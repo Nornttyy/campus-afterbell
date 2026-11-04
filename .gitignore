@@ -1,0 +1,10 @@
+qa/screenshots/
+.DS_Store
+node_modules/
+*.log
+
+art-source/rejected/
+
+.openai/
+
+.publish-cache.json

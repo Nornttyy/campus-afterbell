@@ -44,4 +44,13 @@ npm test
 - Three.js 使用 MIT 许可证，见 `dist/vendor/THREE-LICENSE.txt`。
 - 风格研究参考校园喜剧游戏《我带过的最差一届》的公开展示，本项目没有使用其原始模型、音频、代码或商标标题。
 
-GitHub Pages 工作流只发布 `dist` 目录。
+GitHub Pages 从 `gh-pages` 分支发布，该分支仅包含 `dist` 内容。
+
+更新发布（需已登录有仓库写权限的 GitHub CLI）：
+
+```sh
+git add dist docs scripts README.md package.json qa .gitignore
+python3 scripts/publish.py
+```
+
+发布脚本通过 GitHub 文件接口上传，并在更新分支前检查远程版本，避免覆盖他人的提交。

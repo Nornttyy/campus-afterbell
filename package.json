@@ -1,0 +1,9 @@
+{
+  "name": "campus-afterbell",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node qa/menu-audit.mjs dist",
+    "test": "node --test qa/classroom-rules.test.mjs"
+  }
+}
