@@ -8,3 +8,6 @@ art-source/rejected/
 .openai/
 
 .publish-cache.json
+
+# Local research evidence; link to official sources in public documentation.
+docs/reference-media/

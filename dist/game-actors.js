@@ -48,7 +48,8 @@ function articulatedHand(side,scale=1,palmSign=1){
   const thumbTip=new THREE.Group();thumbTip.position.set(0,.033,.008*palmSign);thumb.add(thumbTip);
   const thumbB=segment(thumbTip,skin,.011);thumbB.set(v(0,0,0),v(0,.024,0));oval(thumbTip,skin,[0,.024,0],[.011,.011,.011]);
   function setCurl(amount){const c=clamp(amount,0,1);fingers.forEach((f,i)=>{f.root.rotation.x=palmSign*(.16+c*(.55+i*.025));f.joint.rotation.x=palmSign*c*1.16;});thumb.rotation.x=palmSign*(.10+c*.6);thumbTip.rotation.x=palmSign*c*.8;}
-  setCurl(.15);return{group,setCurl};
+  function pointIndex(amount=1){const f=fingers[side===1?0:3],a=clamp(amount,0,1);f.root.rotation.x*=1-a;f.joint.rotation.x*=1-a;}
+  setCurl(.15);return{group,setCurl,pointIndex};
 }
 function makeArm(parent,{material=shirt,radius=.065,school=false,side=1,handScale=.92,palmSign=1}={}){
   const group=new THREE.Group();parent.add(group);
@@ -137,68 +138,127 @@ export function createTeacher(){
 }
 
 function snackProp(){
-  const group=new THREE.Group();const orange=mat('packet','#f0a54d'),cream=mat('packetCream','#fff0b6'),red=mat('packetRed','#d65236');
-  const s=new THREE.Shape();s.moveTo(-.044,-.067);s.lineTo(.043,-.067);s.lineTo(.049,.067);s.lineTo(-.05,.067);s.closePath();
-  mesh(group,new THREE.ExtrudeGeometry(s,{depth:.027,bevelEnabled:true,bevelSize:.004,bevelThickness:.003,bevelSegments:2}),orange,[0,0,-.014]);
-  cube(group,cream,[0,.013,.021],[.079,.043,.003]);cube(group,red,[0,.013,.024],[.044,.015,.002]);
-  for(const y of [-.065,.068])cube(group,cream,[0,y,.003],[.094,.012,.034]);
-  for(let i=0;i<5;i++)curve(group,orange,[[-.035+i*.017,.064,.023],[-.033+i*.017,.076,.023]],.0014);
-  mesh(group,new THREE.CylinderGeometry(.006,.006,.11,8),mat('snackStick','#d8b162'),[.008,.109,0],[1,1,1],[0,0,-.13]);batch(group);return group;
+  const group=new THREE.Group();group.name='snack-packet';
+  const gold=mat('packet','#e9b545',.76),cream=mat('packetCream','#fff2c4',.84),red=mat('packetRed','#c94f34',.86),blue=mat('packetBlue','#315d9d',.85);
+  const s=new THREE.Shape();s.moveTo(-.073,-.095);s.lineTo(.070,-.095);s.quadraticCurveTo(.065,-.032,.080,.020);s.lineTo(.073,.098);s.lineTo(-.075,.098);s.quadraticCurveTo(-.070,.045,-.080,-.025);s.closePath();
+  mesh(group,new THREE.ExtrudeGeometry(s,{depth:.036,bevelEnabled:true,bevelSize:.006,bevelThickness:.005,bevelSegments:3,curveSegments:6}),gold,[0,0,-.018]);
+  mesh(group,rounded(.119,.128,.002,.018),cream,[0,.003,.025]);
+  mesh(group,rounded(.112,.027,.002,.008),blue,[0,.044,.029],[1,1,1],[0,0,-.07]);
+  oval(group,red,[0,-.025,.030],[.038,.031,.003]);
+  for(const y of [-.095,.098])cube(group,cream,[0,y,.003],[.152,.012,.038]);
+  for(let i=0;i<5;i++)curve(group,gold,[[-.057+i*.028,.092,.027],[-.052+i*.028,.105,.027]],.0014);
+  // An open folded mouth and a few large creases give the foil bag its shape.
+  oval(group,mat('packetInside','#8f6e32'),[0,.103,-.001],[.060,.005,.013]);
+  curve(group,cream,[[-.060,-.070,.027],[-.049,-.035,.031],[-.061,.004,.028]],.0013);
+  curve(group,gold,[[.054,-.074,.028],[.046,-.044,.030],[.055,-.015,.027]],.0015);
+  batch(group);return group;
+}
+function snackPiece(){
+  const group=new THREE.Group();group.name='single-crisp';
+  const toasted=mat('crispEdge','#bc7034',.92),gold=mat('crisp','#e3a04e',.92),ridge=mat('crispRidge','#e9b369',.94);
+  oval(group,toasted,[0,0,0],[.027,.038,.005]);oval(group,gold,[0,.001,.003],[.025,.036,.0035]);
+  for(let i=-2;i<=2;i++)curve(group,ridge,[[i*.007,-.025,.005],[i*.007+.002,0,.008],[i*.007,.026,.005]],.0012);
+  batch(group);return group;
 }
 function phoneProp(){
-  const group=new THREE.Group();mesh(group,rounded(.163,.285,.020,.021),mat('phoneCase','#243447',.38),[0,0,0]);
-  mesh(group,rounded(.146,.258,.002,.015),new THREE.MeshBasicMaterial({color:'#102b3c'}),[0,0,.014]);
-  cube(group,mat('phoneSpeaker','#131a22'),[0,.118,.018],[.033,.004,.002]);oval(group,black,[.040,.118,.017],[.003,.003,.002]);
-  const green=new THREE.MeshBasicMaterial({color:'#6cbca8'}),pale=new THREE.MeshBasicMaterial({color:'#d5e8da'});
-  for(let i=0;i<4;i++){const right=i%2===0;mesh(group,rounded(right?.087:.095,.027,.001,.006),right?green:pale,[right?.017:-.012,.065-i*.045,.017]);}
-  cube(group,pale,[0,-.112,.018],[.054,.003,.001]);batch(group);return group;
+  const group=new THREE.Group();group.name='handheld-phone';
+  mesh(group,rounded(.115,.208,.013,.014),mat('phoneCase','#eef0eb',.54));
+  mesh(group,rounded(.097,.159,.001,.006),new THREE.MeshBasicMaterial({color:'#294a61'}),[0,.003,.011]);
+  cube(group,mat('phoneSpeaker','#3b4247'),[0,.093,.010],[.022,.003,.002]);oval(group,black,[.026,.092,.010],[.002,.002,.001]);
+  const icons=['#70a985','#df8c51','#609bc0','#d3b95d','#ad86b8','#d2e3df'].map(color=>new THREE.MeshBasicMaterial({color}));
+  for(let row=0;row<4;row++)for(let col=0;col<3;col++){
+    const x=(col-1)*.028,y=.057-row*.033;
+    mesh(group,rounded(.019,.020,.001,.004),icons[(row*3+col)%icons.length],[x,y,.013]);
+    cube(group,icons[5],[x,y-.013,.013],[.013,.001,.001]);
+  }
+  oval(group,mat('phoneHome','#b7c2c6',.4),[0,-.091,.009],[.008,.008,.001]);oval(group,cuffMat,[0,-.091,.010],[.006,.006,.001]);
+  batch(group);return group;
 }
-function paperProp(){const group=new THREE.Group(),paper=mat('notePaper','#fff9df');mesh(group,rounded(.142,.097,.003,.002),paper);const s=new THREE.Shape();s.moveTo(-.071,.048);s.lineTo(.071,.048);s.lineTo(0,-.012);s.closePath();mesh(group,new THREE.ExtrudeGeometry(s,{depth:.002,bevelEnabled:false}),mat('paperFold','#e4e7d7'),[0,0,.004]);curve(group,mat('paperRule','#b4c2c4'),[[-.060,-.035,.005],[.059,-.035,.005]],.0008);batch(group);return group;}
-function coverBook(){const group=new THREE.Group();mesh(group,rounded(.235,.174,.013,.004),mat('bookCover','#6e9788'));mesh(group,rounded(.219,.159,.006,.002),cuffMat,[.003,0,.011]);for(let i=0;i<5;i++)cube(group,mat('bookLines','#adbcb2'),[.009,.047-i*.022,.018],[.156,.0014,.001]);batch(group);return group;}
+function paperProp(){
+  const group=new THREE.Group(),paper=mat('notePaper','#f8f6e9',.94),fold=mat('paperFold','#e0e4dc',.96),rule=mat('paperRule','#9bafb5',.94);
+  group.name='folded-note';const base=new THREE.Group();group.add(base);
+  mesh(base,rounded(.142,.092,.002,.002),paper);for(let i=0;i<3;i++)curve(base,rule,[[-.052,-.012-i*.010,.002],[.041,-.012-i*.010,.002]],.0005);batch(base);
+  const flap=new THREE.Group();flap.position.y=.046;group.add(flap);
+  const s=new THREE.Shape();s.moveTo(-.071,0);s.lineTo(.071,0);s.lineTo(.059,.065);s.lineTo(-.059,.065);s.closePath();
+  mesh(flap,new THREE.ExtrudeGeometry(s,{depth:.0015,bevelEnabled:false}),paper);
+  curve(flap,fold,[[-.069,0,.003],[.069,0,.003]],.0008);batch(flap);
+  group.userData.flap=flap;return group;
+}
 
 export function createDeskHands(){
   const group=new THREE.Group();group.name='first-person-school-hands';
-  const arms=[makeArm(group,{material:clothBlue,radius:.060,school:true,side:-1,handScale:.83,palmSign:-1}),makeArm(group,{material:clothBlue,radius:.060,school:true,side:1,handScale:.83,palmSign:-1})];
-  const props={snack:snackProp(),phone:phoneProp(),note:paperProp(),book:coverBook()};Object.values(props).forEach(p=>group.add(p));
-  const weights={snack:0,note:0,phone:0};let lastTime=null,alertValue=0,phoneGripX=.26;
-  const rest=[v(-.26,-.48,-.55),v(.26,-.48,-.55)];
-  function update(time,{action='snack',holding=false,progress=0,alert=0}={}){
-    if(lastTime!==null&&time<lastTime){lastTime=null;alertValue=0;phoneGripX=.26;weights.snack=weights.note=weights.phone=0;}
-    const dt=lastTime===null?1/60:clamp(time-lastTime,0,.08);lastTime=time;const active=['snack','note','phone'].includes(action)?action:'snack';
+  const deskBlue=mat('deskSchoolBlue','#2473d1',.88);
+  const arms=[makeArm(group,{material:deskBlue,radius:.058,school:true,side:-1,handScale:.9,palmSign:-1}),makeArm(group,{material:deskBlue,radius:.058,school:true,side:1,handScale:.9,palmSign:-1})];
+  arms.forEach((arm,i)=>arm.group.name=i?'right-desk-arm':'left-desk-arm');
+  const props={snack:snackProp(),piece:snackPiece(),phone:phoneProp(),note:paperProp()};Object.values(props).forEach(p=>group.add(p));
+  let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0;
+  const rest=[v(-.22,-.525,-.28),v(.22,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
+  const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
+  function update(time,{action='snack',holding=false,progress=0,alert=0,seated=true,crouched=false,caught=false,viewPitch=.08}={}){
+    if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=0;}
+    const dt=lastTime===null?1/60:clamp(time-lastTime,0,.08);lastTime=time;
+    const requested=['snack','note','phone'].includes(action)?action:'snack';
+    if(extension<.001&&active!==requested){active=requested;useTime=0;}
+    const engaged=holding&&!caught&&active===requested;
+    focus=smooth(focus,engaged&&seated?1:0,dt,7);
+    standing=smooth(standing,seated?0:1,dt,9);
     alertValue=smooth(alertValue,clamp(Number(alert)||0,0,1),dt,12);
-    for(const key of Object.keys(weights))weights[key]=smooth(weights[key],holding&&active===key?1:0,dt,holding?9:13);
-    const total=weights.snack+weights.note+weights.phone,p=clamp(Number(progress)||0,0,1),fidget=Math.sin(time*2.4)*.003;
+    extension=clamp(extension+dt*(engaged?1/.70:-(caught?1/.20:1/.46)),0,1);
+    const clear=ease(extension,0,.16),lower=ease(extension,.16,.32),reach=ease(extension,.30,.48),pull=ease(extension,.48,.72),use=ease(extension,.70,1),p=clamp(Number(progress)||0,0,1);
+    if(engaged&&use>.94)useTime+=dt;else if(extension<.05)useTime=0;
+    const fidget=Math.sin(time*2.4)*.002,cycle=(useTime%2.65)/2.65;
+    const bite=seated&&!crouched?ease(cycle,.20,.48)*(1-ease(cycle,.62,.95)):0;
+    const pass=active==='note'?ease(p,.62,.96):0;
     const targets={
-      snack:[v(-.22,-.39,-.62),v(.16,-.20+Math.sin(time*4.2)*.005,-.38)],
-      note:[rest[0].clone(),v(.10+p*.26,-.29-fidget,-.52-p*.06)],
-      phone:[v(-.105,-.31,-.49),v(.105,-.31,-.49)]
+      snack:[v(-.25,-.615,-.22),v(-.055,-.56,-.23).lerp(v(.115,-.285,-.105),bite)],
+      phone:[v(-.16,-.59,-.245),v(.069,-.575,-.249+Math.sin(useTime*6.2)*.003)],
+      note:[v(-.12,-.59,-.245).lerp(rest[0],pass),v(.12+pass*.27,-.59+pass*.018,-.245+pass*.035)]
     };
-    const wrists=rest.map((r,i)=>{const w=r.clone();for(const key of Object.keys(weights))w.addScaledVector(targets[key][i].clone().sub(r),weights[key]);w.y-=alertValue*.035;return w;});
-    // A released phone and its gripping hands descend as one connected pose.
-    // Only spread the wrists back to rest after the phone has disappeared.
-    const phoneVisible=weights.phone>.04;
-    phoneGripX=phoneVisible?.085:smooth(phoneGripX,.26,dt,12);
-    if(phoneVisible){
-      const y=(wrists[0].y+wrists[1].y)*.5,z=(wrists[0].z+wrists[1].z)*.5;
-      wrists[0].set(-phoneGripX,y,z);wrists[1].set(phoneGripX,y,z);
-    }else if(phoneGripX<.259&&weights.snack+weights.note<.05){
-      wrists[0].x=-phoneGripX;wrists[1].x=phoneGripX;
-    }
-    arms.forEach((arm,i)=>{const side=i?1:-1,shoulder=v(side*.41,-.73,-.12),elbow=v(side*(.35-total*.035),-.54+total*.08,-.34),w=wrists[i];
-      const grip=(i?weights.snack+weights.note*.96:0)+weights.phone*.8;
-      const noteGrip=i===1?weights.note:0;
-      arm.pose(shoulder,elbow,w,phoneVisible?{curl:.90,rx:-.08,ry:-side*.14,rz:-side*.14}:{curl:clamp(grip,.12,1),rx:-.28+weights.phone*.20+(i===0?weights.snack*.75:0)+noteGrip*.08,ry:-side*weights.phone*.22+noteGrip*.78,rz:-side*(.13+weights.phone*.08)-noteGrip*.05});
+    // Clear the front edge before lowering, then reach horizontally through
+    // the opening. A packet is pulled clear before it is turned upright.
+    const wrists=rest.map((r,i)=>{
+      const w=r.clone();w.z=THREE.MathUtils.lerp(r.z,-.17,clear);w.y=THREE.MathUtils.lerp(r.y,drawer[i].y,lower);
+      w.x=THREE.MathUtils.lerp(r.x,drawer[i].x,reach);w.z=THREE.MathUtils.lerp(w.z,drawer[i].z,reach);
+      w.z=THREE.MathUtils.lerp(w.z,-.13,pull);return w.lerp(targets[active][i],use);
     });
-    props.snack.visible=weights.snack>.015;props.snack.position.copy(wrists[1]).add(v(.004,.060,-.025));props.snack.rotation.set(-.12,.12,-.12+fidget*5);
-    props.book.visible=weights.snack>.015;props.book.position.copy(wrists[0]).add(v(.015,-.015,-.035));props.book.rotation.set(-.48,.1,.05);
-    props.note.visible=weights.note>.015;
-    // The paper's right edge is captured between the turned thumb and fingers.
-    const noteHand=arms[1].hand.group;noteHand.updateMatrix();
-    props.note.position.set(-.066,.074,-.027).applyMatrix4(noteHand.matrix);
-    props.note.quaternion.copy(noteHand.quaternion);props.note.rotateZ(-.08-p*.10);
-    props.phone.visible=phoneVisible;props.phone.position.copy(wrists[0]).add(wrists[1]).multiplyScalar(.5).add(v(0,.074,-.032));props.phone.rotation.set(-.03+fidget,.025*Math.sin(time*.7),fidget);
-    // When released, both forearms and the held object lower smoothly together.
-    group.position.y=.18;
+    // Walking carries objects at the waist. Crouching tucks the forearms in.
+    wrists.forEach((w,i)=>{const down=v((i?1:-1)*.24,-.79,-.13);w.lerp(down,standing);if(crouched){w.y-=.055;w.z+=.12*(1-reach)*(1-use);}w.y-=alertValue*.006;});
+    const poses={
+      snack:[{curl:.80,rx:-.18,ry:-1.02,rz:-.08},{curl:.88,rx:-.13,ry:.26,rz:.24}],
+      phone:[{curl:.78,rx:-.20,ry:-1.08,rz:-.08},{curl:.80,rx:-.06,ry:.05,rz:1.04}],
+      note:[{curl:.67,rx:-.34,ry:-.72,rz:-.18},{curl:.72,rx:-.34,ry:.72,rz:.16}]
+    };
+    arms.forEach((arm,i)=>{
+      const side=i?1:-1,w=wrists[i],s=v(side*.265,-.37-standing*.045,.035);if(crouched)s.y-=.04;
+      // A two-segment solve keeps both sleeves the same length while a wrist
+      // travels between the drawer, phone and mouth.
+      const direction=w.clone().sub(s),distance=direction.length();direction.normalize();
+      const upperLength=.27,lowerLength=.245,along=(upperLength*upperLength-lowerLength*lowerLength+distance*distance)/(2*distance);
+      const bend=v(side*.68,-1,.14);bend.addScaledVector(direction,-bend.dot(direction)).normalize();
+      const e=s.clone().addScaledVector(direction,along).addScaledVector(bend,Math.sqrt(Math.max(0,upperLength*upperLength-along*along)));
+      const target=poses[active][i],blend=use*(1-standing),restRX=-Math.PI/2+reach*.16;
+      const pose={curl:.10+(target.curl-.10)*blend,rx:restRX+(target.rx-restRX)*blend,ry:target.ry*blend,rz:target.rz*blend};
+      if(active==='note'&&i===0){pose.rx=THREE.MathUtils.lerp(pose.rx,-Math.PI/2,pass);pose.ry*=1-pass;pose.rz*=1-pass;pose.curl*=1-pass*.85;}
+      pose.rx=THREE.MathUtils.lerp(pose.rx,-.23,standing);pose.rz=THREE.MathUtils.lerp(pose.rz,-side*.06,standing);
+      arm.pose(s,e,w,pose);
+      if(active==='phone'&&i===1&&use>.25&&standing<.1)arm.hand.pointIndex(use);
+    });
+    const visible=extension>.46&&!caught;
+    props.snack.visible=visible&&active==='snack';props.piece.visible=props.snack.visible&&use>.84&&cycle>.14&&cycle<.77&&seated&&!crouched;
+    props.snack.position.copy(wrists[0]).add(v(.075,THREE.MathUtils.lerp(.018,.072,use),-.014));props.snack.rotation.set(THREE.MathUtils.lerp(-Math.PI/2,-.16,use),-.12*use,-.08+fidget);
+    const rightHand=arms[1].hand.group;rightHand.updateMatrix();
+    props.piece.position.set(-.024,.088,-.024).applyMatrix4(rightHand.matrix);props.piece.quaternion.copy(rightHand.quaternion);props.piece.rotateZ(-.25);
+    props.phone.visible=visible&&active==='phone';props.phone.position.copy(wrists[0]).add(v(.065,THREE.MathUtils.lerp(.018,.071,use),-.020));props.phone.rotation.set(THREE.MathUtils.lerp(-Math.PI/2,-.24,use),.015,-.08);
+    props.note.visible=visible&&active==='note';props.note.position.copy(wrists[1]).add(v(-.070,THREE.MathUtils.lerp(.018,.065,use),-.012));props.note.rotation.set(THREE.MathUtils.lerp(-Math.PI/2,-.72,use),.04,-.05-pass*.12);
+    props.note.userData.flap.rotation.x=-Math.PI*ease(p,0,.58);
+    // The scene reads this same focus to lower and pitch its camera. Applying
+    // the inverse transform anchors the wrists to the physical desk opening.
+    const pitch=clamp((Number.isFinite(viewPitch)?viewPitch:.08)+.85*focus,-1.40,1.40),drop=.12*focus+(seated&&crouched?.24:0);
+    group.rotation.x=pitch;group.position.set(0,drop*Math.cos(pitch),drop*Math.sin(pitch));
   }
-  update(0);return{group,update};
+  update(0);return{group,update,getFocus(){return focus;},getDebug(){
+    const camera=group.parent?.isCamera?group.parent:null,prop=props[active];
+    const position=prop.getWorldPosition(v(0,0,0));if(camera)position.project(camera);
+    return{focus:Number(focus.toFixed(3)),extension:Number(extension.toFixed(3)),active,visible:prop.visible,propNDC:position.toArray().map(n=>Number(n.toFixed(3))),groupPitch:Number(group.rotation.x.toFixed(3))};
+  }};
 }
