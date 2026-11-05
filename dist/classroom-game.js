@@ -1,4 +1,4 @@
-import {ClassroomRound} from './classroom-rules.js?v=07';
+import {ClassroomRound} from './classroom-rules.js?v=09';
 
 // Input/UI only. Perception, movement and team results live in rules.
 export function createClassroomGame({scene,audio,onExit}){
