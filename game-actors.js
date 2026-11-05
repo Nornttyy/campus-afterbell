@@ -7,11 +7,12 @@ const mat=(name,color,roughness=.72,metalness=0)=>{
   if(!materials.has(name))materials.set(name,new THREE.MeshStandardMaterial({color,roughness,metalness}));
   return materials.get(name);
 };
-const skin=mat('skin','#edb08c'),skinShade=mat('skinShade','#cd8a6e'),shirt=mat('shirt','#f6f4e9');
-const clothBlue=mat('schoolBlue','#286ac6'),cuffMat=mat('cuff','#f6f5e9'),pants=mat('pants','#725345');
-const hair=mat('teacherHair','#24262c',.58),black=mat('black','#20252e'),pupil=mat('pupil','#161a21',.3);
+const skin=mat('skin','#edb08c'),skinShade=mat('skinShade','#cd8a6e'),shirt=mat('shirt','#d4e4da',.88);
+const adultSkin=mat('teacherSkin','#f2bc70',.78),adultShade=mat('teacherSkinShade','#d69a56',.85),collar=mat('poloCollar','#292d29',.9);
+const clothBlue=mat('schoolBlue','#286ac6'),cuffMat=mat('cuff','#f6f5e9'),pants=mat('pants','#43352f',.94);
+const hair=mat('teacherHair','#191b1c',.82),black=mat('black','#20201f',.84),pupil=mat('pupil','#161a21',.3);
 const sole=mat('sole','#3c3c42'),eyeWhite=mat('eyes','#fff8e9',.4),lip=mat('lip','#70493e');
-const button=mat('button','#bbc1c3',.35,.1),belt=mat('belt','#403b37'),glasses=mat('glasses','#343d48',.4,.2);
+const button=mat('button','#c8d6cd',.65),belt=mat('belt','#403b37');
 const sphere=new THREE.SphereGeometry(1,18,12),box=new THREE.BoxGeometry(1,1,1),axisY=new THREE.Vector3(0,1,0);
 const tmpA=new THREE.Vector3(),tmpB=new THREE.Vector3();
 function mesh(parent,geo,material,p=[0,0,0],s=[1,1,1],r=null){const m=new THREE.Mesh(geo,material);m.position.set(...p);m.scale.set(...s);if(r)m.rotation.set(...r);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
@@ -28,61 +29,119 @@ const v=(x,y,z)=>new THREE.Vector3(x,y,z);
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 function smooth(current,target,dt,speed=10){return current+(target-current)*(1-Math.exp(-Math.max(0,dt)*speed));}
 
-// Fingers have real joints, so a single pair of hands can open, pinch and grip.
-function articulatedHand(side,scale=1,palmSign=1){
-  const group=new THREE.Group(),palm=new THREE.Group();group.add(palm);group.scale.setScalar(scale);
-  oval(palm,skin,[0,.027,0],[.039,.044,.021]);oval(palm,skin,[0,-.012,0],[.028,.022,.022]);
-  curve(palm,skinShade,[[-.023,.02,.019*palmSign],[.003,.015,.022*palmSign],[.024,.022,.019*palmSign]],.0011);batch(palm);
-  const fingers=[];
-  for(let i=0;i<4;i++){
-    const root=new THREE.Group();root.position.set((i-1.5)*.020,.055,0);group.add(root);
-    const len=[.024,.032,.030,.023][i],r=[.009,.010,.0097,.0085][i];
-    const first=segment(root,skin,r);first.set(v(0,0,0),v(0,len,0));
-    oval(root,skin,[0,0,0],[r*1.04,r*1.04,r*1.04]);oval(root,skin,[0,len,0],[r*1.06,r*1.06,r*1.06]);
-    const joint=new THREE.Group();joint.position.y=len;root.add(joint);
-    const end=segment(joint,skin,r*.88);end.set(v(0,0,0),v(0,len*.8,0));oval(joint,skin,[0,len*.8,0],[r*.88,r*.88,r*.88]);
-    fingers.push({root,joint});
+// One skin/fabric surface spans the joint instead of two capped tubes and a ball.
+function sweptLimb(parent,material,radii){
+  const rows=24,cols=18,positions=new Float32Array((rows+1)*(cols+1)*3),indices=[];
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;indices.push(a,a+1,b,a+1,b+1,b);}
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));geometry.setIndex(indices);
+  const surface=mesh(parent,geometry,material),points=[v(0,0,0),v(0,-.2,0),v(0,-.4,0)],path=new THREE.CatmullRomCurve3(points,false,'centripetal');
+  const center=v(0,0,0),tangent=v(0,0,0),normal=v(0,0,0),binormal=v(0,0,0),guide=v(0,0,1);
+  function set(a,b,c){
+    points[0].copy(a);points[1].copy(b);points[2].copy(c);
+    for(let j=0;j<=rows;j++){
+      const t=clamp((j-1)/(rows-2),0,1),half=t<.5?0:1,u=THREE.MathUtils.smoothstep(t<.5?t*2:(t-.5)*2,0,1);
+      const radius=THREE.MathUtils.lerp(radii[half],radii[half+1],u)*(j===0||j===rows?0:1);
+      path.getPoint(t,center);path.getTangent(t,tangent);guide.set(0,0,1);if(Math.abs(tangent.z)>.96)guide.set(1,0,0);
+      normal.crossVectors(tangent,guide).normalize();binormal.crossVectors(tangent,normal).normalize();
+      for(let i=0;i<=cols;i++){
+        const theta=i/cols*Math.PI*2,n=Math.cos(theta)*radius,bn=Math.sin(theta)*radius*.93,o=(j*(cols+1)+i)*3;
+        positions[o]=center.x+normal.x*n+binormal.x*bn;positions[o+1]=center.y+normal.y*n+binormal.y*bn;positions[o+2]=center.z+normal.z*n+binormal.z*bn;
+      }
+    }
+    geometry.attributes.position.needsUpdate=true;geometry.computeVertexNormals();geometry.computeBoundingSphere();
   }
-  const thumb=new THREE.Group();thumb.position.set(-side*.032,.007,.006*palmSign);thumb.rotation.z=side*.64;group.add(thumb);
-  const thumbA=segment(thumb,skin,.013);thumbA.set(v(0,0,0),v(0,.034,.008*palmSign));
-  const thumbTip=new THREE.Group();thumbTip.position.set(0,.033,.008*palmSign);thumb.add(thumbTip);
-  const thumbB=segment(thumbTip,skin,.011);thumbB.set(v(0,0,0),v(0,.024,0));oval(thumbTip,skin,[0,.024,0],[.011,.011,.011]);
-  function setCurl(amount){const c=clamp(amount,0,1);fingers.forEach((f,i)=>{f.root.rotation.x=palmSign*(.16+c*(.55+i*.025));f.joint.rotation.x=palmSign*c*1.16;});thumb.rotation.x=palmSign*(.10+c*.6);thumbTip.rotation.x=palmSign*c*.8;}
-  function pointIndex(amount=1){const f=fingers[side===1?0:3],a=clamp(amount,0,1);f.root.rotation.x*=1-a;f.joint.rotation.x*=1-a;}
+  return{mesh:surface,set};
+}
+
+// Broad palm and continuously bent digits: no separate spherical knuckles.
+function articulatedHand(side,scale=1,palmSign=1,handMaterial=skin){
+  const group=new THREE.Group(),palm=new THREE.Group();group.add(palm);group.scale.setScalar(scale);
+  mesh(palm,loft([[-.032,.023,.019],[-.018,.031,.023],[.008,.042,.025],[.034,.046,.025],[.052,.043,.021],[.062,.035,.014],[.068,0,0]],24,.66),handMaterial);
+  function digit(x,y,z,length,radius,thumb=false){
+    const rows=12,cols=12,g=new THREE.BufferGeometry(),positions=new Float32Array((rows+1)*(cols+1)*3),indices=[];
+    for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;indices.push(a,a+1,b,a+1,b+1,b);}
+    g.setAttribute('position',new THREE.BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));g.setIndex(indices);
+    const m=mesh(group,g,handMaterial,[x,y,z]);if(thumb)m.rotation.z=side*.72;
+    let previous=-1;
+    function bend(c){
+      if(Math.abs(previous-c)<.0001)return;previous=c;
+      let cy=0,cz=0;
+      for(let j=0;j<=rows;j++){
+        const t=j/rows,angle=palmSign*((thumb?.12:.09)+c*(thumb?1.55:1.95)*Math.pow(t,.84));
+        if(j){cy+=Math.cos(angle)*length/rows;cz+=Math.sin(angle)*length/rows;}
+        const tip=t>.76?Math.sqrt(Math.max(.001,1-((t-.76)/.24)**2)):1;
+        const r=radius*(1-.18*t)*tip;
+        for(let i=0;i<=cols;i++){const a=i/cols*Math.PI*2,o=(j*(cols+1)+i)*3;positions[o]=Math.sin(a)*r;positions[o+1]=cy-Math.cos(a)*Math.sin(angle)*r;positions[o+2]=cz+Math.cos(a)*Math.cos(angle)*r;}
+      }
+      g.attributes.position.needsUpdate=true;g.computeVertexNormals();g.computeBoundingSphere();
+    }
+    return{bend};
+  }
+  const fingers=[];for(let i=0;i<4;i++){const n=side===1?i:3-i;fingers.push(digit((i-1.5)*.023,.051,0,[.049,.056,.052,.043][n],[.0126,.013,.0125,.0115][n]));}
+  const thumb=digit(-side*.034,.005,.009*palmSign,.062,.016,true);let curl=.15;
+  function setCurl(amount){curl=clamp(amount,0,1);fingers.forEach((f,i)=>f.bend(curl*(.96+i*.025)));thumb.bend(curl*.86);}
+  function pointIndex(amount=1){fingers[side===1?0:3].bend(curl*(1-clamp(amount,0,1)));}
   setCurl(.15);return{group,setCurl,pointIndex};
 }
-function makeArm(parent,{material=shirt,radius=.065,school=false,side=1,handScale=.92,palmSign=1}={}){
+function makeArm(parent,{material=shirt,radius=.065,school=false,shortSleeve=false,side=1,handScale=.92,palmSign=1,handMaterial=skin}={}){
   const group=new THREE.Group();parent.add(group);
-  const upper=segment(group,material,radius),lower=segment(group,material,radius*.85);
-  const elbow=oval(group,material,[0,0,0],[radius*.91,radius*.91,radius*.91]);
-  const cuff=mesh(group,loft([[-.018,.048,.048],[.018,.047,.047]],16),school?cuffMat:shirt);
-  const hand=articulatedHand(side,handScale,palmSign);group.add(hand.group);
-  const stripes=school?[segment(group,cuffMat,.009),segment(group,cuffMat,.008)]:null;
-  function pose(a,b,c,{curl=.15,rx=0,ry=0,rz=0}={}){upper.set(a,b);lower.set(b,c);elbow.position.copy(b);cuff.position.copy(b).lerp(c,.93);cuff.quaternion.setFromUnitVectors(axisY,tmpB.copy(c).sub(b).normalize());hand.group.position.copy(c);hand.group.rotation.set(rx,ry,rz);hand.setCurl(curl);if(stripes){const off=v(side*.011,0,radius*.85);stripes[0].set(a.clone().add(off),b.clone().add(off));stripes[1].set(b.clone().add(off),c.clone().add(off));}}
+  const limbMaterial=shortSleeve?handMaterial:material;
+  const upper=segment(group,limbMaterial,radius*(shortSleeve?.76:1)),lower=segment(group,limbMaterial,radius*(shortSleeve?.67:.85));
+  const elbow=oval(group,limbMaterial,[0,0,0],[radius*(shortSleeve?.72:.91),radius*(shortSleeve?.72:.91),radius*(shortSleeve?.72:.91)]);
+  const cuff=mesh(group,loft([[-.012,.041,.041],[.012,.041,.041]],16),shortSleeve?handMaterial:material);
+  const continuous=shortSleeve?sweptLimb(group,handMaterial,[radius*.76,radius*.72,radius*.60]):null;
+  if(continuous){upper.mesh.visible=false;lower.mesh.visible=false;elbow.visible=false;cuff.visible=false;}
+  const hand=articulatedHand(side,handScale,palmSign,handMaterial);group.add(hand.group);
+  const sleeve=shortSleeve?mesh(group,loft([[-.5,.063,.063],[.18,.077,.077],[.5,.069,.069]],20),material):null;
+  const upperPanel=school?segment(group,cuffMat,radius*1.015):null;
+  function pose(a,b,c,{curl=.15,rx=0,ry=0,rz=0}={}){
+    upper.set(a,b);lower.set(b,c);elbow.position.copy(b);cuff.position.copy(b).lerp(c,.93);cuff.quaternion.setFromUnitVectors(axisY,tmpB.copy(c).sub(b).normalize());hand.group.position.copy(c);hand.group.rotation.set(rx,ry,rz);hand.setCurl(curl);
+    if(continuous)continuous.set(a,b,c);
+    if(sleeve){const end=a.clone().lerp(b,.48);sleeve.position.copy(a).add(end).multiplyScalar(.5);sleeve.scale.y=a.distanceTo(end);sleeve.quaternion.setFromUnitVectors(axisY,tmpB.copy(a).sub(end).normalize());}
+    if(upperPanel)upperPanel.set(a.clone().lerp(b,.04),a.clone().lerp(b,.56));
+  }
   return{group,pose,hand};
 }
 
-const teacherFace=loft([[-.206,0,0],[-.191,.071,.077],[-.16,.118,.115],[-.09,.146,.137],[.02,.153,.139],[.12,.149,.133],[.18,.119,.106],[.205,.055,.05],[.211,0,0]],32,.83);
-function teacherHairGeometry(){const p=[],idx=[],rows=14,cols=36;for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){const a=i/cols*Math.PI*2,front=Math.max(0,Math.cos(a)),edge=1.91-.77*front**4+.045*Math.sin(a*3)*front**5,t=j/rows*edge,x=Math.sin(t)*Math.sin(a),z=Math.sin(t)*Math.cos(a);p.push(Math.sign(x)*Math.abs(x)**.76*.168,Math.cos(t)*.229+.008,Math.sign(z)*Math.abs(z)**.76*.153-.005);}for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;idx.push(a,b,a+1,b,b+1,a+1);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setIndex(idx);g.computeVertexNormals();return g;}
+// The jaw, cheeks and forehead are one softly squared surface.
+const teacherFace=loft([[-.253,0,0],[-.242,.083,.079],[-.217,.143,.119],[-.164,.177,.143],[-.065,.192,.155],[.055,.188,.151],[.158,.178,.140],[.224,.141,.113],[.247,.058,.047],[.25,0,0]],40,.64);
+function teacherHairGeometry(){
+  // A continuous crew cut with a shallow jagged crown and a shaped hairline.
+  const p=[],idx=[],rows=18,cols=60;
+  for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){
+    const a=i/cols*Math.PI*2,front=Math.max(0,Math.cos(a)),t=j/rows;
+    const edge=-.105+.265*front**4,peak=.286+.024*Math.cos(a*11)+.013*Math.cos(a*19);
+    const y=THREE.MathUtils.lerp(edge,peak,t),rx=.196*(1-.14*t),rz=.162*(1-.14*t);
+    const hairline=.011*Math.cos(a*13)*front**5*(1-t)**5;
+    p.push(Math.sign(Math.sin(a))*Math.abs(Math.sin(a))**.65*rx,y+hairline,Math.sign(Math.cos(a))*Math.abs(Math.cos(a))**.65*rz-.010);
+  }
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;idx.push(a,a+1,b,a+1,b+1,b);}
+  const top=p.length/3;p.push(0,.29,-.01);for(let i=0;i<cols;i++)idx.push(rows*(cols+1)+i,rows*(cols+1)+i+1,top);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setIndex(idx);g.computeVertexNormals();return g;
+}
 const teacherCap=teacherHairGeometry();
-const shirtGeometry=loft([[-.018,.165,.105],[.025,.185,.112],[.15,.184,.117],[.34,.208,.125],[.48,.249,.124],[.535,.22,.108],[.57,.105,.074]],32,.68);
+const shirtGeometry=loft([[-.018,.174,.112],[.025,.197,.119],[.15,.198,.123],[.34,.213,.126],[.48,.249,.124],[.535,.22,.108],[.57,.105,.074]],32,.68);
+function facePatch(parent,material,outline,z){
+  const shape=new THREE.Shape();outline(shape);return mesh(parent,new THREE.ShapeGeometry(shape,18),material,[0,0,z]);
+}
 function createAdultHead(){
-  const group=new THREE.Group(),fixed=new THREE.Group();group.add(fixed);mesh(fixed,teacherFace,skin);mesh(fixed,teacherCap,hair);
-  for(const side of [-1,1]){oval(fixed,skin,[side*.15,-.022,-.006],[.032,.048,.022]);oval(fixed,skinShade,[side*.168,-.025,.013],[.011,.026,.006]);}
-  oval(fixed,skin,[0,-.005,.138],[.018,.046,.022]);oval(fixed,skin,[0,-.036,.155],[.024,.023,.025]);
-  curve(fixed,lip,[[-.042,-.105,.122],[-.01,-.117,.131],[.026,-.112,.129],[.047,-.096,.118]],.004);
-  curve(fixed,skinShade,[[-.025,-.14,.115],[.012,-.142,.12]],.0018);
+  const group=new THREE.Group(),fixed=new THREE.Group();group.add(fixed);mesh(fixed,teacherFace,adultSkin);mesh(fixed,teacherCap,hair);
+  for(const side of [-1,1]){
+    oval(fixed,adultSkin,[side*.190,-.035,-.002],[.039,.057,.027]);
+    curve(fixed,adultShade,[[side*.208,-.063,.019],[side*.219,-.022,.022],[side*.204,-.002,.021]],.003);
+  }
+  // Broad grin and protruding white eyes are the teacher's defining silhouette.
+  facePatch(fixed,mat('teacherMouth','#452620',.9),s=>{s.moveTo(-.129,-.080);s.quadraticCurveTo(0,-.130,.129,-.080);s.quadraticCurveTo(.109,-.180,0,-.188);s.quadraticCurveTo(-.109,-.180,-.129,-.080);},.158);
+  facePatch(fixed,eyeWhite,s=>{s.moveTo(-.119,-.092);s.quadraticCurveTo(0,-.137,.119,-.092);s.lineTo(.101,-.130);s.quadraticCurveTo(0,-.166,-.101,-.130);s.closePath();},.160);
+  facePatch(fixed,mat('teacherTongue','#c46b60',.88),s=>{s.moveTo(-.049,-.175);s.quadraticCurveTo(0,-.155,.048,-.175);s.quadraticCurveTo(0,-.187,-.049,-.175);},.161);
+  oval(fixed,adultSkin,[0,-.020,.165],[.026,.035,.028]);
   const eyes=[];
   for(const side of [-1,1]){
-    const eye=new THREE.Group();eye.position.set(side*.061,.025,.13);group.add(eye);
-    oval(eye,eyeWhite,[0,0,0],[.043,.057,.015]);oval(eye,pupil,[0,0,.016],[.013,.019,.003]);eyes.push(eye);
-    const rim=[];for(let i=0;i<=32;i++){const a=i/32*Math.PI*2;rim.push([side*.061+Math.cos(a)*.049,.026+Math.sin(a)*.064,.151]);}curve(fixed,glasses,rim,.0035);
-    curve(fixed,glasses,[[side*.109,.05,.151],[side*.151,.041,.08],[side*.158,.005,0]],.0028);
-    curve(fixed,hair,[[side*.021,.104,.122],[side*.06,.114,.129],[side*.101,.104,.112]],.006);
+    const eye=new THREE.Group();eye.position.set(side*.080,.031,.144);group.add(eye);
+    oval(eye,eyeWhite,[0,0,0],[.059,.074,.032]);oval(eye,pupil,[side*.002,-.004,.030],[.021,.034,.008]);
+    oval(eye,eyeWhite,[-.006,.012,.038],[.006,.008,.002]);eyes.push(eye);
+    curve(fixed,hair,[[side*.043,.128,.146],[side*.076,.139,.149],[side*.111,.131,.140]],.0065);
   }
-  curve(fixed,glasses,[[-.012,.039,.152],[0,.044,.16],[.012,.039,.152]],.003);
-  // A quiet side part and a continuous cap avoid any detached hair geometry.
-  curve(fixed,mat('part','#383a41'),[[.045,.219,.048],[.069,.205,.092],[.099,.17,.113]],.002);
   batch(fixed);return{group,eyes};
 }
 function shoeMesh(parent,x){
@@ -97,22 +156,27 @@ export function createTeacher(){
   const group=new THREE.Group();group.name='classroom-teacher';
   const body=new THREE.Group();group.add(body);const fixed=new THREE.Group();body.add(fixed);
   mesh(fixed,shirtGeometry,shirt,[0,.99,0]);
-  mesh(fixed,loft([[-.025,.184,.111],[.025,.184,.111]],24,.68),belt,[0,1.0,0]);
-  cube(fixed,button,[0,1.0,.116],[.047,.035,.007]);cube(fixed,belt,[0,1.0,.122],[.028,.018,.004]);
-  oval(fixed,skin,[0,1.595,0],[.061,.078,.059]);
+  mesh(fixed,loft([[-.016,.182,.111],[.016,.182,.111]],24,.68),pants,[0,.989,0]);
+  mesh(fixed,loft([[-.055,.054,.053],[.047,.061,.058]],24,.85),adultSkin,[0,1.605,0]);
+  mesh(fixed,loft([[-.014,.076,.069],[.014,.073,.068]],24,.8),collar,[0,1.568,0]);
   for(const side of [-1,1]){
-    const s=new THREE.Shape();s.moveTo(side*.014,.04);s.lineTo(side*.055,.066);s.lineTo(side*.126,-.008);s.lineTo(side*.065,-.058);s.closePath();
-    mesh(fixed,new THREE.ExtrudeGeometry(s,{depth:.013,bevelEnabled:true,bevelSize:.004,bevelThickness:.003,bevelSegments:2}),shirt,[0,1.535,.069]);
+    const s=new THREE.Shape();s.moveTo(side*.012,.034);s.lineTo(side*.049,.052);s.lineTo(side*.111,-.012);s.lineTo(side*.060,-.051);s.closePath();
+    mesh(fixed,new THREE.ExtrudeGeometry(s,{depth:.012,bevelEnabled:true,bevelSize:.003,bevelThickness:.002,bevelSegments:2}),shirt,[0,1.535,.071]);
+    curve(fixed,collar,[[side*.013,1.569,.092],[side*.06,1.588,.080],[side*.108,1.526,.088]],.0045);
   }
-  curve(fixed,mat('shirtSeam','#d3d5cf'),[[0,1.024,.118],[0,1.30,.13],[0,1.52,.105]],.0016);
-  for(let i=0;i<5;i++)oval(fixed,button,[0,1.10+i*.088,.128],[.006,.006,.003]);
-  curve(fixed,mat('pocket','#d1d4ce'),[[.077,1.43,.128],[.077,1.344,.128],[.148,1.344,.115],[.148,1.43,.115]],.002);
-  cube(fixed,mat('teacherPen','#315983'),[.105,1.438,.132],[.009,.052,.008]);
+  mesh(fixed,rounded(.029,.112,.006,.005),collar,[0,1.497,.124]);
+  for(let i=0;i<2;i++)oval(fixed,button,[0,1.473+i*.036,.130],[.004,.004,.002]);
+  mesh(fixed,rounded(.074,.077,.006,.007),shirt,[.112,1.388,.123],[1,1,1],[0,-.08,0]);
+  curve(fixed,mat('poloPocketSeam','#a8beb3',.94),[[.075,1.428,.128],[.149,1.428,.121]],.0013);
   batch(fixed);
   const adultHead=createAdultHead();adultHead.group.position.y=1.81;body.add(adultHead.group);
-  const arms=[makeArm(body,{side:-1}),makeArm(body,{side:1})];
+  const arms=[makeArm(body,{side:-1,shortSleeve:true,handMaterial:adultSkin,handScale:1.18}),makeArm(body,{side:1,shortSleeve:true,handMaterial:adultSkin,handScale:1.18})];
   const legs=[];
-  for(const side of [-1,1]){const upper=segment(group,pants,.093),lower=segment(group,pants,.078),knee=oval(group,pants,[0,.52,0],[.077,.078,.073]),foot=shoeMesh(group,side*.115);legs.push({side,upper,lower,knee,foot});}
+  for(const side of [-1,1]){
+    const upper=segment(group,pants,.098),lower=segment(group,pants,.080),knee=oval(group,pants,[0,.52,0],[.078,.079,.074]),ankleSkin=segment(group,adultSkin,.047),foot=shoeMesh(group,side*.115);
+    const fabric=sweptLimb(group,pants,[.098,.080,.073]);upper.mesh.visible=false;lower.mesh.visible=false;knee.visible=false;
+    legs.push({side,upper,lower,knee,ankleSkin,foot,fabric});
+  }
   const chalk=new THREE.Group();arms[1].hand.group.add(chalk);mesh(chalk,new THREE.CylinderGeometry(.005,.005,.055,10),cuffMat,[.011,.07,.026],[1,1,1],[Math.PI/2,0,0]);
   let lastTime=null,walk=0,headLook=0,write=1,alertValue=0;
   function update(time,{walking=0,look=0,phase='board',alert=0}={}){
@@ -125,7 +189,7 @@ export function createTeacher(){
     const blink=(time%4.8)<.13?Math.sin(time%4.8/.13*Math.PI):0;adultHead.eyes.forEach(e=>e.scale.y=Math.max(.10,1-blink));
     legs.forEach((l,i)=>{const t=cycle+i*Math.PI,swing=Math.sin(t)*walk,footLift=Math.max(0,Math.cos(t))*.085*walk;
       const hip=v(l.side*.112,.98,0),knee=v(l.side*.118,.52+bob*.25,.04+swing*.10),ankle=v(l.side*.122,.112+footLift,swing*.20);
-      l.upper.set(hip,knee);l.lower.set(knee,ankle);l.knee.position.copy(knee);l.foot.position.set(ankle.x,footLift,ankle.z);l.foot.rotation.x=-Math.max(0,Math.cos(t))*.13*walk;
+      l.upper.set(hip,knee);const trouserEnd=ankle.clone().add(v(0,.059,0));l.lower.set(knee,trouserEnd);l.fabric.set(hip,knee,trouserEnd);l.ankleSkin.set(ankle.clone().add(v(0,-.015,0)),trouserEnd);l.knee.position.copy(knee);l.foot.position.set(ankle.x,footLift,ankle.z);l.foot.rotation.x=-Math.max(0,Math.cos(t))*.13*walk;
     });
     arms.forEach((arm,i)=>{const side=i?1:-1,t=cycle+i*Math.PI,swing=-Math.sin(t)*walk;
       const shoulder=v(side*.238,1.485,0),elbow=v(side*.28,1.22,.02+swing*.13),wrist=v(side*.27,.995,swing*.21);
@@ -188,7 +252,7 @@ function paperProp(){
 export function createDeskHands(){
   const group=new THREE.Group();group.name='first-person-school-hands';
   const deskBlue=mat('deskSchoolBlue','#2473d1',.88);
-  const arms=[makeArm(group,{material:deskBlue,radius:.058,school:true,side:-1,handScale:.9,palmSign:-1}),makeArm(group,{material:deskBlue,radius:.058,school:true,side:1,handScale:.9,palmSign:-1})];
+  const arms=[makeArm(group,{material:deskBlue,radius:.058,school:true,side:-1,handScale:1.02,palmSign:-1}),makeArm(group,{material:deskBlue,radius:.058,school:true,side:1,handScale:1.02,palmSign:-1})];
   arms.forEach((arm,i)=>arm.group.name=i?'right-desk-arm':'left-desk-arm');
   const props={snack:snackProp(),piece:snackPiece(),phone:phoneProp(),note:paperProp()};Object.values(props).forEach(p=>group.add(p));
   let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0;
