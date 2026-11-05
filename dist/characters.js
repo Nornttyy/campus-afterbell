@@ -85,45 +85,58 @@ for(let i=0;i<jacketGeometry.attributes.position.count;i++){
     -Math.exp(-Math.pow((y-.107-Math.abs(x)*.12)/.021,2))*.0015;
   p.setZ(i,z+front*side*fold);
 }
-jacketGeometry.computeVertexNormals();
+jacketGeometry.computeVertexNormals();closeRingNormals(jacketGeometry,32,jacketRings.length);
 // Continuous sewn panels sit above one blue shell. No triangle-by-triangle
 // material partitioning: those cuts became speckled after scene batching.
 function jacketSurface(y,a,offset=0){
   let j=0;while(j<jacketRings.length-2&&jacketRings[j+1][0]<y)j++;
   const lo=jacketRings[j],hi=jacketRings[j+1],t=THREE.MathUtils.clamp((y-lo[0])/(hi[0]-lo[0]),0,1);
-  const rx=THREE.MathUtils.lerp(lo[1],hi[1],t)+offset,rz=THREE.MathUtils.lerp(lo[2],hi[2],t)+offset;
-  const sx=Math.sin(a),cz=Math.cos(a);return [Math.sign(sx)*Math.abs(sx)**.65*rx,y,Math.sign(cz)*Math.abs(cz)**.65*rz];
+  // Sample the actual folded, triangulated garment, rather than a second
+  // idealised shell which can cut through its supporting triangles.
+  const u=THREE.MathUtils.euclideanModulo(a,Math.PI*2)/(Math.PI*2)*32,col=Math.floor(u),f=u-col;
+  const first=j*33+col,ids=t+f<=1?[first,first+1,first+33]:[first+1,first+34,first+33];
+  const weights=t+f<=1?[1-t-f,f,t]:[1-t,t+f-1,1-f],p=jacketGeometry.attributes.position,n=jacketGeometry.attributes.normal;
+  const v=new THREE.Vector3(),normal=new THREE.Vector3();
+  for(let k=0;k<3;k++){v.addScaledVector(new THREE.Vector3().fromBufferAttribute(p,ids[k]),weights[k]);normal.addScaledVector(new THREE.Vector3().fromBufferAttribute(n,ids[k]),weights[k]);}
+  return v.addScaledVector(normal.normalize(),offset).toArray();
 }
 function shoulderPanelGeometry(){
   const vertices=[],indices=[],cols=64,rows=8;
   for(let row=0;row<=rows;row++)for(let col=0;col<=cols;col++){
     const a=col/cols*Math.PI*2,c=Math.cos(a),side=Math.abs(Math.sin(a));
     const low=c>=0?.222+.069*side**.7:.281+.009*side,high=.377-.017*side;
-    vertices.push(...jacketSurface(THREE.MathUtils.lerp(low,high,row/rows),a,.0045));
+    const edge=Math.sin(row/rows*Math.PI);
+    vertices.push(...jacketSurface(THREE.MathUtils.lerp(low,high,row/rows),a,.0012+.0010*edge));
   }
   for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){const a=row*(cols+1)+col,b=a+cols+1;indices.push(a,a+1,b,a+1,b+1,b);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();return g;
 }
 function shirtPanelGeometry(){
-  const vertices=[],indices=[],cols=12,rows=12;
+  const vertices=[],indices=[],cols=16,rows=24;
   for(let row=0;row<=rows;row++)for(let col=0;col<=cols;col++){
     const u=col/cols*2-1,y=THREE.MathUtils.lerp(.017,.332+.035*Math.abs(u),row/rows),x=u*(.108+.006*Math.sin(row/rows*Math.PI));
     let j=0;while(j<jacketRings.length-2&&jacketRings[j+1][0]<y)j++;
     const lo=jacketRings[j],hi=jacketRings[j+1],t=(y-lo[0])/(hi[0]-lo[0]),rx=THREE.MathUtils.lerp(lo[1],hi[1],t),rz=THREE.MathUtils.lerp(lo[2],hi[2],t);
-    const sin=Math.pow(Math.min(.99,Math.abs(x)/rx),1/.65),z=rz*Math.pow(Math.sqrt(1-sin*sin),.65)+.007;
-    vertices.push(x,y,z);
+    const angle=Math.asin(Math.sign(x)*Math.pow(Math.min(.99,Math.abs(x)/rx),1/.65));
+    vertices.push(...jacketSurface(y,angle,.0022));
   }
   for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){const a=row*(cols+1)+col,b=a+cols+1;indices.push(a,a+1,b,a+1,b+1,b);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();return g;
 }
-const shoulderPanel=shoulderPanelGeometry(),shirtPanel=shirtPanelGeometry();
+function jacketHemGeometry(){
+  const vertices=[],indices=[],rings=[-.024,-.020,-.010,0,.008,.012],cols=32;
+  for(let row=0;row<rings.length;row++)for(let col=0;col<=cols;col++)vertices.push(...jacketSurface(rings[row],col/cols*Math.PI*2,row===rings.length-1?.0012:.002));
+  for(let row=0;row<rings.length-1;row++)for(let col=0;col<cols;col++){const a=row*(cols+1)+col,b=a+cols+1;indices.push(a,a+1,b,a+1,b+1,b);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();return closeRingNormals(g,cols,rings.length);
+}
+const shoulderPanel=shoulderPanelGeometry(),shirtPanel=shirtPanelGeometry(),jacketHem=jacketHemGeometry();
 const sleeveGeometry=new THREE.LatheGeometry([
   new THREE.Vector2(0,-1),new THREE.Vector2(.91,-1),new THREE.Vector2(.99,-.88),
   new THREE.Vector2(1,-.70),new THREE.Vector2(.98,-.30),new THREE.Vector2(.94,.26),
   new THREE.Vector2(.92,.58),new THREE.Vector2(.87,.76),new THREE.Vector2(.88,.87),
   new THREE.Vector2(.82,.96),new THREE.Vector2(0,1)
 ],20);
-const cuffGeometry=profileGeometry([[-.019,.045,.045],[-.015,.049,.049],[.014,.047,.047],[.019,.043,.043]],24,1);
+const cuffGeometry=profileGeometry([[-.028,.043,.039],[-.015,.043,.038],[.005,.035,.031],[.012,.033,.029],[.012,.025,.021],[-.005,.025,.021]],24,1);
 const notebookGeometry=new THREE.ExtrudeGeometry(roundedShape(.22,.28,.012),{depth:.026,bevelEnabled:false,curveSegments:4});
 
 // Batch parts that don't move relative to one another by material. Facial
@@ -313,31 +326,75 @@ function limb(parent,mat,radius) {
 // One curved garment surface replaces the two capsules and exposed joint
 // sphere. Ring normals are supplied explicitly, including the closing seam.
 function clothLimb(parent,r0,r1,{yoke=false,radial=16,rows=16}={}){
-  const geometry=new THREE.BufferGeometry(),count=(rows+1)*(radial+1),positions=new Float32Array(count*3),normals=new Float32Array(count*3),blueIndices=[],whiteIndices=[];
-  for(let row=0;row<rows;row++)for(let col=0;col<radial;col++){
-    const a=row*(radial+1)+col,b=a+radial+1,list=yoke&&row<5&&col>0&&col<radial/2?whiteIndices:blueIndices;list.push(a,b,a+1,a+1,b,b+1);
+  const totalRows=rows+(yoke?3:0),geometry=new THREE.BufferGeometry(),count=(totalRows+1)*(radial+1),positions=new Float32Array(count*3),normals=new Float32Array(count*3),blueIndices=[],whiteIndices=[],cuffIndices=[];
+  for(let row=0;row<totalRows;row++)for(let col=0;col<radial;col++){
+    const a=row*(radial+1)+col,b=a+radial+1,list=yoke&&row/rows>=.88?cuffIndices:yoke&&row/rows<.32&&col>0&&col<radial/2?whiteIndices:blueIndices;list.push(a,b,a+1,a+1,b,b+1);
   }
   geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('normal',new THREE.BufferAttribute(normals,3));
-  geometry.setIndex([...blueIndices,...whiteIndices]);geometry.addGroup(0,blueIndices.length,0);if(whiteIndices.length)geometry.addGroup(blueIndices.length,whiteIndices.length,1);
-  const object=mesh(parent,geometry,yoke?[blue,white]:blue),path=new THREE.CatmullRomCurve3([new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()]);
-  const tangent=new THREE.Vector3(),across=new THREE.Vector3(),front=new THREE.Vector3(),radialNormal=new THREE.Vector3(),fallback=new THREE.Vector3(0,0,1);
-  return {object,set(a,b,c){
+  geometry.setIndex([...blueIndices,...whiteIndices,...cuffIndices]);geometry.addGroup(0,blueIndices.length,0);if(whiteIndices.length)geometry.addGroup(blueIndices.length,whiteIndices.length,1);if(cuffIndices.length)geometry.addGroup(blueIndices.length+whiteIndices.length,cuffIndices.length,2);
+  const object=mesh(parent,geometry,yoke?[blue,white,blueDark]:blue),path=new THREE.CatmullRomCurve3([new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()]);
+  const tangent=new THREE.Vector3(),across=new THREE.Vector3(),front=new THREE.Vector3(),radialNormal=new THREE.Vector3(),fallback=new THREE.Vector3(0,0,1),previousTangent=new THREE.Vector3(),transport=new THREE.Quaternion();
+  const radiusAt=t=>(THREE.MathUtils.lerp(r0,r1,t)+.003*Math.sin(t*Math.PI))*(yoke?Math.sin(Math.min(1,t/.18)*Math.PI/2):1);
+  return {object,set(a,b,c,wristDirection=null){
     path.points[0].copy(a);path.points[1].copy(b);path.points[2].copy(c);
-    const length=a.distanceTo(b)+b.distanceTo(c),slope=(r1-r0)/Math.max(.01,length);
+    const end=wristDirection?c.clone().addScaledVector(wristDirection,-.018):c;
+    const middleTangent=end.clone().sub(a).multiplyScalar(.5);
+    const sample=t=>{
+      if(!wristDirection)return path.getPoint(t);
+      const lower=t>=.5,u=lower?(t-.5)*2:t*2,u2=u*u,u3=u2*u,start=lower?b:a,finish=lower?end:b;
+      const startTangent=lower?middleTangent:b.clone().sub(a),endTangent=lower?wristDirection.clone().multiplyScalar(b.distanceTo(end)*.8):middleTangent;
+      return start.clone().multiplyScalar(2*u3-3*u2+1).addScaledVector(startTangent,u3-2*u2+u).addScaledVector(finish,-2*u3+3*u2).addScaledVector(endTangent,u3-u2);
+    };
     for(let row=0;row<=rows;row++){
-      const t=row/rows,center=path.getPoint(t);tangent.copy(path.getTangent(t)).normalize();across.crossVectors(tangent,fallback);
-      if(across.lengthSq()<.01)across.crossVectors(tangent,axisY);across.normalize();front.crossVectors(across,tangent).normalize();
-      const radius=THREE.MathUtils.lerp(r0,r1,t)+.003*Math.sin(t*Math.PI);
+      const t=row/rows,lo=Math.max(0,t-.001),hi=Math.min(1,t+.001),center=sample(t),delta=sample(hi).sub(sample(lo)),speed=delta.length()/(hi-lo);
+      tangent.copy(delta).normalize();
+      if(row===0){front.copy(fallback).addScaledVector(tangent,-fallback.dot(tangent));if(front.lengthSq()<.01)front.set(0,1,0).addScaledVector(tangent,-tangent.y);front.normalize();}
+      else{transport.setFromUnitVectors(previousTangent,tangent);front.applyQuaternion(transport).normalize();}
+      across.crossVectors(tangent,front).normalize();front.crossVectors(across,tangent).normalize();previousTangent.copy(tangent);
+      const radius=radiusAt(t),slope=(radiusAt(hi)-radiusAt(lo))/Math.max(.00001,(hi-lo)*speed);
       for(let col=0;col<=radial;col++){
         const theta=col/radial*Math.PI*2,index=(row*(radial+1)+col)*3;radialNormal.copy(across).multiplyScalar(Math.cos(theta)).addScaledVector(front,Math.sin(theta));
         positions[index]=center.x+radialNormal.x*radius;positions[index+1]=center.y+radialNormal.y*radius;positions[index+2]=center.z+radialNormal.z*radius;
-        radialNormal.addScaledVector(tangent,-slope).normalize();normals[index]=radialNormal.x;normals[index+1]=radialNormal.y;normals[index+2]=radialNormal.z;
+        if(yoke&&row===0)radialNormal.copy(tangent).negate();else radialNormal.addScaledVector(tangent,-slope).normalize();normals[index]=radialNormal.x;normals[index+1]=radialNormal.y;normals[index+2]=radialNormal.z;
+      }
+    }
+    // The cuff is the end of this same surface, rolled inward around the
+    // wrist. A separate intersecting sleeve ring left triangular cut edges.
+    if(yoke)for(let extra=1;extra<=3;extra++){
+      const advance=[.003,.002,-.010][extra-1],radius=[r1-.003,.023,.023][extra-1],center=end.clone().addScaledVector(tangent,advance);
+      for(let col=0;col<=radial;col++){
+        const theta=col/radial*Math.PI*2,index=((rows+extra)*(radial+1)+col)*3;
+        radialNormal.copy(across).multiplyScalar(Math.cos(theta)).addScaledVector(front,Math.sin(theta));
+        positions[index]=center.x+radialNormal.x*radius;positions[index+1]=center.y+radialNormal.y*radius;positions[index+2]=center.z+radialNormal.z*radius;
+        if(extra===1)radialNormal.add(tangent).normalize();else if(extra===2)radialNormal.multiplyScalar(-.3).add(tangent).normalize();else radialNormal.negate();
+        normals[index]=radialNormal.x;normals[index+1]=radialNormal.y;normals[index+2]=radialNormal.z;
       }
     }
     geometry.attributes.position.needsUpdate=true;geometry.attributes.normal.needsUpdate=true;geometry.computeBoundingSphere();
   }};
 }
 function point(x,y,z){return new THREE.Vector3(x,y,z);}
+
+function pantsGeometry(hips,seated){
+  const vertices=[],indices=[],joined=new Map(),radial=20,rows=18;
+  for(const side of [-1,1]){
+    const holder=new THREE.Group(),hip=point(side*.095,hips,0),knee=point(side*.105,seated?.4:.39,seated?.31:.012),ankle=point(side*.115,.095,seated?.3:.035);
+    const leg=clothLimb(holder,.093,.073,{radial,rows});leg.set(hip,knee,ankle);
+    const source=leg.object.geometry,p=source.attributes.position,remap=[];
+    for(let row=0;row<=rows;row++)for(let col=0;col<=radial;col++){
+      const id=row*(radial+1)+col,angle=col/radial*Math.PI*2,rx=-Math.cos(angle),rz=Math.sin(angle),outer=rx*side>=-1e-6;
+      // The two upper loops share one front–crotch–back seam. Their outer
+      // halves meet the waist; the shared inner halves form the gusset.
+      const root=point(outer?side*.176*Math.abs(Math.cos(angle)):0,hips+.030-(outer?0:.125*Math.abs(Math.cos(angle))),.103*rz);
+      const oldRoot=new THREE.Vector3().fromBufferAttribute(p,col),v=new THREE.Vector3().fromBufferAttribute(p,id);
+      v.addScaledVector(root.sub(oldRoot),1-THREE.MathUtils.smoothstep(row/rows,0,.22));
+      const key=row===0?`waist:${Math.round(v.x*1e6)}:${Math.round(v.y*1e6)}:${Math.round(v.z*1e6)}`:`${side}:${row}:${col%radial}`;
+      if(!joined.has(key)){joined.set(key,vertices.length/3);vertices.push(v.x,v.y,v.z);}remap[id]=joined.get(key);
+    }
+    for(const id of source.index.array)indices.push(remap[id]);source.dispose();
+  }
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+}
 
 function shoeGeometry(rings){
   const positions=[],indices=[],n=20;
@@ -353,20 +410,37 @@ const shoeProfile=[[-.075,0,.062,0],[-.066,.052,.065,.033],[-.032,.064,.074,.042
 const trainerUpper=shoeGeometry(shoeProfile),trainerSole=shoeGeometry(shoeProfile.map(([z,x])=>[z,x*1.045,.019,x>0?.014:0]));
 const trainerToe=shoeGeometry(shoeProfile.slice(4).map(([z,x,y,r])=>[z,x*1.009,y+.002,r*1.01]));
 const nailMat=material('nail','#f5cfaf');
-function makeHand(side,gripping=false){
+function makeHand(side,pose='open'){
   const h=new THREE.Group();
-  oval(h,skin,[0,-.005,0],[.027,.025,.022]);
-  oval(h,skin,[0,.03,0],[.037,.043,.022]);
+  oval(h,skin,[0,-.005,0],[.026,.028,.021]);
+  oval(h,skin,[0,.026,0],[.034,.038,.021]);
   for(let i=0;i<4;i++){
-    const x=(-1.5+i)*.0185,len=[.031,.042,.039,.030][i],r=[.009,.0105,.010,.009][i];
-    const start=[x,.056,0],middle=[x,.056+len*.60,gripping?.012:.002],end=[x,.056+len*(gripping?.34:1),gripping?.033:.007];
+    const x=(-1.5+i)*.0165,len=[.037,.043,.040,.032][i],r=[.008,.009,.0086,.0075][i],nearThumb=side>0?i:3-i;
+    const curl=pose==='grip'?.9:pose==='write'?[.50,.72,.95,1.0][nearThumb]:pose==='point'?(nearThumb===0?.03:.9):.09;
+    const start=[x,.051,0],middle=[x,.051+len*.58*Math.cos(curl),len*.58*Math.sin(curl)],end=[x,.051+len*(.58*Math.cos(curl)+.42*Math.cos(curl*2.0)),len*(.58*Math.sin(curl)+.42*Math.sin(curl*2.0))];
+    if(pose==='write'&&nearThumb===0){middle[1]=.068;middle[2]=.015;end[0]=-side*.020;end[1]=.063;end[2]=.029;}
     line(h,skin,[start,middle,end],r);oval(h,skin,end,[r,r,r]);
-    if(!gripping)oval(h,nailMat,[end[0],end[1]-.004,end[2]-.008],[r*.60,.007,.002]);
+    oval(h,nailMat,[end[0],end[1]+Math.sin(curl*2)*.003,end[2]-.006],[r*.56,.005,.0015]);
     line(h,skinShade,[[x-r*.58,.064,.020],[x+r*.58,.064,.020]],.0009);
   }
-  line(h,skin,[[-side*.027,.005,.002],[-side*.048,.025,.012],[-side*.038,.048,.028]],.013);
-  oval(h,skin,[-side*.038,.048,.028],[.013,.013,.012]);
+  const thumb=pose==='open'?[-side*.044,.039,.007]:pose==='write'?[-side*.021,.055,.028]:[-side*.017,.049,.034];
+  line(h,skin,[[-side*.025,.005,.002],[-side*.040,.025,.012],thumb],.0115);
+  oval(h,skin,thumb,[.0115,.0115,.0105]);
   bakeStatic(h);return h;
+}
+function articulatedHand(side){
+  const open=makeHand(side,'open'),grip=makeHand(side,'grip'),writing=makeHand(side,'write'),pointing=makeHand(side,'point');
+  const targets=open.children.map(o=>({object:o,base:o.geometry.attributes.position.array.slice(),baseNormal:o.geometry.attributes.normal.array.slice(),grip:grip.children.find(p=>p.material===o.material).geometry,writing:writing.children.find(p=>p.material===o.material).geometry,pointing:pointing.children.find(p=>p.material===o.material).geometry}));
+  let lastCurl=-1,lastWriting=-1,lastPointing=-1;
+  return {group:open,set(curl,write,pointingWeight){
+    if(Math.abs(curl-lastCurl)+Math.abs(write-lastWriting)+Math.abs(pointingWeight-lastPointing)<.0001)return;lastCurl=curl;lastWriting=write;lastPointing=pointingWeight;
+    const base=1-curl-write-pointingWeight;
+    for(const part of targets){
+      const p=part.object.geometry.attributes.position,n=part.object.geometry.attributes.normal,gp=part.grip.attributes.position.array,wp=part.writing.attributes.position.array,pp=part.pointing.attributes.position.array,gn=part.grip.attributes.normal.array,wn=part.writing.attributes.normal.array,pn=part.pointing.attributes.normal.array;
+      for(let i=0;i<p.array.length;i++){p.array[i]=part.base[i]*base+gp[i]*curl+wp[i]*write+pp[i]*pointingWeight;n.array[i]=part.baseNormal[i]*base+gn[i]*curl+wn[i]*write+pn[i]*pointingWeight;}
+      part.object.geometry.normalizeNormals();p.needsUpdate=true;n.needsUpdate=true;part.object.geometry.computeBoundingSphere();
+    }
+  }};
 }
 
 export function createStudent(options={}) {
@@ -384,7 +458,7 @@ export function createStudent(options={}) {
   mesh(uniform,shoulderPanel,white,[0,hips,0],[1,jacketScale,1]);
   if(!girl)mesh(uniform,shirtPanel,white,[0,hips,0],[1,jacketScale,1]);
   oval(uniform,skin,[0,shoulders+.031,0],[.064,.075,.060]);
-  mesh(uniform,profileGeometry([[-.018,.171,.098],[.015,.178,.103],[.032,.175,.101]],24,.65),blueDark,[0,hips,0]);
+  mesh(uniform,jacketHem,blueDark,[0,hips,0],[1,jacketScale,1]);
   for(const side of [-1,1]){
     const collar=new THREE.Shape();collar.moveTo(side*.010,.030);collar.lineTo(side*.048,.065);collar.lineTo(side*.116,.008);collar.lineTo(side*.067,-.041);collar.closePath();
     const g=new THREE.ExtrudeGeometry(collar,{depth:.018,bevelEnabled:true,bevelSize:.004,bevelThickness:.004,bevelSegments:2});
@@ -398,10 +472,10 @@ export function createStudent(options={}) {
   const headData=buildHead(girl,seed), head=headData.group;
   head.position.y=headY;body.add(head);
   const legs=new THREE.Group();group.add(legs);
+  mesh(legs,pantsGeometry(hips,seated),blue);
   for(const side of [-1,1]) {
     const hip=point(side*.095,hips,0), knee=point(side*.105,seated?.4:.39,seated?.31:.012), ankle=point(side*.115,.095,seated?.3:.035);
-    const trouser=clothLimb(legs,.093,.073,{radial:18,rows:18});trouser.set(hip,knee,ankle);
-    const seamA=hip.clone().add(point(side*.087,0,.035)),seamB=knee.clone().add(point(side*.081,0,.03)),seamC=ankle.clone().add(point(side*.069,0,.024));
+    const seamA=point(side*.167,hips+.03,.035),seamB=knee.clone().add(point(side*.081,0,.03)),seamC=ankle.clone().add(point(side*.069,0,.024));
     line(legs,white,[seamA.toArray(),seamB.toArray(),seamC.toArray()],.009);
     oval(legs,white,[ankle.x,.103,ankle.z],[.055,.032,.054]);
     mesh(legs,trainerSole,sole,[ankle.x,0,ankle.z],[1.12,1.28,1.08]);
@@ -417,12 +491,13 @@ export function createStudent(options={}) {
   bakeStatic(legs);
   const arms=[];
   for(const side of [-1,1]) {
-    const arm=new THREE.Group();body.add(arm);
-    const sleeve=clothLimb(arm,.075,.056,{yoke:true});
-    const cuff=mesh(arm,cuffGeometry,blueDark,[0,0,0],[1.07,1.05,1.07]);
-    const hand=new THREE.Group();arm.add(hand);
-    const handOpen=makeHand(side,false),handGrip=makeHand(side,true);hand.add(handOpen,handGrip);
-    arms.push({side,sleeve,cuff,hand,handOpen,handGrip});
+    const arm=new THREE.Group();arm.name=`${side<0?'left':'right'}-student-arm`;body.add(arm);
+    const sleeve=clothLimb(arm,.075,.033,{yoke:true,rows:24,radial:20});
+    const hand=new THREE.Group();hand.name=`${side<0?'left':'right'}-student-hand`;arm.add(hand);
+    hand.userData.grip=[0,.056,.026];hand.userData.pinch=[-side*.020,.063,.027];
+    hand.userData.attachments={phone:{position:[0,.075,.029],rotation:[0,Math.PI,0]},note:{position:[side*.052,.061,.030],rotation:[0,Math.PI,0]}};
+    const fingers=articulatedHand(side);hand.add(fingers.group);
+    arms.push({side,sleeve,hand,fingers,curl:0,writing:0,pointing:0,gripWeight:0,elbow:point(0,0,0),wrist:point(0,0,0),quaternion:new THREE.Quaternion()});
 
   }
   const accessory=new THREE.Group();body.add(accessory);
@@ -445,11 +520,23 @@ export function createStudent(options={}) {
   mesh(pencil,new THREE.ConeGeometry(.006,.023,8),ink,[0,-.095,0],[1,1,1],[0,0,Math.PI]);
   mesh(pencil,cylinder,red,[0,.085,0],[.006,.014,.006]);
   bakeStatic(pencil);
-  const phase=seed*1.719, shoulderPoints=[point(-.250,shoulders-.055,0),point(.250,shoulders-.055,0)];
+  const phase=seed*1.719, shoulderPoints=[point(-.215,shoulders-.055,0),point(.215,shoulders-.055,0)];
   const elbows=[point(0,0,0),point(0,0,0)],wrists=[point(0,0,0),point(0,0,0)];
-  let previousMood=mood;
+  let lastPoseTime=null,initialized=false;
+  const headQuaternion=new THREE.Quaternion(),targetHandQuaternion=new THREE.Quaternion(),orientationMatrix=new THREE.Matrix4();
+  const pencilLocalPosition=point(0,.07,.03),pencilLocalQuaternion=new THREE.Quaternion();
+  const propWeights={snack:0,notebook:0,pencil:0};
+  function handOrientation(forward,palm,target){
+    const y=new THREE.Vector3(...forward).normalize(),z=new THREE.Vector3(...palm);z.addScaledVector(y,-z.dot(y)).normalize();
+    const x=new THREE.Vector3().crossVectors(y,z).normalize();orientationMatrix.makeBasis(x,y,z);return target.setFromRotationMatrix(orientationMatrix);
+  }
   function update(t,dt=.016) {
     const time=t+phase,breath=Math.sin(time*1.7)*.004;
+    // Scene actors update at 12–30 Hz. Use elapsed actor time, rather than
+    // the renderer's last frame delta, to keep a gesture's duration stable.
+    const elapsed=lastPoseTime===null?0:THREE.MathUtils.clamp(t-lastPoseTime,0,.25);
+    const alpha=initialized?1-Math.exp(-elapsed/.12):1,faceAlpha=initialized?1-Math.exp(-elapsed/.14):1;
+    lastPoseTime=t;
     body.position.y=breath;
     body.rotation.z=seated?Math.sin(time*.55)*.009:Math.sin(time*.65)*.016;
     head.rotation.y=Math.sin(time*.47)*.07;
@@ -461,19 +548,25 @@ export function createStudent(options={}) {
     const eyeScale=Math.max(.07,1-blink*.96);
     for(const eye of headData.eyes) {
       eye.group.scale.y=eyeScale;
-      eye.iris.position.x=Math.sin(time*.41)*.009+(mood==='writing'?-.006:0);
-      eye.iris.position.y=mood==='writing'?-.018:-.003+Math.sin(time*.3)*.005;
+      eye.iris.position.x=THREE.MathUtils.lerp(eye.iris.position.x,Math.sin(time*.41)*.009+(mood==='writing'?-.006:0),faceAlpha);
+      eye.iris.position.y=THREE.MathUtils.lerp(eye.iris.position.y,mood==='writing'?-.018:-.003+Math.sin(time*.3)*.005,faceAlpha);
     }
-    headData.brows[0].position.y=headData.browBases[0]+(mood==='hero'?.018:0)+Math.sin(time*.7)*.002;
-    headData.brows[1].rotation.z=(mood==='hero'?-.12:.07)+Math.sin(time*.6)*.015;
+    headData.brows[0].position.y=THREE.MathUtils.lerp(headData.brows[0].position.y,headData.browBases[0]+(mood==='hero'?.018:0)+Math.sin(time*.7)*.002,faceAlpha);
+    headData.brows[1].rotation.z=THREE.MathUtils.lerp(headData.brows[1].rotation.z,(mood==='hero'?-.12:.07)+Math.sin(time*.6)*.015,faceAlpha);
     const lift=(Math.sin(time*.85)+1)*.5;
     if(seated) {
-      elbows[0].set(-.3,.84,.15);wrists[0].set(-.17,.87,.34);
+      elbows[0].set(-.3,.84,.15);wrists[0].set(-.17,.894,.33);
       elbows[1].set(.30,.86,.14);
-      if(mood==='writing')wrists[1].set(.16+Math.sin(time*3.2)*.012,.875,.37+Math.sin(time*2.7)*.018);
-      else if(mood==='resting')wrists[1].set(.17,.869+Math.sin(time*.7)*.002,.33);
-      else if(mood==='thinking')wrists[1].set(.17,.875,.33);
-      else if(mood==='chat') {elbows[1].set(.30,.86,.14);wrists[1].set(.17,.875+lift*.004,.33);}
+      if(mood==='writing'){
+        elbows[0].set(-.27,.865,.17);wrists[0].set(-.075,.911,.32);
+        elbows[1].set(.28,.865,.16);wrists[1].set(.105+Math.sin(time*3.2)*.004,.951,.335+Math.sin(time*2.7)*.006);
+      }else if(mood==='phone'){
+        wrists[0].set(-.075,1.02,.31);wrists[1].set(.040,1.055+Math.sin(time*3.2)*.002,.29);head.rotation.x=.13;
+      }else if(mood==='note'){
+        wrists[0].set(-.092,1.025,.34);wrists[1].set(.080,1.035,.34);head.rotation.x=.10;
+      }else if(mood==='resting')wrists[1].set(.17,.894+Math.sin(time*.7)*.002,.33);
+      else if(mood==='thinking')wrists[1].set(.17,.895,.33);
+      else if(mood==='chat') {elbows[1].set(.30,.86,.14);wrists[1].set(.17,.895+lift*.004,.33);}
       else wrists[1].set(.1+.025*Math.sin(time*.5),1.08+lift*.09,.30);
     } else if(mood==='hero'){
       elbows[0].set(-.32,.91,.09);wrists[0].set(-.16,1.01,.24);
@@ -484,24 +577,48 @@ export function createStudent(options={}) {
       elbows[1].set(.285,.89,.025);wrists[1].set(.270,.68,.075);
       head.rotation.z=Math.sin(time*.5)*.007;
     }
+    headQuaternion.slerp(head.quaternion,faceAlpha);head.quaternion.copy(headQuaternion);
     arms.forEach((a,i)=>{
-      const s=shoulderPoints[i],e=elbows[i],w=wrists[i];
-      a.sleeve.set(s,e,w);
-      a.cuff.position.copy(e).lerp(w,.88);a.cuff.quaternion.setFromUnitVectors(axisY,w.clone().sub(e).normalize());
-      a.hand.position.copy(w);
-      const resting=seated&&(i===0||mood==='resting'||mood==='thinking'||mood==='chat');
-      const openHand=resting||mood==='chat'||(!seated&&(mood!=='hero'||i===1));
-      a.handOpen.visible=openHand;a.handGrip.visible=!openHand;
-      a.hand.rotation.set(resting?Math.PI*.5:(mood==='writing'?.54:0),0,!seated&&mood!=='hero'?Math.PI+a.side*.07:a.side*-.12);
-
+      const s=shoulderPoints[i],e=elbows[i],w=wrists[i];a.elbow.lerp(e,alpha);a.wrist.lerp(w,alpha);a.hand.position.copy(a.wrist);
+      let forward=[-a.side*.12,0,1],palm=[0,-1,0],curl=.10,writing=0,pointing=0;
+      if(!seated){
+        if(mood==='hero'){forward=i===1?[.08,1,.03]:[1,.03,.04];palm=[0,0,1];curl=i===1?0:.65;}
+        else {forward=[a.side*.05,-1,.10];palm=[-a.side,0,0];curl=.12;}
+      }else if(mood==='writing'&&i===1){forward=[-.55,-.05,.83];writing=1;curl=0;}
+      else if(mood==='phone'){
+        if(i===0){forward=[0,.96,.28];palm=[0,.28,-.96];curl=.55;}
+        else{forward=[-.9,.05,.42];pointing=1;curl=0;}
+      }else if(mood==='note'){forward=[0,.92,.39];palm=[0,.39,-.92];writing=.8;curl=.15;}
+      else if(mood==='snack'&&i===1){forward=[0,.92,.38];palm=[0,.38,-.92];curl=.85;}
+      handOrientation(forward,palm,targetHandQuaternion);a.quaternion.slerp(targetHandQuaternion,alpha);a.hand.quaternion.copy(a.quaternion);
+      a.curl=THREE.MathUtils.lerp(a.curl,curl,alpha);a.writing=THREE.MathUtils.lerp(a.writing,writing,alpha);a.pointing=THREE.MathUtils.lerp(a.pointing,pointing,alpha);a.fingers.set(a.curl,a.writing,a.pointing);
+      a.gripWeight=THREE.MathUtils.lerp(a.gripWeight,(mood==='phone'&&i===0)||(mood==='note'&&i===1)?1:0,alpha);a.hand.userData.gripWeight=a.gripWeight;a.hand.userData.elbow=a.elbow.toArray();
+      const wristDirection=axisY.clone().applyQuaternion(a.hand.quaternion);
+      // Raising an arm opens the axilla. Keep the proximal cloth root inside
+      // the chest instead of pivoting the visible shoulder cap away from it.
+      const raised=THREE.MathUtils.smoothstep(a.elbow.y,shoulders-.05,shoulders+.015),root=s.clone().lerp(point(a.side*.17,shoulders-.095,0),raised);
+      a.sleeve.set(root,a.elbow,a.wrist,wristDirection);
     });
-    snack.visible=seated&&mood==='snack';notebook.visible=seated?mood==='writing':mood==='hero';pencil.visible=seated&&mood==='writing';
-    snack.position.copy(wrists[1]).add(point(-.02,.044,.014));snack.rotation.z=-.12;
+    const propTargets={snack:seated&&mood==='snack',notebook:seated?mood==='writing':mood==='hero',pencil:seated&&mood==='writing'};
+    for(const [key,object]of Object.entries({snack,notebook,pencil})){propWeights[key]=THREE.MathUtils.lerp(propWeights[key],propTargets[key]?1:0,alpha);object.visible=propWeights[key]>(propTargets[key]?.60:.35);}
+    snack.position.copy(point(0,.063,.028).applyQuaternion(arms[1].hand.quaternion)).add(arms[1].wrist);snack.quaternion.copy(arms[1].hand.quaternion);
     if(seated){notebook.position.set(-.015,.852,.40);notebook.rotation.set(-Math.PI/2,0,-.05);}
-    else {notebook.position.copy(wrists[0]).add(point(.02,-.015,.024));notebook.rotation.set(-.18,.06,.12);}
-    pencil.position.copy(wrists[1]).add(point(.014,.014,.025));pencil.rotation.set(.65,0,-.22);
-    if(previousMood!==mood)previousMood=mood;
+    else {
+      // Grip the spine: fingers wrap its left edge, rather than appearing
+      // through the middle of a book independently offset from the wrist.
+      notebook.position.copy(point(0,.165,-.016).applyQuaternion(arms[0].hand.quaternion)).add(arms[0].wrist);
+      notebook.quaternion.copy(arms[0].hand.quaternion).multiply(new THREE.Quaternion().setFromAxisAngle(point(0,0,1),Math.PI/2));
+    }
+    if(mood==='writing'){
+      const pinch=point(...arms[1].hand.userData.pinch).applyQuaternion(arms[1].hand.quaternion).add(arms[1].wrist);
+      const tip=point(pinch.x-.008,.889,pinch.z+.018),penAxis=pinch.clone().sub(tip).normalize();
+      pencil.position.copy(tip).addScaledVector(penAxis,.1065);pencil.quaternion.setFromUnitVectors(axisY,penAxis);
+      const inverse=arms[1].hand.quaternion.clone().invert();pencilLocalPosition.copy(pencil.position).sub(arms[1].wrist).applyQuaternion(inverse);pencilLocalQuaternion.copy(inverse).multiply(pencil.quaternion);
+    }else{
+      pencil.position.copy(pencilLocalPosition).applyQuaternion(arms[1].hand.quaternion).add(arms[1].wrist);pencil.quaternion.copy(arms[1].hand.quaternion).multiply(pencilLocalQuaternion);
+    }
+    initialized=true;
   }
   update(0);
-  return {group,update,setMood(value){mood=value;},head,variant,seated};
+  return {group,update,setMood(value){if(value!==mood)mood=value;},getHand(side){return arms[side==='left'||side===-1||side===0?0:1].hand;},head,variant,seated};
 }

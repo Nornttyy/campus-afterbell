@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.js';
-import {createStudent} from './characters.js?v=09';
-import {createTeacher,createDeskHands} from './game-actors.js?v=09';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,BOARD,DETENTION} from './classroom-layout.js?v=09';
+import {createStudent} from './characters.js?v=10';
+import {createTeacher,createDeskHands} from './game-actors.js?v=10';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,BOARD,DETENTION} from './classroom-layout.js?v=10';
 
 // This room, its textures and props are built locally as editable 3D geometry.
 export async function createClassroom(canvas, {onReady}={}) {
@@ -319,20 +319,21 @@ export async function createClassroom(canvas, {onReady}={}) {
   const heldChalk=new THREE.Mesh(chalkGeometry,chalkMaterial);heldChalk.position.set(.012,.075,.028);heldChalk.rotation.x=Math.PI/2;heldChalk.visible=false;(teacherHand||gesturePivot).add(heldChalk);
   const flyingChalk=new THREE.Mesh(chalkGeometry,chalkMaterial);flyingChalk.visible=false;scene.add(flyingChalk);
   const caughtCards=pupilRecords.map(()=>{const card=new THREE.Mesh(cardGeometry,cardMaterial);card.visible=false;scene.add(card);return card;});
-  const caughtSeen=new Set(),castOrigin=new THREE.Vector3(),castTarget=new THREE.Vector3(),wristPosition=new THREE.Vector3(),gestureCurrent=new THREE.Vector3(),gestureDesired=new THREE.Vector3(),gestureRotation=new THREE.Quaternion();
+  const caughtSeen=new Set(),castOrigin=new THREE.Vector3(),castTarget=new THREE.Vector3(),wristPosition=new THREE.Vector3(),gestureCurrent=new THREE.Vector3(),gestureDesired=new THREE.Vector3(),gestureRotation=new THREE.Quaternion(),gestureTarget=new THREE.Quaternion();
   let teacherCardUntil=0,lastFeedbackElapsed=-Infinity,activeCastTarget=null,previousCastProgress=0;
   function clearTeacherFeedback(state=null){teacherCard.visible=false;heldChalk.visible=false;flyingChalk.visible=false;gesturePivot.rotation.set(0,0,0);teacherCardUntil=0;activeCastTarget=null;previousCastProgress=0;lastFeedbackElapsed=state?.elapsed??-Infinity;caughtSeen.clear();caughtCards.forEach(card=>card.visible=false);for(const student of state?.students||[]){if(student.caught)caughtSeen.add(student.id);}}
-  function updateTeacherFeedback(state){
+  function updateTeacherFeedback(state,dt){
     const elapsed=state.elapsed||0;if(elapsed<lastFeedbackElapsed)clearTeacherFeedback(state);lastFeedbackElapsed=elapsed;
     const students=state.students||[],t=state.teacher||{},progress=THREE.MathUtils.clamp(t.castProgress||0,0,1),target=students.find(student=>student.id===t.targetId);
     for(const student of students){if(student.caught&&!caughtSeen.has(student.id)){caughtSeen.add(student.id);teacherCardUntil=elapsed+2.2;}}
     const showCard=elapsed<teacherCardUntil;
-    gesturePivot.quaternion.identity();
+    gestureTarget.identity();
     if(teacherHand&&(showCard||progress>0)){
       const release=showCard?0:THREE.MathUtils.clamp((progress-.68)/.32,0,1),lift=showCard?1:THREE.MathUtils.smoothstep(progress/.68,0,1);
       gestureCurrent.copy(teacherHand.position).sub(new THREE.Vector3(.238,1.485,0)).normalize();gestureDesired.set(.032,THREE.MathUtils.lerp(.34,.04,release),THREE.MathUtils.lerp(.32,.52,release)).normalize();
-      gestureRotation.setFromUnitVectors(gestureCurrent,gestureDesired);gesturePivot.quaternion.slerp(gestureRotation,lift);
+      gestureRotation.setFromUnitVectors(gestureCurrent,gestureDesired);gestureTarget.slerp(gestureRotation,lift);
     }
+    gesturePivot.quaternion.slerp(gestureTarget,1-Math.exp(-Math.max(0,dt)*16));
     teacher.group.updateMatrixWorld(true);
     if(teacherHand)teacherHand.getWorldPosition(wristPosition);else wristPosition.set(.27,1.75,.35).applyMatrix4(teacher.group.matrixWorld);
     heldChalk.visible=progress>0&&progress<.68&&!showCard;
@@ -393,7 +394,7 @@ export async function createClassroom(canvas, {onReady}={}) {
     }
     gameplay=state;
   }
-  const moodMap={reading:'writing',writing:'writing',thinking:'thinking',snack:'snack',note:'chat',phone:'thinking',cough:'chat',caught:'resting',resting:'resting',alert:'thinking'};
+  const moodMap={reading:'writing',writing:'writing',thinking:'thinking',snack:'snack',note:'note',phone:'phone',cough:'chat',caught:'resting',resting:'resting',alert:'thinking'};
   function updatePupils(state,animationTime,dt){
     const snapshots=new Map((state?.students||[]).map(s=>[s.id??s.seatId,s])),playerId=state?.player?.id??PLAYER_SEAT,playerSeat=state?.player?.seatId??null;
     const readingSeats=state?new Set((state.students||[]).filter(student=>student.seated&&!student.caught&&student.id!==playerId).map(student=>student.seatId)):null;
@@ -429,7 +430,16 @@ export async function createClassroom(canvas, {onReady}={}) {
         headMatrix.makeTranslation(pivot.x,pivot.y,pivot.z);poseRotation.setFromEuler(poseEuler.set(Math.sin(t*.8)*.018,Math.sin(t*.6)*.045,0));headMatrix.multiply(new THREE.Matrix4().makeRotationFromQuaternion(poseRotation));headMatrix.multiply(new THREE.Matrix4().makeTranslation(-pivot.x,-pivot.y,-pivot.z));headMatrix.premultiply(pupilMatrix);
         for(const part of template.meshes)part.object.setMatrixAt(index,part.head?headMatrix:pupilMatrix);
       }
-      if(prop){const phone=record.currentMood==='phone',note=record.currentMood==='note';prop.group.visible=record.group.visible&&!record.caught&&(phone||note);prop.phone.visible=phone;prop.note.visible=note;prop.group.position.set(phone?.17:.33,phone?1.13:1.06,phone?.22:.28);prop.group.rotation.set(phone?-.15:0,phone?.08:.4,phone?-.1:-.2);}
+      if(prop){
+        const phone=record.currentMood==='phone',note=record.currentMood==='note',kind=phone?'phone':'note';
+        const hand=near?record.actor?.getHand?.(phone?'left':'right'):null,attachment=hand?.userData.attachments?.[kind];
+        prop.group.visible=Boolean(record.group.visible&&!record.caught&&(phone||note)&&attachment&&(hand.userData.gripWeight??1)>.65);
+        prop.phone.visible=phone;prop.note.visible=note;
+        if(attachment){
+          if(prop.group.parent!==hand)hand.add(prop.group);
+          prop.group.position.fromArray(attachment.position);prop.group.rotation.fromArray(attachment.rotation);
+        }
+      }
       const cycle=(animationTime+id*.83)%8,turn=cycle<1.15?Math.sin(cycle/1.15*Math.PI)*.48:0,flipping=deskBooks.get(id)?.visible&&(!state||readingSeats.has(id))&&!record.caught&&turn>.01;
       posePosition.set(record.seat.deskX,.88,record.seat.deskZ+.12);poseRotation.setFromEuler(poseEuler.set(0,-turn,0));pupilMatrix.compose(posePosition,poseRotation,flipping?unitScale:hiddenScale);pageFlips.setMatrixAt(id,pupilMatrix);
     }
@@ -514,7 +524,7 @@ export async function createClassroom(canvas, {onReady}={}) {
       const nextFov=THREE.MathUtils.lerp(entryFov,gameFov(),blend);if(Math.abs(camera.fov-nextFov)>.001){camera.fov=nextFov;camera.updateProjectionMatrix();}
       if(!gameplay.paused)feedbackTime=Math.max(0,feedbackTime-dt);
       flash.visible=feedbackTime>0;flashMat.opacity=feedbackKind==='caught'?.045*Math.sin(Math.min(1,feedbackTime/.55)*Math.PI):.018*Math.sin(Math.min(1,feedbackTime/.4)*Math.PI);
-      updateDrawers(gameplay,activeDt,focus);updateTeacher(gameplay,activeDt);updatePupils(gameplay,gameTime,activeDt);updateSmoke(gameplay);updateTeacherFeedback(gameplay);
+      updateDrawers(gameplay,activeDt,focus);updateTeacher(gameplay,activeDt);updatePupils(gameplay,gameTime,activeDt);updateSmoke(gameplay);updateTeacherFeedback(gameplay,activeDt);
     }
     if(motion&&!frozen){const ambientTime=gameplay?gameTime:time;fans.forEach((f,i)=>f.rotation.y=ambientTime*(1.7+i*.08));curtains.forEach((c,i)=>{c.rotation.z=Math.sin(ambientTime*.65+i)*.012;c.position.x=-5.52+Math.sin(ambientTime*.8+i)*.025;});}
     const renderStart=performance.now();renderer.render(scene,camera);
