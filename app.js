@@ -89,9 +89,9 @@ $('#skip-load').addEventListener('click',finishLoad);
 const slowTimer=setTimeout(()=>{$('#skip-load').hidden=false;$('#load-status').textContent='教室还在准备，可以先查看菜单';},7000);
 async function init(){
   try{
-    loadStep(20,'正在打开教室');const module=await import('./classroom.js?v=04');loadStep(58,'摆好课桌，打开窗户');
+    loadStep(20,'正在打开教室');const module=await import('./classroom.js?v=07');loadStep(58,'摆好课桌，打开窗户');
     scene=await module.createClassroom($('#classroom'));
-    const {createClassroomGame}=await import('./classroom-game.js?v=04');game=createClassroomGame({scene,audio,settings,onExit:()=>$('#enter-classroom').focus({preventScroll:true})});
+    const {createClassroomGame}=await import('./classroom-game.js?v=07');game=createClassroomGame({scene,audio,settings,onExit:()=>$('#enter-classroom').focus({preventScroll:true})});
     applySettings();scene.setCharacter(settings.character);sceneReady=true;document.body.classList.add('scene-ready');loadStep(100,'同学们已入座');
     setTimeout(finishLoad,350);
   }catch(error){console.error('Classroom unavailable:',error);$('#classroom').hidden=true;$('#enter-classroom').disabled=true;$('#enter-classroom').querySelector('strong').textContent='教室暂不可用';finishLoad();toast('三维场景未能打开，仍可查看菜单与设置');}
