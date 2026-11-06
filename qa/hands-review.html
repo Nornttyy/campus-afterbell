@@ -6,7 +6,8 @@
 <button id="hold" aria-pressed="false">拿起</button><button id="pause" aria-pressed="false">暂停</button><button id="step">前进一帧</button><output></output>
 </nav><script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=10';
+import {loadStudentAssets} from '../dist/student-assets.js?v=palms-15';
+import {createDeskHands} from '../dist/game-actors.js?v=palms-15';
 const canvas=document.querySelector('canvas'),renderer=new T.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.12;
 const scene=new T.Scene();scene.background=new T.Color('#dde6e7');
@@ -14,7 +15,7 @@ scene.add(new T.HemisphereLight('#f5f7fc','#9d9279',1.1));
 const sun=new T.DirectionalLight('#fff2d5',3.1);sun.position.set(-4,6,5);scene.add(sun);
 const fill=new T.DirectionalLight('#fff0dc',.95);fill.position.set(5,4,6);scene.add(fill);
 const camera=new T.PerspectiveCamera(65,1,.04,20);scene.add(camera);
-const hands=createDeskHands();camera.add(hands.group);
+const assets=await loadStudentAssets();const hands=createDeskHands({createHand:assets.createHand});camera.add(hands.group);
 let time=0,holding=false,paused=false,action='snack',last=0;
 const out=document.querySelector('output'),hold=document.querySelector('#hold'),pause=document.querySelector('#pause');
 hold.onclick=()=>{holding=!holding;hold.textContent=holding?'放下':'拿起';hold.setAttribute('aria-pressed',String(holding))};

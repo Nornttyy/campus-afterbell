@@ -6,6 +6,7 @@ export const SEATS = Object.freeze([-4.5,-2.55,-.6,1.35,3.3].flatMap((z,row)=>
   }))));
 export const PLAYER_SEAT = 9;
 export const FRIEND_SEATS = Object.freeze([2,6,16,27]);
+export const COVERED_SEATS = Object.freeze([PLAYER_SEAT,...FRIEND_SEATS,0,5,10,15,20,25]);
 export const AISLES = Object.freeze([-2.4,.99,4.65]);
 export const BOARD = Object.freeze({x:.99,z:5.55});
 export const DETENTION = Object.freeze(Array.from({length:5},(_,i)=>Object.freeze({x:-4.25+i*.58,z:5.1})));

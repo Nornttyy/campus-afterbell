@@ -1,11 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ClassroomRound, CLASSROOM_ACTIONS, canSee, propVisibility} from '../dist/classroom-rules.js';
+import {ClassroomRound, CLASSROOM_ACTIONS, DEVELOPMENT_TUNING, canSee, propVisibility} from '../dist/classroom-rules.js';
 import {SEATS, PLAYER_SEAT, FRIEND_SEATS, AISLES, DESKS, blocked} from '../dist/classroom-layout.js';
 const DT=1/60;
 function advanceUntil(round,condition,seconds=120,control=()=>{}){
   for(let i=0;i<seconds*60;i++){const s=round.snapshot();if(condition(s))return s;control(s,round);round.step(DT);}
   assert.fail('Expected simulation condition was not reached.');
+}
+function takeAndUse(round){const s=round.snapshot();if(s.drawer.drawnSlot===null)round.takeSlot(s.drawer.selectedSlot);return round.hold(true);}
+function choose(round,index){if(round.snapshot().drawer.drawnSlot!==null)round.returnItem();return round.selectSlot(index);}
+function useAvailable(round,state=round.snapshot()){
+  if(state.player.caught)return;
+  if(!state.drawer.open)round.toggleDrawer();
+  if(!state.drawer.slots[state.drawer.selectedSlot].action){const slot=state.drawer.slots.find(slot=>slot.action);if(slot)round.selectSlot(slot.id);}
+  if(state.holding&&state.selected==='smoke'&&state.actionProgress>=.5)round.releaseUse();else takeAndUse(round);
+}
+function quietFixture(seed=73){
+  const round=new ClassroomRound({seed,target:100000});round.start();
+  round.teacher.x=30;round.teacher.z=30;round._thinkAt=Infinity;round._plan.route=[];round._plan.until=Infinity;
+  for(const actor of round.students)if(actor.isTeammate){actor._decisionAt=Infinity;actor.holding=false;}
+  return round;
 }
 // Controlled perception fixture: an actual unobstructed seat observation, not an
 // injected identification. It isolates vision/capture from other AI decisions.
@@ -15,9 +29,10 @@ function focusSeat(round,id){
   round._turnLeft=0;round._perceive(0);
   round._plan={intent:'investigate',targetId:id,since:round.elapsed,until:round.elapsed+100,route:[],routeLength:0,arrivedAt:round.elapsed,utility:999};
   round.teacher.intent='investigate';round.teacher.targetId=id;round._thinkAt=round.elapsed+100;
-  for(const s of round.students)if(s.isTeammate){s._decisionAt=Infinity;s.holding=false;s._smoke=0;}
-  actor._smoke=0;actor.action='phone';actor.holding=true;
-  if(actor.isPlayer){round.selectAction('phone');round.hold(true);}
+  for(const s of round.students)if(s.isTeammate){s._decisionAt=Infinity;s.holding=false;}
+  // A stocked phone isolates perception from the randomly drawn item mix.
+  actor._selectedSlot=0;Object.assign(actor._slots[0],{action:'phone',progress:0,readyAt:0});actor.action='phone';actor.holding=true;
+  if(actor.isPlayer){if(!round.snapshot().drawer.open)round.toggleDrawer();round.selectAction('phone');takeAndUse(round);}
 }
 
 test('30 shared seats, five team members, no default countdown and no ambient points',()=>{
@@ -32,9 +47,9 @@ test('30 shared seats, five team members, no default countdown and no ambient po
 });
 
 test('same seed, controls and elapsed time are deterministic across caller dt partitions',()=>{
-  function run(chunk){const r=new ClassroomRound({seed:'观察教室',target:100000});r.start();const events=[];
+  function run(chunk){const r=new ClassroomRound({seed:'观察教室',target:100000});r.start();r.toggleDrawer();const events=[];
     for(let second=0;second<25;second++){
-      if(second===2)r.selectAction('phone');if(second===7)r.interact();if(second===10)r.setMovement(1,0);if(second===11)r.setMovement(0,0);if(second===12)r.useItem();
+      if(second===2)r.selectAction('phone');if(second===7)r.interact();if(second===10)r.setMovement(1,0);if(second===11)r.setMovement(0,0);if(second===12)r.returnItem();
       r.hold(second%4<2);for(let n=0;n<Math.round(1/chunk);n++)r.step(chunk);events.push(...r.drainEvents());
     }return{state:r.snapshot(),events};}
   assert.deepEqual(run(1),run(DT));assert.deepEqual(run(.25),run(DT));
@@ -60,7 +75,7 @@ test('book protection is directional and weakens when the teacher approaches or 
 
 test('heard noise can be remembered without visual evidence or a red card',()=>{
   const r=new ClassroomRound({target:100000});r.start();r._plan.until=100;
-  r.hold(true);r.step(5);
+  r.toggleDrawer();assert.equal(r.selectAction('snack'),true);takeAndUse(r);r.step(5);
   const s=r.snapshot(),memory=s.teacher.memory.find(m=>m.id===PLAYER_SEAT);
   assert.ok(memory&&memory.lastHeard!==null);assert.equal(memory.evidence,0);assert.equal(memory.confirmed,false);
   assert.equal(s.player.caught,false);assert.equal(s.teacher.looking,false);
@@ -68,8 +83,8 @@ test('heard noise can be remembered without visual evidence or a red card',()=>{
 });
 
 test('movement collides with desks, can use an aisle, and standing actions earn no points',()=>{
-  const r=new ClassroomRound({target:100000});r.start();assert.equal(r.interact(),'stood');
-  r.hold(true);r.setMovement(0,1);r.step(2);
+  const r=new ClassroomRound({target:100000});r.start();r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
+  takeAndUse(r);r.setMovement(0,1);r.step(2);
   let s=r.snapshot();const desk=DESKS[PLAYER_SEAT];assert.ok(s.player.z<=desk.minZ-.18+1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
   r.setMovement(1,0);r.step(.62);r.setMovement(0,1);r.step(2);
   s=r.snapshot();assert.ok(s.player.z>SEATS[PLAYER_SEAT].z+1);assert.equal(blocked(s.player.x,s.player.z),false);
@@ -78,8 +93,9 @@ test('movement collides with desks, can use an aisle, and standing actions earn 
 });
 
 test('pause freezes perception, AI, movement and smoke and resume needs fresh held input',()=>{
-  const r=new ClassroomRound({target:100000});r.start();r.useItem();r.hold(true);r.step(1);r.interact();r.setMovement(1,0);r.pause(true);
-  const before=r.snapshot();r.step(20);r.hold(true);r.setMovement(0,1);r.setLook(1,.5);r.useItem();r.requestHelp();assert.deepEqual(r.snapshot(),before);
+  const r=quietFixture();r.toggleDrawer();Object.assign(r.player._slots[0],{action:'smoke',progress:0,readyAt:0});r.takeSlot(0);r.hold(true);r.step(.6);r.releaseUse();
+  assert.equal(r.snapshot().projectiles.length,1);r.selectSlot(1);takeAndUse(r);r.step(1);r.interact();r.setMovement(1,0);r.pause(true);
+  const before=r.snapshot();r.step(20);takeAndUse(r);r.setMovement(0,1);r.setLook(1,.5);r.toggleBook();assert.deepEqual(r.snapshot(),before);
   r.pause(false);assert.equal(r.snapshot().holding,false);r.step(.1);assert.equal(r.snapshot().player.x,before.player.x);
 });
 
@@ -90,7 +106,7 @@ test('four classmates plan and complete actual actions; ordinary NPCs never scor
   assert.ok(completed.every(e=>FRIEND_SEATS.includes(e.studentId)&&e.actor==='ai'));
   assert.equal(new Set(s.students.filter(s=>s.isTeammate).map(s=>s.personality)).size,4);
   assert.ok(new Set(s.students.filter(s=>s.isTeammate).map(s=>s.action)).size>1);
-  for(const npc of s.students.filter(s=>!s.isPlayer&&!s.isTeammate)){assert.equal(npc.action,null);assert.equal(npc.holding,false);assert.deepEqual(npc.completed,{snack:0,note:0,phone:0});}
+  for(const npc of s.students.filter(s=>!s.isPlayer&&!s.isTeammate)){assert.equal(npc.action,null);assert.equal(npc.holding,false);assert.deepEqual(npc.completed,{snack:0,note:0,phone:0,smoke:0,computer:0});}
   for(const memory of s.teacher.memory.filter(m=>!FRIEND_SEATS.includes(m.id)&&m.id!==PLAYER_SEAT))assert.equal(memory.evidence,0);
   assert.equal(events.some(e=>e.type==='speech'),false);
 });
@@ -103,11 +119,20 @@ test('teacher revisits remembered individuals and targets only previously seen o
   assert.ok(memories.some(m=>m.evidence>15));
 });
 
-test('smoke is limited inventory, blocks evidence in world space and expires after seven seconds',()=>{
-  const r=new ClassroomRound({target:100000});r.start();focusSeat(r,PLAYER_SEAT);r.player._smoke=1;
-  assert.equal(r.useItem(),true);assert.equal(r.useItem(),false);assert.equal(r.snapshot().inventory.smoke,0);
-  r.step(6.8);assert.equal(r.snapshot().smokes.length,1);assert.equal(r.snapshot().suspicion,0);assert.equal(r.snapshot().player.caught,false);
-  r.step(.25);assert.equal(r.snapshot().smokes.length,0);assert.ok(r.snapshot().suspicion>0);
+test('smoke must be thrown from a consumed drawer slot before impact creates a growing cloud',()=>{
+  const r=quietFixture();Object.assign(r.player._slots[0],{action:'smoke',progress:0,readyAt:0});
+  assert.equal(r.hold(true),false);r.step(1);assert.equal(r.snapshot().projectiles.length,0);
+  r.toggleDrawer();r.takeSlot(0);r.step(1);assert.equal(r.snapshot().projectiles.length,0);
+  r.hold(true);r.step(.6);assert.equal(r.snapshot().projectiles.length,0);r.releaseUse();
+  let s=r.snapshot();assert.equal(s.completed.smoke,1);assert.equal(s.score,0);assert.equal(s.drawer.slots[0].action,null);
+  assert.equal(s.drawer.slots[0].readyIn,3);assert.equal(s.projectiles.length,1);assert.equal(s.smokes.length,0);assert.equal(r.hold(true),false);
+  const launch=s.projectiles[0];r.step(.15);s=r.snapshot();assert.ok(Math.hypot(s.projectiles[0].x-launch.x,s.projectiles[0].z-launch.z)>.5);assert.equal(s.smokes.length,0);
+  s=advanceUntil(r,s=>s.smokes.length===1,3);const cloud=s.smokes[0];assert.equal(cloud.ownerId,r.player.id);assert.ok(s.projectiles[0].bounces>0);
+  const source={x:cloud.x,z:cloud.z-2,yaw:0},target={x:cloud.x,z:cloud.z+2};
+  assert.equal(canSee(source,target,s.smokes),true,'A just-starting wisp is not opaque');
+  r.step(1.5);s=r.snapshot();assert.ok(s.smokes[0].radius>cloud.radius);assert.equal(canSee(source,target,s.smokes),false);
+  const ready=r.snapshot();r.pause();r.step(10);assert.deepEqual(r.snapshot().projectiles,ready.projectiles);r.pause(false);
+  r.step(6);assert.equal(r.snapshot().smokes.length,0);assert.equal(r.snapshot().projectiles.length,0);assert.equal(canSee(source,target,r.snapshot().smokes),true);
 });
 
 test('confirmed identification survives hiding, winds up chalk, then sends only that student to detention',()=>{
@@ -119,7 +144,7 @@ test('confirmed identification survives hiding, winds up chalk, then sends only 
   const s=advanceUntil(r,s=>s.player.caught,10);
   assert.ok(s.elapsed-windup>=.7-DT-1e-6);assert.ok(s.elapsed>before);
   assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.equal(s.player.z,5.1);
-  assert.equal(r.hold(true),false);assert.equal(r.interact(),false);assert.equal(r.setMovement(1,0),false);assert.equal(r.setLook(1,0),true);
+  assert.equal(takeAndUse(r),false);assert.equal(r.interact(),false);assert.equal(r.setMovement(1,0),false);assert.equal(r.setLook(1,0),true);
   const events=r.drainEvents();assert.equal(events.filter(e=>e.type==='caught'&&e.studentId===PLAYER_SEAT).length,1);assert.equal(events.filter(e=>e.type==='chalk'&&e.studentId===PLAYER_SEAT).length,1);
   assert.equal(events.some(e=>e.type==='finish'),false);
 });
@@ -131,42 +156,203 @@ test('teacher victory requires all five team members, with one terminal event',(
     assert.equal(r.snapshot().status,index===4?'lost':'playing');
   }
   const s=r.snapshot();assert.equal(s.caughtCount,5);assert.equal(s.resultReason,'all-caught');
-  assert.equal(r.drainEvents().filter(e=>e.type==='finish').length,1);r.step(30);r.start();r.hold(true);assert.deepEqual(r.snapshot(),s);assert.deepEqual(r.drainEvents(),[]);
+  assert.equal(r.drainEvents().filter(e=>e.type==='finish').length,1);r.step(30);r.start();takeAndUse(r);assert.deepEqual(r.snapshot(),s);assert.deepEqual(r.drainEvents(),[]);
 });
 
 test('a live cooperative session can fill the mischief meter without a task checklist',()=>{
   for(const seed of [1,27,73]){
     const r=new ClassroomRound({seed});r.start();
-    const s=advanceUntil(r,s=>s.status!=='playing',480,(s,r)=>r.hold(!s.teacher.looking&&!s.teacher.warning));
+    const s=advanceUntil(r,s=>s.status!=='playing',480,(s,r)=>{if(!s.teacher.looking&&!s.teacher.warning)useAvailable(r,s);else{r.hold(false);r.returnItem();}});
     assert.equal(s.status,'won');assert.equal(s.score,s.target);assert.equal(s.resultReason,'mischief');
-    assert.equal(s.completed.phone,0);assert.equal(s.completed.note,0);
+    assert.ok(Object.values(s.completed).some(n=>n>0));
     assert.ok(s.students.filter(v=>v.isTeammate).some(v=>Object.values(v.completed).some(n=>n>0)));
   }
 });
 
-test('development pacing permits observation and reckless play can naturally lose all five students',()=>{
+test('three-second pacing permits observation, actual scoring and valid terminal results',()=>{
   // These bounds protect the local prototype rhythm; they are not original-game values.
   for(const seed of [7,42,101]){
     const idle=new ClassroomRound({seed});idle.start();idle.step(30);
     assert.equal(idle.snapshot().status,'playing');assert.ok(idle.snapshot().score<40);
+    // Isolate defeat from the faster three-second scoring target.
     const reckless=new ClassroomRound({seed});reckless.start();let s=reckless.snapshot(),walked=0,previous=s.teacher;
-    for(let i=0;i<1200&&s.status==='playing';i++){
-      reckless.hold(true);s=reckless.step(.25);
+    for(let i=0;i<2400&&s.status==='playing';i++){
+      useAvailable(reckless,s);s=reckless.step(.25);
       walked+=Math.hypot(s.teacher.x-previous.x,s.teacher.z-previous.z);previous=s.teacher;
       if(s.teacher.targetId!==null)assert.ok(s.teacher.observedIds.includes(s.teacher.targetId));
     }
-    assert.equal(s.status,'lost');assert.equal(s.resultReason,'all-caught');assert.equal(s.caughtCount,5);
+    assert.ok(['won','lost'].includes(s.status));
+    if(s.status==='lost'){assert.equal(s.resultReason,'all-caught');assert.equal(s.caughtCount,5);}
+    else{assert.equal(s.resultReason,'mischief');assert.equal(s.score,s.target);assert.ok(s.caughtCount>0);}
     assert.ok(walked>50);assert.ok(s.teacher.memory.filter(m=>m.detained).every(m=>m.confirmed&&m.lastSeen!==null));
   }
 });
 
-test('help is assessed, cannot force a timed distracted phase, and invalid inputs are harmless',()=>{
+test('drawers start with three independent seeded draws, permit repeats, and cannot reroll by opening',()=>{
+  const mixes=new Set();
+  for(let seed=1;seed<=24;seed++){
+    const r=new ClassroomRound({seed}),initial=r.snapshot().drawer;
+    assert.equal(initial.open,false);assert.equal(initial.drawnSlot,null);assert.equal(initial.slots.length,3);
+    assert.deepEqual(initial.slots.map(slot=>slot.id),[0,1,2]);
+    assert.ok(initial.slots.every(slot=>Object.hasOwn(CLASSROOM_ACTIONS,slot.action)&&slot.readyIn===0));
+    mixes.add(initial.slots.map(slot=>slot.action).join(','));
+    r.start();for(let i=0;i<6;i++)assert.equal(r.toggleDrawer(),true);
+    assert.deepEqual(r.snapshot().drawer,initial);
+    initial.slots[0].action=null;assert.notEqual(r.snapshot().drawer.slots[0].action,null);
+    r.reset();assert.deepEqual(r.snapshot(),new ClassroomRound({seed}).snapshot());
+  }
+  assert.ok(mixes.size>6,'The pool must be sampled with replacement, rather than just shuffled.');
+  assert.ok([...mixes].some(mix=>new Set(mix.split(',')).size<3));assert.ok([...mixes].some(mix=>mix.includes('smoke')));
+});
+
+test('a stocked item must be taken from an open drawer, then may be held while closed or standing',()=>{
+  const r=quietFixture();
+  assert.equal(takeAndUse(r),false);assert.equal(r.selectSlot(1),true);assert.equal(r.snapshot().drawer.open,false);assert.equal(takeAndUse(r),false);
+  assert.equal(r.toggleDrawer(),true);assert.equal(takeAndUse(r),true);assert.equal(r.snapshot().drawer.drawnSlot,1);
+  assert.equal(r.toggleDrawer(),true);r.step(1);assert.equal(r.snapshot().holding,true);assert.equal(r.snapshot().actionProgress,.333333);
+  r.hold(false);assert.equal(takeAndUse(r),true); // A concealed, already taken item remains available.
+  const stock=r.snapshot().drawer.slots;r.interact();r.step(1);
+  assert.equal(r.snapshot().drawer.open,false);assert.equal(r.toggleDrawer(),false);assert.equal(r.selectSlot(2),false);
+  assert.equal(r.snapshot().actionProgress,.333333);assert.deepEqual(r.snapshot().drawer.slots,stock);assert.equal(r.snapshot().score,0);
+  r.interact();assert.equal(r.selectSlot(2),false);assert.equal(r.returnItem(),true);r.toggleDrawer();assert.equal(r.selectSlot(2),true);assert.equal(r.snapshot().drawer.drawnSlot,null);assert.equal(takeAndUse(r),false);
+  assert.equal(r.selectAction('phone'),false);assert.equal(r.selectAction('snack'),true);assert.equal(r.snapshot().drawer.selectedSlot,2);
+  const before=r.snapshot();for(const index of [-1,3,.5,'1',null,NaN])assert.equal(r.selectSlot(index),false);assert.deepEqual(r.snapshot(),before);
+});
+
+test('duplicate objects keep independent progress and only the completed slot is consumed',()=>{
+  const r=quietFixture(1);r.player._slots.forEach(s=>s.action='note');r.toggleDrawer();takeAndUse(r);r.step(2);
+  assert.equal(r.snapshot().actionProgress,.666667);
+  choose(r,1);assert.equal(r.snapshot().actionProgress,0);assert.equal(r.snapshot().holding,false);
+  takeAndUse(r);r.step(1);assert.equal(r.snapshot().actionProgress,.333333);
+  choose(r,0);assert.equal(r.snapshot().actionProgress,.666667);takeAndUse(r);r.step(1);
+  const s=r.snapshot();assert.equal(s.completed.note,1);assert.equal(s.score,CLASSROOM_ACTIONS.note.points);assert.equal(s.holding,false);assert.equal(s.drawer.drawnSlot,null);
+  assert.deepEqual(s.drawer.slots[0],{id:0,action:null,readyIn:DEVELOPMENT_TUNING.drawerRefill});
+  assert.equal(s.drawer.slots[1].action,'note');assert.equal(s.drawer.slots[2].action,'note');
+  assert.equal(r.selectSlot(0),false);assert.equal(r.selectAction('note'),true);assert.equal(r.snapshot().drawer.selectedSlot,1);assert.equal(r.snapshot().actionProgress,.333333);
+});
+
+test('consumed slots refill independently after three active seconds, with no automatic scoring',()=>{
+  const r=quietFixture();r.player._slots.forEach(s=>s.action='snack');r.toggleDrawer();
+  r.takeSlot(2);r.hold(true);r.step(1.5);r.returnItem();r.takeSlot(0);r.hold(true);r.step(3);
+  assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.hold(true),false);
+  r.takeSlot(2);r.hold(true);r.step(1.5);let s=r.snapshot();
+  assert.equal(s.drawer.slots[0].readyIn,1.5);assert.equal(s.drawer.slots[2].readyIn,3);assert.equal(s.score,4);
+  r.pause();const paused=r.snapshot();r.step(20);r.toggleDrawer();r.takeSlot(1);assert.deepEqual(r.snapshot(),paused);r.pause(false);
+  r.step(1.5-DT);assert.equal(r.snapshot().drawer.slots[0].action,null);r.step(DT);s=r.snapshot();
+  assert.ok(Object.hasOwn(CLASSROOM_ACTIONS,s.drawer.slots[0].action));assert.equal(s.drawer.slots[0].readyIn,0);assert.equal(s.drawer.slots[2].readyIn,1.5);
+  r.step(1.5);s=r.snapshot();assert.ok(s.drawer.slots[2].action);assert.equal(s.holding,false);assert.equal(s.score,4);
+  r.step(10);assert.equal(r.snapshot().score,4);assert.equal(r.snapshot().actionProgress,0);
+});
+
+test('AI completions consume their own stocked slots and empty AI drawers wait for refills',()=>{
+  const r=quietFixture(42),ids=[...FRIEND_SEATS];
+  for(const id of ids){const actor=r.students[id];actor._decisionAt=0;for(const slot of actor._slots)Object.assign(slot,{action:null,readyAt:3,progress:0});}
+  r.step(3-DT);let s=r.snapshot();assert.equal(s.score,0);assert.ok(s.students.filter(actor=>actor.isTeammate).every(actor=>!actor.holding&&actor.drawer.slots.every(slot=>slot.action===null)));
+  r.step(DT);assert.ok(r.snapshot().students.filter(actor=>actor.isTeammate).every(actor=>actor.drawer.slots.every(slot=>slot.action)));
+  r.drainEvents();let completions=0;
+  for(let frame=0;frame<35*60;frame++){
+    const before=r.snapshot();s=r.step(DT);
+    for(const event of r.drainEvents().filter(event=>event.type==='complete')){
+      completions++;assert.equal(event.actor,'ai');assert.ok(ids.includes(event.studentId));
+      const previous=before.students[event.studentId].drawer.slots[event.slotId],actor=s.students[event.studentId],slot=actor.drawer.slots[event.slotId];
+      assert.equal(previous.action,event.action);assert.equal(slot.action,null);assert.equal(slot.readyIn,3);assert.equal(actor.holding,false);
+    }
+  }
+  assert.ok(completions>=4);assert.equal(s.score,s.students.reduce((points,actor)=>points+Object.entries(actor.completed).reduce((sum,[action,count])=>sum+count*CLASSROOM_ACTIONS[action].points,0),0));
+});
+
+test('invalid inputs are harmless and removed help skill is unavailable',()=>{
   const r=new ClassroomRound();r.start();const before=r.snapshot();
   for(const n of [NaN,Infinity,-1,0,'1',null])r.step(n);
   for(const a of ['',null,'__proto__','run'])assert.equal(r.selectAction(a),false);
   assert.equal(r.setMovement(NaN,0),false);assert.equal(r.setLook(Infinity,0),false);assert.deepEqual(r.snapshot(),before);
-  r.requestHelp();assert.notEqual(r.snapshot().teacher.phase,'distracted');assert.equal(r.snapshot().score,0);assert.equal(r.requestHelp(),false);
-  const refused=new ClassroomRound();refused.start();for(const id of FRIEND_SEATS)refused.students[id].caught=true;
-  assert.equal(refused.requestHelp(),false);assert.ok(refused.drainEvents().some(e=>e.type==='help'&&e.accepted===false));
+  assert.equal(r.requestHelp,undefined);
   const bounded=new ClassroomRound({target:100000});bounded.start();bounded.step(1e9);assert.ok(bounded.snapshot().elapsed<=30);assert.ok(Number.isFinite(bounded.snapshot().elapsed));
+});
+
+test('E takes without using, left release retains the item, Q returns without duplicating stock',()=>{
+ const r=quietFixture(1);r.toggleDrawer();const original=r.snapshot().drawer.slots;
+ assert.equal(r.hold(true),false,'Left click must not take from the drawer');
+ assert.equal(r.takeSlot(1),true);assert.equal(r.snapshot().drawer.drawnSlot,1);assert.equal(r.snapshot().holding,false);
+ r.step(1);assert.equal(r.snapshot().actionProgress,0);assert.equal(r.snapshot().score,0);
+ assert.equal(r.takeSlot(2),false);assert.equal(r.selectSlot(2),false);
+ assert.equal(r.hold(true),true);r.step(1);r.hold(false);const progress=r.snapshot().actionProgress;
+ assert.ok(progress>0);r.step(1);assert.equal(r.snapshot().drawer.drawnSlot,1);assert.equal(r.snapshot().actionProgress,progress);
+ r.toggleDrawer();assert.equal(r.returnItem(),true);assert.equal(r.snapshot().drawer.open,true);assert.equal(r.snapshot().drawer.drawnSlot,null);
+ assert.deepEqual(r.snapshot().drawer.slots,original);assert.equal(r.returnItem(),false);assert.equal(r.hold(true),false);
+ assert.equal(r.takeSlot(1),true);assert.equal(r.snapshot().actionProgress,progress);
+ r.pause();const paused=r.snapshot();assert.equal(r.returnItem(),false);assert.deepEqual(r.snapshot(),paused);r.pause(false);
+ r.interact();assert.equal(r.returnItem(),false,'Cannot put an item back from another place in the room');
+ r.interact();assert.equal(r.returnItem(),true);
+});
+
+// Measure the public interaction clock, including an interrupted hold.
+test('snack, phone and note complete at exactly three active held seconds',()=>{
+ for(const action of ['snack','phone','note']){
+  const r=quietFixture();Object.assign(r.player._slots[0],{action,progress:0,readyAt:0});r.toggleDrawer();r.takeSlot(0);
+  assert.equal(CLASSROOM_ACTIONS[action].duration,3);r.step(5);assert.equal(r.snapshot().actionProgress,0);
+  r.hold(true);r.step(1);r.hold(false);r.step(2);assert.equal(r.snapshot().completed[action],0);
+  r.hold(true);r.step(2-DT);assert.equal(r.snapshot().completed[action],0);assert.ok(r.snapshot().actionProgress<1);
+  r.step(DT);assert.equal(r.snapshot().completed[action],1);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.snapshot().drawer.drawnSlot,null);
+ }
+});
+
+function heldSmoke(){const r=quietFixture();Object.assign(r.player._slots[0],{action:'smoke',progress:0,readyAt:0});r.toggleDrawer();r.takeSlot(0);return r;}
+test('a smoke tap throws immediately on release, consumes exactly one item and cannot repeat',()=>{
+ const r=heldSmoke();r.hold(true);assert.equal(r.releaseUse(),true);const s=r.snapshot();
+ assert.equal(s.elapsed,0);assert.equal(s.projectiles.length,1);assert.equal(s.projectiles[0].charge,0);
+ assert.equal(s.completed.smoke,1);assert.equal(s.drawer.slots[0].readyIn,3);assert.equal(s.drawer.drawnSlot,null);
+ assert.equal(r.releaseUse(),false);assert.equal(r.snapshot().projectiles.length,1);
+});
+test('smoke charge increases throw distance, saturates and waits indefinitely for release',()=>{
+ const speeds=[];
+ for(const seconds of [0,.6,1.2,6]){
+  const r=heldSmoke();r.hold(true);r.step(seconds);const s=r.snapshot();
+  assert.equal(s.projectiles.length,0);assert.equal(s.completed.smoke,0);assert.equal(s.drawer.drawnSlot,0);
+  assert.equal(s.actionProgress,Math.min(seconds/1.2,1));
+  r.releaseUse();const p=r.snapshot().projectiles[0];speeds.push(Math.hypot(p.vx,p.vy,p.vz));
+ }
+ assert.ok(speeds[0]<speeds[1]&&speeds[1]<speeds[2]);assert.ok(Math.abs(speeds[2]-speeds[3])<1e-9);
+});
+test('put back, pause and input cancellation cancel charge without throwing or losing the grenade',()=>{
+ for(const cancel of [r=>r.hold(false),r=>r.returnItem(),r=>r.pause(true)]){
+  const r=heldSmoke();r.hold(true);r.step(.8);cancel(r);r.releaseUse();const s=r.snapshot();
+  assert.equal(s.projectiles.length,0);assert.equal(s.completed.smoke,0);assert.equal(s.drawer.slots[0].action,'smoke');assert.equal(s.actionProgress,0);
+ }
+ const r=heldSmoke();r.interact();r.hold(true);r.setLook(Math.PI/2,0);r.releaseUse();assert.ok(r.snapshot().projectiles[0].vx>4);
+});
+
+test('smoke waits half a second after settling; wall hits and airborne bounces never start it',()=>{
+ for(const aim of [{yaw:0,pitch:0,charge:0},{yaw:Math.PI/2,pitch:-.6,charge:1},{yaw:Math.PI,pitch:.6,charge:.5}]){
+  const r=heldSmoke();r.setLook(aim.yaw,aim.pitch);r.hold(true);r.step(aim.charge*1.2);r.releaseUse();
+  let p,previousRest=0,hadImpactInAir=false;
+  for(let i=0;i<600;i++){
+   r.step(DT);p=r.projectiles[0];
+   if(p.firstImpact!==null&&!p.settled)hadImpactInAir=true;
+   if(!p.settled||p.restTime<.5-1e-9)assert.equal(r.smokes.length,0,'No smoke during flight or the landing delay');
+   if(r.smokes.length){
+    assert.equal(p.settled,true);assert.ok(p.restTime>=.5-1e-9&&previousRest<.5);
+    assert.deepEqual([r.smokes[0].x,r.smokes[0].y,r.smokes[0].z],[p.x,p.y,p.z]);break;
+   }
+   previousRest=p.restTime;
+  }
+  assert.ok(hadImpactInAir);assert.equal(r.smokes.length,1);
+ }
+});
+test('pausing during the half-second landing delay cannot ignite a grenade',()=>{
+ const r=heldSmoke();r.hold(true);r.releaseUse();advanceUntil(r,s=>s.projectiles[0].settled,5);r.step(.2);
+ const before=r.snapshot();r.pause();r.step(20);assert.deepEqual(r.snapshot().projectiles,before.projectiles);assert.equal(r.smokes.length,0);
+ r.pause(false);r.step(.2);assert.equal(r.smokes.length,0);r.step(.15);assert.equal(r.smokes.length,1);
+});
+
+
+test('book interaction changes real cover, survives leaving the seat, and freezes on pause',()=>{
+ const r=quietFixture(11);const id=r.player.seatId;
+ assert.equal(r.snapshot().books[id].raised,true);r.toggleBook();r.step(.25);
+ assert.equal(r.snapshot().books[id].amount,0);
+ const observer={x:r.player.x,z:r.player.z+5,yaw:Math.PI};
+ assert.ok(Math.abs(propVisibility(observer,r.player)-1)<1e-8);
+ r.pause(true);assert.equal(r.toggleBook(),false);r.step(1);assert.equal(r.snapshot().books[id].amount,0);
+ r.pause(false);r.toggleBook();r.step(.25);assert.ok(propVisibility(observer,r.player)<.3);
+ r.interact();assert.equal(r.toggleBook(),false);assert.equal(r.snapshot().books[id].raised,true);
 });

@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "check": "node qa/menu-audit.mjs dist",
-    "test": "node --test qa/classroom-rules.test.mjs"
+    "test": "node --test qa/*.test.mjs"
   }
 }

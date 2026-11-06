@@ -1,0 +1,27 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>中心交互检视</title>
+<style>body{margin:0;font:14px sans-serif;background:#f8fafb}canvas{display:block;width:100vw;height:100vh}nav{position:fixed;top:6px;left:10px;background:#fff;padding:8px;display:flex;gap:7px;align-items:center}input{width:70px}button{padding:6px}#reticle{position:fixed;left:50%;top:50%;width:5px;height:5px;border:1px solid #25343c;background:white;border-radius:50%;transform:translate(-50%,-50%)}output{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:9px;background:#fff;white-space:pre}</style>
+<canvas id="classroom"></canvas><i id="reticle"></i><nav>
+<label>种子 <input id="seed" type="number" value="11"></label><label>低头 <input id="pitch" type="number" min="-1.15" max="1.3" step=".05" value="0.75"></label><label>左右 <input id="yaw" type="number" step=".05" value="0"></label>
+<button id="interact">E 交互</button><button id="back">Q 放回</button><button id="use">按住使用</button><button id="pause">暂停</button><button id="restart">重新开始</button><label>蓄力秒数 <input id="charge" type="number" min="0" max="5" step=".1" value=".6"></label><button id="throw-review">投掷检视</button><button id="step">推进 0.1 秒</button><button id="record">录制完整投掷</button><a id="recording" hidden download="smoke-ground-23.webm">下载实录</a>
+</nav><output>加载中</output><script type="module">
+import {createClassroom} from '../dist/classroom.js?v=classmates-24d';import {ClassroomRound} from '../dist/classroom-rules.js?v=classmates-24d';
+const canvas=document.querySelector('canvas'),scene=await createClassroom(canvas),round=new ClassroomRound({seed:73,target:100000}),output=document.querySelector('output');
+let paused=false,last=performance.now();function reset(){paused=false;round.reset(Number(document.querySelector('#seed').value));round.start();round.teacher.x=30;round.teacher.z=30;round._thinkAt=Infinity;round._plan.route=[];round._plan.until=Infinity;for(const a of round.students)if(a.isTeammate)a._decisionAt=Infinity;round.setLook(Number(yaw.value),Number(pitch.value));}const pitch=document.querySelector('#pitch'),yaw=document.querySelector('#yaw');reset();
+function sync(){round.pause(false);round.setLook(Number(yaw.value),Number(pitch.value));round.pause(paused);}pitch.oninput=sync;yaw.oninput=sync;
+function interact(){const t=scene.getInteraction();if(t?.kind==='book')round.toggleBook();if(t?.kind==='desk')round.toggleDrawer();if(t?.kind==='item')round.takeSlot(t.slot);}
+document.querySelector('#interact').onclick=interact;document.querySelector('#back').onclick=()=>round.returnItem();document.querySelector('#restart').onclick=reset;
+const use=document.querySelector('#use');use.onpointerdown=()=>round.hold(true);addEventListener('pointerup',()=>round.releaseUse());document.querySelector('#pause').onclick=()=>{paused=!paused;round.pause(paused)};
+document.querySelector('#throw-review').onclick=()=>{document.querySelector('#seed').value='11';reset();round.toggleDrawer();round.takeSlot(1);round.hold(true);round.step(Number(document.querySelector('#charge').value));round.releaseUse();paused=true;round.pause(true);};
+document.querySelector('#step').onclick=()=>{round.pause(false);round.step(.1);paused=true;round.pause(true);};
+document.querySelector('#record').onclick=()=>{
+  const recordButton=document.querySelector('#record'),link=document.querySelector('#recording');
+  recordButton.disabled=true;link.hidden=true;
+  document.querySelector('#seed').value='11';reset();round.toggleDrawer();round.takeSlot(1);
+  setTimeout(()=>round.hold(true),900);setTimeout(()=>round.releaseUse(),900+Number(document.querySelector('#charge').value)*1000);
+  const stream=canvas.captureStream(30),chunks=[],recorder=new MediaRecorder(stream,{mimeType:'video/webm;codecs=vp9',videoBitsPerSecond:5000000});
+  recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  recorder.onstop=()=>{stream.getTracks().forEach(t=>t.stop());link.href=URL.createObjectURL(new Blob(chunks,{type:'video/webm'}));link.hidden=false;recordButton.disabled=false;};
+  recorder.start();setTimeout(()=>{round.hold(false);paused=true;round.pause(true);recorder.stop();},11000);
+};
+function tick(now){const dt=Math.min((now-last)/1000,.05);last=now;round.step(dt);const s=round.snapshot();scene.setGameplay(s);const t=scene.getInteraction();output.textContent=`中心 ${JSON.stringify(t)} · 手持 ${s.drawer.drawnSlot??'无'} · 进度 ${s.actionProgress.toFixed(3)} · 飞行 ${s.projectiles[0]?`${s.projectiles[0].age.toFixed(2)}秒 / 高${s.projectiles[0].y.toFixed(2)} / 碰撞${s.projectiles[0].bounces}`:"无"} · 完成 ${JSON.stringify(s.completed)}`;requestAnimationFrame(tick);}requestAnimationFrame(tick);
+</script></html>

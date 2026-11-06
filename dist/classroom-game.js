@@ -1,18 +1,21 @@
-import {ClassroomRound} from './classroom-rules.js?v=10';
+import {bindHeldUseInput} from './held-use-input.js?v=classroom-25';
+import {ClassroomRound} from './classroom-rules.js?v=classroom-25';
+
+import {TeacherRound} from './teacher-rules.js?v=classroom-25';
 
 // Input/UI only. Perception, movement and team results live in rules.
-export function createClassroomGame({scene,audio,onExit}){
+export function createClassroomGame({scene,audio,onExit,round:providedRound=null}){
+  let round=providedRound||new ClassroomRound(),options={role:'student',map:'classroom'};
   const $=s=>document.querySelector(s),ui=$('#play-ui'),canvas=$('#classroom');
   const pauseDialog=$('#pause-dialog'),resultDialog=$('#result-dialog');
-  const round=new ClassroomRound(),buttons=[...document.querySelectorAll('[data-action]')];
-  const labels={snack:'零食',note:'纸条',phone:'手机'},keys=new Set(),inputs=new Set();
+  const labels={snack:'零食',note:'纸条',phone:'手机',smoke:'烟雾弹'},keys=new Set(),inputs=new Set();
   let active=false,finished=false,raf=0,last=0,lastHud=0,lastEffect=0,lastFootstep=0;
   let yaw=0,pitch=0,dragLook=false,dragX=0,dragY=0,captionTimer=0,feedbackTimer=0,hintTimer=0,lastFriends='',lastTeacher=null;
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   function release(){inputs.clear();round.hold(false);}
   function stopMovement(){keys.clear();round.setMovement(0,0);round.setCrouch(false);dragLook=false;}
   function unlock(){if(document.pointerLockElement===canvas)document.exitPointerLock();}
-  function lock(){if(!canvas.requestPointerLock)return;try{canvas.requestPointerLock()?.catch?.(()=>{});}catch{}}
+  function lock(){if(document.pointerLockElement===canvas||!canvas.requestPointerLock)return;try{canvas.requestPointerLock()?.catch?.(()=>{});}catch{}}
   function caption(text,who=''){
     if(!text)return;clearTimeout(captionTimer);$('#speech-name').textContent=who;$('#speech-text').textContent=text;$('#speech').hidden=false;
     captionTimer=setTimeout(()=>$('#speech').hidden=true,2600);
@@ -23,15 +26,18 @@ export function createClassroomGame({scene,audio,onExit}){
     feedbackTimer=setTimeout(()=>box.classList.remove('pop'),1500);
   }
   function finish(s){
-    release();stopMovement();unlock();audio.gameplay=false;audio.apply();fx(s.status==='won'?'bell':'caught');
+    release();stopMovement();unlock();audio.gameplay=false;audio.apply();fx((s.role==='teacher'?s.status==='lost':s.status==='won')?'bell':'caught');
     $('#result-title').textContent=s.status==='won'?'学生获胜':'老师获胜';$('#result-score').textContent=Math.round(s.score);$('#result-goal').textContent='捣乱值';
     $('#result-detail').textContent=s.status==='won'?'这节课，藏住了。':'捣蛋同学都被找出来了。';
-    $('#result-actions').textContent=`你完成了：零食 ${s.completed.snack} · 纸条 ${s.completed.note} · 手机 ${s.completed.phone}`;
+    $('#result-actions').textContent=s.role==='teacher'?`找到 ${s.caughtCount} / ${s.teamSize} 位捣蛋同学`:`零食 ${s.completed.snack} · 纸条 ${s.completed.note} · 手机 ${s.completed.phone}`+(s.map==='computer'?` · 电脑 ${s.completed.computer}`:'');
     if(!resultDialog.open)resultDialog.showModal();
   }
   function processEvents(){for(const e of round.drainEvents()){
-    if(e.type==='complete'&&e.actor==='player'){fx('complete');feedback('+'+(e.points??''));}
-    if(e.type==='chalk')fx('warning');
+    if(e.type==='complete'&&e.actor==='player'&&e.action!=='smoke'){fx('complete');feedback('+'+(e.points??''));}
+    if(['smoke-throw','smoke-impact','smoke-bloom'].includes(e.type)){const p=round.player,dist=Math.hypot(e.x-p.x,e.z-p.z);if(dist<9)audio.effect?.(e.type,Math.max(.12,1-dist/10));}
+    if(e.type==='chalk'||e.type==='chalk-throw')fx('warning');
+    if(e.type==='chalk-hit')audio.effect?.('note');
+    if(e.type==='wrong-card'){audio.effect?.('warning');feedback('这位同学没有捣乱','bad');}
     if(e.type==='caught'){
       const s=round.snapshot();fx('caught');
       if(e.studentId===s.player?.id||e.actor==='player'){release();stopMovement();feedback('罚站','bad');caption('同学们还在继续。');}
@@ -39,42 +45,51 @@ export function createClassroomGame({scene,audio,onExit}){
     }
     // Factual world events, not canned spoken conversations.
     if(e.type==='observation'&&e.public===true)caption(e.text,e.speaker||'');
-    if(e.type==='help'&&e.accepted!==false)audio.effect?.('note');
+
   }}
   function render(s){
-    const p=s.player,teammates=s.students.filter(x=>x.isTeammate),alive=5-s.students.filter(x=>(x.isPlayer||x.isTeammate)&&x.caught).length;
+    const p=s.player,teacher=s.role==='teacher',alive=s.teamSize-s.caughtCount;
     ui.dataset.status=s.status;ui.dataset.phase=s.teacher.phase;ui.dataset.holding=String(s.holding);ui.dataset.score=String(s.score);
     ui.dataset.seated=String(p.seated);ui.dataset.caught=String(p.caught);ui.dataset.position=`${p.x.toFixed(2)},${p.z.toFixed(2)}`;
     $('#round-clock').textContent=alive+' / 5';$('#round-score').textContent=Math.floor(s.score);$('#round-target').textContent='/ '+s.target;
     $('#score-fill').style.width=clamp(s.score/s.target*100,0,100)+'%';
-    const notice=clamp(s.suspicion,0,100);$('#notice-fill').style.width=notice+'%';$('#notice-meter').setAttribute('aria-valuenow',String(Math.round(notice)));
-    $('.teacher-watch').classList.toggle('visible',notice>8||p.caught);$('#teacher-state').textContent=p.caught?'被点名，讲台旁罚站':notice>68?'老师盯上你了':'动作被注意到了';
-    $('#teacher-state').dataset.alert=String(notice>68);$('#strikes').hidden=true;
-    buttons.forEach(b=>{const selected=b.dataset.action===s.selected;b.disabled=p.caught;b.setAttribute('aria-pressed',String(selected));b.classList.toggle('acting',selected&&s.holding);b.style.setProperty('--action-progress',selected?(s.actionProgress*100)+'%':'0%');});
-    $('#hold-action').disabled=p.caught;$('#hold-action').textContent=s.holding?'松手收起':p.seated?'按住使用':'按住携带';$('#active-action').textContent=p.caught?'罚站中':p.seated?labels[s.selected]:p.crouched?'蹲下移动':'离开座位';
-    $('#interact-seat').disabled=p.caught;$('#seat-label').textContent=p.seated?'起身':'坐下';const smoke=s.inventory?.smoke??0;
-    $('#ask-help').disabled=p.caught||smoke<=0;$('#help-cooldown').textContent='Q · '+smoke;
-    const signature=teammates.map(f=>[f.id,f.caught,f.holding].join(':')).join('|');
-    if(signature!==lastFriends){lastFriends=signature;$('#classmates').replaceChildren(...teammates.map(friend=>{
-      const dot=document.createElement('span');dot.textContent=friend.name;dot.className='mate '+(friend.caught?'caught':friend.holding?'busy':'');dot.title=friend.caught?'罚站中':'同学';return dot;
-    }));}
-    $('#crosshair').hidden=p.caught||p.seated;scene.setGameplay(s);
+    ui.dataset.role=s.role;ui.dataset.map=s.map;
+    const drawer=s.drawer,carrying=drawer.drawnSlot!==null,target=scene.getInteraction?.(),hover=target?.kind==='item'?target.slot:null;
+    ui.dataset.drawerOpen=String(drawer.open);ui.dataset.selectedSlot=String(drawer.selectedSlot);ui.dataset.carrying=String(carrying);
+    const deskPrompt=target?.kind==='book'?`E ${p.bookRaised?'放下':'竖起'}书本`:target?.kind==='desk'?`E ${drawer.open?'收起':'打开'}课桌`:'';
+    const needsSeat=carrying&&!p.seated&&s.selected!=='smoke';
+    const actionText=teacher?(target?.kind==='student'?(target.cardReady?'E 出示红牌':'左键投粉笔'):'左键投粉笔'):p.computerActive?'按住左键玩电脑 · Q 切回课件':target?.kind==='computer'?'E 打开电脑游戏':p.caught?'罚站中':hover!==null?`E 拿取 ${labels[drawer.slots[hover]?.action]||''}`:(carrying?(needsSeat?'坐下后使用 · 空格坐下':s.selected==='smoke'?(s.holding?'松手抛出':'点击抛出 · 长按蓄力'):'按住左键使用')+(p.seated?'  ·  Q 放回':''):deskPrompt);
+    $('#interaction-prompt').textContent=actionText;$('#interaction-prompt').hidden=!actionText;
+    $('#drawer-hint').textContent='';
+    renderUseProgress(s);
+    canvas.dataset.carriedItem=carrying?drawer.slots[drawer.drawnSlot]?.action||'':'';
+    $('#crosshair').hidden=p.caught||s.paused;scene.setGameplay(s);
+  }
+  function renderUseProgress(s){
+    const ring=$('#use-progress'),visible=(s.drawer.drawnSlot!==null||s.player.computerActive)&&!s.player.caught&&!s.paused&&(s.holding||s.actionProgress>0);
+    ring.hidden=!visible;ring.dataset.active=String(s.holding);ring.setAttribute('aria-valuenow',String(Math.round(s.actionProgress*100)));
+    ring.setAttribute('aria-label',s.selected==='smoke'?'投掷蓄力':'物品使用进度');ring.dataset.charged=String(s.selected==='smoke'&&s.actionProgress>=1);
+    $('#use-progress-fill').style.strokeDashoffset=String(100-s.actionProgress*100);
+    ui.dataset.useProgress=String(s.actionProgress);ui.dataset.holding=String(s.holding);
   }
   function movement(){
     let side=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0),forward=(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0);const len=Math.hypot(side,forward)||1;side/=len;forward/=len;
     round.setMovement(Math.sin(yaw)*forward-Math.cos(yaw)*side,Math.cos(yaw)*forward+Math.sin(yaw)*side);round.setCrouch(keys.has('KeyC')||keys.has('ControlLeft'));
   }
   function frame(now){
-    if(!active)return;raf=requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000||0);last=now;movement();round.step(dt);const s=round.snapshot();processEvents();
+    if(!active)return;raf=requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000||0);last=now;movement();round.step(dt);const s=round.snapshot();processEvents();renderUseProgress(s);
     if(s.status==='playing'&&!s.paused&&s.holding&&now-lastEffect>780){audio.effect?.(s.selected);lastEffect=now;}
     const t=s.teacher;if(s.status==='playing'&&!s.paused&&lastTeacher&&Math.hypot(t.x-lastTeacher.x,t.z-lastTeacher.z)>.001&&now-lastFootstep>520){audio.effect?.('step');lastFootstep=now;}lastTeacher={x:t.x,z:t.z};
     if(now-lastHud>80){lastHud=now;render(s);}else scene.setGameplay(s);
     if(s.status!=='playing'&&!finished){finished=true;render(s);finish(s);}
   }
-  function start(){
-    cancelAnimationFrame(raf);if(pauseDialog.open)pauseDialog.close();if(resultDialog.open)resultDialog.close();release();keys.clear();round.reset(Date.now()>>>0);round.start();yaw=0;pitch=0;round.setLook(yaw,pitch);
+  function start(nextOptions){
+    if(nextOptions?.role)options={role:nextOptions.role==='teacher'?'teacher':'student',map:nextOptions.map||'classroom'};
+    if(!providedRound)round=options.role==='teacher'?new TeacherRound({map:options.map}):new ClassroomRound({map:options.map});
+    cancelAnimationFrame(raf);if(pauseDialog.open)pauseDialog.close();if(resultDialog.open)resultDialog.close();release();keys.clear();round.reset(Date.now()>>>0);round.start();yaw=round.player.yaw||0;pitch=round.player.pitch||0;round.setLook(yaw,pitch);
     active=true;finished=false;lastFriends='';lastTeacher=null;document.body.classList.add('playing');ui.hidden=false;$('#menu').inert=true;$('#menu').setAttribute('aria-hidden','true');
-    $('#speech').hidden=true;$('#round-feedback').classList.remove('pop');$('#control-hint').classList.remove('dismissed');clearTimeout(hintTimer);hintTimer=setTimeout(()=>$('#control-hint').classList.add('dismissed'),9000);
+    $('#speech').hidden=true;$('#round-feedback').classList.remove('pop');
+    $('#student-controls').hidden=round.snapshot().role==='teacher';$('#teacher-controls').hidden=round.snapshot().role!=='teacher';
     audio.gameplay=true;audio.apply();audio.start();fx('bell');render(round.snapshot());last=performance.now();raf=requestAnimationFrame(frame);canvas.focus({preventScroll:true});lock();
   }
   function exit(){
@@ -83,26 +98,23 @@ export function createClassroomGame({scene,audio,onExit}){
   }
   function pause(value=true){if(!active||finished)return;release();stopMovement();round.pause(value);if(value){unlock();if(!pauseDialog.open)pauseDialog.showModal();}else{if(pauseDialog.open)pauseDialog.close();lock();}render(round.snapshot());}
   const canInput=()=>active&&!finished&&!round.snapshot().paused;
-  function choose(action){if(!canInput())return;release();round.selectAction(action);audio.click();render(round.snapshot());}
-  function hold(id,value){if(!canInput())return;if(value){inputs.add(id);round.hold(true);}else{inputs.delete(id);round.hold(inputs.size>0);}render(round.snapshot());}
-  function interact(){if(!canInput())return;release();round.interact();render(round.snapshot());}
-  function smoke(){if(!canInput())return;release();round.useItem();processEvents();render(round.snapshot());}
-  buttons.forEach(b=>b.addEventListener('click',()=>choose(b.dataset.action)));
-  for(const target of [canvas,$('#hold-action')]){
-    target.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();target.setPointerCapture?.(e.pointerId);if(target===canvas&&!document.pointerLockElement)lock();hold('pointer',true);});
-    target.addEventListener('pointerup',e=>{if(e.button===0)hold('pointer',false);});target.addEventListener('pointercancel',release);target.addEventListener('lostpointercapture',()=>hold('pointer',false));
-  }
+  function hold(id,value){if(!canInput())return;if(value){if(round.hold(true))inputs.add(id);}else{const wasHeld=inputs.delete(id);if(wasHeld&&!inputs.size)round.releaseUse();}render(round.snapshot());}
+  function take(){if(!canInput())return;lock();if(round.snapshot().role==='teacher'){round.redCard();processEvents();render(round.snapshot());return;}const target=scene.getInteraction?.();if(target?.kind==='computer'){if(round.startComputer()){audio.click();render(round.snapshot());}return;}if(target?.kind==='book'){if(round.toggleBook()){audio.click();render(round.snapshot());}return;}if(target?.kind==='desk'){toggleDrawer();return;}if(target?.kind==='item'&&round.takeSlot(target.slot)){audio.click();render(round.snapshot());}}
+  function putBack(){if(!canInput())return;release();if(round.stopComputer()||round.returnItem()){lock();audio.click();render(round.snapshot());}}
+  function interact(){if(!canInput())return;round.interact();if(!round.snapshot().player.seated)lock();render(round.snapshot());}
+  function toggleDrawer(){if(!canInput()||!round.toggleDrawer())return;release();lock();audio.click();render(round.snapshot());}
+  const heldInput=bindHeldUseInput({canvas,document,window,canInput,onHold:value=>hold('pointer',value),onRelease:release,onLock:lock});
   canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('pointerdown',e=>{if(e.button===2&&canInput()){release();dragLook=true;dragX=e.clientX;dragY=e.clientY;}});window.addEventListener('pointerup',e=>{if(e.button===2)dragLook=false;});
-  document.addEventListener('mousemove',e=>{if(!canInput()||(!dragLook&&document.pointerLockElement!==canvas))return;const locked=document.pointerLockElement===canvas,dx=locked?e.movementX:e.clientX-dragX,dy=locked?e.movementY:e.clientY-dragY;dragX=e.clientX;dragY=e.clientY;yaw-=dx*.0024;pitch=clamp(pitch+dy*.0021,-1.15,.88);round.setLook(yaw,pitch);});
-  document.addEventListener('pointerlockchange',()=>{document.body.classList.toggle('mouse-locked',document.pointerLockElement===canvas);if(!document.pointerLockElement)release();});
-  $('#ask-help').addEventListener('click',smoke);$('#interact-seat').addEventListener('click',interact);$('#pause-game').addEventListener('click',()=>pause());$('#resume-game').addEventListener('click',()=>pause(false));
+  document.addEventListener('mousemove',e=>{if(!canInput()||(!dragLook&&document.pointerLockElement!==canvas))return;const locked=document.pointerLockElement===canvas,dx=locked?e.movementX:e.clientX-dragX,dy=locked?e.movementY:e.clientY-dragY;dragX=e.clientX;dragY=e.clientY;yaw-=dx*.0024;pitch=clamp(pitch+dy*.0021,-1.15,1.3);round.setLook(yaw,pitch);});
+  document.addEventListener('pointerlockchange',()=>{document.body.classList.toggle('mouse-locked',document.pointerLockElement===canvas);});
+  $('#pause-game').addEventListener('click',()=>pause());$('#resume-game').addEventListener('click',()=>pause(false));
   $('#restart-game').addEventListener('click',start);$('#retry-game').addEventListener('click',start);$('#leave-game').addEventListener('click',exit);$('#result-menu').addEventListener('click',exit);
   pauseDialog.addEventListener('cancel',e=>{e.preventDefault();pause(false);});resultDialog.addEventListener('cancel',e=>{e.preventDefault();exit();});
   document.addEventListener('keydown',e=>{
     if(!active||pauseDialog.open||resultDialog.open)return;if(e.code==='Escape'){e.preventDefault();pause();return;}
-    if(['Space','Digit1','Digit2','Digit3','KeyQ','KeyE','KeyW','KeyA','KeyS','KeyD','KeyC','ControlLeft'].includes(e.code)){e.preventDefault();keys.add(e.code);if(e.repeat)return;if(e.code==='Space')hold('keyboard',true);else if(e.code==='KeyQ')smoke();else if(e.code==='KeyE')interact();else if(e.code.startsWith('Digit'))choose(['snack','note','phone'][+e.code.slice(-1)-1]);}
+    if(['Space','KeyQ','KeyE','KeyW','KeyA','KeyS','KeyD','KeyC','ControlLeft'].includes(e.code)){e.preventDefault();keys.add(e.code);if(e.repeat)return;if(e.code==='KeyE')take();else if(e.code==='KeyQ')putBack();else if(e.code==='Space')interact();}
   });
-  document.addEventListener('keyup',e=>{keys.delete(e.code);if(e.code==='Space'&&active){e.preventDefault();hold('keyboard',false);}});
+  document.addEventListener('keyup',e=>{keys.delete(e.code);});
   window.addEventListener('blur',()=>{if(active&&!finished)pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&active&&!finished)pause();});
   return{start,exit,get active(){return active;},dispose:exit};
 }

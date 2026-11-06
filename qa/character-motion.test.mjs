@@ -33,6 +33,15 @@ function deskHands(actor){
     assert.ok(hand,`Missing ${side} desk hand.`);return hand;
   });
 }
+
+test('first-person hands have three fingers and one thumb each',()=>{
+  const actor=createDeskHands();
+  for(const hand of deskHands(actor)){
+    const digits=[];hand.traverse(o=>{if(o.name==='finger'||o.name==='thumb')digits.push(o.name);});
+    assert.equal(digits.filter(n=>n==='finger').length,3);
+    assert.equal(digits.filter(n=>n==='thumb').length,1);
+  }
+});
 function pose(hand){return{p:hand.position.clone(),q:hand.quaternion.clone()};}
 function worldPose(hand){return{p:hand.getWorldPosition(new T.Vector3()),q:hand.getWorldQuaternion(new T.Quaternion())};}
 function assertFiniteModel(root,label){
@@ -158,6 +167,22 @@ test('changing a held item retracts the old item before the new one appears',()=
     current.forEach((p,j)=>assert.ok(p.p.distanceTo(previous[j].p)<.12,`Hand ${j} snapped during the item change.`));previous=current;
   }
   assert.ok(sawPhone,'Requested phone never became available after retraction.');
+});
+
+test('eating bobs one held food vertically without a separate bite or mouth reach',()=>{
+  const actor=createDeskHands(),hands=deskHands(actor),food=actor.group.getObjectByName('snack-packet');
+  assert.equal(actor.group.getObjectByName('single-crisp'),undefined);
+  let time=0;for(let i=0;i<120;i++)actor.update(time+=DT,{holding:true,action:'snack'});
+  const positions=[],resting=[],scales=[];
+  for(let i=0;i<150;i++){
+    actor.update(time+=DT,{holding:true,action:'snack'});
+    assert.ok(food.visible);positions.push(food.position.clone());resting.push(hands[1].position.clone());scales.push(food.scale.clone());
+  }
+  const range=axis=>Math.max(...positions.map(p=>p[axis]))-Math.min(...positions.map(p=>p[axis]));
+  assert.ok(range('y')>.05&&range('y')<.09,'Food must visibly move up and down without reaching the face.');
+  assert.ok(range('x')<.001&&range('z')<.001,'Food moved sideways or towards the mouth.');
+  assert.ok(resting.every(p=>p.distanceTo(resting[0])<.001),'The empty hand should rest, not mime carrying a bite.');
+  assert.ok(scales.every(s=>s.distanceTo(new T.Vector3(1,1,1))<1e-9),'Eating must not scale the held food.');
 });
 
 test('seated, standing and teacher geometry remain finite through representative actions',()=>{
