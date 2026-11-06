@@ -5,7 +5,7 @@
   <meta name="theme-color" content="#f1eedf"><meta name="description" content="下课别走：阳光教室里的校园捣蛋游戏。观察老师，和四位 AI 同学配合，偷偷完成课堂小动作。">
   <title>下课别走 · 校园派对</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232d786c'/%3E%3Cpath d='M16 18h32v25H16z' fill='%23fff6dd'/%3E%3Cpath d='M25 49h14M32 43v6M24 27h16M24 34h10' stroke='%232d786c' stroke-width='4'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=10">
+  <link rel="stylesheet" href="./style.css?v=classroom-25">
 
 </head>
 <body>
@@ -21,6 +21,10 @@
 <symbol id="i-expand" viewBox="0 0 24 24"><path d="M3 9V3h6m6 0h6v6M3 15v6h6m6 0h6v-6"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
 <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
+<symbol id="i-item-snack" viewBox="0 0 48 48"><path d="M12 8h24l-3 8 3 24H12l3-24Z" fill="#e6ad45"/><path d="M14 17h20v17H14" fill="#df6350"/><path d="M19 22h10M19 28h6" stroke="#fff5dc"/></symbol>
+<symbol id="i-item-note" viewBox="0 0 48 48"><path d="m8 11 32 7-15 7-7 14-10-28Z" fill="#fff9e8"/><path d="m8 11 17 14 15-7M25 25l-7 14"/></symbol>
+<symbol id="i-item-phone" viewBox="0 0 48 48"><rect x="13" y="5" width="22" height="38" rx="4" fill="#3f505e"/><path d="M17 11h14v24H17Z" fill="#90c9ce"/><path d="M22 39h4" stroke="#fff"/></symbol>
+<symbol id="i-item-empty" viewBox="0 0 48 48"><path d="M11 15h26v22H11Z" opacity=".35"/><path d="M20 27h8" opacity=".5"/></symbol>
 </defs></svg>
 
 <main id="game">
@@ -41,35 +45,32 @@
       </div>
     </section>
 
-    <footer class="footer"><span>课堂试玩 <i>·</i> 0.5</span></footer>
+    <footer class="footer"><span>本地 AI 试玩 <i>·</i> 0.6</span></footer>
   </div>
 
   <section id="play-ui" hidden aria-label="课堂游戏">
     <header class="play-top"><div class="round-clock"><svg><use href="#i-person"/></svg><strong id="round-clock">5 / 5</strong></div><div class="round-goal"><div><span>捣乱值</span><strong id="round-score">0</strong><small id="round-target">/ 100</small></div><div class="goal-track"><i id="score-fill"></i></div></div><button class="icon-button" id="pause-game" aria-label="暂停游戏"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button></header>
-    <div class="teacher-watch"><div id="teacher-state">老师在写板书</div><div id="notice-meter" role="progressbar" aria-label="老师的怀疑程度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="notice-fill"></i></div><div id="strikes"><span>被发现</span><b id="strike-count">0 / 3</b></div></div>
-    <i id="crosshair" hidden aria-hidden="true"></i><div id="classmates" aria-label="同学状态"></div><div id="round-feedback" aria-live="polite"></div>
+    <i id="crosshair" hidden aria-hidden="true"></i>
+    <div id="use-progress" role="progressbar" aria-label="物品使用进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="use-ring-shadow" cx="24" cy="24" r="19"/><circle class="use-ring-track" cx="24" cy="24" r="19"/><circle id="use-progress-fill" cx="24" cy="24" r="19" pathLength="100"/></svg></div><div id="round-feedback" aria-live="polite"></div>
     <div id="speech" hidden role="status"><b id="speech-name"></b><span id="speech-text"></span></div>
-    <footer class="play-bottom"><div id="control-hint">1 / 2 / 3 选物品 · 左键或空格使用 · E 起身 · WASD 移动 · C 蹲下</div><div class="action-dock">
-      <button class="action-card" data-action="snack" aria-pressed="true"><kbd>1</kbd><svg viewBox="0 0 48 48"><path d="M12 8h24l-3 8 3 24H12l3-24Z" fill="#e6ad45"/><path d="M14 17h20v17H14" fill="#df6350"/><path d="M19 22h10M19 28h6" stroke="#fff5dc"/></svg><b>偷吃</b><i></i></button>
-      <button class="action-card" data-action="note" aria-pressed="false"><kbd>2</kbd><svg viewBox="0 0 48 48"><path d="m8 11 32 7-15 7-7 14-10-28Z" fill="#fff9e8"/><path d="m8 11 17 14 15-7M25 25l-7 14"/></svg><b>传纸条</b><i></i></button>
-      <button class="action-card" data-action="phone" aria-pressed="false"><kbd>3</kbd><svg viewBox="0 0 48 48"><rect x="13" y="5" width="22" height="38" rx="4" fill="#3f505e"/><path d="M17 11h14v24H17Z" fill="#90c9ce"/><path d="M22 39h4" stroke="#fff"/></svg><b>玩手机</b><i></i></button>
-      <button id="hold-action" class="primary-button">按住使用</button><button id="interact-seat" class="help-button"><small>E</small><b id="seat-label">起身</b></button><button id="ask-help" class="help-button"><small id="help-cooldown">Q · 1</small><b>烟雾</b></button></div><div id="active-action">偷吃零食</div></footer>
+    <footer class="play-bottom"><div id="interaction-prompt"></div></footer>
+    <div id="drawer-hint"></div>
   </section>
-  <dialog id="pause-dialog" class="sheet round-sheet" aria-labelledby="pause-title"><h2 id="pause-title">歇一会儿</h2><button class="primary-button" id="resume-game">继续上课</button><button class="paper-button" id="restart-game">重新开始</button><button class="paper-button" id="leave-game">返回主菜单</button></dialog>
+  <dialog id="pause-dialog" class="sheet round-sheet" aria-labelledby="pause-title"><h2 id="pause-title">暂停</h2><details class="controls-guide"><summary>操作</summary><p id="student-controls">中心瞄准 · E 开桌 / 拿取 / 竖放书本<br>Q 放回 · 长按左键使用<br>烟雾弹：点击抛出 / 长按蓄力，松手投掷<br>空格起身 / 坐下 · WASD 移动<br>C 蹲下 · ESC 暂停<br>机房：E 打开电脑游戏 · Q 切回课件</p><p id="teacher-controls" hidden>WASD 移动 · 鼠标转向<br>左键投粉笔 · 命中后靠近，E 出示红牌<br>C 蹲下 · ESC 暂停</p></details><button class="primary-button" id="resume-game">继续上课</button><button class="paper-button" id="restart-game">重新开始</button><button class="paper-button" id="leave-game">返回主菜单</button></dialog>
   <dialog id="result-dialog" class="sheet round-sheet" aria-labelledby="result-title"><span class="result-bell"><svg><use href="#i-bell"/></svg></span><h2 id="result-title">下课啦！</h2><div class="result-number"><strong id="result-score">0</strong><span id="result-goal">捣乱值</span></div><p id="result-detail"></p><p id="result-actions"></p><button class="primary-button" id="retry-game">再上一节</button><button class="paper-button" id="result-menu">返回主菜单</button></dialog>
 
   <div id="loader" class="loader"><div class="loader-card"><svg class="loader-bell"><use href="#i-bell"/></svg><p>下课别走</p><span id="load-status">正在打开教室</span><div class="loading-track"><span id="loading-fill"></span></div></div><button id="skip-load" class="paper-button" hidden>查看菜单</button></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <dialog id="mode-dialog" class="sheet mode-sheet" aria-labelledby="mode-title"><div class="sheet-top"><div><h2 id="mode-title">选择玩法</h2></div><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
-    <div class="mode-feature pending-art"><svg><use href="#i-book"/></svg><div class="feature-bottom"><h3>课堂捣蛋</h3><span>藏好东西，别露馅</span></div></div>
-    <div class="mode-copy"><span class="preview-label">本地试玩 · 学生视角 · AI 老师与同学</span></div>
-    <div class="planned-modes"><div><svg><use href="#i-lock"/></svg><span>课间追逐<small>待定玩法</small></span></div><div><svg><use href="#i-lock"/></svg><span>校园寻物<small>待定玩法</small></span></div></div>
-    <button class="primary-button compact" id="select-classroom"><span>选择课堂捣蛋</span><svg><use href="#i-check"/></svg></button>
+    <fieldset class="round-options"><legend>你的身份</legend><div class="segmented" role="group" aria-label="身份"><button data-role="student" aria-pressed="true">学生</button><button data-role="teacher" aria-pressed="false">老师</button></div></fieldset>
+    <fieldset class="round-options"><legend>课堂</legend><div class="map-options" role="group" aria-label="课堂场景"><button data-map="classroom" aria-pressed="true"><span class="map-sketch day"></span><b>白天教室</b></button><button data-map="night" aria-pressed="false"><span class="map-sketch night"></span><b>晚自习</b></button><button data-map="computer" aria-pressed="false"><span class="map-sketch computer"></span><b>机房</b></button></div></fieldset>
+    <p class="mode-copy"><span class="preview-label">本地 AI 试玩</span></p>
+    <button class="primary-button compact" id="select-classroom"><span>确定</span><svg><use href="#i-check"/></svg></button>
   </dialog>
 
   <dialog id="character-dialog" class="sheet character-sheet" aria-labelledby="character-title"><div class="sheet-top"><div><h2 id="character-title">选择同学</h2></div><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
-    <div class="character-options" role="group" aria-label="选择同学"><button class="character-option" data-character="boy" aria-pressed="true"><span><strong>男同学</strong><svg><use href="#i-check"/></svg></span></button><button class="character-option" data-character="girl" aria-pressed="false"><span><strong>女同学</strong><svg><use href="#i-check"/></svg></span></button></div>
+    <div class="character-options" role="group" aria-label="选择同学"><button class="character-option" data-character="boy" aria-pressed="true"><span><strong>男同学</strong><svg><use href="#i-check"/></svg></span></button><button class="character-option" data-character="girl" aria-pressed="false"><span><strong>女同学</strong><svg><use href="#i-check"/></svg></span></button><button class="character-option" data-character="glasses" aria-pressed="false"><span><strong>眼镜同学</strong><svg><use href="#i-check"/></svg></span></button></div>
     <button class="primary-button compact" id="confirm-character"><span>确定</span><svg><use href="#i-check"/></svg></button>
   </dialog>
 
@@ -80,5 +81,5 @@
     </div><button class="primary-button compact close" id="settings-done"><span>完成</span><svg><use href="#i-check"/></svg></button>
   </dialog>
 </main>
-<script type="module" src="./app.js?v=10"></script>
+<script type="module" src="./app.js?v=classroom-25"></script>
 </body></html>

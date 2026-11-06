@@ -1,0 +1,102 @@
+import {ClassroomRound} from './classroom-rules.js?v=classroom-25';
+import {ROOM,SEATS,BOARD} from './classroom-layout.js?v=classroom-25';
+
+// Segment tests share real desk/book/monitor positions with the renderer.
+// Chalk speed, cooldown and stagger are local tuning, not measured original values.
+export function segmentBox(a,b,box){
+  let lo=0,hi=1;
+  for(const axis of ['x','y','z']){
+    const d=b[axis]-a[axis],min=box['min'+axis.toUpperCase()],max=box['max'+axis.toUpperCase()];
+    if(Math.abs(d)<1e-9){if(a[axis]<min||a[axis]>max)return null;continue;}
+    const u=(min-a[axis])/d,v=(max-a[axis])/d;
+    lo=Math.max(lo,Math.min(u,v));hi=Math.min(hi,Math.max(u,v));if(lo>hi)return null;
+  }
+  return lo;
+}
+export function chalkHit(a,b,students,books,map){
+  let nearest=null;
+  const test=(box,kind,id)=>{const t=segmentBox(a,b,box);if(t!==null&&(!nearest||t<nearest.t))nearest={t,kind,id};};
+  for(const s of SEATS){
+    test({minX:s.x-.61,maxX:s.x+.61,minY:.58,maxY:.865,minZ:s.deskZ-.4,maxZ:s.deskZ+.4},'desk',s.id);
+    if(map==='computer')test({minX:s.x-.33,maxX:s.x+.33,minY:1.03,maxY:1.43,minZ:s.deskZ-.06,maxZ:s.deskZ+.05},'desk',s.id);
+    else if((books[s.id]?.amount??0)>.5)test({minX:s.x-.34,maxX:s.x+.34,minY:.88,maxY:1.35,minZ:s.deskZ-.30,maxZ:s.deskZ-.26},'desk',s.id);
+  }
+  for(const s of students){
+    if(s.caught)continue;
+    test({minX:s.x-.24,maxX:s.x+.24,minY:s.seated?.82:.65,maxY:s.seated?1.64:1.88,minZ:s.z-.23,maxZ:s.z+.23},'student',s.id);
+  }
+  return nearest;
+}
+
+export class TeacherRound extends ClassroomRound{
+  reset(seed){
+    super.reset(seed);
+    const pool=this.students.slice();
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(this._random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    this._team=new Set(pool.slice(0,5).map(s=>s.id));
+    for(const s of this.students){
+      s.isPlayer=false;s.isTeammate=this._team.has(s.id);s.name='同学';
+      s._profile=s.isTeammate?{caution:this._range(.3,.85),helpful:.5,distraction:this._range(0,.7)}:null;
+      s._slots=s.isTeammate?Array.from({length:3},(_,id)=>({id,action:this._drawItem(),readyAt:0,progress:0})):[];
+      s._decisionAt=this._range(1,6);s._chalkUntil=0;
+    }
+    this.player={id:-1,x:BOARD.x,z:BOARD.z,yaw:Math.PI,pitch:.05,seated:false,crouched:false,caught:false,seatId:null,holding:false,
+      _slots:[],_selectedSlot:0,_drawnSlot:null,_drawerOpen:false};
+    this.selected='chalk';this.chalks=[];this._chalkId=0;this._nextThrow=0;this._lastThrow=-100;this._cardUntil=0;this.wrongCards=0;
+    Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw,phase:'watching',intent:'player',warning:false});
+    return this.snapshot();
+  }
+  snapshot(){
+    const s=super.snapshot();
+    if(!this.chalks)return s; // Base reset calls snapshot before teacher initialization.
+    s.role='teacher';const aim=this.aimedStudent();s.teacherAim=aim?{id:aim.id,cardReady:Math.hypot(aim.x-this.player.x,aim.z-this.player.z)<2.4&&this.elapsed<aim._chalkUntil}:null;s.chalks=this.chalks.map(c=>({...c}));s.throwAge=this.elapsed-this._lastThrow;
+    s.cardVisible=this.elapsed<this._cardUntil;s.wrongCards=this.wrongCards;
+    s.students=s.students.map(p=>({...p,chalked:this.elapsed<(this.students[p.id]._chalkUntil||0)}));
+    return s;
+  }
+  hold(value){if(!value){this.holding=false;return false;}return this.throwChalk();}
+  releaseUse(){this.holding=false;return false;}
+  toggleDrawer(){return false;} toggleBook(){return false;} takeSlot(){return false;}
+  returnItem(){return false;} interact(){return false;} startComputer(){return false;}
+  _perceive(){} // The human observes. No evidence meter, memory-based aim or auto-capture.
+  _hear(){} // Sound cues stay spatial; they must not reveal hidden identity to the UI.
+  throwChalk(){
+    if(!this._inputAllowed()||this.elapsed<this._nextThrow||this.elapsed<this._cardUntil)return false;
+    const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
+    this.chalks.push({id:this._chalkId++,x:p.x,y:p.crouched?1.02:1.65,z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
+    this._lastThrow=this.elapsed;this._nextThrow=this.elapsed+.72;this._events.push({type:'chalk-throw'});return true;
+  }
+  aimedStudent(range=9){
+    const p=this.player,a={x:p.x,y:p.crouched?1.02:1.65,z:p.z},cp=Math.cos(p.pitch);
+    const b={x:a.x+Math.sin(p.yaw)*cp*range,y:a.y-Math.sin(p.pitch)*range,z:a.z+Math.cos(p.yaw)*cp*range};
+    const hit=chalkHit(a,b,this.students,this.books,this.map);
+    if(hit?.kind!=='student')return null;
+    // Opaque smoke masks the intervening part of the ray, not the whole room.
+    const end={x:a.x+(b.x-a.x)*hit.t,y:a.y+(b.y-a.y)*hit.t,z:a.z+(b.z-a.z)*hit.t};
+    for(const s of this.smokes){if(s.density<.3)continue;const dx=end.x-a.x,dz=end.z-a.z,len=dx*dx+dz*dz,t=len?Math.max(0,Math.min(1,((s.x-a.x)*dx+(s.z-a.z)*dz)/len)):0;if(Math.hypot(a.x+dx*t-s.x,a.z+dz*t-s.z)<s.radius)return null;}
+    return this.students[hit.id];
+  }
+  redCard(){
+    if(!this._inputAllowed()||this.elapsed<this._cardUntil)return false;
+    const s=this.aimedStudent(2.4);if(!s||this.elapsed>=s._chalkUntil)return false;
+    this._cardUntil=this.elapsed+.85;
+    if(this._team.has(s.id)){this._capture(s);return true;}
+    s._chalkUntil=0;this.wrongCards++;this._events.push({type:'wrong-card',studentId:s.id});return false;
+  }
+  _advanceTeacher(dt){
+    const p=this.player;Object.assign(this.teacher,{x:p.x,z:p.z,yaw:p.yaw,phase:'watching',intent:'player',warning:false,looking:true,castProgress:0});
+    for(const c of this.chalks){
+      const next={x:c.x+c.vx*dt,y:c.y+c.vy*dt,z:c.z+c.vz*dt};c.age+=dt;c.vy-=1.6*dt;
+      const hit=chalkHit(c,next,this.students,this.books,this.map);
+      if(hit){
+        c.x+=(next.x-c.x)*hit.t;c.y+=(next.y-c.y)*hit.t;c.z+=(next.z-c.z)*hit.t;c.dead=true;
+        if(hit.kind==='student'){
+          const s=this.students[hit.id];s._chalkUntil=this.elapsed+5;s.holding=false;s._drawnSlot=null;s._computerActive=false;s._restUntil=s._chalkUntil;s.mood='thinking';
+        }
+        this._events.push({type:'chalk-hit',kind:hit.kind,x:c.x,y:c.y,z:c.z});
+      }else Object.assign(c,next);
+      if(c.age>1.3||c.y<.02||c.x<ROOM.minX||c.x>ROOM.maxX||c.z<ROOM.minZ||c.z>ROOM.maxZ)c.dead=true;
+    }
+    this.chalks=this.chalks.filter(c=>!c.dead);
+  }
+}

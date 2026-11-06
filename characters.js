@@ -409,23 +409,47 @@ function shoeGeometry(rings){
 const shoeProfile=[[-.075,0,.062,0],[-.066,.052,.065,.033],[-.032,.064,.074,.042],[.025,.074,.073,.043],[.092,.077,.055,.028],[.143,.057,.043,.021],[.171,0,.038,0]];
 const trainerUpper=shoeGeometry(shoeProfile),trainerSole=shoeGeometry(shoeProfile.map(([z,x])=>[z,x*1.045,.019,x>0?.014:0]));
 const trainerToe=shoeGeometry(shoeProfile.slice(4).map(([z,x,y,r])=>[z,x*1.009,y+.002,r*1.01]));
-const nailMat=material('nail','#f5cfaf');
-function makeHand(side,pose='open'){
-  const h=new THREE.Group();
-  oval(h,skin,[0,-.005,0],[.026,.028,.021]);
-  oval(h,skin,[0,.026,0],[.034,.038,.021]);
-  for(let i=0;i<4;i++){
-    const x=(-1.5+i)*.0165,len=[.037,.043,.040,.032][i],r=[.008,.009,.0086,.0075][i],nearThumb=side>0?i:3-i;
-    const curl=pose==='grip'?.9:pose==='write'?[.50,.72,.95,1.0][nearThumb]:pose==='point'?(nearThumb===0?.03:.9):.09;
-    const start=[x,.051,0],middle=[x,.051+len*.58*Math.cos(curl),len*.58*Math.sin(curl)],end=[x,.051+len*(.58*Math.cos(curl)+.42*Math.cos(curl*2.0)),len*(.58*Math.sin(curl)+.42*Math.sin(curl*2.0))];
-    if(pose==='write'&&nearThumb===0){middle[1]=.068;middle[2]=.015;end[0]=-side*.020;end[1]=.063;end[2]=.029;}
-    line(h,skin,[start,middle,end],r);oval(h,skin,end,[r,r,r]);
-    oval(h,nailMat,[end[0],end[1]+Math.sin(curl*2)*.003,end[2]-.006],[r*.56,.005,.0015]);
-    line(h,skinShade,[[x-r*.58,.064,.020],[x+r*.58,.064,.020]],.0009);
+// Small classroom hands use one closed palm profile and tapered digits. The
+// fingertip is part of the digit surface, not a ball glued onto a tube.
+const studentPalmGeometry=profileGeometry([
+  [-.027,0,0],[-.024,.017,.016],[-.015,.024,.020],[0,.028,.020],
+  [.018,.033,.021],[.038,.034,.019],[.050,.030,.016],[.058,.023,.009],[.061,0,0]
+],24,.9);
+function handDigit(parent,points,radius){
+  const rows=18,cols=12,positions=[],indices=[];
+  const path=new THREE.CatmullRomCurve3(points.map(p=>point(...p)),false,'centripetal');
+  const center=point(0,0,0),tangent=point(0,0,0),across=point(1,0,0),normal=point(0,0,0),binormal=point(0,0,0);
+  for(let row=0;row<=rows;row++){
+    const t=THREE.MathUtils.clamp((row-1)/(rows-2),0,1);
+    path.getPoint(t,center);path.getTangent(t,tangent);
+    normal.copy(across).addScaledVector(tangent,-across.dot(tangent)).normalize();
+    binormal.crossVectors(tangent,normal).normalize();
+    const cap=t>.76?Math.sqrt(Math.max(0,1-((t-.76)/.24)**2)):1;
+    const r=radius*(1-.18*t)*cap*(row===0||row===rows?0:1);
+    for(let col=0;col<=cols;col++){
+      const angle=col/cols*Math.PI*2;
+      positions.push(center.x+r*(normal.x*Math.cos(angle)+binormal.x*Math.sin(angle)),center.y+r*(normal.y*Math.cos(angle)+binormal.y*Math.sin(angle)),center.z+r*(normal.z*Math.cos(angle)+binormal.z*Math.sin(angle)));
+    }
   }
-  const thumb=pose==='open'?[-side*.044,.039,.007]:pose==='write'?[-side*.021,.055,.028]:[-side*.017,.049,.034];
-  line(h,skin,[[-side*.025,.005,.002],[-side*.040,.025,.012],thumb],.0115);
-  oval(h,skin,thumb,[.0115,.0115,.0105]);
+  for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+    const a=row*(cols+1)+col,b=a+cols+1;indices.push(a,a+1,b,a+1,b+1,b);
+  }
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();closeRingNormals(geometry,cols,rows+1);
+  return mesh(parent,geometry,skin);
+}
+function makeHand(side,pose='open'){
+  const h=new THREE.Group();mesh(h,studentPalmGeometry,skin);
+  for(let i=0;i<3;i++){
+    // Three fingers and one separate thumb, matching the new model sheets.
+    const nearThumb=side>0?i:2-i,x=(-1+i)*.022;
+    const len=[.037,.043,.032][nearThumb],r=[.010,.011,.0095][nearThumb];
+    const curl=pose==='grip'?.9:pose==='write'?[.50,.72,1.0][nearThumb]:pose==='point'?(nearThumb===0?.03:.9):.09;
+    const start=[x,.045,0],middle=[x,.051+len*.58*Math.cos(curl),len*.58*Math.sin(curl)],end=[x,.051+len*(.58*Math.cos(curl)+.42*Math.cos(curl*2.0)),len*(.58*Math.sin(curl)+.42*Math.sin(curl*2.0))];
+    if(pose==='write'&&nearThumb===0){middle[1]=.073;middle[2]=.017;end[0]=-side*.020;end[1]=.069;end[2]=.029;}
+    handDigit(h,[start,middle,end],r);
+  }
+  const thumb=pose==='open'?[-side*.045,.040,.008]:pose==='write'?[-side*.021,.055,.028]:[-side*.017,.049,.034];
+  handDigit(h,[[-side*.022,.001,.002],[-side*.035,.021,.012],thumb],.0125);
   bakeStatic(h);return h;
 }
 function articulatedHand(side){
@@ -434,6 +458,7 @@ function articulatedHand(side){
   let lastCurl=-1,lastWriting=-1,lastPointing=-1;
   return {group:open,set(curl,write,pointingWeight){
     if(Math.abs(curl-lastCurl)+Math.abs(write-lastWriting)+Math.abs(pointingWeight-lastPointing)<.0001)return;lastCurl=curl;lastWriting=write;lastPointing=pointingWeight;
+    const total=curl+write+pointingWeight;if(total>1){curl/=total;write/=total;pointingWeight/=total;}
     const base=1-curl-write-pointingWeight;
     for(const part of targets){
       const p=part.object.geometry.attributes.position,n=part.object.geometry.attributes.normal,gp=part.grip.attributes.position.array,wp=part.writing.attributes.position.array,pp=part.pointing.attributes.position.array,gn=part.grip.attributes.normal.array,wn=part.writing.attributes.normal.array,pn=part.pointing.attributes.normal.array;
@@ -561,9 +586,12 @@ export function createStudent(options={}) {
         elbows[0].set(-.27,.865,.17);wrists[0].set(-.075,.911,.32);
         elbows[1].set(.28,.865,.16);wrists[1].set(.105+Math.sin(time*3.2)*.004,.951,.335+Math.sin(time*2.7)*.006);
       }else if(mood==='phone'){
-        wrists[0].set(-.075,1.02,.31);wrists[1].set(.040,1.055+Math.sin(time*3.2)*.002,.29);head.rotation.x=.13;
+        const tap=Math.max(0,Math.sin(time*3.2))*.004;
+        wrists[0].set(-.075,1.02,.31);wrists[1].set(.0272,1.0818+tap*.28,.2705-tap*.96);head.rotation.x=.13;
       }else if(mood==='note'){
-        wrists[0].set(-.092,1.025,.34);wrists[1].set(.080,1.035,.34);head.rotation.x=.10;
+        wrists[0].set(-.022,1.034,.337);wrists[1].set(.080,1.035,.34);head.rotation.x=.10;
+      }else if(mood==='snack'){
+        wrists[1].set(.10,1.07+.034*Math.sin(time*Math.PI*2/1.05),.30);
       }else if(mood==='resting')wrists[1].set(.17,.894+Math.sin(time*.7)*.002,.33);
       else if(mood==='thinking')wrists[1].set(.17,.895,.33);
       else if(mood==='chat') {elbows[1].set(.30,.86,.14);wrists[1].set(.17,.895+lift*.004,.33);}

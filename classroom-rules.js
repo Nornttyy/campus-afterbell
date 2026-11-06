@@ -1,13 +1,16 @@
-import { ROOM, SEATS, PLAYER_SEAT, FRIEND_SEATS, AISLES, BOARD, DETENTION, moveInRoom } from './classroom-layout.js';
+import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from './smoke-physics.js?v=classroom-25';
+import { ROOM, SEATS, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, moveInRoom } from './classroom-layout.js?v=classroom-25';
 
 /** Local prototype tuning, NOT verified original-game balance values. */
-export const DEVELOPMENT_TUNING = Object.freeze({ target:100, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:1.8, crouchSpeed:.85, teammateRestMin:3, teammateRestMax:7 });
+export const DEVELOPMENT_TUNING = Object.freeze({ target:100, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:1.8, crouchSpeed:.85, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
 export const CLASSROOM_ACTIONS = Object.freeze({
-  snack:Object.freeze({duration:4,points:2,risk:1,noise:.85,label:'偷吃零食'}),
-  note:Object.freeze({duration:5,points:2.5,risk:.82,noise:.45,label:'传纸条'}),
-  phone:Object.freeze({duration:6.5,points:3.5,risk:1.3,noise:.12,label:'玩手机'}),
+  snack:Object.freeze({duration:3,points:2,risk:1,noise:.85,label:'偷吃零食'}),
+  note:Object.freeze({duration:3,points:2.5,risk:.82,noise:.45,label:'传纸条'}),
+  phone:Object.freeze({duration:3,points:3.5,risk:1.3,noise:.12,label:'玩手机'}),
+  computer:Object.freeze({duration:3,points:2.5,risk:1.15,noise:.35,label:'偷偷玩电脑'}),
+  smoke:Object.freeze({duration:1.2,releaseToUse:true,points:0,risk:1,noise:.2,label:'烟雾弹'}),
 });
-const STEP=1/60, EPS=1e-9, TAU=Math.PI*2;
+const STEP=1/60, EPS=1e-9, TAU=Math.PI*2, ACTION_KEYS=['snack','note','phone','smoke'];
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const clean=n=>Math.round(n*1e6)/1e6;
 const angle=n=>Math.atan2(Math.sin(n),Math.cos(n));
@@ -18,9 +21,9 @@ function seedNumber(value){if(valid(value))return value>>>0;let h=2166136261;for
 function segmentDistance(p,a,b){const dx=b.x-a.x,dz=b.z-a.z,l=dx*dx+dz*dz,t=l?clamp(((p.x-a.x)*dx+(p.z-a.z)*dz)/l,0,1):0;return Math.hypot(p.x-a.x-t*dx,p.z-a.z-t*dz);}
 /** Geometry only: +Z is yaw 0. Smoke blocks the actual observer-to-target segment. */
 export function canSee(observer,target,smokes=[]){
-  if(distance(observer,target)>DEVELOPMENT_TUNING.viewRange)return false;
-  if(Math.abs(angle(heading(observer,target)-observer.yaw))>DEVELOPMENT_TUNING.fov*Math.PI/360)return false;
-  return !smokes.some(s=>s.remaining>0&&segmentDistance(s,observer,target)<s.radius);
+  if(distance(observer,target)>(observer.viewRange??DEVELOPMENT_TUNING.viewRange))return false;
+  if(Math.abs(angle(heading(observer,target)-observer.yaw))>(observer.fov??DEVELOPMENT_TUNING.fov)*Math.PI/360)return false;
+  return !smokes.some(s=>s.remaining>0&&(s.density??1)>.3&&segmentDistance(s,observer,target)<s.radius);
 }
 /** Upright desk books reduce distant frontal prop visibility, not all visibility. */
 export function propVisibility(observer,target,smokes=[]){
@@ -29,64 +32,109 @@ export function propVisibility(observer,target,smokes=[]){
   if(!target.seated)return target.crouched?.72:1;
   const front=Math.cos(heading(target,observer)); // Desks/books face +Z, independently of head look.
   const book=front>.52&&d>2.35?.22:front>.2&&d>2.35?.55:1;
-  return book*(target.crouched&&d>2.1?.45:1);
+  const cover=target.bookCover??(target.bookRaised===false?0:1);
+  return (1-(1-book)*cover)*(target.crouched&&d>2.1?.45:1);
 }
 
 export class ClassroomRound{
-  constructor({seed=73,duration=Infinity,target=DEVELOPMENT_TUNING.target}={}){
+  constructor({seed=73,duration=Infinity,target=DEVELOPMENT_TUNING.target,map='classroom'}={}){
+    this.map=['classroom','night','computer'].includes(map)?map:'classroom';
     this.seed=seedNumber(seed);this.duration=valid(duration)&&duration>0?Math.min(duration,3600):Infinity;
     this.target=valid(target)&&target>0?Math.min(target,100000):DEVELOPMENT_TUNING.target;this.reset();
   }
   reset(seed){
-    if(seed!==undefined)this.seed=seedNumber(seed);this._rng=this.seed;
+    if(seed!==undefined)this.seed=seedNumber(seed);this._rng=this.seed;this._drawerRng=(this.seed^0xA341316C)>>>0;
     this.status='ready';this.paused=false;this.elapsed=0;this.score=0;this.strikes=0;this.resultReason=null;
-    this.selected='snack';this.holding=false;this.completed={snack:0,note:0,phone:0};this.helpCooldown=0;
-    this.smokes=[];this._events=[];this._accumulator=0;this._movement={x:0,z:0};this._lastObservation=-Infinity;this._smokeId=0;
+    this.selected='snack';this.holding=false;this.completed={snack:0,note:0,phone:0,smoke:0,computer:0};
+    this.smokes=[];this.projectiles=[];this._events=[];this._accumulator=0;this._movement={x:0,z:0};this._lastObservation=-Infinity;this._smokeId=0;
     this._team=new Set([PLAYER_SEAT,...FRIEND_SEATS]);
+    this.books=SEATS.map(s=>({id:s.id,raised:COVERED_SEATS.includes(s.id),amount:COVERED_SEATS.includes(s.id)?1:0}));
     const personalities=['cautious','bold','helpful','distractible'];
     const profiles=[{caution:.96,helpful:.65,distraction:.10},{caution:.28,helpful:.35,distraction:.18},{caution:.68,helpful:.98,distraction:.12},{caution:.48,helpful:.55,distraction:.75}];
     this.students=SEATS.map(seat=>{
       const friend=FRIEND_SEATS.indexOf(seat.id), profile=friend>=0?profiles[friend]:null;
       return {id:seat.id,seatId:seat.id,x:seat.x,z:seat.z,yaw:0,pitch:0,seated:true,crouched:false,caught:false,isPlayer:seat.id===PLAYER_SEAT,isTeammate:friend>=0,
         name:seat.id===PLAYER_SEAT?'你':friend>=0?['小满','阿杰','小雨','乐乐'][friend]:`${seat.row+1}排同学${seat.col+1}`,
-        mood:'writing',action:null,holding:false,progress:0,personality:friend>=0?personalities[friend]:'ordinary',completed:{snack:0,note:0,phone:0},
-        _profile:profile,_progress:{snack:0,note:0,phone:0},_noise:0,_decisionAt:this._range(.15,1.8),_idleAt:this._range(1,7),_speed:this._range(.65,.9),_preference:this._random(),_smoke:friend>=0||seat.id===PLAYER_SEAT?1:0,_exposure:0,_helpUntil:0,_helpCount:0,_helpReady:0,_restUntil:0};
+        mood:'writing',action:null,holding:false,progress:0,personality:friend>=0?personalities[friend]:'ordinary',completed:{snack:0,note:0,phone:0,smoke:0,computer:0},_computerActive:false,_computerProgress:0,
+        _profile:profile,_slots:this._team.has(seat.id)?Array.from({length:3},(_,id)=>({id,action:this._drawItem(),readyAt:0,progress:0})):[],_selectedSlot:0,_drawerOpen:false,_drawnSlot:null,_noise:0,_decisionAt:this._range(.15,1.8),_idleAt:this._range(1,7),_speed:this._range(.65,.9),_preference:this._random(),_exposure:0,_restUntil:0};
     });
-    this.player=this.students[PLAYER_SEAT];this.player.action=this.selected;
-    this.teacher={x:BOARD.x,z:BOARD.z,yaw:0,phase:'board',phaseTime:0,phaseDuration:1,intent:'write',targetId:null,looking:false,warning:false,attention:0,walkProgress:0,castProgress:0};
+    if(this.map==='computer')for(const b of this.books){b.raised=false;b.amount=0;}
+    this.player=this.students[PLAYER_SEAT];this.selected=this.player._slots[0].action;this.player.action=this.selected;
+    this.teacher={fov:this.map==='night'?49:DEVELOPMENT_TUNING.fov,viewRange:this.map==='night'?12:DEVELOPMENT_TUNING.viewRange,x:BOARD.x,z:BOARD.z,yaw:0,phase:'board',phaseTime:0,phaseDuration:1,intent:'write',targetId:null,looking:false,warning:false,attention:0,walkProgress:0,castProgress:0};
     this._memory=new Map();this._plan={intent:'write',targetId:null,since:0,until:3,route:[],routeLength:0,arrivedAt:null,utility:0};
     this._turnLeft=0;this._thinkAt=0;this._lastScan=0;this._writingNeed=.8;this._cast=null;
     return this.snapshot();
   }
   start(){if(this.status==='ready'){this.status='playing';this._observe('round-start',null,'课堂开始，捣乱值由实际行动积累。');}return this.snapshot();}
   _inputAllowed(){return this.status==='playing'&&!this.paused;}
-  selectAction(action){
-    if(!Object.hasOwn(CLASSROOM_ACTIONS,action)||this.paused||this.player.caught||!['ready','playing'].includes(this.status))return false;
-    if(action!==this.selected)this.hold(false);this.selected=action;this.player.action=action;return true;
+  toggleDrawer(){
+    if(!this._inputAllowed()||this.player.caught||!this.player.seated)return false;
+    this.player._drawerOpen=!this.player._drawerOpen;return true;
   }
-  hold(value){if(typeof value!=='boolean')return false;if(!value){this.holding=false;this.player.holding=false;return false;}if(!this._inputAllowed()||this.player.caught)return false;this.holding=true;this.player.holding=true;return true;}
+  toggleBook(){
+    const p=this.player;if(!this._inputAllowed()||p.caught||!p.seated)return false;
+    this.books[p.seatId].raised=!this.books[p.seatId].raised;return true;
+  }
+  selectSlot(index){
+    const p=this.player,slot=p._slots[index];
+    if(!Number.isInteger(index)||!slot?.action||this.paused||p.caught||!p.seated||!['ready','playing'].includes(this.status))return false;
+    if(p._drawnSlot!==null&&index!==p._drawnSlot)return false;
+    p._selectedSlot=index;this.selected=slot.action;p.action=slot.action;p.progress=slot.progress;return true;
+  }
+  selectAction(action){
+    if(!Object.hasOwn(CLASSROOM_ACTIONS,action))return false;
+    const p=this.player,current=p._slots[p._selectedSlot];
+    return this.selectSlot(current?.action===action?p._selectedSlot:p._slots.findIndex(slot=>slot.action===action));
+  }
+  takeSlot(index){
+    const p=this.player;
+    if(!this._inputAllowed()||p.caught||!p.seated||!p._drawerOpen||p._drawnSlot!==null)return false;
+    this.stopComputer();
+    if(!this.selectSlot(index))return false;
+    p._drawnSlot=index;this.hold(false);return true;
+  }
+  returnItem(){
+    const p=this.player;
+    if(!this._inputAllowed()||p.caught||!p.seated||p._drawnSlot===null)return false;
+    this.hold(false);p._drawerOpen=true;p._drawnSlot=null;return true;
+  }
+  startComputer(){
+    const p=this.player;if(!this._inputAllowed()||this.map!=='computer'||!p.seated||p.caught||p._drawnSlot!==null)return false;
+    p._computerActive=true;p.action='computer';p._drawerOpen=false;this.selected='computer';return true;
+  }
+  stopComputer(){
+    const p=this.player;if(!p._computerActive)return false;
+    p._computerActive=false;p.holding=false;this.holding=false;this.selected=p._slots[p._selectedSlot]?.action||'snack';p.action=this.selected;return true;
+  }
+  hold(value){
+    if(typeof value!=='boolean')return false;
+    const p=this.player;
+    if(!value){this.holding=false;p.holding=false;const slot=p._slots[p._selectedSlot];if(slot?.action==='smoke'){slot.progress=0;p.progress=0;}return false;}
+    if(this._inputAllowed()&&!p.caught&&p.seated&&p._computerActive){this.selected=p.action='computer';this.holding=p.holding=true;return true;}
+    const slot=p._slots[p._selectedSlot];
+    if(!this._inputAllowed()||p.caught||!slot?.action||p._drawnSlot!==p._selectedSlot)return false;
+    this.selected=slot.action;p.action=slot.action;this.holding=true;p.holding=true;return true;
+  }
+  // Only an intentional mouse/touch release throws. Pause, blur, Q and pointer
+  // cancellation call hold(false), keeping the grenade and clearing its charge.
+  releaseUse(){
+    const p=this.player,slot=p._slots[p._selectedSlot];
+    if(this._inputAllowed()&&!p.caught&&this.holding&&slot?.action==='smoke'&&p._drawnSlot===p._selectedSlot){
+      this._completeAction(p,slot);return true;
+    }
+    this.hold(false);return false;
+  }
   setMovement(x,z){if(!valid(x)||!valid(z)||!this._inputAllowed()||this.player.caught)return false;const n=Math.max(1,Math.hypot(x,z));this._movement={x:clamp(x/n,-1,1),z:clamp(z/n,-1,1)};return true;}
   setLook(yaw,pitch){if(!valid(yaw)||!valid(pitch)||!this._inputAllowed())return false;this.player.yaw=angle(yaw);this.player.pitch=clamp(pitch,-1.3,1.3);return true;}
   setCrouch(value){if(typeof value!=='boolean'||!this._inputAllowed()||this.player.caught)return false;this.player.crouched=value;return true;}
   interact(){
     if(!this._inputAllowed()||this.player.caught)return false;
     const p=this.player;
-    if(p.seated){p.seated=false;p.seatId=null;this._observe('stand',p.id,'已离开座位；持物移动不会增加捣乱值。');return 'stood';}
+    if(p.seated){this.stopComputer();p._drawerOpen=false;p.seated=false;p.seatId=null;this._observe('stand',p.id,'已离开座位；持物移动不会增加捣乱值。');return 'stood';}
     const occupied=new Set(this.students.filter(s=>s.seated&&!s.caught).map(s=>s.seatId));
     const seat=SEATS.filter(s=>!occupied.has(s.id)&&distance(p,s)<1.05).sort((a,b)=>distance(p,a)-distance(p,b))[0];
     if(!seat)return false;
     p.x=seat.x;p.z=seat.z;p.seated=true;p.seatId=seat.id;p.crouched=false;this._movement={x:0,z:0};this._observe('sit',p.id,'已坐下。');return 'seated';
-  }
-  useItem(){if(!this._inputAllowed()||this.player.caught||this.player._smoke<1)return false;this._throwSmoke(this.player);return true;}
-  requestHelp(){
-    if(!this._inputAllowed()||this.player.caught||this.helpCooldown>EPS)return false;
-    const candidates=this.students.filter(s=>s.isTeammate&&!s.caught&&s._helpReady<=this.elapsed).map(s=>({s,risk:this._localRisk(s)})).filter(v=>v.risk<.75).sort((a,b)=>(b.s._profile.helpful-b.risk*.7-distance(b.s,this.player)*.07)-(a.s._profile.helpful-a.risk*.7-distance(a.s,this.player)*.07));
-    const helper=candidates[0]?.s;
-    if(!helper||helper._profile.helpful<.5){this.helpCooldown=2;this._events.push({type:'help',accepted:false,reason:'unsafe',text:'附近同学暂时无法掩护。'});return false;}
-    helper.holding=false;helper._helpCount++;helper._helpReady=this.elapsed+18+helper._helpCount*4;this.helpCooldown=18;
-    if(helper._smoke&&distance(helper,this.player)<4.2&&this._localRisk(this.player)>.25)this._throwSmoke(helper,this.player);
-    else{helper._helpUntil=this.elapsed+1;helper.mood='cough';this._hear(helper,1.8/(1+helper._helpCount*.5),'cough');this._events.push({type:'help',accepted:true,studentId:helper.id,speaker:helper.name,strategy:'cough',text:`${helper.name}制造了一处声响。`});}
-    return true;
   }
   pause(value=true){if(typeof value!=='boolean'||this.status!=='playing')return this.snapshot();if(value!==this.paused){this.hold(false);this._movement={x:0,z:0};this._accumulator=0;}this.paused=value;return this.snapshot();}
   /** Fixed-step simulation; a single caller delta is bounded to 30s for safety. */
@@ -101,16 +149,31 @@ export class ClassroomRound{
   }
   snapshot(){
     const p=this.player,t=this.teacher,m=this._memory.get(p.id);
-    return {status:this.status,paused:this.paused,seed:this.seed,elapsed:clean(this.elapsed),timeLeft:Number.isFinite(this.duration)?clean(Math.max(0,this.duration-this.elapsed)):0,timed:Number.isFinite(this.duration),score:this.score,target:this.target,strikes:this.strikes,resultReason:this.resultReason,
-      suspicion:clean(m?.evidence||0),holding:this.holding,selected:this.selected,actionProgress:clean(p._progress[this.selected]),completed:{...this.completed},helpCooldown:clean(this.helpCooldown),inventory:{smoke:p._smoke},caughtCount:this.students.filter(s=>this._team.has(s.id)&&s.caught).length,teamSize:5,
-      player:{id:p.id,x:clean(p.x),z:clean(p.z),yaw:clean(p.yaw),pitch:clean(p.pitch),seated:p.seated,crouched:p.crouched,caught:p.caught,seatId:p.seatId},
+    return {role:'student',map:this.map,status:this.status,paused:this.paused,seed:this.seed,elapsed:clean(this.elapsed),timeLeft:Number.isFinite(this.duration)?clean(Math.max(0,this.duration-this.elapsed)):0,timed:Number.isFinite(this.duration),score:this.score,target:this.target,strikes:this.strikes,resultReason:this.resultReason,
+      suspicion:clean(m?.evidence||0),holding:this.holding,selected:this.selected,actionProgress:clean(p._computerActive?p._computerProgress:p._slots[p._selectedSlot]?.progress||0),completed:{...this.completed},drawer:this._drawerSnapshot(p),caughtCount:this.students.filter(s=>this._team.has(s.id)&&s.caught).length,teamSize:5,
+      books:this.books.map(b=>({...b,amount:clean(b.amount)})),
+      player:{computerActive:Boolean(p._computerActive),bookRaised:p.seated?this.books[p.seatId].raised:false,id:p.id,x:clean(p.x),z:clean(p.z),yaw:clean(p.yaw),pitch:clean(p.pitch),seated:p.seated,crouched:p.crouched,caught:p.caught,seatId:p.seatId},
       teacher:{...t,x:clean(t.x),z:clean(t.z),yaw:clean(t.yaw),phaseTime:clean(t.phaseTime),phaseDuration:clean(t.phaseDuration),castProgress:clean(t.castProgress),attention:clean(t.attention),walkProgress:clean(t.walkProgress),observedIds:[...this._memory.keys()],memory:[...this._memory.values()].map(m=>({id:m.id,evidence:clean(m.evidence),suspicion:clean(m.evidence),noise:clean(m.noise),confirmed:m.confirmed,detained:m.detained,lastSeen:m.lastSeen,lastHeard:m.lastHeard,lastVisit:m.lastVisit,visits:m.visits,x:clean(m.x),z:clean(m.z)}))},
-      students:this.students.map(s=>({id:s.id,seatId:s.seatId,x:clean(s.x),z:clean(s.z),yaw:clean(s.yaw),seated:s.seated,crouched:s.crouched,isPlayer:s.isPlayer,isTeammate:s.isTeammate,caught:s.caught,mood:s.mood,action:s.action,holding:s.holding,progress:clean(s.progress),name:s.name,personality:s.personality,completed:{...s.completed}})),
-      smokes:this.smokes.map(s=>({...s,remaining:clean(s.remaining)}))};
+      students:this.students.map(s=>({computerActive:Boolean(s._computerActive),bookRaised:s.seated?this.books[s.seatId].raised:false,id:s.id,seatId:s.seatId,x:clean(s.x),z:clean(s.z),yaw:clean(s.yaw),seated:s.seated,crouched:s.crouched,isPlayer:s.isPlayer,isTeammate:s.isTeammate,caught:s.caught,mood:s.mood,action:s.action,holding:s.holding,progress:clean(s.progress),name:s.name,personality:s.personality,completed:{...s.completed},...(this._team.has(s.id)?{drawer:this._drawerSnapshot(s)}:{})})),
+      projectiles:this.projectiles.map(p=>({...p})),smokes:this.smokes.map(s=>({...s,remaining:clean(s.remaining)}))};
   }
   drainEvents(){const events=this._events;this._events=[];return events;}
   _random(){let t=this._rng=(this._rng+0x6D2B79F5)>>>0;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}
   _range(a,b){return a+(b-a)*this._random();}
+  _drawItem(){
+    // A separate seeded stream keeps opening the drawer from changing AI choices.
+    // Sampling with replacement permits two or three copies of the same object.
+    let t=this._drawerRng=(this._drawerRng+0x6D2B79F5)>>>0;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);
+    return ACTION_KEYS[Math.floor((((t^t>>>14)>>>0)/4294967296)*ACTION_KEYS.length)];
+  }
+  _drawerSnapshot(actor){return{open:actor._drawerOpen,slots:actor._slots.map(slot=>({id:slot.id,action:slot.action,readyIn:slot.action?0:clean(Math.max(0,slot.readyAt-this.elapsed))})),selectedSlot:actor._selectedSlot,drawnSlot:actor._drawnSlot};}
+  _refillDrawers(){
+    for(const s of this.students)for(const slot of s._slots){
+      if(slot.action||slot.readyAt>this.elapsed+EPS)continue;
+      slot.action=this._drawItem();slot.readyAt=0;slot.progress=0;
+      if(slot.id===s._selectedSlot){s.action=slot.action;s.progress=0;if(s.isPlayer)this.selected=slot.action;}
+    }
+  }
   _observe(fact,id,text){if(this.elapsed-this._lastObservation<2.4)return;this._lastObservation=this.elapsed;this._events.push({type:'observation',fact,studentId:id,text});}
   _remember(actor){let m=this._memory.get(actor.id);if(!m){m={id:actor.id,x:actor.x,z:actor.z,evidence:0,noise:0,confirmed:false,detained:false,lastSeen:null,lastHeard:null,lastVisit:null,visits:0};this._memory.set(actor.id,m);}return m;}
   _hear(actor,strength,source='object'){
@@ -118,10 +181,33 @@ export class ClassroomRound{
     const m=this._remember(actor);m.noise=Math.min(5,m.noise+strength*(1-d/15));m.lastHeard=clean(this.elapsed);m.x=actor.x;m.z=actor.z;
     this._observe('noise-heard',actor.id,`${actor.name}所在位置传来声响。`);
   }
-  _throwSmoke(actor,toward=null){
-    actor._smoke--;const yaw=toward?heading(actor,toward):actor.yaw;
-    const s={id:this._smokeId++,ownerId:actor.id,x:clamp(actor.x+Math.sin(yaw)*1.1,ROOM.minX,ROOM.maxX),z:clamp(actor.z+Math.cos(yaw)*1.1,ROOM.minZ,ROOM.maxZ),radius:DEVELOPMENT_TUNING.smokeRadius,remaining:DEVELOPMENT_TUNING.smokeDuration};this.smokes.push(s);
-    this._hear(actor,.8,'smoke');this._events.push({type:'help',accepted:true,strategy:'smoke',studentId:actor.id,speaker:actor.name,duration:s.remaining,text:`${actor.name}使用了烟雾。`});this._observe('smoke',actor.id,'烟雾遮住了穿过它的视线。');
+  _throwSmoke(actor,charge){
+    const projectile=createSmokeProjectile(actor,this._smokeId++,charge);this.projectiles.push(projectile);
+    this._hear(actor,.35,'throw');this._events.push({type:'smoke-throw',studentId:actor.id,x:projectile.x,y:projectile.y,z:projectile.z});
+  }
+  _completeAction(actor,slot){
+    const kind=slot.action,action=CLASSROOM_ACTIONS[kind],charge=slot.progress;
+    slot.progress=0;slot.action=null;slot.readyAt=this.elapsed+DEVELOPMENT_TUNING.drawerRefill;
+    actor.progress=0;actor.completed[kind]++;actor.holding=false;actor._drawnSlot=null;
+    if(actor.isPlayer){this.completed[kind]++;this.holding=false;}
+    if(kind==='smoke')this._throwSmoke(actor,charge);
+    const points=Math.min(action.points,this.target-this.score);this.score+=points;
+    this._events.push({type:'complete',actor:actor.isPlayer?'player':'ai',studentId:actor.id,speaker:actor.name,action:kind,slotId:slot.id,points,score:this.score});
+    if(actor.isTeammate)actor._restUntil=this.elapsed+this._range(DEVELOPMENT_TUNING.teammateRestMin,DEVELOPMENT_TUNING.teammateRestMax)+actor._profile.caution*3+this._localRisk(actor)*2;
+    if(this.score>=this.target)this._finish('won','mischief');
+  }
+  _advanceSmoke(dt){
+    for(const smoke of this.smokes){smoke.remaining-=dt;smoke.age+=dt;Object.assign(smoke,smokeEnvelope(smoke.age,smoke.remaining));}
+    this.smokes=this.smokes.filter(s=>s.remaining>EPS);
+    for(const p of this.projectiles){
+      for(const impact of stepSmokeProjectile(p,dt))this._events.push({type:'smoke-impact',...impact,studentId:p.ownerId});
+      if(!p.emitting&&p.settled&&p.restTime+EPS>=.5){
+        p.emitting=true;p.expiresAt=this.elapsed+DEVELOPMENT_TUNING.smokeDuration;
+        this.smokes.push({id:p.id,ownerId:p.ownerId,x:p.x,y:p.y,z:p.z,age:0,...smokeEnvelope(0,DEVELOPMENT_TUNING.smokeDuration),remaining:DEVELOPMENT_TUNING.smokeDuration});
+        this._events.push({type:'smoke-bloom',studentId:p.ownerId,x:p.x,y:p.y,z:p.z});
+      }
+    }
+    this.projectiles=this.projectiles.filter(p=>!p.emitting||p.expiresAt>this.elapsed);
   }
   _localRisk(actor){
     if(!canSee(this.teacher,actor,this.smokes)){
@@ -138,36 +224,47 @@ export class ClassroomRound{
         if(this.elapsed>=s._idleAt){s.mood=['writing','reading','scratch','page'][Math.floor(this._random()*4)];s._idleAt=this.elapsed+this._range(2.3,7.5);if(s.mood==='page')this._hear(s,.12,'page');}
         continue;
       }
-      if(s._helpUntil>this.elapsed){s.mood='cough';s.holding=false;continue;}
       // After a real action, each classmate watches the room and prepares again.
       // These personality/risk-dependent breaks pace play, without fake scoring.
-      if(s._restUntil>this.elapsed){s.holding=false;s.mood='reading';continue;}
+      if(s._restUntil>this.elapsed){s.holding=false;s._drawnSlot=null;s._drawerOpen=false;s._computerActive=false;s.mood=this.elapsed<(s._chalkUntil||0)?'thinking':'reading';continue;}
       const risk=this._localRisk(s);s._exposure=Math.max(0,s._exposure+(s.holding&&risk>.4?dt:-dt*.6));
-      if(s._smoke&&s._exposure>1.5&&risk>.55){this._throwSmoke(s);s._exposure=0;}
       if(this.elapsed<s._decisionAt)continue;
       s._decisionAt=this.elapsed+this._range(.16,.42);
-      const profile=s._profile,near=distance(this.teacher,s),finishRisk=s.action?s._progress[s.action]>.83: false;
+      const profile=s._profile,near=distance(this.teacher,s),current=s._slots[s._selectedSlot],finishRisk=current?.action&&current.progress>.83;
       const threshold=.24+(1-profile.caution)*.55+(finishRisk&&!this.teacher.warning?.16:0);
-      if(risk>threshold||(this.teacher.warning&&profile.caution>.8)){s.holding=false;s.mood='writing';continue;}
-      if(profile.distraction>.5&&this._random()<.08){s.holding=false;s.mood='scratch';s._decisionAt+=1.2;continue;}
-      if(!s.action||s._progress[s.action]<EPS){
-        s.action=Object.keys(CLASSROOM_ACTIONS).map((key,index)=>({key,utility:1/CLASSROOM_ACTIONS[key].duration-CLASSROOM_ACTIONS[key].noise*profile.caution/(near+1)*.7+(index===Math.floor(s._preference*3)?.11:0)-s.completed[key]*.025})).sort((a,b)=>b.utility-a.utility)[0].key;
+      const smoke=s._slots.find(slot=>slot.action==='smoke');
+      if(risk>.3&&smoke){s._computerActive=false;s._selectedSlot=smoke.id;s.action='smoke';s.progress=smoke.progress;s._drawnSlot=smoke.id;s._drawerOpen=true;s.holding=true;s.mood='smoke';continue;}
+      if(risk>threshold||(this.teacher.warning&&profile.caution>.8)){s._computerActive=false;s.holding=false;s._drawnSlot=null;s._drawerOpen=false;s.mood='writing';continue;}
+      if(this.map==='computer'&&s.seated){s._computerActive=true;s._drawnSlot=null;s._drawerOpen=false;s.action='computer';s.holding=true;s.mood='computer';continue;}
+      if(profile.distraction>.5&&this._random()<.08){s.holding=false;s._drawnSlot=null;s._drawerOpen=false;s.mood='scratch';s._decisionAt+=1.2;continue;}
+      if(!current?.action||current.progress<EPS){
+        const choice=s._slots.filter(slot=>slot.action).map(slot=>({slot,utility:(slot.action==='smoke'?risk*.8-.35:1/CLASSROOM_ACTIONS[slot.action].duration)-CLASSROOM_ACTIONS[slot.action].noise*profile.caution/(near+1)*.7+(ACTION_KEYS.indexOf(slot.action)===Math.floor(s._preference*ACTION_KEYS.length)?.11:0)-s.completed[slot.action]*.025})).sort((a,b)=>b.utility-a.utility)[0];
+        if(!choice){s.holding=false;s.mood='reading';continue;}
+        s._selectedSlot=choice.slot.id;s.action=choice.slot.action;s.progress=choice.slot.progress;
       }
-      s.holding=true;s.mood=s.action;
+      s._drawnSlot=s._selectedSlot;s._drawerOpen=true;s.holding=true;s.mood=s.action;
     }
     for(const s of this.students){
+      const slot=s._slots[s._selectedSlot];
+      if(s.holding&&s._computerActive&&!s.caught&&s.seated){
+        s.action='computer';s._computerProgress=Math.min(1,s._computerProgress+dt/3*(s.isPlayer?1:s._speed));s.progress=s._computerProgress;
+        if(s._computerProgress+EPS>=1){
+          s._computerProgress=0;s.completed.computer++;const points=Math.min(CLASSROOM_ACTIONS.computer.points,this.target-this.score);this.score+=points;
+          if(s.isPlayer)this.completed.computer++;else{s._restUntil=this.elapsed+this._range(2,5);s.holding=false;s._computerActive=false;}
+          this._events.push({type:'complete',actor:s.isPlayer?'player':'ai',studentId:s.id,action:'computer',points,score:this.score});if(this.score>=this.target){this._finish('won','mischief');return;}
+        }
+        continue;
+      }
       if(s.caught||!s.holding||!s.action)continue;
+      if(!slot?.action||slot.action!==s.action){s.holding=false;if(s.isPlayer)this.holding=false;continue;}
       const action=CLASSROOM_ACTIONS[s.action];
       s._noise+=dt*action.noise;if(s._noise>=1){s._noise-=1;this._hear(s,1);}
       // Carrying an object while walking is permitted, but earns no mischief.
-      if(!s.seated)continue;
-      s._progress[s.action]=Math.min(1,s._progress[s.action]+dt/action.duration*(s.isPlayer?1:s._speed));s.progress=s._progress[s.action];
+      if(!s.seated&&s.action!=='smoke')continue;
+      slot.progress=Math.min(1,slot.progress+dt/action.duration*(s.isPlayer?1:s._speed));s.progress=slot.progress;
+      if(s.isPlayer&&action.releaseToUse)continue;
       if(s.progress+EPS>=1){
-        s._progress[s.action]=0;s.progress=0;s.completed[s.action]++;if(s.isPlayer)this.completed[s.action]++;
-        const points=Math.min(action.points,this.target-this.score);this.score+=points;
-        this._events.push({type:'complete',actor:s.isPlayer?'player':'ai',studentId:s.id,speaker:s.name,action:s.action,points,score:this.score});
-        if(s.isTeammate){s.holding=false;s._restUntil=this.elapsed+this._range(DEVELOPMENT_TUNING.teammateRestMin,DEVELOPMENT_TUNING.teammateRestMax)+s._profile.caution*3+this._localRisk(s)*2;}
-        if(this.score>=this.target){this._finish('won','mischief');return;}
+        this._completeAction(s,slot);if(this.status!=='playing')return;
       }
     }
   }
@@ -181,7 +278,7 @@ export class ClassroomRound{
       if(!m)continue;
       m.noise=Math.max(0,m.noise-dt*.10);
       if(m.confirmed||m.detained)continue;
-      if(seen&&s.holding&&s.action){
+      if(seen&&(s.holding||s._computerActive||(s.isPlayer&&s._drawnSlot!==null))&&s.action){
         const visibility=propVisibility(t,s,this.smokes),rate=DEVELOPMENT_TUNING.evidenceRate*CLASSROOM_ACTIONS[s.action].risk*visibility;
         const before=m.evidence;m.evidence=Math.min(100,m.evidence+rate*dt);
         if(before<20&&m.evidence>=20)this._observe('prop-seen',s.id,`老师看见了${s.name}的手部动作。`);
@@ -246,15 +343,17 @@ export class ClassroomRound{
   }
   _capture(actor){
     if(actor.caught)return;const captured=this.students.filter(s=>s.caught).length,spot=DETENTION[Math.min(captured,DETENTION.length-1)];
-    actor.caught=true;actor.holding=false;actor.seated=false;actor.crouched=false;actor.seatId=null;actor.x=spot.x;actor.z=spot.z;actor.yaw=Math.PI;actor.mood='caught';actor.progress=0;
+    actor._computerActive=false;actor.caught=true;actor.holding=false;actor._drawerOpen=false;actor._drawnSlot=null;actor.seated=false;actor.crouched=false;actor.seatId=null;actor.x=spot.x;actor.z=spot.z;actor.yaw=Math.PI;actor.mood='caught';actor.progress=0;
     const memory=this._memory.get(actor.id);if(memory){memory.detained=true;memory.x=spot.x;memory.z=spot.z;}
     if(actor.isPlayer){this.holding=false;this.strikes=1;this._movement={x:0,z:0};}
     this._events.push({type:'caught',actor:actor.isPlayer?'player':'ai',studentId:actor.id,playerCaught:actor.isPlayer,text:`${actor.name}被红牌罚到讲台旁。`});
     if([...this._team].every(id=>this.students[id].caught))this._finish('lost','all-caught');
   }
   _advance(dt){
-    this.elapsed+=dt;this.helpCooldown=Math.max(0,this.helpCooldown-dt);
-    for(const smoke of this.smokes)smoke.remaining-=dt;this.smokes=this.smokes.filter(s=>s.remaining>EPS);
+    this.elapsed+=dt;this._refillDrawers();
+    for(const b of this.books)b.amount=clamp(b.amount+(b.raised?1:-1)*dt*4,0,1);
+    for(const s of this.students)s.bookCover=s.seated?this.books[s.seatId].amount:0;
+    this._advanceSmoke(dt);
     if(!this.player.seated&&!this.player.caught){const speed=this.player.crouched?DEVELOPMENT_TUNING.crouchSpeed:DEVELOPMENT_TUNING.walkSpeed,pos=moveInRoom(this.player,this._movement.x*speed*dt,this._movement.z*speed*dt);this.player.x=pos.x;this.player.z=pos.z;}
     this._advanceTeacher(dt);if(this.status!=='playing')return;
     this._perceive(dt);this._advanceStudents(dt);

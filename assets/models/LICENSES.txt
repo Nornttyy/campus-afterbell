@@ -1,0 +1,32 @@
+desk-v1.glb
+Based on School Desk 01 by Ethan Place / Poly Haven.
+License: CC0.
+Source: https://polyhaven.com/a/SchoolDesk_01
+License: https://polyhaven.com/license
+Modified dimensions, materials, separate sliding drawer, front and handle.
+
+teacher-v1.glb
+Generated in the user's Tripo account from four separate reference images.
+Original asset ID: 6958d01e-064d-48be-b0e1-72702ccb4e64.
+Rig, material cleanup and animations retained in local art-source.
+
+student-boy-v1.glb, hand-left-v1.glb, hand-right-v1.glb
+Derived from the model generated, textured and rigged in the user's Tripo account.
+Tripo task: 45e95e06-c20d-4ee2-a740-99ab8f4e968e.
+Immutable rigged source: art-source/tripo-models/student-boy-rigged-20261106/original.glb.
+Local edits: finger repair/weights, animation clips, separate continuous capped palms.
+Original color and baked lighting retained at the user's request.
+These assets are not stated to be CC0; the Poly Haven CC0 notice above applies only to desk-v1.glb.
+
+student-boy-v2.glb
+Same immutable user-supplied rigged source as student-boy-v1.glb.
+Ten revised classroom clips; pelvis, wrist orientation and finger weights corrected.
+First-person palms remain hand-left-v1.glb and hand-right-v1.glb.
+
+student-girl-v2.glb
+Generated, textured and rigged by the user in Tripo.
+Tripo task: e3a4eddf-fd75-474f-b636-1a119a17c39a.
+Immutable source: art-source/tripo-models/student-girl-rigged-20261106/original.glb.
+Original color and baked lighting retained; ten local classroom animation clips.
+Source metadata, editable Blender scenes and export script are retained locally.
+These Tripo-derived assets are not described as CC0 or as original-game assets.
