@@ -1,8 +1,8 @@
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=classroom-34';
-import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,clearWallSegment,floorHeight} from './classroom-layout.js?v=classroom-34';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=props-35';
+import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,clearWallSegment,floorHeight} from './classroom-layout.js?v=props-35';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=classroom-34';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=props-35';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){

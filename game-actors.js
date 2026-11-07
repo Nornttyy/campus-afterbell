@@ -1,4 +1,6 @@
 import * as THREE from './vendor/three.module.js';
+import {clonePropAsset,propContact} from './prop-assets.js';
+export {loadPropAssets} from './prop-assets.js';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
 // First-person hands use camera coordinates: the scene is in front at -Z.
@@ -413,6 +415,7 @@ export const THROWABLE_ITEM_KINDS=Object.freeze(['smoke','flash','ink']);
 export const DESK_ITEM_KINDS=Object.freeze(['snack','drink','burger','note','phone',...THROWABLE_ITEM_KINDS]);
 
 export function createDeskItem(action){
+  const imported=clonePropAsset(action);if(imported)return imported;
   if(action==='snack')return snackProp();
   if(action==='phone')return phoneProp();
   if(action==='note')return paperProp();
@@ -444,7 +447,7 @@ export function createDeskHands({createHand}={}){
   grips.drink={position:v(0,0,0),rotation:new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,.90,.08))};
   grips.burger={position:v(0,0,0),rotation:new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,.90,.08))};
   const gripBack={flash:v(-.029,-.018,-.026),ink:v(-.032,-.020,-.028),smoke:v(-.028,-.018,-.025),snack:v(-.028,-.018,-.025),drink:v(-.028,-.025,-.032),burger:v(-.096,-.032,-.035),phone:v(-.018,-.015,-.014),note:v(.010,.013,-.006)};
-  for(const action of DESK_ITEM_KINDS){const hand=arms[action==='note'?1:0].hand;hand.setCurl(['snack','drink','burger',...THROWABLE_ITEM_KINDS].includes(action)?.80:action==='phone'?.78:.72);if(action==='note')hand.pointIndex(.25);grips[action].position.copy(hand.indexTip()).sub(gripBack[action].clone().multiplyScalar(1/hand.group.scale.x).applyQuaternion(grips[action].rotation));}
+  for(const action of DESK_ITEM_KINDS){const hand=arms[action==='note'?1:0].hand;hand.setCurl(['snack','drink','burger',...THROWABLE_ITEM_KINDS].includes(action)?.80:action==='phone'?.78:.72);if(action==='note')hand.pointIndex(.25);grips[action].position.copy(hand.indexTip()).sub(propContact(props[action],gripBack[action]).multiplyScalar(1/hand.group.scale.x).applyQuaternion(grips[action].rotation));}
   function attachToGrip(prop,hand,anchor){hand.updateMatrix();prop.position.copy(anchor.position).applyMatrix4(hand.matrix);prop.quaternion.copy(hand.quaternion).multiply(anchor.rotation);}
   let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0,using=0,throwCharge=0,releaseCharge=0,wasReleasing=false;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
@@ -561,7 +564,7 @@ export function createDeskHands({createHand}={}){
     }
     if(active==='phone')fitSecondaryHand(1,props.phone,tapContact,use);
     if(active==='note')fitSecondaryHand(0,props.note,v(-.060,.010,-.006),use*(1-pass));
-    function thumbAt(i,prop,p,amount){const hand=arms[i].hand.group;hand.updateMatrix();const target=contactPoint(prop,p).applyMatrix4(hand.matrix.clone().invert());arms[i].hand.aimThumb(target,amount);}
+    function thumbAt(i,prop,p,amount){const hand=arms[i].hand.group;hand.updateMatrix();const target=contactPoint(prop,propContact(prop,p)).applyMatrix4(hand.matrix.clone().invert());arms[i].hand.aimThumb(target,amount);}
     if(throwable)thumbAt(0,props[active],v(-.032,-.020,.025),grip*(releasing?1-ease(throwAge,.035,.12):1));
     if(active==='snack')thumbAt(0,props.snack,v(-.052,-.020,.025),grip);
     if(active==='drink')thumbAt(0,props.drink,v(-.030,-.025,.032),grip);

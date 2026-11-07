@@ -1,6 +1,6 @@
-import {smokeEnvelope} from './smoke-physics.js?v=classroom-34';
-import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=classroom-34';
-import { ROOM, CORRIDOR, SEATS, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, clearWallSegment, CAMPUS_MAPS, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight } from './classroom-layout.js?v=classroom-34';
+import {smokeEnvelope} from './smoke-physics.js?v=props-35';
+import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=props-35';
+import { ROOM, CORRIDOR, SEATS, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, clearWallSegment, CAMPUS_MAPS, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight } from './classroom-layout.js?v=props-35';
 
 /** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:1.8, crouchSpeed:.85, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
