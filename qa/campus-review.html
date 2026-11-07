@@ -1,9 +1,9 @@
 <!doctype html><meta charset="utf-8"><title>校园连接检查</title><style>html,body{margin:0;background:#111;color:white;font:14px sans-serif}canvas{width:100vw;height:calc(100vh - 42px);display:block}nav{height:42px;display:flex;align-items:center;gap:14px;padding:0 10px}button,select{font:inherit}#note{margin-left:auto}</style>
-<nav><select id="map"><option value="classroom">白天教室</option><option value="night">夜间教室</option><option value="tiered">阶梯教室</option><option value="computer">机房</option></select><button id="office">办公室</button><button id="officeInside">办公室内</button><button id="corridor">走廊</button><button id="front">教室前方</button><button id="angle">教室斜看</button><button id="rear">教室后方</button><button id="lift">电梯</button><button id="walk">走完整条路线</button><span id="note">加载中</span></nav><canvas id="canvas"></canvas>
+<nav><select id="map"><option value="classroom">白天教室</option><option value="night">夜间教室</option><option value="tiered">阶梯教室</option><option value="computer">机房</option></select><button id="office">办公室</button><button id="officeInside">办公室内</button><button id="corridor">走廊</button><button id="courtyard">窗外庭院</button><button id="front">教室前方</button><button id="angle">教室斜看</button><button id="rear">教室后方</button><button id="lift">电梯</button><button id="walk">走完整条路线</button><span id="note">加载中</span></nav><canvas id="canvas"></canvas>
 <script type="module">
-import {createClassroom} from '../dist/classroom.js?v=map-30c';
-import {TeacherRound} from '../dist/teacher-rules.js?v=map-30c';
-import {walkRoute,floorHeight,blocked,TEACHER_SPAWN} from '../dist/classroom-layout.js?v=map-30c';
+import {createClassroom} from '../dist/classroom.js?v=map-30d';
+import {TeacherRound} from '../dist/teacher-rules.js?v=map-30d';
+import {walkRoute,floorHeight,blocked,TEACHER_SPAWN} from '../dist/classroom-layout.js?v=map-30d';
 const canvas=document.querySelector('#canvas'),scene=await createClassroom(canvas),select=document.querySelector('#map'),note=document.querySelector('#note');
 let map=new URL(location.href).searchParams.get('map')||'tiered',round,route=[],last=0,trace=[],keys=new Set();select.value=map;
 function reset(){round=new TeacherRound({map,target:100000});round.start();for(const s of round.students)s._decisionAt=Infinity;route=[];trace=[];scene.setMap(map);scene.setGameplay(round.snapshot());}
@@ -12,6 +12,7 @@ reset();
 document.querySelector('#office').onclick=()=>place(7.15,6.0,0,0);
 document.querySelector('#officeInside').onclick=()=>place(6.70,9.60,-Math.PI/2,0);
 document.querySelector('#corridor').onclick=()=>place(7.2,4.80,Math.PI,0);
+document.querySelector('#courtyard').onclick=()=>place(7.2,-1.0,Math.PI/2,.45);
 document.querySelector('#front').onclick=()=>place(1.58,4.30,Math.PI,0);
 document.querySelector('#angle').onclick=()=>place(-2.215,4.30,2.9,.06);
 document.querySelector('#rear').onclick=()=>place(1.58,-5.45,0,.15);

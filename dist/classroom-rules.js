@@ -1,5 +1,5 @@
-import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from './smoke-physics.js?v=map-30c';
-import { ROOM, SEATS, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, moveInRoom, walkRoute, blocked, clearWallSegment, CAMPUS_MAPS } from './classroom-layout.js?v=map-30c';
+import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from './smoke-physics.js?v=map-30d';
+import { ROOM, SEATS, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, moveInRoom, walkRoute, blocked, clearWallSegment, CAMPUS_MAPS } from './classroom-layout.js?v=map-30d';
 
 /** Local prototype tuning, NOT verified original-game balance values. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:100, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:1.8, crouchSpeed:.85, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });

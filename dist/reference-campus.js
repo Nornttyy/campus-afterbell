@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CAMPUS_MAPS,floorTiles,floorHeight} from './classroom-layout.js?v=map-30c';
+import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CAMPUS_MAPS,floorTiles,floorHeight} from './classroom-layout.js?v=map-30d';
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
 export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat}){
  const enclosure=new T.Group();enclosure.name='classroom-cutaway-walls';scene.add(enclosure);
@@ -220,6 +220,10 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  const ceil=B(ceilingMaterial,[1.24,4.59,-.05],[14.35,.16,13.6],enclosure);ceil.castShadow=true;
  ceilingGrid(6.12,8.25,-6.5,6.4,enclosure);
  for(const z of [-4.6,-.2,4.2])fluorescent(7.15,z,enclosure);
+ // A grounded courtyard stays visible below the glazing; tree trunks never end in sky colour.
+ const yard=mat('#bebcad',{roughness:.93}),grass=mat('#96a47d',{roughness:.97}),curb=mat('#b7c0b0',{roughness:.88});
+ B(yard,[1.25,-.21,2],[35,.20,33]);
+ for(const x of [-9.3,11.65]){B(grass,[x,-.15,1],[4.0,.12,27]);for(const xx of [x-2.02,x+2.02])B(curb,[xx,-.085,1],[.08,.13,27]);}
  // School block beyond both sides, with sky and planted courtyard between.
  const block=mat('#e6e6d9'),pane=mat('#83bccb',{roughness:.38});
  for(const side of [-1,1]){
@@ -229,7 +233,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   const leafImage=texture(256,256,(c,w,h)=>{c.clearRect(0,0,w,h);for(let n=0;n<92;n++){const a=n*2.39996,r=Math.sqrt(n/92)*105,x=128+Math.cos(a)*r,y=128+Math.sin(a)*r*.78;c.fillStyle=['#69874b','#82a356','#9bb763','#748f50'][n%4];c.beginPath();c.ellipse(x,y,6+n%5,3+n%3,a,0,Math.PI*2);c.fill();}}),leafMat=mat('#ffffff',{map:leafImage,transparent:true,alphaTest:.45,depthWrite:true,side:T.DoubleSide,roughness:1}),branchMat=mat('#80765b',{roughness:.96}),leafGeo=new T.PlaneGeometry(1.28,1.10);assets.add(leafGeo);
   for(const [n,z]of [-4.8,.7,5.5].entries()){
    const tx=side<0?-9.2+(n%2)*.6:11.75-(n%2)*.5,top=2.1+(n%2)*.6;
-   cylinder(branchMat,[tx,top*.42,z],[.055,top*.84,.075],null,room);
+   cylinder(branchMat,[tx,top*.42-.045,z],[.055,top*.84+.09,.075],null,room);
    for(let b=0;b<4;b++){const angle=b*1.78+n,ex=tx+Math.sin(angle)*.67,ez=z+Math.cos(angle)*.78,ey=top-.1+(b%2)*.35,curve=new T.CatmullRomCurve3([new T.Vector3(tx,top*.55,z),new T.Vector3((tx+ex)/2,top*.85,(z+ez)/2),new T.Vector3(ex,ey,ez)]),geo=new T.TubeGeometry(curve,5,.018,5,false);assets.add(geo);mesh(geo,branchMat,[0,0,0],[1,1,1],null,room);for(let leaf=0;leaf<3;leaf++)mesh(leafGeo,leafMat,[ex+Math.sin(leaf*2.1+b)*.22,ey+(leaf-1)*.22,ez+Math.cos(leaf*2.1+b)*.2],[1,1,1],[0,leaf*Math.PI/3+angle,Math.sin(b)*.2],room);}
   }
  }

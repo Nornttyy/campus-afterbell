@@ -1,14 +1,14 @@
-import {buildReferenceCampus} from './reference-campus.js?v=map-30c';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=map-30c';
-import {createRoomVariants} from './room-variants.js?v=map-30c';
+import {buildReferenceCampus} from './reference-campus.js?v=map-30d';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=map-30d';
+import {createRoomVariants} from './room-variants.js?v=map-30d';
 import * as THREE from './vendor/three.module.js';
-import {createSmokeEffects} from './smoke-effects.js?v=map-30c';
-import {createItemOutline} from './item-outline.js?v=map-30c';
-import {createStudent} from './characters.js?v=map-30c';
-import {createTeacher,createDeskHands,createDeskItem} from './game-actors.js?v=map-30c';
-import {loadStudentAssets} from './student-assets.js?v=map-30c';
-import {loadDeskModel} from './imported-actors.js?v=map-30c';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT} from './classroom-layout.js?v=map-30c';
+import {createSmokeEffects} from './smoke-effects.js?v=map-30d';
+import {createItemOutline} from './item-outline.js?v=map-30d';
+import {createStudent} from './characters.js?v=map-30d';
+import {createTeacher,createDeskHands,createDeskItem} from './game-actors.js?v=map-30d';
+import {loadStudentAssets} from './student-assets.js?v=map-30d';
+import {loadDeskModel} from './imported-actors.js?v=map-30d';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT} from './classroom-layout.js?v=map-30d';
 
 // This room, its textures and props are built locally as editable 3D geometry.
 export async function createClassroom(canvas, {onReady}={}) {

@@ -6,8 +6,8 @@
 <button id="hold" aria-pressed="false">拿起</button><button id="pause" aria-pressed="false">暂停</button><button id="step">前进一帧</button><button id="stand">站立</button><label>蓄力 <input id="charge" type="range" min="0" max="1" step=".01" value="0" style="width:80px"></label><button id="throw">投掷</button><output></output>
 </nav><script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=map-30c';
-import {createDeskHands} from '../dist/game-actors.js?v=map-30c';
+import {loadStudentAssets} from '../dist/student-assets.js?v=map-30d';
+import {createDeskHands} from '../dist/game-actors.js?v=map-30d';
 const canvas=document.querySelector('canvas'),renderer=new T.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.12;
 const scene=new T.Scene();scene.background=new T.Color('#dde6e7');
