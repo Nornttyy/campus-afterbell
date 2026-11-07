@@ -7,13 +7,13 @@ const mat=(name,color,roughness=.72,metalness=0)=>{
   if(!materials.has(name))materials.set(name,new THREE.MeshStandardMaterial({color,roughness,metalness}));
   return materials.get(name);
 };
-const skin=mat('skin','#edb08c'),skinShade=mat('skinShade','#cd8a6e'),shirt=mat('shirt','#d4e4da',.88);
-const adultSkin=mat('teacherSkin','#f2bc70',.78),adultShade=mat('teacherSkinShade','#d69a56',.85),collar=mat('poloCollar','#292d29',.9);
+const skin=mat('skin','#edb08c'),skinShade=mat('skinShade','#cd8a6e'),shirt=mat('shirt','#e0d7b7',.88);
+const adultSkin=mat('teacherSkin','#f2bd62',.78),adultShade=mat('teacherSkinShade','#d69a56',.85),collar=mat('poloCollar','#292d29',.9);
 const clothBlue=mat('schoolBlue','#286ac6'),cuffMat=mat('cuff','#f6f5e9'),pants=mat('pants','#43352f',.94);
 const hair=mat('teacherHair','#191b1c',.82),black=mat('black','#20201f',.84),pupil=mat('pupil','#161a21',.3);
 const sole=mat('sole','#3c3c42'),eyeWhite=mat('eyes','#fff8e9',.4),lip=mat('lip','#70493e');
 const button=mat('button','#c8d6cd',.65),belt=mat('belt','#403b37');
-const sphere=new THREE.SphereGeometry(1,18,12),box=new THREE.BoxGeometry(1,1,1),axisY=new THREE.Vector3(0,1,0);
+const sphere=new THREE.SphereGeometry(1,32,24),box=new THREE.BoxGeometry(1,1,1),axisY=new THREE.Vector3(0,1,0);
 const tmpA=new THREE.Vector3(),tmpB=new THREE.Vector3();
 function mesh(parent,geo,material,p=[0,0,0],s=[1,1,1],r=null){const m=new THREE.Mesh(geo,material);m.position.set(...p);m.scale.set(...s);if(r)m.rotation.set(...r);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 const oval=(parent,material,p,s,r=null)=>mesh(parent,sphere,material,p,s,r);
@@ -136,46 +136,65 @@ function makeArm(parent,{material=shirt,radius=.065,school=false,shortSleeve=fal
   return{group,pose,hand};
 }
 
-// The jaw, cheeks and forehead are one softly squared surface.
-const teacherFace=loft([[-.253,0,0],[-.242,.083,.079],[-.217,.143,.119],[-.164,.177,.143],[-.065,.192,.155],[.055,.188,.151],[.158,.178,.140],[.224,.141,.113],[.247,.058,.047],[.25,0,0]],40,.64);
+// One continuous cheek/jaw surface; features follow its curvature in profile.
+const teacherProfile=[[-.263,0,0],[-.253,.085,.074],[-.226,.155,.117],[-.185,.198,.149],[-.090,.226,.168],[.045,.225,.169],[.160,.212,.156],[.225,.167,.122],[.255,.075,.055],[.260,0,0]];
+const teacherCurve=new THREE.CatmullRomCurve3(teacherProfile.map(r=>v(r[1],r[0],r[2])),false,'centripetal');
+const teacherRings=Array.from({length:97},(_,i)=>{const p=teacherCurve.getPoint(i/96);return[p.y,Math.max(0,p.x),Math.max(0,p.z)];});
+const teacherFace=loft(teacherRings,64,.72);
+function teacherFront(x,y,offset=0){
+  let r=teacherRings[1];for(let i=1;i<teacherRings.length;i++)if(y<=teacherRings[i][0]){const a=teacherRings[i-1],b=teacherRings[i],t=clamp((y-a[0])/(b[0]-a[0]),0,1);r=[y,THREE.MathUtils.lerp(a[1],b[1],t),THREE.MathUtils.lerp(a[2],b[2],t)];break;}
+  return r[2]*Math.max(0,1-(Math.abs(x)/Math.max(.001,r[1]))**(2/.72))**(.72/2)+offset;
+}
 function teacherHairGeometry(){
-  // A continuous crew cut with a shallow jagged crown and a shaped hairline.
-  const p=[],idx=[],rows=18,cols=60;
+  const p=[],idx=[],rows=36,cols=112;
+  const profile=[[.04,.232,.177],[.16,.223,.170],[.225,.191,.147],[.260,.181,.138],[.279,.163,.125],[.290,.110,.084],[.293,0,0]];
   for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){
     const a=i/cols*Math.PI*2,front=Math.max(0,Math.cos(a)),t=j/rows;
-    const edge=-.105+.265*front**4,peak=.286+.024*Math.cos(a*11)+.013*Math.cos(a*19);
-    const y=THREE.MathUtils.lerp(edge,peak,t),rx=.196*(1-.14*t),rz=.162*(1-.14*t);
-    const hairline=.011*Math.cos(a*13)*front**5*(1-t)**5;
-    p.push(Math.sign(Math.sin(a))*Math.abs(Math.sin(a))**.65*rx,y+hairline,Math.sign(Math.cos(a))*Math.abs(Math.cos(a))**.65*rz-.010);
+    const zig=1-Math.abs((a*14/Math.PI)%2-1),edge=.060+.119*THREE.MathUtils.smoothstep(front,.20,.60)+.020*zig*THREE.MathUtils.smoothstep(front,.30,.65),y=THREE.MathUtils.lerp(edge,.293,t);
+    let rx=0,rz=0;for(let k=1;k<profile.length;k++)if(y<=profile[k][0]){const l=profile[k-1],r=profile[k],u=clamp((y-l[0])/(r[0]-l[0]),0,1);rx=THREE.MathUtils.lerp(l[1],r[1],u);rz=THREE.MathUtils.lerp(l[2],r[2],u);break;}
+    p.push(Math.sign(Math.sin(a))*Math.abs(Math.sin(a))**.72*rx,y,Math.sign(Math.cos(a))*Math.abs(Math.cos(a))**.72*rz-.001);
   }
   for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;idx.push(a,a+1,b,a+1,b+1,b);}
-  const top=p.length/3;p.push(0,.29,-.01);for(let i=0;i<cols;i++)idx.push(rows*(cols+1)+i,rows*(cols+1)+i+1,top);
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setIndex(idx);g.computeVertexNormals();return g;
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setIndex(idx);g.computeVertexNormals();smoothRingSeam(g,cols);return g;
 }
 const teacherCap=teacherHairGeometry();
-const shirtGeometry=loft([[-.020,0,0],[-.020,.207,.121],[-.026,.212,.126],[-.018,.213,.127],[.025,.209,.127],[.15,.202,.124],[.34,.213,.126],[.48,.249,.124],[.535,.22,.108],[.57,.105,.074]],32,.68);
-function facePatch(parent,material,outline,z){
-  const shape=new THREE.Shape();outline(shape);return mesh(parent,new THREE.ShapeGeometry(shape,18),material,[0,0,z]);
+// The reference has a belly that is wider than the chest, a narrow neck, and
+// long thin limbs. Detail is added to that silhouette, not a straight tunic.
+const shirtGeometry=softLoft([[-.024,0,0],[-.023,.238,.154],[-.008,.266,.172],[.045,.278,.180],[.150,.264,.171],[.310,.232,.145],[.440,.225,.128],[.505,.239,.119],[.545,.180,.096],[.576,.076,.060]],40,.80);
+function facePatch(parent,material,outline,offset=.006){
+  const shape=new THREE.Shape();outline(shape);
+  // Densify the triangulation so the smile wraps the cheeks instead of a
+  // flat cardboard patch intersecting the head when viewed from the side.
+  let geometry=new THREE.ShapeGeometry(shape,32).toNonIndexed();
+  for(let pass=0;pass<3;pass++){
+    const p=geometry.attributes.position,out=[];
+    for(let i=0;i<p.count;i+=3){const a=v(p.getX(i),p.getY(i),0),b=v(p.getX(i+1),p.getY(i+1),0),c=v(p.getX(i+2),p.getY(i+2),0),ab=a.clone().lerp(b,.5),bc=b.clone().lerp(c,.5),ca=c.clone().lerp(a,.5);for(const point of [a,ab,ca,ab,b,bc,ca,bc,c,ab,bc,ca])out.push(point.x,point.y,0);}
+    geometry.dispose();geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(out,3));
+  }
+  const positions=geometry.attributes.position;for(let i=0;i<positions.count;i++)positions.setZ(i,teacherFront(positions.getX(i),positions.getY(i),offset));const normals=[];for(let i=0;i<positions.count;i++){const x=positions.getX(i),y=positions.getY(i),h=.0001,dx=(teacherFront(x+h,y)-teacherFront(x-h,y))/(2*h),dy=(teacherFront(x,y+h)-teacherFront(x,y-h))/(2*h),n=v(-dx,-dy,1).normalize();normals.push(n.x,n.y,n.z);}geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));const m=mesh(parent,geometry,material);m.castShadow=false;return m;
 }
+function faceLine(parent,material,points,radius=.002,offset=.009){return curve(parent,material,points.map(([x,y])=>[x,y,teacherFront(x,y,offset)]),radius);}
 function createAdultHead(){
   const group=new THREE.Group(),fixed=new THREE.Group();group.add(fixed);mesh(fixed,teacherFace,adultSkin);mesh(fixed,teacherCap,hair);
   for(const side of [-1,1]){
-    oval(fixed,adultSkin,[side*.190,-.035,-.002],[.039,.057,.027]);
-    curve(fixed,adultShade,[[side*.208,-.063,.019],[side*.219,-.022,.022],[side*.204,-.002,.021]],.003);
+    oval(fixed,adultSkin,[side*.223,-.020,-.004],[.036,.056,.028]);
+    curve(fixed,adultShade,[[side*.238,-.049,.018],[side*.249,-.010,.023],[side*.234,.017,.021]],.003);
   }
-  // Broad grin and protruding white eyes are the teacher's defining silhouette.
-  facePatch(fixed,mat('teacherMouth','#452620',.9),s=>{s.moveTo(-.129,-.080);s.quadraticCurveTo(0,-.130,.129,-.080);s.quadraticCurveTo(.109,-.180,0,-.188);s.quadraticCurveTo(-.109,-.180,-.129,-.080);},.158);
-  facePatch(fixed,eyeWhite,s=>{s.moveTo(-.119,-.092);s.quadraticCurveTo(0,-.137,.119,-.092);s.lineTo(.101,-.130);s.quadraticCurveTo(0,-.166,-.101,-.130);s.closePath();},.160);
-  facePatch(fixed,mat('teacherTongue','#c46b60',.88),s=>{s.moveTo(-.049,-.175);s.quadraticCurveTo(0,-.155,.048,-.175);s.quadraticCurveTo(0,-.187,-.049,-.175);},.161);
-  oval(fixed,adultSkin,[0,-.020,.165],[.026,.035,.028]);
+  const mouth=mat('teacherMouth','#4e241b',.88),tooth=mat('teacherTeeth','#fff5d7',.62),seam=mat('teacherToothSeam','#c5b494',.84);
+  facePatch(fixed,mouth,s=>{s.moveTo(-.183,-.092);s.quadraticCurveTo(0,-.119,.183,-.092);s.quadraticCurveTo(.167,-.202,0,-.218);s.quadraticCurveTo(-.167,-.202,-.183,-.092);},.006);
+  facePatch(fixed,tooth,s=>{s.moveTo(-.171,-.105);s.quadraticCurveTo(0,-.131,.171,-.105);s.quadraticCurveTo(.146,-.194,0,-.203);s.quadraticCurveTo(-.146,-.194,-.171,-.105);},.009);
+  faceLine(fixed,seam,[[-.161,-.145],[-.117,-.160],[0,-.170],[.117,-.160],[.161,-.145]],.0018,.012);
+  for(let i=-4;i<=4;i++){const x=i*.033,top=-.118+.013*(x/.17)**2,bottom=-.199+.031*(x/.17)**2;faceLine(fixed,seam,[[x,top],[x*.97,(top+bottom)/2],[x*.91,bottom]],.0015,.013);}
+  // Narrow jagged moustache above the grin, including the corners.
+  for(const side of [-1,1]){const points=[];for(let i=0;i<17;i++){const x=side*(.020+i*.009),y=-.078+(i%2?-.009:.005)+.010*(i/16);points.push([x,y,teacherFront(x,y,.012)]);}curve(fixed,hair,points,.0024);}
+  oval(fixed,adultSkin,[0,-.017,.176],[.021,.028,.023]);
   const eyes=[];
   for(const side of [-1,1]){
-    const eye=new THREE.Group();eye.position.set(side*.080,.031,.144);group.add(eye);
-    oval(eye,eyeWhite,[0,0,0],[.059,.074,.032]);oval(eye,pupil,[side*.002,-.004,.030],[.021,.034,.008]);
-    oval(eye,eyeWhite,[-.006,.012,.038],[.006,.008,.002]);eyes.push(eye);
-    curve(fixed,hair,[[side*.043,.128,.146],[side*.076,.139,.149],[side*.111,.131,.140]],.0065);
+    const eye=new THREE.Group();eye.position.set(side*.095,.041,.158);group.add(eye);
+    oval(eye,eyeWhite,[0,0,0],[.069,.094,.039]);oval(eye,pupil,[0,.002,.036],[.032,.080,.010]);eyes.push(eye);
+    faceLine(fixed,hair,[[side*.053,.161],[side*.078,.167],[side*.102,.161]],.0075,.010);
   }
-  batch(fixed);return{group,eyes};
+  batch(fixed);fixed.traverse(o=>{if(o.isMesh&&[tooth,mouth,seam].includes(o.material)){o.castShadow=false;o.receiveShadow=false;}});return{group,eyes};
 }
 function shoeMesh(parent,x){
   const g=new THREE.Group();g.position.x=x;parent.add(g);
@@ -189,25 +208,26 @@ export function createTeacher(){
   const group=new THREE.Group();group.name='classroom-teacher';
   const body=new THREE.Group();group.add(body);const fixed=new THREE.Group();body.add(fixed);
   mesh(fixed,shirtGeometry,shirt,[0,.99,0]);
-  mesh(fixed,loft([[-.016,.182,.111],[.016,.182,.111]],24,.68),pants,[0,.989,0]);
+  mesh(fixed,loft([[-.016,.182,.111],[.016,.182,.111]],24,.68),pants,[0,.975,0]);
   mesh(fixed,loft([[-.055,.054,.053],[.047,.061,.058]],24,.85),adultSkin,[0,1.605,0]);
   mesh(fixed,loft([[-.014,.076,.069],[.014,.073,.068]],24,.8),collar,[0,1.568,0]);
   for(const side of [-1,1]){
     const s=new THREE.Shape();s.moveTo(side*.012,.034);s.lineTo(side*.049,.052);s.lineTo(side*.111,-.012);s.lineTo(side*.060,-.051);s.closePath();
-    mesh(fixed,new THREE.ExtrudeGeometry(s,{depth:.012,bevelEnabled:true,bevelSize:.003,bevelThickness:.002,bevelSegments:2}),shirt,[0,1.535,.071]);
+    mesh(fixed,new THREE.ExtrudeGeometry(s,{depth:.012,bevelEnabled:true,bevelSize:.003,bevelThickness:.002,bevelSegments:2}),collar,[0,1.535,.071]);
     curve(fixed,collar,[[side*.013,1.569,.092],[side*.06,1.588,.080],[side*.108,1.526,.088]],.0045);
   }
-  mesh(fixed,rounded(.029,.112,.006,.005),collar,[0,1.497,.124]);
-  for(let i=0;i<2;i++)oval(fixed,button,[0,1.473+i*.036,.130],[.004,.004,.002]);
-  mesh(fixed,rounded(.074,.077,.006,.007),shirt,[.112,1.388,.123],[1,1,1],[0,-.08,0]);
-  curve(fixed,mat('poloPocketSeam','#a8beb3',.94),[[.075,1.428,.128],[.149,1.428,.121]],.0013);
+  mesh(fixed,rounded(.034,.148,.006,.005),collar,[0,1.479,.139]);
+  for(let i=0;i<2;i++)oval(fixed,button,[0,1.452+i*.036,.146],[.004,.004,.002]);
+  mesh(fixed,rounded(.074,.077,.006,.007),shirt,[.121,1.362,.128],[1,1,1],[0,-.08,0]);
+  curve(fixed,mat('poloPocketSeam','#c7bea2',.94),[[.084,1.401,.139],[.158,1.401,.132]],.0013);
+  mesh(fixed,rounded(.009,.045,.006,.002),collar,[.105,1.415,.139]);
   batch(fixed);
-  const adultHead=createAdultHead();adultHead.group.position.y=1.81;body.add(adultHead.group);
+  const adultHead=createAdultHead();adultHead.group.position.y=1.835;body.add(adultHead.group);
   const arms=[makeArm(body,{side:-1,shortSleeve:true,handMaterial:adultSkin,handScale:1.18}),makeArm(body,{side:1,shortSleeve:true,handMaterial:adultSkin,handScale:1.18})];
   const legs=[];
   for(const side of [-1,1]){
-    const upper=segment(group,pants,.098),lower=segment(group,pants,.080),knee=oval(group,pants,[0,.52,0],[.078,.079,.074]),ankleSkin=segment(group,adultSkin,.047),foot=shoeMesh(group,side*.115);
-    const fabric=sweptLimb(group,pants,[.098,.080,.073]);upper.mesh.visible=false;lower.mesh.visible=false;knee.visible=false;
+    const upper=segment(group,pants,.078),lower=segment(group,pants,.060),knee=oval(group,pants,[0,.52,0],[.061,.065,.060]),ankleSkin=segment(group,adultSkin,.047),foot=shoeMesh(group,side*.115);
+    const fabric=sweptLimb(group,pants,[.078,.061,.054]);upper.mesh.visible=false;lower.mesh.visible=false;knee.visible=false;
     legs.push({side,upper,lower,knee,ankleSkin,foot,fabric});
   }
   const chalk=new THREE.Group();arms[1].hand.group.add(chalk);mesh(chalk,new THREE.CylinderGeometry(.005,.005,.055,10),cuffMat,[.011,.07,.026],[1,1,1],[Math.PI/2,0,0]);
@@ -219,27 +239,29 @@ export function createTeacher(){
     write=smooth(write,phase==='board'&&walk<.15?1:0,dt,5);alertValue=smooth(alertValue,clamp(Number(alert)||0,0,1),dt,7);
     const cycle=time*5.7,bob=Math.cos(cycle*2)*.012*walk;
     body.position.y=bob;body.rotation.z=Math.sin(cycle)*.012*walk;adultHead.group.rotation.set(-.025+alertValue*.045,headLook,Math.sin(time*.8)*.008);
-    const blink=(time%4.8)<.13?Math.sin(time%4.8/.13*Math.PI):0;adultHead.eyes.forEach(e=>e.scale.y=Math.max(.10,1-blink));
+    // Keep the long oval stare: scaling the eyeballs to blink changes their silhouette.
     legs.forEach((l,i)=>{const t=cycle+i*Math.PI,swing=Math.sin(t)*walk,footLift=Math.max(0,Math.cos(t))*.085*walk;
       const hip=v(l.side*.112,.98,0),knee=v(l.side*.118,.52+bob*.25,.04+swing*.10),ankle=v(l.side*.122,.112+footLift,swing*.20);
       l.upper.set(hip,knee);const trouserEnd=ankle.clone().add(v(0,.059,0));l.lower.set(knee,trouserEnd);l.fabric.set(hip,knee,trouserEnd);l.ankleSkin.set(ankle.clone().add(v(0,-.015,0)),trouserEnd);l.knee.position.copy(knee);l.foot.position.set(ankle.x,footLift,ankle.z);l.foot.rotation.x=-Math.max(0,Math.cos(t))*.13*walk;
     });
     arms.forEach((arm,i)=>{const side=i?1:-1,t=cycle+i*Math.PI,swing=-Math.sin(t)*walk;
       const shoulder=v(side*.238,1.485,0),elbow=v(side*.28,1.22,.02+swing*.13),wrist=v(side*.27,.995,swing*.21);
-      if(i===1){elbow.lerp(v(.29,1.64,.14),write);wrist.lerp(v(.27+Math.sin(time*2.7)*.024,1.79+Math.sin(time*3.4)*.023,.37),write);}
-      arm.pose(shoulder,elbow,wrist,{curl:i===1?write*.82:.16,rx:i===1?write*.26:0,rz:(1-write*(i===1?1:0))*Math.PI});
+      if(i===1){elbow.lerp(v(.31,1.48,.20),write);wrist.lerp(v(.21+Math.sin(time*5.2)*.025,1.75+Math.sin(time*7.4)*.018,.39),write);}
+      arm.pose(shoulder,elbow,wrist,{curl:i===1?write*.82:.16,rx:i===1?write*-.10:0,rz:(1-write*(i===1?1:0))*Math.PI});
     });
     chalk.visible=write>.15;
   }
   function gripNeck(worldPoint){
     const wrist=body.worldToLocal(worldPoint.clone()),side=wrist.x<0?-1:1,shoulder=v(side*.238,1.485,0),elbow=shoulder.clone().lerp(wrist,.48).add(v(side*.12,-.10,-.035));
-    arms[side<0?0:1].pose(shoulder,elbow,wrist,{curl:.75,rx:-.7,ry:0,rz:-.12});chalk.visible=false;
+    arms[side<0?0:1].pose(shoulder,elbow,wrist,{curl:.69,rx:-1.12,ry:-side*.42,rz:side*.20});chalk.visible=false;
   }
   function castChalk(progress){
     if(progress<=0)return;
-    const release=clamp((progress-.68)/.32,0,1),lift=THREE.MathUtils.smoothstep(progress/.3,0,1);
-    const shoulder=v(.238,1.485,0),elbow=v(.28,1.22,.02).lerp(v(.32,1.59-release*.19,.14+release*.12),lift),wrist=v(.27,.995,0).lerp(v(.27,1.77-release*.33,.26+release*.29),lift);
-    arms[1].pose(shoulder,elbow,wrist,{curl:.78,rx:.3-release*.7,rz:0});chalk.visible=false;
+    const p=clamp(progress,0,1),lift=THREE.MathUtils.smoothstep(p,0,.32),send=THREE.MathUtils.smoothstep(p,.32,.68),recover=THREE.MathUtils.smoothstep(p,.72,1);
+    const shoulder=v(.238,1.485,0),restElbow=v(.28,1.22,.02),restWrist=v(.27,.995,0);
+    const elbow=restElbow.clone().lerp(v(.33,1.48,.14),lift).lerp(v(.28,1.48,.33),send).lerp(restElbow,recover);
+    const wrist=restWrist.clone().lerp(v(.18,1.76,.20),lift).lerp(v(.25,1.63,.58),send).lerp(restWrist,recover);
+    arms[1].pose(shoulder,elbow,wrist,{curl:THREE.MathUtils.lerp(.78,.16,send*(1-recover)),rx:(-.3-send*.9)*(1-recover),ry:send*.22*(1-recover),rz:recover*Math.PI});chalk.visible=p<.68;
   }
   update(0);return{group,update,getHand:side=>arms[side==='right'?1:0].hand.group,gripNeck,castChalk};
 }
@@ -310,7 +332,7 @@ export function createDeskHands({createHand}={}){
   const arms=[-1,1].map(side=>{
     const hand=createHand?createHand(side,1.38):articulatedHand(side,1.38,-1,skin);
     const arm=new THREE.Group();group.add(arm);arm.add(hand.group);
-    return {group:arm,hand,pose(a,b,c,{curl=.15,rx=0,ry=0,rz=0}={}){hand.group.position.copy(c);hand.group.rotation.set(rx,ry,rz);hand.setCurl(curl);}};
+    return {group:arm,hand,pose(position,{curl=.15,rx=0,ry=0,rz=0}={}){hand.group.position.copy(position);hand.group.rotation.set(rx,ry,rz);hand.setCurl(curl);}};
   });
   arms.forEach((arm,i)=>{arm.group.name=i?'right-desk-arm':'left-desk-arm';arm.hand.group.name=i?'right-desk-hand':'left-desk-hand';});
   const props={snack:snackProp(),phone:phoneProp(),note:paperProp(),smoke:smokeProp()};Object.values(props).forEach(p=>group.add(p));
@@ -324,12 +346,11 @@ export function createDeskHands({createHand}={}){
   const gripBack={smoke:v(-.028,-.018,-.025),snack:v(-.028,-.018,-.025),phone:v(-.018,-.015,-.014),note:v(.010,.013,-.006)};
   for(const action of ['snack','phone','note','smoke']){const hand=arms[action==='note'?1:0].hand;hand.setCurl((action==='snack'||action==='smoke')?.80:action==='phone'?.78:.72);if(action==='note')hand.pointIndex(.25);grips[action].position.copy(hand.indexTip()).sub(gripBack[action].clone().multiplyScalar(1/hand.group.scale.x).applyQuaternion(grips[action].rotation));}
   function attachToGrip(prop,hand,anchor){hand.updateMatrix();prop.position.copy(anchor.position).applyMatrix4(hand.matrix);prop.quaternion.copy(hand.quaternion).multiply(anchor.rotation);}
-  function elbowFor(shoulder,wrist,side){const direction=wrist.clone().sub(shoulder),distance=direction.length();direction.normalize();const upperLength=.27,lowerLength=.245,along=(upperLength*upperLength-lowerLength*lowerLength+distance*distance)/(2*distance),bend=v(side*.68,-1,.14);bend.addScaledVector(direction,-bend.dot(direction)).normalize();return shoulder.clone().addScaledVector(direction,along).addScaledVector(bend,Math.sqrt(Math.max(0,upperLength*upperLength-along*along)));}
-  let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0;
+  let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0,using=0,smokeCharge=0,releaseCharge=0,wasReleasing=false;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
   function update(time,{action='snack',holding=false,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false}={}){
-    if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=0;}
+    if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=using=smokeCharge=releaseCharge=0;wasReleasing=false;}
     const dt=lastTime===null?1/60:clamp(time-lastTime,0,.08);lastTime=time;
     const requested=['snack','note','phone','smoke'].includes(action)?action:'snack';
     if(extension<.001&&active!==requested){active=requested;useTime=0;}
@@ -341,13 +362,20 @@ export function createDeskHands({createHand}={}){
     const idleWeight=1-ease(extension,0,.32);
     const clear=ease(extension,0,.16),lower=ease(extension,.16,.32),reach=ease(extension,.30,.48),pull=ease(extension,.48,.72),grip=ease(extension,.42,.70),use=ease(extension,.70,1),p=clamp(Number(progress)||0,0,1);
     if(engaged&&holding&&use>.94)useTime+=dt;else if(extension<.05)useTime=0;
+    using=smooth(using,engaged&&holding?1:0,dt,14);
     // The whole held food moves vertically; no separate bite or mouth reach.
-    const foodBob=seated&&!crouched?.034*Math.sin(useTime*Math.PI*2/1.05):0;
+    const foodBob=.034*Math.sin(useTime*Math.PI*2/1.05)*using;
     const pass=active==='note'?ease(p,.62,.96):0;
-    const tapCycle=(useTime%1.72)/1.72,tapPress=ease(tapCycle,.28,.43)*(1-ease(tapCycle,.48,.65));
+    const tapCycle=(useTime%1.72)/1.72,tapPress=ease(tapCycle,.28,.43)*(1-ease(tapCycle,.48,.65))*using;
     const tapIndex=Math.floor(useTime/1.72),tapTravel=ease(tapCycle,0,.23),tapX=THREE.MathUtils.lerp(.012+.022*Math.sin((tapIndex-1)*2.4),.012+.022*Math.sin(tapIndex*2.4),tapTravel),tapY=THREE.MathUtils.lerp(-.018+.025*Math.cos((tapIndex-1)*1.7),-.018+.025*Math.cos(tapIndex*1.7),tapTravel);
     const tapContact=v(tapX,tapY,.017+.018*(1-tapPress));
-    const windup=active==='smoke'?ease(p):0;
+    const releasing=active==='smoke'&&throwAge>=0&&throwAge<.34;
+    if(releasing&&!wasReleasing)releaseCharge=smokeCharge;
+    if(!releasing)smokeCharge=smooth(smokeCharge,active==='smoke'&&engaged?ease(p):0,dt,14);
+    wasReleasing=releasing;
+    const throwStroke=releasing?Math.sin(Math.PI*ease(throwAge,0,.34)):0;
+    const windup=releasing?releaseCharge*(1-ease(throwAge,0,.16)):smokeCharge;
+    if(releasing)smokeCharge=windup;
     const targets={
       smoke:[v(-.18-windup*.025,-.595+windup*.08,-.24+windup*.06),rest[1].clone()],
       snack:[v(-.20,-.595+foodBob,-.22),rest[1].clone()],
@@ -361,29 +389,52 @@ export function createDeskHands({createHand}={}){
       w.x=THREE.MathUtils.lerp(r.x,drawer[i].x,reach);w.z=THREE.MathUtils.lerp(w.z,drawer[i].z,reach);
       w.z=THREE.MathUtils.lerp(w.z,-.13,pull);return w.lerp(targets[active][i],use);
     });
-    // Walking carries objects at the waist. Crouching tucks the forearms in.
-    wrists.forEach((w,i)=>{const down=v((i?1:-1)*.24,-.29,-.50);w.lerp(down,standing);if(crouched){w.y-=.055;w.z+=.12*(1-reach)*(1-use);}w.y-=alertValue*.006;w.lerp(v((i?1:-1)*.285,-.24+Math.sin(time*1.35+i*.6)*.0015,-.52),idleWeight);});
-    const releasing=active==='smoke'&&throwAge>=0&&throwAge<.34;
-    if(releasing){const follow=1-ease(throwAge,0,.34);wrists[0].lerp(v(-.125,-.57,-.44),follow);}
+    // Standing changes the height of the carry, not the grip. The phone remains
+    // a two-hand action and food keeps its small vertical movement.
+    const standingTargets={
+      smoke:[v(-.23-windup*.02,-.30+windup*.06,-.52+windup*.075),v(.24,-.29,-.50)],
+      snack:[v(-.23,-.30+foodBob,-.52),v(.24,-.29,-.50)],
+      phone:[v(-.20,-.28,-.53),v(.09,-.27,-.50)],
+      note:[v(-.10,-.31,-.51),v(.19+pass*.20,-.30+pass*.015,-.54)]
+    };
+    wrists.forEach((w,i)=>{w.lerp(standingTargets[active][i],standing);if(crouched){w.y-=.055;w.z+=.12*(1-reach)*(1-use);}w.y-=alertValue*.006;w.lerp(v((i?1:-1)*.285,-.24,-.52),idleWeight);});
+    if(releasing)wrists[0].lerp(v(-.125,-.57,-.44).lerp(v(-.15,-.25,-.70),standing),throwStroke);
     const poses={
-      smoke:[{curl:.80,rx:-.75,ry:-1.02,rz:-.08},{curl:.10,rx:-Math.PI/2,ry:0,rz:0}],
+      smoke:[{curl:.80,rx:-.94,ry:-.83,rz:-.22},{curl:.10,rx:-Math.PI/2,ry:0,rz:0}],
       snack:[{curl:.80,rx:-.75,ry:-1.02,rz:-.08},{curl:.10,rx:-Math.PI/2,ry:0,rz:0}],
       phone:[{curl:.78,rx:-.75,ry:-1.08,rz:-.08},{curl:.94,rx:-.80,ry:-.36,rz:.65}],
       note:[{curl:.67,rx:-.85,ry:-.72,rz:-.18},{curl:.72,rx:-.85,ry:.72,rz:.16}]
     };
-    const livePoses=[];arms.forEach((arm,i)=>{
-      const side=i?1:-1,w=wrists[i],s=v(side*.265,-.37-standing*.045,.035);if(crouched)s.y-=.04;
-      // A two-segment solve keeps both sleeves the same length while a wrist
-      // travels between the drawer and held-object pose.
-      const e=elbowFor(s,w,side);
-      const target=poses[active][i],blend=use*(1-standing),restRX=-Math.PI/2+reach*.16;
-      const pose={curl:.10+(target.curl-.10)*grip,rx:restRX+(target.rx-restRX)*blend,ry:target.ry*blend,rz:target.rz*blend};
+    const standingPoses={
+      smoke:[{rx:-.44,ry:-.82,rz:-.30},{rx:-.65,ry:0,rz:.11}],
+      snack:[{rx:-.24,ry:-1.02,rz:-.08},{rx:-.65,ry:0,rz:.11}],
+      phone:[{rx:-.10,ry:-1.16,rz:.10},{rx:-.24,ry:-.36,rz:.65}],
+      note:[{rx:-.34,ry:-.72,rz:-.18},{rx:-.34,ry:.72,rz:.16}]
+    };
+    // A press extends the index; between presses its real phalanges flex back.
+    // Apply it before the contact solve and do not reset it while moving the wrist.
+    const tapCurl=.25-.19*tapPress;
+    function posePhoneIndex(hand,curl){
+      if(hand.setFingerCurl)hand.setFingerCurl('Index',THREE.MathUtils.lerp(curl,tapCurl,use));
+      else hand.pointIndex(use*(1-tapCurl/Math.max(.001,curl)));
+    }
+    arms.forEach((arm,i)=>{
+      const side=i?1:-1,w=wrists[i];
+      const target=poses[active][i],standingTarget=standingPoses[active][i],blend=ease(extension,.38,.86),restRX=-Math.PI/2+reach*.16;
+      const heldRX=THREE.MathUtils.lerp(target.rx,standingTarget.rx,standing),heldRY=THREE.MathUtils.lerp(target.ry,standingTarget.ry,standing),heldRZ=THREE.MathUtils.lerp(target.rz,standingTarget.rz,standing);
+      const pose={curl:.10+(target.curl-.10)*grip,rx:restRX+(heldRX-restRX)*blend,ry:heldRY*blend,rz:heldRZ*blend};
       if(active==='note'&&i===0){pose.rx=THREE.MathUtils.lerp(pose.rx,-Math.PI/2,pass);pose.ry*=1-pass;pose.rz*=1-pass;pose.curl*=1-pass*.85;}
-      pose.rx=THREE.MathUtils.lerp(pose.rx,-.23,standing);pose.rz=THREE.MathUtils.lerp(pose.rz,-side*.06,standing);
       pose.rx=THREE.MathUtils.lerp(pose.rx,-.65,idleWeight);pose.ry*=1-idleWeight;pose.rz=THREE.MathUtils.lerp(pose.rz,side*.11,idleWeight);
-      if(active==='smoke'&&i===0){pose.rx+=windup*.16;if(releasing){pose.rx-=.45*(1-ease(throwAge,0,.34));pose.curl*=ease(throwAge,0,.34);}}
-      livePoses[i]=pose;arm.pose(s,e,w,pose);
-      if(active==='phone'&&i===1&&use>.25&&standing<.1)arm.hand.pointIndex(use);
+      if(active==='smoke'&&i===0){pose.rx+=windup*.50-throwStroke*.66;pose.ry-=windup*.18;pose.rz-=windup*.16;if(releasing)pose.curl=THREE.MathUtils.lerp(pose.curl,.10,ease(throwAge,.035,.12));}
+      // Empty hands settle. Visible motion comes from taking, holding, using,
+      // and releasing an object rather than a constant idle wrist oscillation.
+      pose.curl=THREE.MathUtils.lerp(pose.curl,.18,idleWeight);
+      if(holding&&active==='note')pose.rz+=use*side*.035*Math.sin(useTime*3.2);
+      arm.pose(w,pose);
+      if(arm.hand.setFingerCurl){
+        arm.hand.setFingerCurl('Middle',pose.curl);arm.hand.setFingerCurl('Pinky',pose.curl+grip*.025);
+      }
+      if(active==='phone'&&i===1)posePhoneIndex(arm.hand,pose.curl);
       if(active==='note'&&i===1)arm.hand.pointIndex(grip*.25);
       arm.hand.opposeThumb(grip*(active==='note'&&i===0?1-pass:(active==='snack'||active==='smoke')&&i===1?0:1),active);
     });
@@ -395,10 +446,10 @@ export function createDeskHands({createHand}={}){
     props.note.visible=visible&&active==='note';attachToGrip(props.note,arms[1].hand.group,grips.note);
     function contactPoint(prop,p){prop.updateMatrix();return p.clone().applyMatrix4(prop.matrix);}
     function fitSecondaryHand(i,prop,p,amount){
-      const arm=arms[i],hand=arm.hand.group,target=contactPoint(prop,p),tip=arm.hand.indexTip().multiplyScalar(hand.scale.x).applyQuaternion(hand.quaternion),wrist=wrists[i].clone().lerp(target.sub(tip),amount),side=i?1:-1,s=v(side*.265,-.37-standing*.045,.035);if(crouched)s.y-=.04;
-      arm.pose(s,elbowFor(s,wrist,side),wrist,livePoses[i]);if(active==='phone')arm.hand.pointIndex(use);hand.updateMatrix();
+      const arm=arms[i],hand=arm.hand.group,target=contactPoint(prop,p),tip=arm.hand.indexTip().multiplyScalar(hand.scale.x).applyQuaternion(hand.quaternion);
+      hand.position.copy(wrists[i]).lerp(target.sub(tip),amount);hand.updateMatrix();
     }
-    if(active==='phone')fitSecondaryHand(1,props.phone,tapContact,use*(1-standing));
+    if(active==='phone')fitSecondaryHand(1,props.phone,tapContact,use);
     if(active==='note')fitSecondaryHand(0,props.note,v(-.060,.010,-.006),use*(1-pass));
     function thumbAt(i,prop,p,amount){const hand=arms[i].hand.group;hand.updateMatrix();const target=contactPoint(prop,p).applyMatrix4(hand.matrix.clone().invert());arms[i].hand.aimThumb(target,amount);}
     if(active==='smoke')thumbAt(0,props.smoke,v(-.032,-.020,.025),grip);

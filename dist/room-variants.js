@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {SEATS} from './classroom-layout.js?v=restraint-26';
+import {SEATS,TEACHER_EYE_HEIGHT,floorHeight} from './classroom-layout.js?v=map-30c';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic}){
   const group=new T.Group(),hardware=new T.Group(),screens=new Map();group.name='computer-lab';group.add(hardware);scene.add(group);group.visible=false;
@@ -37,7 +37,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic}){
       if(group.visible){const bySeat=new Map((state?.students||[]).filter(s=>s.seated).map(s=>[s.seatId,s]));for(const [id,screen]of screens)screen.material=bySeat.get(id)?.computerActive?gameMat:workMat;}
       if(light.visible){
         const t=state?.teacher||{x:.99,z:5.55,yaw:Math.PI},pitch=state?.role==='teacher'?state.player.pitch:.08;
-        light.position.set(t.x,1.65,t.z);light.target.position.set(t.x+Math.sin(t.yaw)*6,1.65-Math.tan(pitch)*6,t.z+Math.cos(t.yaw)*6);
+        const height=TEACHER_EYE_HEIGHT+floorHeight(t.x,t.z,state?.map);light.position.set(t.x,height,t.z);light.target.position.set(t.x+Math.sin(t.yaw)*6,height-Math.tan(pitch)*6,t.z+Math.cos(t.yaw)*6);
       }
     },dispose(){screenGeo.dispose();light.shadow.map?.dispose();}
   };

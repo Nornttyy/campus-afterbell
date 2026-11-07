@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from '../dist/smoke-physics.js';
-import {ROOM,DESKS} from '../dist/classroom-layout.js';
+import {ROOM,DESKS,AISLES,CEILING_HEIGHT} from '../dist/classroom-layout.js';
 
-const actor={id:9,x:.99,z:-4,yaw:0,pitch:0,seated:false};
+const actor={id:9,x:AISLES[1],z:-4,yaw:0,pitch:0,seated:false};
 const advance=(p,seconds)=>{let collisions=[];for(let i=0;i<seconds*120;i++)collisions.push(...stepSmokeProjectile(p,1/120));return collisions;};
 
 test('aim controls throw heading and upward throws travel farther than downward throws',()=>{
@@ -38,7 +38,7 @@ test('canisters bounce off floor, walls, ceiling and thin desk tops without tunn
   const hit=advance(floor,.05);assert.ok(hit.length);assert.ok(floor.y>=.075);assert.ok(floor.vy>0);
   const wall=createSmokeProjectile({...actor,x:ROOM.maxX-.12,yaw:Math.PI/2},2);wall.x=ROOM.maxX-.1;
   advance(wall,.05);assert.ok(wall.x<=ROOM.maxX-.075);assert.ok(wall.vx<0);
-  const ceiling=createSmokeProjectile(actor,3);ceiling.y=4.1;ceiling.vy=10;advance(ceiling,.05);assert.ok(ceiling.vy<0);assert.ok(ceiling.y<=4.205);
+  const ceiling=createSmokeProjectile(actor,3);ceiling.y=CEILING_HEIGHT-.18;ceiling.vy=10;advance(ceiling,.05);assert.ok(ceiling.vy<0);assert.ok(ceiling.y<=CEILING_HEIGHT-.075);
   const d=DESKS[0],desk=createSmokeProjectile(actor,4);Object.assign(desk,{x:(d.minX+d.maxX)/2,z:(d.minZ+d.maxZ)/2,y:1.2,vx:0,vy:-20,vz:0});
   advance(desk,.04);assert.ok(desk.bounces>0);assert.ok(desk.y>=.97);assert.ok(desk.vy>0);
 });

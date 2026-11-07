@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound, CLASSROOM_ACTIONS, DEVELOPMENT_TUNING, canSee, propVisibility} from '../dist/classroom-rules.js';
-import {SEATS, PLAYER_SEAT, FRIEND_SEATS, AISLES, DESKS, blocked} from '../dist/classroom-layout.js';
+import {SEATS, PLAYER_SEAT, FRIEND_SEATS, AISLES, DESKS, DETENTION, blocked} from '../dist/classroom-layout.js';
 const DT=1/60;
 function advanceUntil(round,condition,seconds=120,control=()=>{}){
   for(let i=0;i<seconds*60;i++){const s=round.snapshot();if(condition(s))return s;control(s,round);round.step(DT);}
@@ -57,9 +57,9 @@ test('same seed, controls and elapsed time are deterministic across caller dt pa
 });
 
 test('FOV and range use actual geometry; smoke blocks the segment, not the whole room',()=>{
-  const t={x:0,z:0,yaw:0};
-  assert.equal(canSee(t,{x:0,z:8.9}),true);assert.equal(canSee(t,{x:0,z:9.1}),false);
-  assert.equal(canSee(t,{x:0,z:-1}),false);assert.equal(canSee(t,{x:4,z:1}),false);
+  const t={x:0,z:-3,yaw:0};
+  assert.equal(canSee(t,{x:0,z:5.9}),true);assert.equal(canSee(t,{x:0,z:6.1}),false);
+  assert.equal(canSee(t,{x:0,z:-4}),false);assert.equal(canSee(t,{x:4,z:-2}),false);
   assert.equal(canSee(t,{x:0,z:6},[{x:0,z:3,radius:1,remaining:2}]),false);
   assert.equal(canSee(t,{x:0,z:6},[{x:4,z:3,radius:1,remaining:2}]),true);
   assert.equal(canSee(t,{x:0,z:6},[{x:0,z:3,radius:1,remaining:0}]),true);
@@ -86,7 +86,7 @@ test('movement collides with desks, can use an aisle, and standing actions earn 
   const r=new ClassroomRound({target:100000});r.start();r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
   takeAndUse(r);r.setMovement(0,1);r.step(2);
   let s=r.snapshot();const desk=DESKS[PLAYER_SEAT];assert.ok(s.player.z<=desk.minZ-.18+1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
-  r.setMovement(1,0);r.step(.62);r.setMovement(0,1);r.step(2);
+  r.setMovement(-1,0);r.step((r.player.x-AISLES[1])/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,1);r.step(2);
   s=r.snapshot();assert.ok(s.player.z>SEATS[PLAYER_SEAT].z+1);assert.equal(blocked(s.player.x,s.player.z),false);
   assert.equal(s.completed.snack,0);assert.equal(s.holding,true);
   const other=new ClassroomRound();other.start();assert.equal(other.interact(),'stood');assert.equal(other.interact(),'seated');assert.equal(other.snapshot().player.seatId,PLAYER_SEAT);
@@ -128,7 +128,7 @@ test('smoke must be thrown from a consumed drawer slot before impact creates a g
   assert.equal(s.drawer.slots[0].readyIn,3);assert.equal(s.projectiles.length,1);assert.equal(s.smokes.length,0);assert.equal(r.hold(true),false);
   const launch=s.projectiles[0];r.step(.15);s=r.snapshot();assert.ok(Math.hypot(s.projectiles[0].x-launch.x,s.projectiles[0].z-launch.z)>.5);assert.equal(s.smokes.length,0);
   s=advanceUntil(r,s=>s.smokes.length===1,3);const cloud=s.smokes[0];assert.equal(cloud.ownerId,r.player.id);assert.ok(s.projectiles[0].bounces>0);
-  const source={x:cloud.x,z:cloud.z-2,yaw:0},target={x:cloud.x,z:cloud.z+2};
+  const source={x:cloud.x-1,z:cloud.z,yaw:Math.PI/2},target={x:cloud.x+1,z:cloud.z};
   assert.equal(canSee(source,target,s.smokes),true,'A just-starting wisp is not opaque');
   r.step(1.5);s=r.snapshot();assert.ok(s.smokes[0].radius>cloud.radius);assert.equal(canSee(source,target,s.smokes),false);
   const ready=r.snapshot();r.pause();r.step(10);assert.deepEqual(r.snapshot().projectiles,ready.projectiles);r.pause(false);
@@ -141,10 +141,10 @@ test('confirmed identification survives hiding, stuns, physically escorts and bi
   r.hold(false);const before=r.snapshot().elapsed;
   advanceUntil(r,s=>s.teacher.castProgress>0,10);
   const windup=r.snapshot().elapsed;r.step(.3);assert.equal(r.snapshot().player.caught,false);
-  const carried=advanceUntil(r,s=>s.player.captivity==='carried',10);assert.equal(carried.caughtCount,0);assert.notEqual(carried.player.z,5.18);
+  const carried=advanceUntil(r,s=>s.player.captivity==='carried',10);assert.equal(carried.caughtCount,0);assert.notEqual(carried.player.z,DETENTION[0].z-.30);
   const s=advanceUntil(r,s=>s.player.caught,35);
   assert.ok(s.elapsed-windup>=.7-DT-1e-6);assert.ok(s.elapsed>before);
-  assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.equal(s.player.z,5.18);
+  assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.ok(Math.abs(s.player.z-(DETENTION[0].z-.30))<1e-9);
   assert.equal(takeAndUse(r),false);assert.equal(r.interact(),false);assert.equal(r.setMovement(1,0),false);assert.equal(r.setLook(1,0),true);
   const events=r.drainEvents();assert.equal(events.filter(e=>e.type==='bound'&&e.studentId===PLAYER_SEAT).length,1);assert.equal(events.filter(e=>e.type==='chalk'&&e.studentId===PLAYER_SEAT).length,1);
   assert.equal(events.some(e=>e.type==='finish'),false);

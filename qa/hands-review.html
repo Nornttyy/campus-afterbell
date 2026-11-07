@@ -2,12 +2,12 @@
 <html lang="zh"><meta charset="utf-8"><title>手部动作检视</title>
 <style>body{margin:0;background:#dde6e7;font:14px sans-serif;color:#213b43}canvas{display:block;width:100vw;height:100vh}nav{position:fixed;top:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:#fffe;padding:10px;border-radius:6px}button,select{font:inherit;padding:9px 14px;border:1px solid #9eafb2;background:white;border-radius:4px;color:inherit}button[aria-pressed=true]{background:#276a83;color:white}output{min-width:9em}</style>
 <canvas aria-label="实际手部模型"></canvas><nav>
-<select aria-label="检视物品"><option value="snack">零食</option><option value="phone">手机</option><option value="note">纸条</option></select>
-<button id="hold" aria-pressed="false">拿起</button><button id="pause" aria-pressed="false">暂停</button><button id="step">前进一帧</button><output></output>
+<select aria-label="检视物品"><option value="snack">零食</option><option value="phone">手机</option><option value="note">纸条</option><option value="smoke">烟雾弹</option></select>
+<button id="hold" aria-pressed="false">拿起</button><button id="pause" aria-pressed="false">暂停</button><button id="step">前进一帧</button><button id="stand">站立</button><label>蓄力 <input id="charge" type="range" min="0" max="1" step=".01" value="0" style="width:80px"></label><button id="throw">投掷</button><output></output>
 </nav><script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=palms-15';
-import {createDeskHands} from '../dist/game-actors.js?v=palms-15';
+import {loadStudentAssets} from '../dist/student-assets.js?v=map-30c';
+import {createDeskHands} from '../dist/game-actors.js?v=map-30c';
 const canvas=document.querySelector('canvas'),renderer=new T.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.12;
 const scene=new T.Scene();scene.background=new T.Color('#dde6e7');
@@ -16,15 +16,17 @@ const sun=new T.DirectionalLight('#fff2d5',3.1);sun.position.set(-4,6,5);scene.a
 const fill=new T.DirectionalLight('#fff0dc',.95);fill.position.set(5,4,6);scene.add(fill);
 const camera=new T.PerspectiveCamera(65,1,.04,20);scene.add(camera);
 const assets=await loadStudentAssets();const hands=createDeskHands({createHand:assets.createHand});camera.add(hands.group);
-let time=0,holding=false,paused=false,action='snack',last=0;
+let time=0,holding=false,paused=false,action='snack',last=0,seated=true,throwAt=-Infinity;
 const out=document.querySelector('output'),hold=document.querySelector('#hold'),pause=document.querySelector('#pause');
 hold.onclick=()=>{holding=!holding;hold.textContent=holding?'放下':'拿起';hold.setAttribute('aria-pressed',String(holding))};
 pause.onclick=()=>{paused=!paused;pause.textContent=paused?'继续':'暂停';pause.setAttribute('aria-pressed',String(paused))};
 document.querySelector('select').onchange=e=>action=e.target.value;
+document.querySelector('#stand').onclick=e=>{seated=!seated;e.target.textContent=seated?'站立':'坐下';};
+document.querySelector('#throw').onclick=()=>{throwAt=time;holding=false;hold.textContent='拿起';hold.setAttribute('aria-pressed','false');};
 document.querySelector('#step').onclick=()=>{time+=1/60;draw()};
 function draw(){
-  hands.update(time,{action,holding,progress:0,seated:true,viewPitch:.08});
-  const focus=hands.getFocus();camera.position.set(0,1.43-.12*focus,0);camera.rotation.x=-(.08+.85*focus);
+  hands.update(time,{action,holding,progress:Number(document.querySelector('#charge').value),seated,viewPitch:.08,throwAge:time-throwAt});
+  const focus=hands.getFocus();camera.position.set(0,(seated?1.43:1.65)-.12*focus,0);camera.rotation.x=-(.08+.85*focus);
   const state=hands.getDebug();canvas.dataset.phase=String(state.extension);canvas.dataset.active=state.active;canvas.dataset.visible=String(state.visible);canvas.dataset.ready=String(state.extension>=.99&&holding);
   out.textContent=`${time.toFixed(2)}s · ${(state.extension*100).toFixed(0)}%`;
   renderer.render(scene,camera);

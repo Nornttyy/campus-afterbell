@@ -7,8 +7,8 @@ try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch {}
 const volume = (value, fallback) => Number.isFinite(+value) ? Math.min(100,Math.max(0,+value)) : fallback;
 const settings = { ...defaults, music:volume(saved.music,25), sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:saved.quality==='low'?'low':'high', motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion, character:['boy','girl','glasses'].includes(saved.character)?saved.character:'boy' };
 let scene, game, sceneReady=false, openingButton=null, draftCharacter=settings.character;
-let roundOptions={role:saved.role==='teacher'?'teacher':'student',map:['classroom','night','computer'].includes(saved.map)?saved.map:'classroom'};
-const mapNames={classroom:'白天教室',night:'晚自习',computer:'机房'};
+let roundOptions={role:saved.role==='teacher'?'teacher':'student',map:['classroom','night','tiered','computer'].includes(saved.map)?saved.map:'classroom'};
+const mapNames={classroom:'白天教室',night:'晚自习',tiered:'阶梯教室',computer:'机房'};
 function syncRoundOptions(){
   $$('[data-role]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.role===roundOptions.role)));
   $$('[data-map]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.map===roundOptions.map)));
@@ -107,9 +107,9 @@ $('#skip-load').addEventListener('click',finishLoad);
 const slowTimer=setTimeout(()=>{$('#skip-load').hidden=false;$('#load-status').textContent='教室还在准备，可以先查看菜单';},7000);
 async function init(){
   try{
-    loadStep(20,'正在打开教室');const module=await import('./classroom.js?v=restraint-26');loadStep(58,'摆好课桌，打开窗户');
+    loadStep(20,'正在打开教室');const module=await import('./classroom.js?v=map-30c');loadStep(58,'摆好课桌，打开窗户');
     scene=await module.createClassroom($('#classroom'));
-    const {createClassroomGame}=await import('./classroom-game.js?v=restraint-26');game=createClassroomGame({scene,audio,settings,onExit:()=>$('#enter-classroom').focus({preventScroll:true})});
+    const {createClassroomGame}=await import('./classroom-game.js?v=map-30c');game=createClassroomGame({scene,audio,settings,onExit:()=>$('#enter-classroom').focus({preventScroll:true})});
     applySettings();syncRoundOptions();scene.setCharacter(settings.character);sceneReady=true;document.body.classList.add('scene-ready');loadStep(100,'同学们已入座');
     setTimeout(finishLoad,350);
   }catch(error){console.error('Classroom unavailable:',error);$('#classroom').hidden=true;$('#enter-classroom').disabled=true;$('#enter-classroom').querySelector('strong').textContent='教室暂不可用';finishLoad();toast('三维场景未能打开，仍可查看菜单与设置');}
