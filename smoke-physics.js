@@ -1,4 +1,4 @@
-import {ROOM,DESKS,WALL_VOLUMES,LECTERN,CEILING_HEIGHT,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=map-30c';
+import {ROOM,DESKS,WALL_VOLUMES,LECTERN,CEILING_HEIGHT,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=map-30d';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));

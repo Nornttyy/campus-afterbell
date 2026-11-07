@@ -1,7 +1,7 @@
-import {createStudentHandMotion} from './hand-motion.js?v=map-30c';
-import {createCapturePose} from './capture-poses.js?v=map-30c';
+import {createStudentHandMotion} from './hand-motion.js?v=map-30d';
+import {createCapturePose} from './capture-poses.js?v=map-30d';
 import * as T from './vendor/three.module.js';
-import {createDeskItem} from './game-actors.js?v=map-30c';
+import {createDeskItem} from './game-actors.js?v=map-30d';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 function cloneSkin(source){
@@ -11,7 +11,7 @@ function cloneSkin(source){
 }
 export async function loadStudentAssets(){
  const loader=new GLTFLoader(),files=['student-boy-v2','student-girl-v2','student-glasses-v1','hand-left-v1','hand-right-v1'];
- const [boy,girl,glasses,left,right]=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=map-30c`,import.meta.url).href)));
+ const [boy,girl,glasses,left,right]=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=map-30d`,import.meta.url).href)));
  return {createStudent:(options={})=>{const source=options.glasses&&options.variant!=='girl'?glasses:options.variant==='girl'?girl:boy;return createRiggedStudent({scene:cloneSkin(source.scene),animations:source.animations},options);},createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)};
 }
 export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glasses=false}={}){

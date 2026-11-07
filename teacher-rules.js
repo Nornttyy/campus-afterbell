@@ -1,5 +1,5 @@
-import {ClassroomRound} from './classroom-rules.js?v=map-30c';
-import {ROOM,SEATS,BOARD,DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,WALL_VOLUMES,LECTERN,OFFICE_SOLIDS,floorTiles,clearWallSegment,floorHeight} from './classroom-layout.js?v=map-30c';
+import {ClassroomRound} from './classroom-rules.js?v=map-30d';
+import {ROOM,SEATS,BOARD,DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,WALL_VOLUMES,LECTERN,OFFICE_SOLIDS,floorTiles,clearWallSegment,floorHeight} from './classroom-layout.js?v=map-30d';
 
 // Segment tests share real desk/book/monitor positions with the renderer.
 // Chalk speed, cooldown and stagger are local tuning, not measured original values.
