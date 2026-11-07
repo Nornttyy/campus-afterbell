@@ -120,6 +120,23 @@ tex=head_mat.node_tree.nodes.new('ShaderNodeTexImage');tex.image=head_img
 head_mat.node_tree.links.new(tex.outputs['Color'],head_mat.node_tree.nodes.get('Principled BSDF').inputs['Base Color'])
 body.data.materials.append(head_mat);head_material=len(body.data.materials)-1
 uv_layer=bm.loops.layers.uv.active
+# The retained source underside is a closed chin/neck surface, not a hole.
+# Its baked dark skin patch met the new uniform face at the cut plane and
+# looked like an open circular throat when the Head bone tilted back. Give
+# the actual skin below that seam the same face material; preserve topology,
+# normals, rig weights and the blue collar instead of covering it with a cap.
+continuous_neck_faces=0
+for face in bm.faces:
+ center=sum((body.matrix_world@v.co for v in face.verts),Vector())/len(face.verts)
+ if not(.625<center.z<cut_z+.00001) or abs(center.x)>.12:continue
+ coord=sum((loop[uv_layer].uv for loop in face.loops),Vector((0,0)))/len(face.loops)
+ px=min(w-1,max(0,int(coord.x*w)));py=min(h-1,max(0,int(coord.y*h)))
+ c=pixels[(py*w+px)*4:(py*w+px)*4+3]
+ if c[0]>c[1]*1.08 and c[0]>c[2]*1.20 and c[1]>c[2]*1.05:
+  face.material_index=head_material
+  for loop in face.loops:loop[uv_layer].uv=(.25,.025)
+  continuous_neck_faces+=1
+assert continuous_neck_faces>30,'No neck skin found at the rebuilt head seam'
 deform=bm.verts.layers.deform.verify();head_group=body.vertex_groups.get('mixamorig:Head').index
 NHEAD=160;RHEAD=96;newrings=[]
 for j in range(RHEAD):
@@ -262,6 +279,7 @@ audit={
  'repairedVertexCount':len(body.data.vertices),'repairedFaceCount':len(body.data.polygons),
  'headAngularSamples':NHEAD,'headVerticalSamples':RHEAD,
  'neckBoundaryVertices':len(neck),'neckZipperFaces':zipper_faces,
+ 'continuousNeckSkinFaces':continuous_neck_faces,
  'cranialOpenEdges':cranial_open_edges,'sourceHeadSurfacePreserved':False,
  'preservedSourceFeatures':['front nose and jaw silhouette','front eye bulge','ear outer contour','original neck, body and four-finger rig'],
  'napeClearanceAboveCollar':min(p[2]for p in hair_edge)-.635,

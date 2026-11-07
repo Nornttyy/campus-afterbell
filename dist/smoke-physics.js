@@ -1,9 +1,9 @@
-import {ROOM,DESKS,WALL_VOLUMES,LECTERN,CEILING_HEIGHT,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=map-30d';
+import {ROOM,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=classroom-31';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const colliderCache=new Map();
-function tablesFor(map='classroom'){if(!colliderCache.has(map))colliderCache.set(map,[...DESKS.map(d=>{const h=floorHeight((d.minX+d.maxX)/2,(d.minZ+d.maxZ)/2,map);return{...d,minY:h+.80,maxY:h+.895};}),...WALL_VOLUMES,...OFFICE_SOLIDS,...floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})),{...LECTERN,minY:.16,maxY:1.15}]);return colliderCache.get(map);}
+function tablesFor(map='classroom'){if(!colliderCache.has(map))colliderCache.set(map,[...DESKS.map(d=>{const h=floorHeight((d.minX+d.maxX)/2,(d.minZ+d.maxZ)/2,map);return{...d,minY:h+.80,maxY:h+.895};}),...enclosureVolumes(map),...OFFICE_SOLIDS,...floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})),{...LECTERN,minY:.16,maxY:1.15}]);return colliderCache.get(map);}
 
 function safeRelease(origin,hand,map){
   const tables=tablesFor(map);
@@ -20,7 +20,7 @@ function safeRelease(origin,hand,map){
   }
   const p=Object.fromEntries(['x','y','z'].map(axis=>[axis,origin[axis]+(hand[axis]-origin[axis])*travel]));
   p.x=clamp(p.x,ROOM.minX+R,ROOM.maxX-R);p.z=clamp(p.z,ROOM.minZ+R,ROOM.maxZ-R);
-  p.y=clamp(p.y,floorHeight(p.x,p.z,map)+R,CEILING_HEIGHT-R);return p;
+  p.y=Math.max(p.y,floorHeight(p.x,p.z,map)+R);return p;
 }
 
 export function createSmokeProjectile(actor,id,charge=0,map='classroom'){
@@ -52,7 +52,6 @@ export function stepSmokeProjectile(p,dt){
     p.x+=p.vx*h;p.y+=p.vy*h-.5*GRAVITY*h*h;p.z+=p.vz*h;p.vy-=GRAVITY*h;
     let normal=null;
     if(p.y<floorHeight(p.x,p.z,map)+R){p.y=floorHeight(p.x,p.z,map)+R;normal=[0,1,0];}
-    else if(p.y>CEILING_HEIGHT-R){p.y=CEILING_HEIGHT-R;normal=[0,-1,0];}
     if(p.x<ROOM.minX+R){p.x=ROOM.minX+R;normal=[1,0,0];}
     else if(p.x>ROOM.maxX-R){p.x=ROOM.maxX-R;normal=[-1,0,0];}
     if(p.z<ROOM.minZ+R){p.z=ROOM.minZ+R;normal=[0,0,1];}

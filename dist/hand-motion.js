@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {strugglePose} from './capture-poses.js?v=map-30d';
+import {strugglePose} from './capture-poses.js?v=classroom-31';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 // Pose the palm using the actual digit bases. The female right rig has its
 // transverse axis reversed, so a left/right sign alone is not sufficient.
@@ -62,12 +62,14 @@ export function createStudentHandMotion(group,bones,{seed=0}={}){
      else if(kind==='rescuing'){along=V(sign*(.14+.12*turn),.24+.18*release,1);dorsal=V(sign*.30*turn,1,-.3);}
      else if(kind==='stunned'){along=V(sign*.12,-1,.17);dorsal=V(sign*.12,.10,1);}
      else if(kind==='recovering'){along=V(sign*.10,-1,.11);dorsal=V(sign*.12,0,1);}
-     if(along){const world=group.getWorldQuaternion(Q());const target=basis(along.applyQuaternion(world),dorsal.applyQuaternion(world));
+     const character=group.getWorldQuaternion(Q());
+     if(along){const target=basis(along,dorsal);
       target.multiply(h.localBasis);
-      // Preserve the previous world orientation while the elbow/forearm turns.
-      // Keeping a parent-local quaternion here produces a visible wrist snap.
-      h.previous=(h.previous||h.wrist.getWorldQuaternion(Q())).slerp(target,1-Math.exp(-6*dt));}
-     if(h.previous)h.wrist.quaternion.slerp(h.wrist.parent.getWorldQuaternion(Q()).invert().multiply(h.previous),restraintBlend);
+      // Filter in character space: the palm can lag the moving forearm, but
+      // must travel with its carrier through a turn. World-space history left
+      // the hand behind, and even reversed it while the recovery faded out.
+      h.previous=(h.previous||character.clone().invert().multiply(h.wrist.getWorldQuaternion(Q()))).slerp(target,1-Math.exp(-6*dt));}
+     if(h.previous)h.wrist.quaternion.slerp(h.wrist.parent.getWorldQuaternion(Q()).invert().multiply(character).multiply(h.previous),restraintBlend);
     }else h.previous=null;
     h.wrist.quaternion.multiply(Q().setFromAxisAngle(h.across,values.rx));
     for(const d of h.digits){

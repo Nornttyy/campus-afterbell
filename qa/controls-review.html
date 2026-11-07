@@ -5,7 +5,7 @@
   <meta name="theme-color" content="#f1eedf"><meta name="description" content="下课别走：阳光教室里的校园捣蛋游戏。观察老师，和四位 AI 同学配合，偷偷完成课堂小动作。">
   <title>下课别走 · 校园派对</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232d786c'/%3E%3Cpath d='M16 18h32v25H16z' fill='%23fff6dd'/%3E%3Cpath d='M25 49h14M32 43v6M24 27h16M24 34h10' stroke='%232d786c' stroke-width='4'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=map-30d">
+  <link rel="stylesheet" href="./style.css?v=classroom-31">
 
 </head>
 <body>
@@ -49,7 +49,7 @@
   </div>
 
   <section id="play-ui" hidden aria-label="课堂游戏">
-    <header class="play-top"><div class="round-clock"><svg><use href="#i-person"/></svg><strong id="round-clock">5 / 5</strong></div><div class="round-goal"><div><span>捣乱值</span><strong id="round-score">0</strong><small id="round-target">/ 100</small></div><div class="goal-track"><i id="score-fill"></i></div></div><button class="icon-button" id="pause-game" aria-label="暂停游戏"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button></header>
+    <header class="play-top"><div class="round-clock"><svg><use href="#i-person"/></svg><strong id="round-clock">5 / 5</strong></div><div id="teacher-stamina" class="stamina-meter" hidden><div><span>体力</span><strong id="stamina-number">100%</strong></div><div class="stamina-track"><i id="stamina-fill"></i></div></div><div class="round-goal"><div><span>捣乱值</span><strong id="round-score">0</strong><small id="round-target">/ 100</small></div><div class="goal-track"><i id="score-fill"></i></div></div><button class="icon-button" id="pause-game" aria-label="暂停游戏"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button></header>
     <i id="crosshair" hidden aria-hidden="true"></i>
     <div id="use-progress" role="progressbar" aria-label="物品使用进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="use-ring-shadow" cx="24" cy="24" r="19"/><circle class="use-ring-track" cx="24" cy="24" r="19"/><circle id="use-progress-fill" cx="24" cy="24" r="19" pathLength="100"/></svg></div><div id="round-feedback" aria-live="polite"></div>
     <div id="speech" hidden role="status"><b id="speech-name"></b><span id="speech-text"></span></div>
@@ -81,5 +81,5 @@
     </div><button class="primary-button compact close" id="settings-done"><span>完成</span><svg><use href="#i-check"/></svg></button>
   </dialog>
 </main>
-<script type="module" src="../qa/controls-review.js?v=map-30d"></script><nav id="qa-controls" style="position:fixed;bottom:6px;left:6px;z-index:100;background:white;padding:6px"><label>低头 <input id="qa-pitch" value="0" type="number" step=".1" style="width:60px"></label><button id="qa-snack">拿取零食</button><button id="qa-smoke">拿取烟雾弹</button></nav>
+<script type="module" src="../qa/controls-review.js?v=classroom-31"></script><nav id="qa-controls" style="position:fixed;bottom:6px;left:6px;z-index:100;background:white;padding:6px"><label>低头 <input id="qa-pitch" value="0" type="number" step=".1" style="width:60px"></label><button id="qa-snack">拿取零食</button><button id="qa-smoke">拿取烟雾弹</button></nav>
 </body></html>

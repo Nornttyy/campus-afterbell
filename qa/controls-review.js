@@ -1,6 +1,6 @@
-import {createClassroom} from '../dist/classroom.js?v=map-30d';
-import {createClassroomGame} from '../dist/classroom-game.js?v=map-30d';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=map-30d';
+import {createClassroom} from '../dist/classroom.js?v=classroom-31';
+import {createClassroomGame} from '../dist/classroom-game.js?v=classroom-31';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=classroom-31';
 class ReviewRound extends ClassroomRound{
   reset(){return super.reset(11);}
   start(){super.start();this.teacher.x=this.teacher.z=30;this._thinkAt=this._plan.until=Infinity;this._plan.route=[];for(const s of this.students)if(s.isTeammate)s._decisionAt=Infinity;return this.snapshot();}

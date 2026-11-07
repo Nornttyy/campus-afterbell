@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from '../dist/smoke-physics.js';
-import {ROOM,DESKS,AISLES,CEILING_HEIGHT} from '../dist/classroom-layout.js';
+import {ROOM,DESKS,AISLES,CEILING_HEIGHT,TIERED_CEILING_HEIGHT} from '../dist/classroom-layout.js';
 
 const actor={id:9,x:AISLES[1],z:-4,yaw:0,pitch:0,seated:false};
 const advance=(p,seconds)=>{let collisions=[];for(let i=0;i<seconds*120;i++)collisions.push(...stepSmokeProjectile(p,1/120));return collisions;};
@@ -41,6 +41,16 @@ test('canisters bounce off floor, walls, ceiling and thin desk tops without tunn
   const ceiling=createSmokeProjectile(actor,3);ceiling.y=CEILING_HEIGHT-.18;ceiling.vy=10;advance(ceiling,.05);assert.ok(ceiling.vy<0);assert.ok(ceiling.y<=CEILING_HEIGHT-.075);
   const d=DESKS[0],desk=createSmokeProjectile(actor,4);Object.assign(desk,{x:(d.minX+d.maxX)/2,z:(d.minZ+d.maxZ)/2,y:1.2,vx:0,vy:-20,vz:0});
   advance(desk,.04);assert.ok(desk.bounces>0);assert.ok(desk.y>=.97);assert.ok(desk.vy>0);
+});
+test('tiered canisters pass the old ceiling, bounce at the raised roof and stay below adjoining low roofs',()=>{
+  const free=createSmokeProjectile(actor,1,1,'tiered');Object.assign(free,{x:0,z:0,y:4.4,vx:0,vy:2,vz:0});
+  advance(free,.15);assert.ok(free.y>CEILING_HEIGHT);assert.equal(free.firstImpact,null);assert.ok(free.vy>0);
+  for(const [x,z,height] of [[0,0,TIERED_CEILING_HEIGHT],[7.15,0,CEILING_HEIGHT],[5.5,9.5,CEILING_HEIGHT]]){
+    const p=createSmokeProjectile(actor,2,1,'tiered');Object.assign(p,{x,z,y:height-.18,vx:0,vy:10,vz:0});
+    advance(p,.05);assert.ok(p.bounces>0);assert.ok(p.vy<0);assert.ok(p.y<=height-.075);
+  }
+  const wall=createSmokeProjectile(actor,3,1,'tiered');Object.assign(wall,{x:5.5,z:0,y:4.85,vx:10,vy:0,vz:0});
+  advance(wall,.05);assert.ok(wall.bounces>0);assert.ok(wall.vx<0);assert.ok(wall.x<=5.8-.075);
 });
 test('settled canisters stay at rest instead of jittering or sinking into a surface',()=>{
   const p=createSmokeProjectile(actor,1);advance(p,4);assert.equal(p.settled,true);const {x,y,z,spinX,spinZ}=p;

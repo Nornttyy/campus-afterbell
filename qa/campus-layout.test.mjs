@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SEATS,DETENTION,DOORS,DOOR_LEAVES,TEACHER_EYE_HEIGHT,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight} from '../dist/classroom-layout.js';
+import {SEATS,DETENTION,DOORS,DOOR_LEAVES,TEACHER_EYE_HEIGHT,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,ceilingVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight} from '../dist/classroom-layout.js';
 import {ClassroomRound,canSee} from '../dist/classroom-rules.js';
 import {TeacherRound,chalkHit} from '../dist/teacher-rules.js';
 import {createSmokeProjectile,stepSmokeProjectile} from '../dist/smoke-physics.js';
@@ -25,6 +25,39 @@ test('every seat can reach every detention post and return without cutting acros
   }
 });
 
+test('reused routes preserve exact destinations and cannot be corrupted by a caller moving waypoints',()=>{
+  const start={x:6.7,z:9.6},end={...SEATS[9]},expected=walkRoute(start,end,.23);
+  assert.ok(expected.length>2);assert.deepEqual(expected.at(-1),end);
+  const consumed=walkRoute(start,end,.23);consumed[0].x=1000;consumed[1].z=-1000;consumed.at(-1).id=-1;consumed.splice(2,5);
+  assert.deepEqual(walkRoute(start,end,.23),expected);
+  assert.deepEqual(end,{...SEATS[9]});
+});
+
+test('cached navigation never gives a wide actor the narrower actor clearance',()=>{
+  const start={x:4.9,z:4.96},end={x:7.64,z:4.96};
+  assert.equal(blocked(start.x,start.z,.6),false);assert.equal(blocked(end.x,end.z,.6),false);
+  for(const radius of [.2,.6,.23,.6,.2]){
+    const route=walkRoute(start,end,radius);
+    if(radius===.6)assert.deepEqual(route,[],'both open doors are too narrow for this radius');
+    else {assert.ok(route.length);assert.deepEqual(route.at(-1),end);}
+  }
+});
+
+test('small actors route around thin open door leaves, never through the edge between grid points',()=>{
+  const radius=.02;
+  for(const leaf of DOOR_LEAVES){
+    const x=(leaf.minX+leaf.maxX)/2,start={x,z:leaf.minZ-.20},end={x,z:leaf.maxZ+.20},route=walkRoute(start,end,radius);
+    assert.ok(route.length);
+    let from=start;
+    for(const to of route){
+      const steps=Math.max(1,Math.ceil(Math.hypot(to.x-from.x,to.z-from.z)/.01));
+      for(let i=0;i<=steps;i++)assert.equal(blocked(from.x+(to.x-from.x)*i/steps,from.z+(to.z-from.z)*i/steps,radius),false);
+      from=to;
+    }
+    assert.deepEqual(route.at(-1),end);
+  }
+});
+
 test('chalk first hits solid walls or door leaves; aimed shots pass through an open doorway',()=>{
   const a={x:5.3,y:1.4,z:0},b={x:7.5,y:1.4,z:0},student={id:0,x:7.3,z:0,seated:false};
   assert.equal(chalkHit(a,b,[student],[],'classroom').kind,'wall');
@@ -32,6 +65,20 @@ test('chalk first hits solid walls or door leaves; aimed shots pass through an o
   const leaf=DOOR_LEAVES[0],x=(leaf.minX+leaf.maxX)/2;
   assert.equal(chalkHit({x,y:1.4,z:leaf.minZ-.6},{x,y:1.4,z:leaf.maxZ+.6},[],[],'classroom').kind,'wall');
   assert.equal(chalkHit({x:-.8,y:.8,z:4.7},{x:-.8,y:.8,z:6.25},[],[],'classroom').kind,'desk');
+});
+
+test('chalk hits the visible map ceiling and cannot escape over the raised classroom walls',()=>{
+  for(const map of ['classroom','night','computer','tiered']){
+    for(const [x,z,height] of [[0,0,map==='tiered'?TIERED_CEILING_HEIGHT:CEILING_HEIGHT],[7.15,0,CEILING_HEIGHT],[5.5,9.5,CEILING_HEIGHT]]){
+      const a={x,y:4,z},b={x,y:6,z},hit=chalkHit(a,b,[],[],map);
+      assert.equal(hit?.kind,'wall');assert.ok(Math.abs(a.y+(b.y-a.y)*hit.t-height)<1e-9);
+      assert.ok(ceilingVolumes(map).some(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ&&v.minY===height));
+    }
+  }
+  assert.equal(chalkHit({x:0,y:4.4,z:0},{x:0,y:4.9,z:0},[],[],'tiered'),null,'the old low ceiling must be absent');
+  for(const [a,b] of [[{x:-5.5,z:0},{x:-6.3,z:0}],[{x:5.5,z:0},{x:6.3,z:0}],[{x:0,z:-6.2},{x:0,z:-7}],[{x:0,z:6.2},{x:0,z:7}]]){
+    assert.equal(chalkHit({...a,y:4.85},{...b,y:4.85},[],[],'tiered')?.kind,'wall');
+  }
 });
 
 test('a near-wall smoke throw releases on the player side, bounces, and can pass through open doors',()=>{

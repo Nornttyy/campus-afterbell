@@ -16,7 +16,11 @@ test('chalk only stuns; grabbing requires close aim; only a post can bind',()=>{
 });
 test('a miss cannot grant a grab and an ordinary NPC is not counted as a target',()=>{
  const r=setup(),s=r.students.find(s=>!r._team.has(s.id));aim(r,s);r.setLook(Math.PI,-1);r.throwChalk();r.step(.8);assert.equal(s.captivity,'free');assert.equal(r.grabStudent(),false);
- aim(r,s);r.throwChalk();r.step(.15);assert.equal(s.captivity,'stunned');assert.equal(r.grabStudent(),false);assert.equal(s.caught,false);assert.equal(r.wrongGrabs,1);assert.equal(r.snapshot().caughtCount,0);
+ aim(r,s);r.throwChalk();r.step(.15);assert.equal(s.captivity,'stunned');assert.equal(r.grabStudent(),true);assert.equal(s.captivity,'carried');assert.equal(r.wrongGrabs,0);
+ const post=DETENTION[0];r.player.x=post.x;r.player.z=post.z-1.1;r.setLook(0,0);r.step(.4);const before=r.teacher.stamina;
+ assert.ok(r.bindStudent());assert.equal(s.captivity,'bound');assert.equal(r.wrongGrabs,1);assert.equal(r.snapshot().caughtCount,0);assert.equal(r.teacher.stamina,before-40);
+ assert.equal(r.bindStudent(),false);assert.equal(r.teacher.stamina,before-40);assert.ok(r.drainEvents().some(e=>e.type==='wrong-grab'&&e.penalty===40));
+ assert.equal(r.releaseTarget()?.id,s.id);assert.ok(r.releaseBoundStudent());r.step(30);assert.equal(s.captivity,'free');assert.equal(s.seated,true);assert.equal(s.action,null);
 });
 test('chalk collides with desks and computer cases instead of passing through',()=>{
  const s=SEATS[27],a={x:s.x,y:.73,z:s.deskZ+1},b={x:s.x,y:.73,z:s.z};
@@ -40,4 +44,48 @@ test('PC gameplay cannot start in a classroom, standing, paused or holding a dra
 test('computer actions never appear as a drawer item and AI can play the PCs',()=>{
  const r=new ClassroomRound({map:'computer',seed:9,target:100000});r.start();r._thinkAt=Infinity;r._plan.until=Infinity;r.teacher.x=r.teacher.z=30;
  for(let i=0;i<20;i++)r.step(1);assert.ok(r.students.some(s=>s.completed.computer>0));assert.ok(r.students.flatMap(s=>s._slots).every(s=>s.action!=='computer'));
+});
+
+
+test('correct binding restores twenty stamina once; holding and dropping do not reveal identity',()=>{
+ const r=setup(),s=r.students[[...r._team][0]];r.teacher.stamina=45;aim(r,s);r._stun(s);assert.ok(r.grabStudent());
+ assert.equal(r.teacher.stamina,45);assert.ok(r.dropStudent());assert.equal(r.teacher.stamina,45);assert.equal(r.snapshot().caughtCount,0);
+ aim(r,s);r._stun(s);r.grabStudent();const post=DETENTION[0];r.player.x=post.x;r.player.z=post.z-1.1;r.setLook(0,0);r.step(.4);const before=r.teacher.stamina;
+ assert.ok(r.bindStudent());assert.equal(r.teacher.stamina,before+20);assert.equal(r.bindStudent(),false);assert.equal(r.teacher.stamina,before+20);
+ assert.equal(r.drainEvents().filter(e=>e.type==='correct-capture').length,1);
+});
+
+test('blackboard writing restores stamina, and releasing, moving or pausing stops it',()=>{
+ const r=setup();r.teacher.stamina=20;assert.equal(r.setWriting(true),false);
+ Object.assign(r.player,{x:1.25,z:5.55,yaw:0,pitch:0});assert.equal(r.canWriteBoard(),true);assert.ok(r.setWriting(true));r.step(2);
+ assert.ok(Math.abs(r.teacher.stamina-40)<.001);assert.equal(r.snapshot().teacher.phase,'board');assert.equal(r.snapshot().teacher.writing,true);
+ assert.equal(r.throwChalk(),false);r.setWriting(false);r.step(1);assert.ok(Math.abs(r.teacher.stamina-39)<.001);
+ r.setWriting(true);r.setMovement(1,0);r.step(.1);assert.equal(r.teacher.writing,false);r.setMovement(0,0);
+ r.setWriting(true);r.pause();const saved=r.teacher.stamina;r.step(5);assert.equal(r.teacher.stamina,saved);assert.equal(r.teacher.writing,false);r.pause(false);r.step(.1);assert.ok(r.teacher.stamina<saved);
+ r.teacher.stamina=0;assert.equal(r.throwChalk(),false);assert.ok(r.drainEvents().some(e=>e.type==='stamina-low'));
+ r.reset();assert.equal(r.teacher.stamina,100);assert.equal(r.teacher.writing,false);
+});
+
+test('blackboard facing accepts full turns without accepting a genuinely sideways view',()=>{
+ const r=setup();Object.assign(r.player,{x:1.25,z:5.55,pitch:0});
+ for(const turns of [-8,-2,0,2,8]){
+   r.player.yaw=turns*Math.PI*2+.4;r.teacher.stamina=20;
+   assert.equal(r.canWriteBoard(),true);assert.equal(r.snapshot().writeBoardAvailable,true);assert.equal(r.setWriting(true),true);
+   r.step(.1);assert.equal(r.snapshot().teacher.writing,true);assert.ok(Math.abs(r.teacher.stamina-21)<.001);
+   r.player.yaw=turns*Math.PI*2+1.1;r.step(1/60);assert.equal(r.canWriteBoard(),false);assert.equal(r.snapshot().teacher.writing,false);
+ }
+});
+
+test('binding and release snapshots update posts, caught count and stamina without stale aliases',()=>{
+ const r=setup(),s=r.students[[...r._team][0]],post=DETENTION[0];aim(r,s);r._stun(s);assert.ok(r.grabStudent());
+ Object.assign(r.player,{x:post.x,z:post.z-1.1});r.setLook(0,0);r.step(.4);r.teacher.stamina=95;assert.ok(r.bindStudent());
+ const bound=r.snapshot();assert.equal(bound.teacher.stamina,100);assert.equal(bound.teacher.carriedId,null);assert.equal(bound.caughtCount,1);assert.equal(bound.posts[post.id].studentId,s.id);assert.equal(bound.releaseStudent,s.id);
+ assert.ok(r.releaseBoundStudent());const released=r.snapshot();assert.equal(released.teacher.stamina,100);assert.equal(released.caughtCount,0);assert.equal(released.posts[post.id].studentId,null);assert.equal(released.releaseStudent,null);
+ assert.equal(bound.caughtCount,1);assert.equal(bound.posts[post.id].studentId,s.id);bound.teacher.stamina=-500;assert.equal(r.snapshot().teacher.stamina,100);
+ assert.equal(r.releaseBoundStudent(),false);assert.equal(r.bindStudent(),false);assert.equal(r.teacher.stamina,100);
+});
+
+test('chalk collision respects crouched students instead of using standing head height',()=>{
+ const a={x:1.42,y:1.45,z:2},b={x:1.42,y:1.45,z:0},s={id:99,x:1.42,z:.1,seated:false,crouched:true};
+ assert.equal(chalkHit(a,b,[s],[],'classroom'),null);assert.equal(chalkHit(a,b,[{...s,crouched:false}],[],'classroom')?.kind,'student');
 });

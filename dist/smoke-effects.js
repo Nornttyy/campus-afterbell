@@ -69,10 +69,27 @@ export function createSmokeEffects(renderer){
     const mesh=new T.Mesh(bounds,material);mesh.frustumCulled=false;volumeScene.add(mesh);pool.push(mesh);return mesh;
   }
   const composite=new T.ShaderMaterial({depthTest:false,depthWrite:false,toneMapped:true,
-    uniforms:{colorMap:{value:opaque.texture},smokeMap:{value:mist.texture}},
+    uniforms:{colorMap:{value:opaque.texture},smokeMap:{value:mist.texture},depthMap:{value:opaque.depthTexture},projectionInverse:{value:new T.Matrix4()},projection:{value:new T.Matrix4()},screenSize:{value:new T.Vector2()},smokeActive:{value:0},contactStrength:{value:.52}},
     vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=vec4(position.xy,0.,1.);}',
-    fragmentShader:`uniform sampler2D colorMap,smokeMap;varying vec2 v;
-      void main(){vec3 scene=texture2D(colorMap,v).rgb;vec4 smoke=texture2D(smokeMap,v);gl_FragColor=vec4(scene*(1.-smoke.a)+smoke.rgb,1.);
+    fragmentShader:`uniform sampler2D colorMap,smokeMap,depthMap;uniform mat4 projectionInverse,projection;uniform vec2 screenSize;uniform float smokeActive,contactStrength;varying vec2 v;
+      vec3 surface(vec2 uv){float d=texture2D(depthMap,clamp(uv,vec2(.001),vec2(.999))).r;vec4 p=projectionInverse*vec4(uv*2.-1.,d*2.-1.,1.);return p.xyz/p.w;}
+      float contactShade(){
+        if(contactStrength<.001||texture2D(depthMap,v).r>.9999)return 1.;
+        vec2 pixel=1./screenSize;vec3 p=surface(v);
+        vec3 l=surface(v-vec2(pixel.x,0.)),r=surface(v+vec2(pixel.x,0.));
+        vec3 d=surface(v-vec2(0.,pixel.y)),u=surface(v+vec2(0.,pixel.y));
+        vec3 dx=abs(l.z-p.z)<abs(r.z-p.z)?p-l:r-p,dy=abs(d.z-p.z)<abs(u.z-p.z)?p-d:u-p;
+        vec3 n=normalize(cross(dx,dy));if(dot(n,-p)<0.)n=-n;
+        float radius=.32,occlusion=0.;vec2 footprint=vec2(projection[0][0],projection[1][1])*radius/max(-p.z,.1)*.5;
+        for(int i=0;i<16;i++){
+          float a=float(i)*2.39996323;float ring=sqrt((float(i)+.5)/16.);
+          vec3 delta=surface(v+vec2(cos(a),sin(a))*footprint*ring)-p;float dist=length(delta);
+          float horizon=max(dot(n,delta)/max(dist,.001)-.075,0.);
+          occlusion+=horizon*(1.-smoothstep(radius*.15,radius,dist))*smoothstep(.003,.018,dist);
+        }
+        return 1.-clamp(occlusion*(3.0/16.)*contactStrength,0.,.42);
+      }
+      void main(){vec3 scene=texture2D(colorMap,v).rgb*contactShade();vec4 smoke=smokeActive>.5?texture2D(smokeMap,v):vec4(0.);gl_FragColor=vec4(scene*(1.-smoke.a)+smoke.rgb,1.);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
       }`});
@@ -89,17 +106,18 @@ export function createSmokeEffects(renderer){
     }
   }
   function render(scene,camera,quality='high'){
-    if(!active){renderer.render(scene,camera);return;}
+    if(!active&&quality==='low'){renderer.render(scene,camera);return;}
     renderer.getDrawingBufferSize(size);
     if(opaque.width!==size.x||opaque.height!==size.y)opaque.setSize(size.x,size.y);
     const ratio=quality==='low'?.35:.5,w=Math.max(1,Math.floor(size.x*ratio)),h=Math.max(1,Math.floor(size.y*ratio));
     if(mist.width!==w||mist.height!==h)mist.setSize(w,h);
     camera.updateMatrixWorld();
     inverse.multiplyMatrices(camera.matrixWorld,camera.projectionMatrixInverse);
+    composite.uniforms.projectionInverse.value.copy(camera.projectionMatrixInverse);composite.uniforms.projection.value.copy(camera.projectionMatrix);composite.uniforms.screenSize.value.copy(size);composite.uniforms.smokeActive.value=active?1:0;composite.uniforms.contactStrength.value=quality==='low'?0:.52;
     for(const mesh of pool)if(mesh.visible)mesh.material.uniforms.resolution.value.set(w,h);
     const target=renderer.getRenderTarget(),auto=renderer.autoClear,alpha=renderer.getClearAlpha();renderer.getClearColor(clearColor);
     renderer.setRenderTarget(opaque);renderer.render(scene,camera);
-    renderer.setRenderTarget(mist);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(volumeScene,camera);
+    if(active){renderer.setRenderTarget(mist);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(volumeScene,camera);}
     renderer.setClearColor(clearColor,alpha);renderer.setRenderTarget(target);renderer.render(screenScene,screenCamera);renderer.autoClear=auto;
   }
   return{update,render,dispose(){opaque.dispose();opaque.depthTexture.dispose();mist.dispose();noise.dispose();bounds.dispose();for(const m of pool)m.material.dispose();quad.geometry.dispose();composite.dispose();}};

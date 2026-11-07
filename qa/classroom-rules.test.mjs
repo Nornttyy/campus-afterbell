@@ -40,7 +40,7 @@ test('30 shared seats, five team members, no default countdown and no ambient po
   assert.equal(s.students.length,30);assert.equal(s.player.id,PLAYER_SEAT);
   assert.deepEqual(s.students.filter(s=>s.isTeammate).map(s=>s.id),[...FRIEND_SEATS]);
   assert.equal(s.students.filter(s=>!s.isPlayer&&!s.isTeammate).length,25);
-  assert.equal(s.timed,false);assert.equal(s.timeLeft,0);assert.equal(s.target,100);
+  assert.equal(s.timed,false);assert.equal(s.timeLeft,0);assert.equal(s.target,120);
   r.step(100);assert.equal(r.snapshot().elapsed,0);assert.equal(r.snapshot().score,0);
   assert.deepEqual(s.teacher.observedIds,[]);
   s.students[0].x=999;s.teacher.memory.push({id:999});assert.notEqual(r.snapshot().students[0].x,999);assert.deepEqual(r.snapshot().teacher.memory,[]);
@@ -356,4 +356,23 @@ test('book interaction changes real cover, survives leaving the seat, and freeze
  r.pause(true);assert.equal(r.toggleBook(),false);r.step(1);assert.equal(r.snapshot().books[id].amount,0);
  r.pause(false);r.toggleBook();r.step(.25);assert.ok(propVisibility(observer,r.player)<.3);
  r.interact();assert.equal(r.toggleBook(),false);assert.equal(r.snapshot().books[id].raised,true);
+});
+
+
+test('AI chalk telegraphs a fixed aim, stays physical and permits dodging during windup',()=>{
+  const r=quietFixture(),p=r.player,t=r.teacher;
+  Object.assign(p,{x:1.42,z:0,seated:false,seatId:null});Object.assign(t,{x:1.42,z:2.7,yaw:Math.PI,warning:false});
+  const m=r._remember(p);Object.assign(m,{confirmed:true,x:p.x,z:p.z});
+  r._plan={intent:'catch',targetId:p.id,since:0,until:100,route:[],routeLength:0,arrivedAt:0};r._turnLeft=0;
+  Object.assign(p._slots[0],{action:'phone',progress:0});p._selectedSlot=0;p._drawnSlot=0;r.selected=p.action='phone';r.hold(true);
+  r.step(.1);assert.ok(r.snapshot().teacher.castProgress>0);assert.equal(r.holding,true,'windup must not confiscate the player action');
+  p.x+=.85;r.step(.6);
+  assert.ok(r.snapshot().chalks.length>0,'windup ends by launching visible chalk');assert.equal(p.captivity,'free');
+  r.step(.35);assert.equal(p.captivity,'free','a miss must not stun the remembered target');
+});
+
+test('AI chalk cannot cross classroom walls to stun the remembered player',()=>{
+  const r=quietFixture();Object.assign(r.player,{x:7.15,z:0,seated:false,seatId:null});
+  r.chalks.push({id:0,x:5.1,y:1.5,z:0,vx:16,vy:0,vz:0,age:0});r.step(.2);
+  assert.equal(r.player.captivity,'free');assert.equal(r.chalks.length,0);assert.ok(r.drainEvents().some(e=>e.type==='chalk-hit'&&e.kind==='wall'));
 });
