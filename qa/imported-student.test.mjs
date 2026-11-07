@@ -78,3 +78,19 @@ for(const variant of ['boy','girl'])test(`${variant}: seated pelvis lowers, knee
  assert.ok(a.diagnostics().weights.WalkCarry>.99);
  const bounds=new T.Box3().setFromObject(a.group,true);assert.ok(bounds.min.y>-.09&&bounds.max.y<1.95,'deformed skin escaped bounds');
 });
+
+for(const variant of ['boy','girl'])test(`${variant}: restrained poses bend actual limbs without changing bone lengths or exploding skin`,async()=>{
+ const gltf=await loadGeometry(`student-${variant}-v2.glb`),a=createRiggedStudent(gltf,{variant,seated:false});let t=0;
+ a.setMotion({seated:false});for(let i=0;i<60;i++)a.update(t+=1/60);
+ const lengths=['LeftArm','LeftForeArm','LeftHand','LeftUpLeg','LeftLeg','LeftFoot'].map(n=>a.bones[n].position.length());
+ for(const kind of ['carried','bound','stunned','free']){
+  a.setMotion({seated:false,restraint:kind});let previous=null,maxStep=0;
+  for(let i=0;i<120;i++){
+   a.update(t+=1/60);const hand=a.bones.LeftHand.getWorldPosition(new T.Vector3());if(previous)maxStep=Math.max(maxStep,hand.distanceTo(previous));previous=hand;
+   a.group.traverse(o=>{assert.ok(o.matrixWorld.elements.every(Number.isFinite));});
+  }
+  assert.ok(maxStep<.11,`${kind}: wrist snaps ${maxStep}`);
+  const next=['LeftArm','LeftForeArm','LeftHand','LeftUpLeg','LeftLeg','LeftFoot'].map(n=>a.bones[n].position.length());next.forEach((v,i)=>assert.ok(Math.abs(v-lengths[i])<.005));
+  const bounds=new T.Box3().setFromObject(a.group,true);assert.ok(bounds.max.y<2&&bounds.min.y>-.08);assert.ok(bounds.getSize(new T.Vector3()).x<1.5);
+ }
+});

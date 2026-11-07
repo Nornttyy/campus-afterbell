@@ -1,12 +1,13 @@
-import {createRoomVariants} from './room-variants.js?v=classroom-25';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=restraint-26';
+import {createRoomVariants} from './room-variants.js?v=restraint-26';
 import * as THREE from './vendor/three.module.js';
-import {createSmokeEffects} from './smoke-effects.js?v=classroom-25';
-import {createItemOutline} from './item-outline.js?v=classroom-25';
-import {createStudent} from './characters.js?v=classroom-25';
-import {createTeacher,createDeskHands,createDeskItem} from './game-actors.js?v=classroom-25';
-import {loadStudentAssets} from './student-assets.js?v=classroom-25';
-import {loadDeskModel} from './imported-actors.js?v=classroom-25';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION} from './classroom-layout.js?v=classroom-25';
+import {createSmokeEffects} from './smoke-effects.js?v=restraint-26';
+import {createItemOutline} from './item-outline.js?v=restraint-26';
+import {createStudent} from './characters.js?v=restraint-26';
+import {createTeacher,createDeskHands,createDeskItem} from './game-actors.js?v=restraint-26';
+import {loadStudentAssets} from './student-assets.js?v=restraint-26';
+import {loadDeskModel} from './imported-actors.js?v=restraint-26';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION} from './classroom-layout.js?v=restraint-26';
 
 // This room, its textures and props are built locally as editable 3D geometry.
 export async function createClassroom(canvas, {onReady}={}) {
@@ -338,21 +339,28 @@ export async function createClassroom(canvas, {onReady}={}) {
   const teacherHands=createDeskHands({createHand:importedStudents?.createHand});teacherHands.group.visible=false;camera.add(teacherHands.group);
   const rightPalm=teacherHands.group.getObjectByName('right-desk-hand');
   const fpChalk=cylinder(M.paper,[.035,.075,-.025],[.007,.073,.007],[0,0,.8],rightPalm);
-  const fpCard=rounded(mat('#d33b35'),[.035,.13,-.025],[.13,.19,.007],.008,[0,.2,0],rightPalm);fpCard.visible=false;
   const leftPalm=teacherHands.group.getObjectByName('left-desk-hand');
   const fpTorch=new THREE.Group();leftPalm.add(fpTorch);
   cylinder(M.dark,[0,0,0],[.027,.13,.027],null,fpTorch);cylinder(M.steel,[0,.077,0],[.038,.034,.038],null,fpTorch);cylinder(M.paper,[0,.096,0],[.03,.005,.03],null,fpTorch);
   const chalkModels=[];
   function updateTeacherTools(state,dt){
-    const isTeacher=state?.role==='teacher';teacherHands.group.visible=isTeacher;hands.group.visible=Boolean(state&&!isTeacher);
+    const isTeacher=state?.role==='teacher';teacherHands.group.visible=isTeacher;hands.group.visible=Boolean(state&&!isTeacher&&state.player.captivity!=='bound');
+    if(state&&!isTeacher&&state.player.captivity==='carried'){for(const [side,x]of [['left',-.15],['right',.15]]){const hand=hands.getHand(side),wave=Math.sin(state.elapsed*7+(x<0?0:Math.PI));hand.group.position.set(x,-.28+wave*.018,-.37);hand.group.rotation.set(-.3,x*2,x*.8);hand.setCurl(.65);}}
     if(isTeacher){
       teacherHands.update(state.elapsed,{seated:false,carrying:false,freeLook:true});
       const age=state.throwAge,throwing=age>=0&&age<.45,reach=throwing?Math.sin(Math.PI*age/.45):0;
       rightPalm.position.set(.22,-.24+reach*.08,-.51-reach*.20);rightPalm.rotation.set(-.65-reach*.6,.1,.11);
       const grip=teacherHands.getHand('right');grip.setCurl(.80);grip.opposeThumb(.8);fpChalk.position.copy(grip.indexTip()).add(new THREE.Vector3(.004,-.013,.001));
       fpTorch.visible=state.map==='night';if(fpTorch.visible){const l=teacherHands.getHand('left');l.setCurl(.8);l.opposeThumb(.8);fpTorch.position.copy(l.indexTip()).add(new THREE.Vector3(0,-.01,0));fpTorch.rotation.x=-.5;}
-      fpChalk.visible=!state.cardVisible&&(!throwing||age>.30);fpCard.visible=state.cardVisible;
-      if(state.cardVisible){rightPalm.position.set(.2,-.18,-.54);rightPalm.rotation.set(-.3,-.2,.12);}
+      fpChalk.visible=state.teacher.carriedId===null&&(!throwing||age>.30);
+      if(state.teacher.carriedId!==null){
+        const record=pupilRecords[state.teacher.carriedId],neck=record?.actor?.bones?.Neck;
+        if(neck){
+          const contact=neck.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.01,-.075).applyAxisAngle(upAxis,record.group.rotation.y));
+          rightPalm.parent.updateWorldMatrix(true,false);rightPalm.position.copy(rightPalm.parent.worldToLocal(contact));
+          rightPalm.rotation.set(-.50,0,-.15);grip.setCurl(.7);grip.opposeThumb(.65);
+        }
+      }
     }
     const chalks=state?.chalks||[];
     while(chalkModels.length<chalks.length){const c=cylinder(M.paper,[0,0,0],[.012,.11,.012],null,dynamic);chalkModels.push(c);}
@@ -370,44 +378,51 @@ export async function createClassroom(canvas, {onReady}={}) {
   const gesturePivot=new THREE.Group();gesturePivot.position.set(.238,1.485,0);teacherBody.add(gesturePivot);
   let teacherHand=teacher.getHand?.('right')||null;
   if(teacherArm){teacherHand=teacherArm.children.find(o=>o.isGroup);gesturePivot.add(teacherArm);teacherArm.position.set(-.238,-1.485,0);}
-  const cardTexture=texture(128,192,(c,w,h)=>{c.fillStyle='#cf3d32';c.fillRect(0,0,w,h);c.strokeStyle='#ffe6d2';c.lineWidth=4;c.strokeRect(8,8,w-16,h-16);c.fillStyle='#fff4e9';c.textAlign='center';c.font='bold 64px "PingFang SC","Microsoft YaHei",sans-serif';c.fillText('罚',w/2,92);c.font='bold 38px "PingFang SC","Microsoft YaHei",sans-serif';c.fillText('站',w/2,149);});
-  const cardMaterial=mat('#ffffff',{map:cardTexture,roughness:.8,emissive:'#8e241b',emissiveIntensity:.12,side:THREE.DoubleSide});
-  const cardGeometry=new THREE.PlaneGeometry(.18,.27);assets.add(cardGeometry);
-  const teacherCard=new THREE.Mesh(cardGeometry,cardMaterial);teacherCard.visible=false;scene.add(teacherCard);
   const chalkGeometry=new THREE.CylinderGeometry(.012,.012,.11,8);assets.add(chalkGeometry);
   const chalkMaterial=mat('#fff7df',{emissive:'#fff5d3',emissiveIntensity:.15});
   const heldChalk=new THREE.Mesh(chalkGeometry,chalkMaterial);heldChalk.position.set(.012,.075,.028);heldChalk.rotation.x=Math.PI/2;heldChalk.visible=false;(teacherHand||gesturePivot).add(heldChalk);
   const flyingChalk=new THREE.Mesh(chalkGeometry,chalkMaterial);flyingChalk.visible=false;scene.add(flyingChalk);
-  const caughtCards=pupilRecords.map(()=>{const card=new THREE.Mesh(cardGeometry,cardMaterial);card.visible=false;scene.add(card);return card;});
-  const caughtSeen=new Set(),castOrigin=new THREE.Vector3(),castTarget=new THREE.Vector3(),wristPosition=new THREE.Vector3(),gestureCurrent=new THREE.Vector3(),gestureDesired=new THREE.Vector3(),gestureRotation=new THREE.Quaternion(),gestureTarget=new THREE.Quaternion();
-  let teacherCardUntil=0,lastFeedbackElapsed=-Infinity,activeCastTarget=null,previousCastProgress=0;
-  function clearTeacherFeedback(state=null){teacherCard.visible=false;heldChalk.visible=false;flyingChalk.visible=false;gesturePivot.rotation.set(0,0,0);teacherCardUntil=0;activeCastTarget=null;previousCastProgress=0;teacher.setGesture?.({card:false,cast:0});lastFeedbackElapsed=state?.elapsed??-Infinity;caughtSeen.clear();caughtCards.forEach(card=>card.visible=false);for(const student of state?.students||[]){if(student.caught)caughtSeen.add(student.id);}}
+  const castOrigin=new THREE.Vector3(),castTarget=new THREE.Vector3(),wristPosition=new THREE.Vector3(),gestureCurrent=new THREE.Vector3(),gestureDesired=new THREE.Vector3(),gestureRotation=new THREE.Quaternion(),gestureTarget=new THREE.Quaternion();
+  let lastFeedbackElapsed=-Infinity,activeCastTarget=null,previousCastProgress=0;
+  const stakes=new THREE.Group();stakes.name='capture-posts';dynamic.add(stakes);
+  const postModels=DETENTION.map(p=>{
+    const g=new THREE.Group();g.name='wooden-post-'+p.id;g.position.set(p.x,0,p.z);stakes.add(g);
+    cylinder(M.edge,[0,1.03,0],[.085,2.06,.10],null,g);
+    rounded(M.wood,[0,2.035,0],[.15,.055,.15],.018,null,g);
+    for(const z of [-.13,.13])rounded(M.dark,[0,.035,z],[.36,.07,.13],.018,null,g);
+    for(const y of [.18,.34])cylinder(M.steel,[0,y,-.099],[.018,.009,.018],[Math.PI/2,0,0],g);
+    return g;
+  });
+  const ropeMaterial=mat('#b38b52',{roughness:.95}),ropes=new Map();
+  for(const record of pupilRecords){
+    const rope=new THREE.Group();rope.name='restraint-rope';rope.visible=false;record.group.add(rope);ropes.set(record.seat.id,rope);
+    for(const y of [.82,.89,.96]){const points=[];for(let i=0;i<=72;i++){const a=i/72*Math.PI*2;points.push(new THREE.Vector3(Math.sin(a)*.285,y+Math.sin(a*4)*.004,-.11+Math.cos(a)*.35));}const geo=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),72,.013,7,false);assets.add(geo);const cord=new THREE.Mesh(geo,ropeMaterial);cord.castShadow=true;rope.add(cord);}
+    const knot=new THREE.Mesh(new THREE.TorusGeometry(.035,.013,7,18),ropeMaterial);knot.position.set(.03,.89,.25);knot.rotation.z=.5;rope.add(knot);rope.userData.rescueHandle=knot;
+  }
+  function clearTeacherFeedback(state=null){heldChalk.visible=false;flyingChalk.visible=false;gesturePivot.rotation.set(0,0,0);activeCastTarget=null;previousCastProgress=0;lastFeedbackElapsed=state?.elapsed??-Infinity;}
   function updateTeacherFeedback(state,dt){
     const elapsed=state.elapsed||0;if(elapsed<lastFeedbackElapsed)clearTeacherFeedback(state);lastFeedbackElapsed=elapsed;
     const students=state.students||[],t=state.teacher||{},progress=THREE.MathUtils.clamp(t.castProgress||0,0,1),target=students.find(student=>student.id===t.targetId);
-    for(const student of students){if(student.caught&&!caughtSeen.has(student.id)){caughtSeen.add(student.id);teacherCardUntil=elapsed+2.2;}}
-    const showCard=elapsed<teacherCardUntil;
-    teacher.setGesture?.({card:showCard,cast:progress});
     gestureTarget.identity();
-    if(teacherHand&&!teacher.setGesture&&(showCard||progress>0)){
-      const release=showCard?0:THREE.MathUtils.clamp((progress-.68)/.32,0,1),lift=showCard?1:THREE.MathUtils.smoothstep(progress/.68,0,1);
+    if(teacherHand&&progress>0){
+      const release=THREE.MathUtils.clamp((progress-.68)/.32,0,1),lift=THREE.MathUtils.smoothstep(progress/.68,0,1);
       gestureCurrent.copy(teacherHand.position).sub(new THREE.Vector3(.238,1.485,0)).normalize();gestureDesired.set(.032,THREE.MathUtils.lerp(.34,.04,release),THREE.MathUtils.lerp(.32,.52,release)).normalize();
       gestureRotation.setFromUnitVectors(gestureCurrent,gestureDesired);gestureTarget.slerp(gestureRotation,lift);
     }
     gesturePivot.quaternion.slerp(gestureTarget,1-Math.exp(-Math.max(0,dt)*16));
+    teacher.castChalk?.(progress);
+    const carried=t.carriedId!==null&&t.carriedId!==undefined?pupilRecords[t.carriedId]:null,neck=carried?.actor?.bones?.Neck;
+    if(neck&&state.role!=='teacher')teacher.gripNeck?.(neck.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.01,-.075).applyAxisAngle(upAxis,carried.group.rotation.y)));
     teacher.group.updateMatrixWorld(true);
     if(teacherHand)teacherHand.getWorldPosition(wristPosition);else wristPosition.set(.27,1.75,.35).applyMatrix4(teacher.group.matrixWorld);
-    heldChalk.visible=progress>0&&progress<.68&&!showCard;
-    teacherCard.visible=showCard;teacherCard.position.copy(wristPosition).add(new THREE.Vector3(0,.12,0));teacherCard.quaternion.copy(camera.quaternion);
+    heldChalk.visible=progress>0&&progress<.68;
     if(progress>.68&&target&&!target.caught){
       if(activeCastTarget!==target.id||previousCastProgress<=.68){castOrigin.copy(wristPosition);activeCastTarget=target.id;}
       const flight=THREE.MathUtils.clamp((progress-.68)/.32,0,1);castTarget.set(target.x,target.seated===false?1.45:1.29,target.z);
       flyingChalk.visible=true;flyingChalk.position.lerpVectors(castOrigin,castTarget,flight);flyingChalk.position.y+=Math.sin(flight*Math.PI)*.10;flyingChalk.quaternion.setFromUnitVectors(upAxis,castTarget.clone().sub(castOrigin).normalize());
     }else{flyingChalk.visible=false;if(progress===0)activeCastTarget=null;}
     previousCastProgress=progress;
-    const playerId=state.player?.id??PLAYER_SEAT;
-    for(const record of pupilRecords){const card=caughtCards[record.seat.id];card.visible=record.caught&&record.seat.id!==playerId;if(card.visible){card.position.copy(record.group.position);card.position.y=1.97;card.scale.setScalar(.72);card.quaternion.copy(camera.quaternion);}}
-    canvas.dataset.teacherFeedback=JSON.stringify({castProgress:progress,targetId:t.targetId??null,chalking:flyingChalk.visible,redCard:showCard,caught:[...caughtSeen]});
+    canvas.dataset.teacherFeedback=JSON.stringify({castProgress:progress,targetId:t.targetId??null,chalking:flyingChalk.visible,carriedId:t.carriedId,bound:students.filter(s=>s.captivity==='bound').map(s=>s.id)});
   }
   // Teacher rounds randomize the five active seats, so any pupil can hold a prop.
   const phoneScreen=mat('#8dc5be',{emissive:'#8dc5be',emissiveIntensity:.3});
@@ -467,7 +482,7 @@ export async function createClassroom(canvas, {onReady}={}) {
     teacher.group.visible=state.role!=='teacher';
     gameplay=state;
   }
-  const moodMap={reading:'writing',writing:'writing',thinking:'thinking',snack:'snack',note:'note',phone:'phone',computer:'computer',smoke:'phone',caught:'resting',resting:'resting',alert:'thinking'};
+  const moodMap={carried:'resting',bound:'resting',stunned:'thinking',rescuing:'rescuing',reading:'writing',writing:'writing',thinking:'thinking',snack:'snack',note:'note',phone:'phone',computer:'computer',smoke:'phone',caught:'resting',resting:'resting',alert:'thinking'};
   function updatePupils(state,animationTime,dt){
     const snapshots=new Map((state?.students||[]).map(s=>[s.id??s.seatId,s])),playerId=state?.player?.id??PLAYER_SEAT,playerSeat=state?.player?.seatId??null;
     const bookStates=new Map((state?.books||[]).map(b=>[b.id,b]));
@@ -478,9 +493,10 @@ export async function createClassroom(canvas, {onReady}={}) {
       const id=record.seat.id,snapshot=snapshots.get(id),caught=Boolean(snapshot?.caught);record.caught=caught;
       record.group.visible=!(state&&id===playerId);
       const fallback=caught?DETENTION[detentionIndex++%DETENTION.length]:record.seat;
-      record.group.position.set(Number.isFinite(snapshot?.x)?snapshot.x:fallback.x,0,Number.isFinite(snapshot?.z)?snapshot.z:fallback.z);
+      record.group.position.set(Number.isFinite(snapshot?.x)?snapshot.x:fallback.x,snapshot?.captivity==='carried'?.12:0,Number.isFinite(snapshot?.z)?snapshot.z:fallback.z);
       record.group.rotation.y=Number.isFinite(snapshot?.yaw)?snapshot.yaw:caught?Math.PI:0;
-      record.currentMood=caught?'resting':state?(snapshot?.mood||snapshot?.currentAction||snapshot?.action||'writing'):id===27?heroMood():record.menuMood;
+      ropes.get(id).visible=snapshot?.captivity==='bound';
+      record.currentMood=state?(snapshot?.mood||snapshot?.currentAction||snapshot?.action||'writing'):id===27?heroMood():record.menuMood;
       record.distance=record.group.position.distanceTo(camera.position);
       if(record.group.visible)candidates.push(record);
     }
@@ -493,7 +509,7 @@ export async function createClassroom(canvas, {onReady}={}) {
       const id=record.seat.id,near=record.group.visible&&(detailed.has(id)||importedStudents),prop=friendProps.get(id);
       for(const actor of record.actors.values())actor.group.visible=false;
       if(near){
-        const actor=actorFor(record,record.caught||snapshots.get(id)?.seated===false);record.actor=actor;actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||'writing');actor.setMotion?.({seated:!record.caught&&snapshots.get(id)?.seated!==false,speed:0,carrying:snapshots.get(id)?.drawer?.drawnSlot!=null});
+        const actor=actorFor(record,record.caught||snapshots.get(id)?.seated===false);record.actor=actor;actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||'writing');const student=snapshots.get(id);actor.setMotion?.({seated:!record.caught&&student?.seated!==false,speed:student?.mood==='walking'?1.35:0,carrying:student?.drawer?.drawnSlot!=null,restraint:student?.mood==='rescuing'?'rescuing':student?.captivity||'free'});
         const interval=quality==='low'?1/15:record.distance>4?1/12:1/30;
         if(animationTime<record.lastUpdate||animationTime-record.lastUpdate>=interval||record.lastMood!==record.currentMood){actor.update(animationTime,dt);record.lastUpdate=animationTime;record.lastMood=record.currentMood;}
 
@@ -555,7 +571,8 @@ export async function createClassroom(canvas, {onReady}={}) {
   }
   function getInteraction(){
     if(!gameplay||gameplay.paused||gameplay.status!=='playing'||gameplay.player.caught)return null;
-    if(gameplay.role==='teacher')return gameplay.teacherAim?{kind:'student',...gameplay.teacherAim}:null;
+    if(gameplay.role==='teacher')return gameplay.bindPost!==null?{kind:'post',id:gameplay.bindPost}:gameplay.teacherAim?{kind:'student',...gameplay.teacherAim}:null;
+    if(gameplay.rescueAim!==null)return{kind:'rescue',id:gameplay.rescueAim};
     if(!gameplay.player.seated)return null;
     if(mapVariant==='computer'&&gameplay.drawer.drawnSlot===null){
       camera.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);const screen=variants.screens.get(gameplay.player.seatId);screen?.updateWorldMatrix(true,false);
@@ -575,7 +592,7 @@ export async function createClassroom(canvas, {onReady}={}) {
   }
   function updateItemHover(){
     const target=getInteraction();hoveredSlot=target?.kind==='item'?target.slot:null;
-    const prop=hoveredSlot===null?target?.kind==='computer'?variants.screens.get(gameplay.player.seatId):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group:null:drawerSlotProps[hoveredSlot].props.get(gameplay.drawer.slots[hoveredSlot].action);
+    const prop=target?.kind==='post'?postModels[target.id]:target?.kind==='rescue'?ropes.get(target.id)?.userData.rescueHandle:hoveredSlot===null?target?.kind==='computer'?variants.screens.get(gameplay.player.seatId):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group:null:drawerSlotProps[hoveredSlot].props.get(gameplay.drawer.slots[hoveredSlot].action);
     itemOutline.select(prop||null);canvas.dataset.hoveredSlot=hoveredSlot===null?'':String(hoveredSlot);canvas.dataset.interaction=target?JSON.stringify(target):'';
     if(gameplay?.drawer?.open){canvas.dataset.drawerTargets=JSON.stringify(drawerSlotProps.map((slot,id)=>{const p=slot.group.getWorldPosition(new THREE.Vector3());p.project(camera);return{id,x:(p.x+1)/2,y:(1-p.y)/2};}));}
   }
@@ -592,7 +609,7 @@ export async function createClassroom(canvas, {onReady}={}) {
       }
       teacher.group.position.set(t.x,0,t.z);teacher.group.rotation.y=t.yaw;
       const walking=state.paused||state.status!=='playing'?0:THREE.MathUtils.clamp(teacherWorldSpeed/1.35,0,1);
-      teacher.update(gameTime,{walking,look:0,phase:state.elapsed<teacherCardUntil||t.castProgress>0?'watching':phase,alert:Math.max((state.suspicion||0)/100,feedbackKind==='caught'?feedbackTime/.55:0)});
+      teacher.update(gameTime,{walking,look:0,phase:t.castProgress>0||t.carriedId!==null?'watching':phase,alert:Math.max((state.suspicion||0)/100,feedbackKind==='caught'?feedbackTime/.55:0)});
       lastTeacherPhase=phase;return;
     }
     teacherWorldSample=null;teacherWorldSpeed=0;
@@ -634,7 +651,7 @@ export async function createClassroom(canvas, {onReady}={}) {
       const yaw=Number.isFinite(player.yaw)?player.yaw:0,pitch=THREE.MathUtils.clamp(basePitch,-1.40,1.40);
       // Match the hands' existing inverse camera transform without changing their pose.
       hands.group.position.y+=extraDrop*Math.cos(pitch);hands.group.position.z+=extraDrop*Math.sin(pitch);
-      playerPosition.set(Number.isFinite(player.x)?player.x:SEATS[PLAYER_SEAT].x,(seated?1.43-(crouched?.24:0):crouched?1.02:1.65)-viewFocus*.12,Number.isFinite(player.z)?player.z:SEATS[PLAYER_SEAT].z);
+      playerPosition.set(Number.isFinite(player.x)?player.x:SEATS[PLAYER_SEAT].x,(seated?1.43-(crouched?.24:0):crouched?1.02:gameplay.role==='teacher'?TEACHER_EYE_HEIGHT:1.65)+(player.captivity==='carried'?.12:0)-viewFocus*.12,Number.isFinite(player.z)?player.z:SEATS[PLAYER_SEAT].z);
       targetQuaternion.setFromEuler(playerEuler.set(-pitch,yaw+Math.PI,0,'YXZ'));
       const blend=THREE.MathUtils.smoothstep(entryTime/.7,0,1);
       if(blend<1){camera.position.lerpVectors(entryPosition,playerPosition,blend);camera.quaternion.slerpQuaternions(entryQuaternion,targetQuaternion,blend);}else{camera.position.copy(playerPosition);camera.quaternion.copy(targetQuaternion);}

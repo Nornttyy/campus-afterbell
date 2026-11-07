@@ -135,24 +135,25 @@ test('smoke must be thrown from a consumed drawer slot before impact creates a g
   r.step(6);assert.equal(r.snapshot().smokes.length,0);assert.equal(r.snapshot().projectiles.length,0);assert.equal(canSee(source,target,r.snapshot().smokes),true);
 });
 
-test('confirmed identification survives hiding, winds up chalk, then sends only that student to detention',()=>{
+test('confirmed identification survives hiding, stuns, physically escorts and binds only that student',()=>{
   const r=new ClassroomRound({target:100000});r.start();focusSeat(r,PLAYER_SEAT);
   advanceUntil(r,s=>s.teacher.memory.find(m=>m.id===PLAYER_SEAT)?.confirmed,10);
   r.hold(false);const before=r.snapshot().elapsed;
   advanceUntil(r,s=>s.teacher.castProgress>0,10);
   const windup=r.snapshot().elapsed;r.step(.3);assert.equal(r.snapshot().player.caught,false);
-  const s=advanceUntil(r,s=>s.player.caught,10);
+  const carried=advanceUntil(r,s=>s.player.captivity==='carried',10);assert.equal(carried.caughtCount,0);assert.notEqual(carried.player.z,5.18);
+  const s=advanceUntil(r,s=>s.player.caught,35);
   assert.ok(s.elapsed-windup>=.7-DT-1e-6);assert.ok(s.elapsed>before);
-  assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.equal(s.player.z,5.1);
+  assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.equal(s.player.z,5.18);
   assert.equal(takeAndUse(r),false);assert.equal(r.interact(),false);assert.equal(r.setMovement(1,0),false);assert.equal(r.setLook(1,0),true);
-  const events=r.drainEvents();assert.equal(events.filter(e=>e.type==='caught'&&e.studentId===PLAYER_SEAT).length,1);assert.equal(events.filter(e=>e.type==='chalk'&&e.studentId===PLAYER_SEAT).length,1);
+  const events=r.drainEvents();assert.equal(events.filter(e=>e.type==='bound'&&e.studentId===PLAYER_SEAT).length,1);assert.equal(events.filter(e=>e.type==='chalk'&&e.studentId===PLAYER_SEAT).length,1);
   assert.equal(events.some(e=>e.type==='finish'),false);
 });
 
 test('teacher victory requires all five team members, with one terminal event',()=>{
   const r=new ClassroomRound({target:100000});r.start();
   for(const [index,id] of [PLAYER_SEAT,...FRIEND_SEATS].entries()){
-    focusSeat(r,id);advanceUntil(r,s=>s.students[id].caught,15);
+    focusSeat(r,id);advanceUntil(r,s=>s.students[id].caught,45);
     assert.equal(r.snapshot().status,index===4?'lost':'playing');
   }
   const s=r.snapshot();assert.equal(s.caughtCount,5);assert.equal(s.resultReason,'all-caught');
@@ -183,7 +184,7 @@ test('three-second pacing permits observation, actual scoring and valid terminal
     }
     assert.ok(['won','lost'].includes(s.status));
     if(s.status==='lost'){assert.equal(s.resultReason,'all-caught');assert.equal(s.caughtCount,5);}
-    else{assert.equal(s.resultReason,'mischief');assert.equal(s.score,s.target);assert.ok(s.caughtCount>0);}
+    else{assert.equal(s.resultReason,'mischief');assert.equal(s.score,s.target);assert.ok(reckless.drainEvents().some(e=>e.type==='bound'),'students should have been bound before possible rescues');}
     assert.ok(walked>50);assert.ok(s.teacher.memory.filter(m=>m.detained).every(m=>m.confirmed&&m.lastSeen!==null));
   }
 });
