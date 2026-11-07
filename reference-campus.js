@@ -1,10 +1,11 @@
 import * as T from './vendor/three.module.js';
-import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CORRIDOR,CAMPUS_MAPS,floorTiles,floorHeight} from './classroom-layout.js?v=classroom-33';
+import {surfaceHeight,drawBoardSurface,setWallSurfaceUV} from './surface-materials.js?v=classroom-34';
+import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CORRIDOR,CAMPUS_MAPS,floorTiles,floorHeight} from './classroom-layout.js?v=classroom-34';
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
-export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat}){
+export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces=null}){
  const enclosure=new T.Group();enclosure.name='classroom-cutaway-walls';scene.add(enclosure);
- const plaster=texture(512,512,(c,w,h)=>{c.fillStyle='#e9e7dc';c.fillRect(0,0,w,h);let seed=71;for(let i=0;i<9000;i++){seed=(seed*16807)%2147483647;const x=seed%w;seed=(seed*16807)%2147483647;const y=seed%h;c.fillStyle=i%3?'rgba(119,119,100,.025)':'rgba(255,255,245,.13)';c.fillRect(x,y,1+i%2,1);}});
- const blue=mat('#46746e',{metalness:.24,roughness:.38}),edge=mat('#a7bbc0',{metalness:.3,roughness:.43}),cream=mat('#f3f1e9',{map:plaster,roughness:.94}),glass=mat('#a9d9ea',{transparent:true,opacity:.065,depthWrite:false,roughness:.10});
+ const plaster=surfaces?.wall||texture(512,512,(c,w,h)=>{c.fillStyle='#e9e7dc';c.fillRect(0,0,w,h);let seed=71;for(let i=0;i<9000;i++){seed=(seed*16807)%2147483647;const x=seed%w;seed=(seed*16807)%2147483647;const y=seed%h;c.fillStyle=i%3?'rgba(119,119,100,.025)':'rgba(255,255,245,.13)';c.fillRect(x,y,1+i%2,1);}});
+ const blue=mat('#46746e',{metalness:.24,roughness:.38}),edge=mat('#a7bbc0',{metalness:.3,roughness:.43}),cream=mat(surfaces?'#ffffff':'#f3f1e9',{map:plaster,bumpMap:surfaces?surfaceHeight(plaster,assets):null,bumpScale:.0014,roughness:.9}),glass=mat('#a9d9ea',{transparent:true,opacity:.065,depthWrite:false,roughness:.10});
  const frostedGlass=mat('#bdd6d5',{transparent:true,opacity:.77,depthWrite:false,roughness:.94,metalness:0}),upperGlass=mat('#c1d8d8',{transparent:true,opacity:.26,depthWrite:false,roughness:.38});
  const frameGroove=mat('#294d4b',{metalness:.12,roughness:.49}),frameLip=mat('#71928a',{metalness:.31,roughness:.32}),windowCloth=mat('#3f706d',{side:T.DoubleSide,roughness:.95});
  const seal=mat('#455c5a',{roughness:.8}),recess=mat('#879b95',{roughness:.82}),doorPaint=mat('#d8e1d9',{roughness:.62}),skirting=mat('#547b70',{roughness:.72});
@@ -14,7 +15,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  // Kept detached until the caller has baked the common enclosure. They are
  // baked separately, then attached back to it so its menu cutaway still works.
  const ceilingRig=new T.Group(),upperWalls=new T.Group();ceilingRig.name='classroom-ceiling-rig';upperWalls.name='tiered-upper-walls';upperWalls.visible=false;
- const B=(m,p,s,parent=room)=>box(m,p,s,null,parent);
+ const B=(m,p,s,parent=room)=>{const object=box(m,p,s,null,parent);return surfaces&&m===cream?setWallSurfaceUV(object,assets):object;};
  // Only continuous upper walls: overlapping pier infills made coplanar flicker.
  const upperColumn=(x,z,w,d)=>{if(w<10&&d<10)return;return B(cream,[x,4.88,z],[w,.84,d],upperWalls);};
  // A recessed aluminium section, not a line painted on the glass. One shared
@@ -116,12 +117,12 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  B(cream,[0,2.23,-6.72],[11.82,4.46,.18]);strip(0,-6.60,11.80,.12,room,true,ceilingRig);
  B(cream,[0,2.23,6.62],[11.82,4.46,.18],enclosure);strip(0,6.50,11.80,.12,enclosure,true,ceilingRig);
  const chalk=texture(1536,768,(c,w,h)=>{
-  c.fillStyle='#293c38';c.fillRect(0,0,w,h);c.fillStyle='#f0e9c6';c.textAlign='center';c.font='bold 90px "Kaiti SC","STKaiti",serif';c.fillText('迎接新世纪',w/2,125);
+  drawBoardSurface(c,w,h,surfaces?.board);c.fillStyle='#f0e9c6';c.textAlign='center';c.font='bold 90px "Kaiti SC","STKaiti",serif';c.fillText('迎接新世纪',w/2,125);
   c.strokeStyle='#d8dfbb';c.lineWidth=5;c.strokeRect(46,184,645,170);c.strokeRect(46,389,428,302);c.strokeRect(515,389,445,302);c.strokeRect(1002,184,481,507);
   c.font='39px "Kaiti SC","STKaiti",serif';c.fillStyle='#cbdcd1';c.fillText('素质文化',370,256);c.fillText('努力学习  团结友爱',259,468);c.fillText('文明礼貌',735,468);c.fillText('从我做起',735,544);c.fillStyle='#a9c9df';c.fillText('成长足迹',1240,262);c.fillStyle='#e6caa0';c.fillText('认真学习',1240,347);c.fillText('快乐成长',1240,423);
   c.strokeStyle='#c8dcd8';c.lineWidth=3;for(let i=0;i<9;i++){c.beginPath();c.arc(90+i*65,307,9,0,Math.PI*2);c.stroke();}c.fillStyle='#d9bfa8';c.font='100px serif';c.fillText('☆',1240,610);c.fillText('☆',142,626);c.fillText('☆',376,626);
  });
- const board=mat('#ffffff',{map:chalk,roughness:.94});
+ const board=mat('#ffffff',{map:chalk,bumpMap:surfaces?surfaceHeight(surfaces.board,assets,2,1):null,bumpScale:.001,roughness:.92});
  function endBoards(z,front,parent){
   const facing=front?-1:1,depth=z+facing*.14;
   B(edge,[0,2.57,z],[5.08,2.22,.09],parent);B(board,[0,2.57,depth],[4.98,2.12,.025],parent);
@@ -134,8 +135,8 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  }
  // The tiered reference has a blank rear wall; displays belong to the ordinary room only.
  endBoards(-6.54,false,facades[0]);
- const lesson=texture(1400,680,(c,w,h)=>{c.fillStyle='#274338';c.fillRect(0,0,w,h);c.fillStyle='#e4ead8';c.font='42px "Kaiti SC",serif';c.fillText('数学',75,80);c.font='italic 62px Georgia';c.fillText('y = ax² + bx + c',85,230);c.fillText('a² + b² = c²',85,372);c.font='38px serif';c.fillText('练习 3    P.48',85,550);c.strokeStyle='#e4ead8';c.lineWidth=5;c.beginPath();c.moveTo(900,480);c.lineTo(1220,480);c.lineTo(1220,180);c.closePath();c.stroke();});
- B(edge,[0,2.65,6.40],[7.5,2.55,.11],enclosure);B(mat('#ffffff',{map:lesson}),[0,2.65,6.32],[7.36,2.40,.025],enclosure);
+ const lesson=texture(1400,680,(c,w,h)=>{drawBoardSurface(c,w,h,surfaces?.board);c.fillStyle='#e4ead8';c.font='42px "Kaiti SC",serif';c.fillText('数学',75,80);c.font='italic 62px Georgia';c.fillText('y = ax² + bx + c',85,230);c.fillText('a² + b² = c²',85,372);c.font='38px serif';c.fillText('练习 3    P.48',85,550);c.strokeStyle='#e4ead8';c.lineWidth=5;c.beginPath();c.moveTo(900,480);c.lineTo(1220,480);c.lineTo(1220,180);c.closePath();c.stroke();});
+ B(edge,[0,2.65,6.40],[7.5,2.55,.11],enclosure);B(mat('#ffffff',{map:lesson,bumpMap:surfaces?surfaceHeight(surfaces.board,assets,1400/680,1):null,bumpScale:.001,roughness:.92}),[0,2.65,6.32],[7.36,2.40,.025],enclosure);
  B(edge,[0,1.34,6.24],[7.55,.05,.20],enclosure);
  const motto=texture(1536,160,(c,w,h)=>{c.clearRect(0,0,w,h);c.fillStyle='#b92222';c.textAlign='center';c.textBaseline='middle';c.font='bold 80px "Kaiti SC","STKaiti",serif';c.fillText('立德树人',w*.25,h*.52);c.fillText('追求卓越',w*.75,h*.52);});
  const mottoGeo=new T.PlaneGeometry(7.30,.57);assets.add(mottoGeo);mesh(mottoGeo,mat('#ffffff',{map:motto,transparent:true,depthWrite:false,roughness:.9}),[0,4.10,6.50],[1,1,1],[0,Math.PI,0],enclosure).castShadow=false;

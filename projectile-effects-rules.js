@@ -1,5 +1,5 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=classroom-33';
-import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,floorHeight,TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=classroom-33';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=classroom-34';
+import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,floorHeight,TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=classroom-34';
 
 // Local reconstruction parameters, not measured single-projectile durations.
 export const PROJECTILE_EFFECT_TUNING=Object.freeze({flashFuse:1.2,flashRange:8,flashWhite:4.5,flashFade:2.5,inkRange:2.2,inkDuration:7});
