@@ -118,7 +118,7 @@ export class ClassroomRound{
   _classInputAllowed(){return this._inputAllowed()&&this.stage==='class';}
   _enterGathering(){
     this.stage='gathering';this.duration=CLASS_START_TIMING.classDuration;this._stageElapsed=0;
-    const spots=[{x:6.65,z:3.25},{x:7.15,z:1.35},{x:6.65,z:-.7},{x:7.15,z:-3.5},{x:6.65,z:-5.1}];let index=0;
+    const spots=[{x:8.15,z:2.50},{x:8.15,z:.90},{x:7.20,z:-.80},{x:8.10,z:-2.90},{x:8.10,z:-4.80}];let index=0;
     for(const s of this.students)if(this._team.has(s.id)&&!s.isPlayer){Object.assign(s,spots[index++],{seated:false,seatId:null,yaw:0,holding:false,mood:'standing',_drawerOpen:false,_drawnSlot:null});}
     Object.assign(this.player,{x:7.25,z:3.50,yaw:Math.atan2(START_BELL.x-7.25,START_BELL.z-3.50),pitch:Math.atan2(.13,Math.hypot(START_BELL.x-7.25,START_BELL.z-3.50)),seated:false,seatId:null,crouched:false,holding:false,_drawerOpen:false,_drawnSlot:null});
     if(this.player.id!==-1)Object.assign(this.teacher,TEACHER_SPAWN,{phase:'watching',intent:'wait'});
