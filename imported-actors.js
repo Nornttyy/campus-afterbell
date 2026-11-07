@@ -2,12 +2,12 @@ import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 
 export async function loadTeacherModel(){
-  const url=new URL('./assets/models/teacher-v1.glb?v=map-30d',import.meta.url);
+  const url=new URL('./assets/models/teacher-v1.glb?v=classroom-31',import.meta.url);
   return createRiggedTeacher(await new GLTFLoader().loadAsync(url.href));
 }
 
 export async function loadDeskModel(){
-  const url=new URL('./assets/models/desk-v1.glb?v=map-30d',import.meta.url);
+  const url=new URL('./assets/models/desk-v1.glb?v=classroom-31',import.meta.url);
   const gltf=await new GLTFLoader().loadAsync(url.href);
   const body=gltf.scene.getObjectByName('DeskBody'),drawer=gltf.scene.getObjectByName('DeskDrawer');
   if(!body||!drawer)throw new Error('Desk model must have separate body and drawer');

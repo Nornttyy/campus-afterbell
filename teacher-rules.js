@@ -1,38 +1,8 @@
-import {ClassroomRound} from './classroom-rules.js?v=map-30d';
-import {ROOM,SEATS,BOARD,DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,WALL_VOLUMES,LECTERN,OFFICE_SOLIDS,floorTiles,clearWallSegment,floorHeight} from './classroom-layout.js?v=map-30d';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=classroom-31';
+import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,clearWallSegment,floorHeight} from './classroom-layout.js?v=classroom-31';
 
-// Segment tests share real desk/book/monitor positions with the renderer.
-// Chalk speed, cooldown and stagger are local tuning, not measured original values.
-export function segmentBox(a,b,box){
-  let lo=0,hi=1;
-  for(const axis of ['x','y','z']){
-    const d=b[axis]-a[axis],min=box['min'+axis.toUpperCase()],max=box['max'+axis.toUpperCase()];
-    if(Math.abs(d)<1e-9){if(a[axis]<min||a[axis]>max)return null;continue;}
-    const u=(min-a[axis])/d,v=(max-a[axis])/d;
-    lo=Math.max(lo,Math.min(u,v));hi=Math.min(hi,Math.max(u,v));if(lo>hi)return null;
-  }
-  return lo;
-}
-export function chalkHit(a,b,students,books,map){
-  let nearest=null;
-  const test=(box,kind,id)=>{const t=segmentBox(a,b,box);if(t!==null&&(!nearest||t<nearest.t))nearest={t,kind,id};};
-  for(const [id,wall] of WALL_VOLUMES.entries())test(wall,'wall',id);
-  for(const solid of OFFICE_SOLIDS)test(solid,'wall',-1);
-  for(const tile of floorTiles(map))test({...tile,minY:0,maxY:tile.height},'wall',-1);
-  test({...LECTERN,minY:.16,maxY:1.15},'desk',-1);
-  for(const s of SEATS){
-    const base=floorHeight(s.x,s.z,map);
-    test({minX:s.x-.61,maxX:s.x+.61,minY:base+.58,maxY:base+.865,minZ:s.deskZ-.4,maxZ:s.deskZ+.4},'desk',s.id);
-    if(map==='computer')test({minX:s.x-.33,maxX:s.x+.33,minY:base+1.03,maxY:base+1.43,minZ:s.deskZ-.06,maxZ:s.deskZ+.05},'desk',s.id);
-    else if((books[s.id]?.amount??0)>.5)test({minX:s.x-.34,maxX:s.x+.34,minY:base+.88,maxY:base+1.35,minZ:s.deskZ-.30,maxZ:s.deskZ-.26},'desk',s.id);
-  }
-  for(const s of students){
-    if(s.caught||s.captivity==='carried')continue;
-    const base=floorHeight(s.x,s.z,map);
-    test({minX:s.x-.24,maxX:s.x+.24,minY:base+(s.seated?.82:.65),maxY:base+(s.seated?1.64:1.88),minZ:s.z-.23,maxZ:s.z+.23},'student',s.id);
-  }
-  return nearest;
-}
+// Shared with the AI teacher: a visible projectile must hit before it can stun.
+export {chalkHit,segmentBox} from './classroom-rules.js?v=classroom-31';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
@@ -48,15 +18,15 @@ export class TeacherRound extends ClassroomRound{
     }
     this.player={id:-1,...TEACHER_SPAWN,seated:false,crouched:false,caught:false,captivity:'free',seatId:null,holding:false,
       _slots:[],_selectedSlot:0,_drawnSlot:null,_drawerOpen:false};
-    this.selected='chalk';this.chalks=[];this._chalkId=0;this._nextThrow=0;this._lastThrow=-100;this.wrongGrabs=0;
-    Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw,phase:'watching',intent:'player',warning:false});
+    this.selected='chalk';this.chalks=[];this._chalkId=0;this._nextThrow=0;this._lastThrow=-100;this.wrongGrabs=0;this._writing=false;this._writeTime=0;
+    Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw,phase:'watching',intent:'player',warning:false,stamina:100,writing:false,writeProgress:0});
     return this.snapshot();
   }
   snapshot(){
     const s=super.snapshot();
-    if(!this.chalks)return s; // Base reset calls snapshot before teacher initialization.
+    if(this.player.id!==-1)return s; // Base reset calls snapshot before teacher initialization.
     s.role='teacher';const aim=this.aimedStudent();s.teacherAim=aim?{id:aim.id,grabReady:Math.hypot(aim.x-this.player.x,aim.z-this.player.z)<1.55&&aim.captivity==='stunned'}:null;s.bindPost=this.bindTarget()?.id??null;s.chalks=this.chalks.map(c=>({...c}));s.throwAge=this.elapsed-this._lastThrow;
-    s.wrongGrabs=this.wrongGrabs;
+    s.wrongGrabs=this.wrongGrabs;s.writeBoardAvailable=this.canWriteBoard();s.releaseStudent=this.releaseTarget()?.id??null;
     s.students=s.students.map(p=>({...p,chalked:this.elapsed<(this.students[p.id]._chalkUntil||0)}));
     return s;
   }
@@ -67,7 +37,8 @@ export class TeacherRound extends ClassroomRound{
   _perceive(){} // The human observes. No evidence meter, memory-based aim or auto-capture.
   _hear(){} // Sound cues stay spatial; they must not reveal hidden identity to the UI.
   throwChalk(){
-    if(!this._inputAllowed()||this.elapsed<this._nextThrow||this.teacher.carriedId!==null)return false;
+    if(!this._inputAllowed()||this._writing||this.elapsed<this._nextThrow||this.teacher.carriedId!==null)return false;
+    if(this.teacher.stamina<=0){this._events.push({type:'stamina-low'});return false;}
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
     this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?1.02:TEACHER_EYE_HEIGHT),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
     this._lastThrow=this.elapsed;this._nextThrow=this.elapsed+.72;this._events.push({type:'chalk-throw'});return true;
@@ -88,27 +59,46 @@ export class TeacherRound extends ClassroomRound{
     const p=this.player;return DETENTION.find(post=>Math.hypot(p.x-post.x,p.z-post.z)<1.55&&clearWallSegment(p,post)&&Math.abs(Math.atan2(Math.sin(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw),Math.cos(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw)))<.85&&!this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))||null;
   }
   grabStudent(){
-    if(!this._inputAllowed()||this.teacher.carriedId!==null)return false;
+    if(!this._inputAllowed()||this._writing||this.teacher.carriedId!==null)return false;
     const s=this.aimedStudent(1.55);if(!s||s.captivity!=='stunned')return false;
-    if(!this._team.has(s.id)){s.captivity='free';s._chalkUntil=0;this.wrongGrabs++;this._events.push({type:'wrong-grab',studentId:s.id});return false;}
     Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw});return this._grab(s);
   }
   bindStudent(){const post=this.bindTarget();if(!this._inputAllowed()||!post)return false;return this._bind(post.id);}
   dropStudent(){if(!this._inputAllowed())return false;const s=this.students[this.teacher.carriedId];if(!s)return false;this._release(s);return true;}
-  _advanceTeacher(dt){
-    const p=this.player;Object.assign(this.teacher,{x:p.x,z:p.z,yaw:p.yaw,phase:'watching',intent:'player',warning:false,looking:true,castProgress:0});
-    for(const c of this.chalks){
-      const next={x:c.x+c.vx*dt,y:c.y+c.vy*dt,z:c.z+c.vz*dt};c.age+=dt;c.vy-=1.6*dt;
-      const hit=chalkHit(c,next,this.students,this.books,this.map);
-      if(hit){
-        c.x+=(next.x-c.x)*hit.t;c.y+=(next.y-c.y)*hit.t;c.z+=(next.z-c.z)*hit.t;c.dead=true;
-        if(hit.kind==='student'){
-          const s=this.students[hit.id];this._stun(s);
-        }
-        this._events.push({type:'chalk-hit',kind:hit.kind,x:c.x,y:c.y,z:c.z});
-      }else Object.assign(c,next);
-      if(c.age>1.3||c.y<floorHeight(c.x,c.z,this.map)+.02||c.x<ROOM.minX||c.x>ROOM.maxX||c.z<ROOM.minZ||c.z>ROOM.maxZ)c.dead=true;
+  // Video 25:02 and 26:10 show a wrong pupil still bound before the -40 penalty.
+  _bind(postId){
+    const id=this.teacher.carriedId;if(!super._bind(postId))return false;
+    if(this._team.has(id)){
+      this.teacher.stamina=Math.min(100,this.teacher.stamina+20);
+      this._events.push({type:'correct-capture',studentId:id,recovery:20});
+    }else{
+      this.teacher.stamina=Math.max(0,this.teacher.stamina-40);this.wrongGrabs++;
+      this._events.push({type:'wrong-grab',studentId:id,penalty:40});
     }
-    this.chalks=this.chalks.filter(c=>!c.dead);
+    return true;
+  }
+  releaseTarget(){
+    if(this.teacher.carriedId!==null)return null;
+    const p=this.player;
+    return this.students.filter(s=>s.captivity==='bound'&&Math.hypot(s.x-p.x,s.z-p.z)<1.65&&clearWallSegment(p,s)&&Math.abs(Math.atan2(Math.sin(Math.atan2(s.x-p.x,s.z-p.z)-p.yaw),Math.cos(Math.atan2(s.x-p.x,s.z-p.z)-p.yaw)))<.62).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0]||null;
+  }
+  releaseBoundStudent(){const s=this.releaseTarget();if(!this._inputAllowed()||!s)return false;return this._release(s);}
+  canWriteBoard(){
+    const p=this.player,yaw=Math.atan2(Math.sin(p.yaw),Math.cos(p.yaw));
+    return this.teacher.carriedId===null&&Math.abs(p.x)<3.5&&p.z>4.95&&p.z<6.25&&Math.abs(yaw)<.85&&p.pitch<.45&&p.pitch>-.85;
+  }
+  setWriting(value){
+    if(!value){this._writing=false;this.teacher.writing=false;this.teacher.writeProgress=0;return false;}
+    if(!this._inputAllowed()||!this.canWriteBoard())return false;
+    this._writing=true;this._writeTime=0;this.teacher.writing=true;this.holding=false;return true;
+  }
+  pause(value=true){if(value)this.setWriting(false);return super.pause(value);}
+  _advanceTeacher(dt){
+    const p=this.player,t=this.teacher;
+    if(this._writing&&(!this.canWriteBoard()||Math.hypot(this._movement.x,this._movement.z)>.01))this.setWriting(false);
+    // +10/sec is visible in 09:14-09:18; passive fatigue remains local tuning.
+    t.stamina=Math.max(0,Math.min(100,t.stamina+dt*(this._writing?10:-1)));
+    if(this._writing)this._writeTime+=dt;
+    Object.assign(t,{x:p.x,z:p.z,yaw:p.yaw,phase:this._writing?'board':'watching',intent:this._writing?'write':'player',warning:false,looking:!this._writing,castProgress:0,writing:this._writing,writeProgress:this._writing?this._writeTime%1:0});
   }
 }

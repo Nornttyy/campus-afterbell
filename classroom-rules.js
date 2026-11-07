@@ -1,8 +1,8 @@
-import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from './smoke-physics.js?v=map-30d';
-import { ROOM, SEATS, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, moveInRoom, walkRoute, blocked, clearWallSegment, CAMPUS_MAPS } from './classroom-layout.js?v=map-30d';
+import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from './smoke-physics.js?v=classroom-31';
+import { ROOM, SEATS, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, moveInRoom, walkRoute, blocked, clearWallSegment, CAMPUS_MAPS, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight } from './classroom-layout.js?v=classroom-31';
 
-/** Local prototype tuning, NOT verified original-game balance values. */
-export const DEVELOPMENT_TUNING = Object.freeze({ target:100, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:1.8, crouchSpeed:.85, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
+/** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
+export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:1.8, crouchSpeed:.85, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
 export const CLASSROOM_ACTIONS = Object.freeze({
   snack:Object.freeze({duration:3,points:2,risk:1,noise:.85,label:'偷吃零食'}),
   note:Object.freeze({duration:3,points:2.5,risk:.82,noise:.45,label:'传纸条'}),
@@ -36,6 +36,39 @@ export function propVisibility(observer,target,smokes=[]){
   return (1-(1-book)*cover)*(target.crouched&&d>2.1?.45:1);
 }
 
+// Segment tests share real desk/book/monitor positions with the renderer.
+// Chalk speed, cooldown and stagger are local tuning, not measured original values.
+export function segmentBox(a,b,box){
+  let lo=0,hi=1;
+  for(const axis of ['x','y','z']){
+    const d=b[axis]-a[axis],min=box['min'+axis.toUpperCase()],max=box['max'+axis.toUpperCase()];
+    if(Math.abs(d)<1e-9){if(a[axis]<min||a[axis]>max)return null;continue;}
+    const u=(min-a[axis])/d,v=(max-a[axis])/d;
+    lo=Math.max(lo,Math.min(u,v));hi=Math.min(hi,Math.max(u,v));if(lo>hi)return null;
+  }
+  return lo;
+}
+export function chalkHit(a,b,students,books,map){
+  let nearest=null;
+  const test=(box,kind,id)=>{const t=segmentBox(a,b,box);if(t!==null&&(!nearest||t<nearest.t))nearest={t,kind,id};};
+  for(const [id,wall] of enclosureVolumes(map).entries())test(wall,'wall',id);
+  for(const solid of OFFICE_SOLIDS)test(solid,'wall',-1);
+  for(const tile of floorTiles(map))test({...tile,minY:0,maxY:tile.height},'wall',-1);
+  test({...LECTERN,minY:.16,maxY:1.15},'desk',-1);
+  for(const s of SEATS){
+    const base=floorHeight(s.x,s.z,map);
+    test({minX:s.x-.61,maxX:s.x+.61,minY:base+.58,maxY:base+.865,minZ:s.deskZ-.4,maxZ:s.deskZ+.4},'desk',s.id);
+    if(map==='computer')test({minX:s.x-.33,maxX:s.x+.33,minY:base+1.03,maxY:base+1.43,minZ:s.deskZ-.06,maxZ:s.deskZ+.05},'desk',s.id);
+    else if((books[s.id]?.amount??0)>.5)test({minX:s.x-.34,maxX:s.x+.34,minY:base+.88,maxY:base+1.35,minZ:s.deskZ-.30,maxZ:s.deskZ-.26},'desk',s.id);
+  }
+  for(const s of students){
+    if(s.caught||s.captivity==='carried')continue;
+    const base=floorHeight(s.x,s.z,map);
+    test({minX:s.x-.24,maxX:s.x+.24,minY:base+(s.seated?.82:.65),maxY:base+(s.crouched?1.22:s.seated?1.64:1.88),minZ:s.z-.23,maxZ:s.z+.23},'student',s.id);
+  }
+  return nearest;
+}
+
 export class ClassroomRound{
   constructor({seed=73,duration=Infinity,target=DEVELOPMENT_TUNING.target,map='classroom'}={}){
     this.map=CAMPUS_MAPS.includes(map)?map:'classroom';
@@ -46,7 +79,7 @@ export class ClassroomRound{
     if(seed!==undefined)this.seed=seedNumber(seed);this._rng=this.seed;this._drawerRng=(this.seed^0xA341316C)>>>0;
     this.status='ready';this.paused=false;this.elapsed=0;this.score=0;this.strikes=0;this.resultReason=null;
     this.selected='snack';this.holding=false;this.completed={snack:0,note:0,phone:0,smoke:0,computer:0};
-    this.smokes=[];this.projectiles=[];this._events=[];this._accumulator=0;this._movement={x:0,z:0};this._lastObservation=-Infinity;this._smokeId=0;
+    this.smokes=[];this.projectiles=[];this.chalks=[];this._chalkId=0;this._nextCastAt=0;this._events=[];this._accumulator=0;this._movement={x:0,z:0};this._lastObservation=-Infinity;this._smokeId=0;
     this._team=new Set([PLAYER_SEAT,...FRIEND_SEATS]);
     this.books=SEATS.map(s=>({id:s.id,raised:COVERED_SEATS.includes(s.id),amount:COVERED_SEATS.includes(s.id)?1:0}));
     const personalities=['cautious','bold','helpful','distractible'];
@@ -159,7 +192,7 @@ export class ClassroomRound{
       player:{...capture(p),computerActive:Boolean(p._computerActive),bookRaised:p.seated?this.books[p.seatId].raised:false,id:p.id,x:clean(p.x),z:clean(p.z),yaw:clean(p.yaw),pitch:clean(p.pitch),seated:p.seated,crouched:p.crouched,caught:p.caught,seatId:p.seatId},
       teacher:{...t,x:clean(t.x),z:clean(t.z),yaw:clean(t.yaw),phaseTime:clean(t.phaseTime),phaseDuration:clean(t.phaseDuration),castProgress:clean(t.castProgress),attention:clean(t.attention),walkProgress:clean(t.walkProgress),observedIds:[...this._memory.keys()],memory:[...this._memory.values()].map(m=>({id:m.id,evidence:clean(m.evidence),suspicion:clean(m.evidence),noise:clean(m.noise),confirmed:m.confirmed,detained:m.detained,lastSeen:m.lastSeen,lastHeard:m.lastHeard,lastVisit:m.lastVisit,visits:m.visits,x:clean(m.x),z:clean(m.z)}))},
       students:this.students.map(s=>({...capture(s),computerActive:Boolean(s._computerActive),bookRaised:s.seated?this.books[s.seatId].raised:false,id:s.id,seatId:s.seatId,x:clean(s.x),z:clean(s.z),yaw:clean(s.yaw),seated:s.seated,crouched:s.crouched,isPlayer:s.isPlayer,isTeammate:s.isTeammate,caught:s.caught,mood:s.mood,action:s.action,holding:s.holding,progress:clean(s.progress),name:s.name,personality:s.personality,completed:{...s.completed},...(this._team.has(s.id)?{drawer:this._drawerSnapshot(s)}:{})})),
-      projectiles:this.projectiles.map(p=>({...p})),smokes:this.smokes.map(s=>({...s,remaining:clean(s.remaining)}))};
+      chalks:this.chalks.map(c=>({...c})),projectiles:this.projectiles.map(p=>({...p})),smokes:this.smokes.map(s=>({...s,remaining:clean(s.remaining)}))};
   }
   drainEvents(){const events=this._events;this._events=[];return events;}
   _random(){let t=this._rng=(this._rng+0x6D2B79F5)>>>0;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}
@@ -223,7 +256,7 @@ export class ClassroomRound{
   _advanceStudents(dt){
     for(const s of this.students){
       if(this._restrained(s)){s.holding=false;s.mood=s.captivity;continue;}
-      if(s.isTeammate&&this._advanceRescuer(s,dt))continue;
+      if((s.isTeammate||s._returnRoute)&&this._advanceRescuer(s,dt))continue;
       if(s.isPlayer){s.holding=this.holding;s.action=this.selected;s.mood=s.holding?s.action:s.seated?'writing':'walking';continue;}
       if(!s.isTeammate){
         if(this.elapsed>=s._idleAt){s.mood=['writing','reading','scratch','page'][Math.floor(this._random()*4)];s._idleAt=this.elapsed+this._range(2.3,7.5);if(s.mood==='page')this._hear(s,.12,'page');}
@@ -339,13 +372,28 @@ export class ClassroomRound{
     }
     if(!p.route.length&&p.arrivedAt===null){p.arrivedAt=this.elapsed;if(m){m.lastVisit=clean(this.elapsed);m.visits++;}}
     if(m&&p.arrivedAt!==null&&this.elapsed-p.arrivedAt>2&&p.intent!=='catch'){m.noise=Math.max(0,m.noise-dt*.9);p.until=Math.min(p.until,this.elapsed);}
-    if(p.intent==='catch'&&m&&!m.detained&&!this._cast&&this._turnLeft<=EPS){
-      const actor=this.students[m.id];if(distance(t,actor)<3.25&&canSee(t,actor,this.smokes)){this._cast={id:actor.id,time:0};actor.holding=false;if(actor.isPlayer)this.holding=false;}
+    if(p.intent==='catch'&&m&&!m.detained&&!this._cast&&this._turnLeft<=EPS&&this.elapsed>=this._nextCastAt){
+      const actor=this.students[m.id];if(distance(t,actor)<3.25&&canSee(t,actor,this.smokes)){this._cast={id:actor.id,time:0,aim:{x:actor.x,y:floorHeight(actor.x,actor.z,this.map)+(actor.crouched?1.08:actor.seated?1.45:1.55),z:actor.z}};}
     }
-    if(this._cast){this._cast.time+=dt;t.castProgress=clamp(this._cast.time/DEVELOPMENT_TUNING.chalkWindup,0,1);if(this._cast.time+EPS>=DEVELOPMENT_TUNING.chalkWindup){const id=this._cast.id;this._events.push({type:'chalk',studentId:id,targetId:id});this._stun(this.students[id]);this._cast=null;t.castProgress=0;p.until=0;this._thinkAt=0;}}
+    if(this._cast){this._cast.time+=dt;t.castProgress=clamp(this._cast.time/DEVELOPMENT_TUNING.chalkWindup,0,1);if(this._cast.time+EPS>=DEVELOPMENT_TUNING.chalkWindup){const id=this._cast.id,origin={x:t.x,y:floorHeight(t.x,t.z,this.map)+TEACHER_EYE_HEIGHT,z:t.z},aim=this._cast.aim,dx=aim.x-origin.x,dy=aim.y-origin.y,dz=aim.z-origin.z,length=Math.hypot(dx,dy,dz)||1;this.chalks.push({id:this._chalkId++,...origin,vx:dx/length*16,vy:dy/length*16,vz:dz/length*16,age:0});this._events.push({type:'chalk',studentId:id,targetId:id});this._cast=null;this._nextCastAt=this.elapsed+.9;t.castProgress=0;p.until=0;this._thinkAt=0;}}
     const phase=this._turnLeft>EPS?'turning':this._cast?'watching':p.route.length?'patrol':p.intent==='write'?'board':'watching';
     if(t.phase!==phase){t.phase=phase;t.phaseTime=0;}else t.phaseTime+=dt;
     t.warning=phase==='turning';t.phaseDuration=phase==='turning'?.7:this._cast?.7:Math.max(1,p.until-p.since);t.walkProgress=p.routeLength?clamp(1-p.route.reduce((sum,v,i)=>sum+distance(i?p.route[i-1]:t,v),0)/p.routeLength,0,1):0;
+  }
+  _advanceChalk(dt){
+    for(const c of this.chalks){
+      const next={x:c.x+c.vx*dt,y:c.y+c.vy*dt,z:c.z+c.vz*dt};c.age+=dt;c.vy-=1.6*dt;
+      const hit=chalkHit(c,next,this.students,this.books,this.map);
+      if(hit){
+        c.x+=(next.x-c.x)*hit.t;c.y+=(next.y-c.y)*hit.t;c.z+=(next.z-c.z)*hit.t;c.dead=true;
+        if(hit.kind==='student'){
+          const s=this.students[hit.id];this._stun(s);
+        }
+        this._events.push({type:'chalk-hit',kind:hit.kind,x:c.x,y:c.y,z:c.z});
+      }else Object.assign(c,next);
+      if(c.age>1.3||c.y<floorHeight(c.x,c.z,this.map)+.02||c.x<ROOM.minX||c.x>ROOM.maxX||c.z<ROOM.minZ||c.z>ROOM.maxZ)c.dead=true;
+    }
+    this.chalks=this.chalks.filter(c=>!c.dead);
   }
   _stopActor(actor){
     actor._computerActive=false;actor.holding=false;actor._drawerOpen=false;actor._drawnSlot=null;actor.progress=0;
@@ -376,7 +424,7 @@ export class ClassroomRound{
     actor.captivity='free';actor.caught=false;actor.postId=null;actor._chalkUntil=0;actor._restUntil=this.elapsed+2;actor.mood='walking';
     if(this.teacher.carriedId===actor.id)this.teacher.carriedId=null;
     this._memory.delete(actor.id);this._plan.until=0;this._thinkAt=0;
-    if(actor.isTeammate)actor._returnRoute=walkRoute(actor,SEATS[actor.id]);
+    if(!actor.isPlayer)actor._returnRoute=walkRoute(actor,SEATS[actor.id]);
     this._events.push({type:'rescued',studentId:actor.id,rescuerId:rescuer?.id??null});return true;
   }
   rescueTarget(actor=this.player){
@@ -416,7 +464,7 @@ export class ClassroomRound{
     if(s._returnRoute){s.holding=false;s.mood='walking';if(this._follow(s,s._returnRoute,1.35,dt)){s._returnRoute=null;const seat=SEATS[s.id];s.x=seat.x;s.z=seat.z;s.yaw=0;s.seatId=s.id;s.seated=true;s._decisionAt=this.elapsed+3;}return true;}
     let target=this.students[s._rescueTarget];
     if(!target||target.captivity!=='bound'){s._rescueTarget=null;s._rescueRoute=null;s._helpProgress=0;target=null;}
-    if(!target&&s._decisionAt!==Infinity){
+    if(!target&&s.isTeammate&&s._decisionAt!==Infinity){
       target=this.students.find(a=>a.captivity==='bound'&&this._team.has(a.id)&&this.elapsed-a._boundAt>3&&distance(this.teacher,a)>2.8&&!this.students.some(b=>b!==s&&b._rescueTarget===a.id));
       if(target){s._rescueTarget=target.id;s._rescueRoute=walkRoute(s,{x:target.x,z:target.z-.7});this._stopActor(s);s.seated=false;s.seatId=null;}
     }
@@ -432,7 +480,7 @@ export class ClassroomRound{
     for(const s of this.students)s.bookCover=s.seated?this.books[s.seatId].amount:0;
     this._advanceSmoke(dt);
     if(!this.player.seated&&!this._restrained()){const speed=this.teacher.carriedId!==null&&this.player.id===-1?1.15:this.player.crouched?DEVELOPMENT_TUNING.crouchSpeed:DEVELOPMENT_TUNING.walkSpeed,pos=moveInRoom(this.player,this._movement.x*speed*dt,this._movement.z*speed*dt);this.player.x=pos.x;this.player.z=pos.z;}
-    this._advanceTeacher(dt);this._advanceCaptivity(dt);if(this.status!=='playing')return;
+    this._advanceTeacher(dt);this._advanceChalk(dt);this._advanceCaptivity(dt);if(this.status!=='playing')return;
     this._perceive(dt);this._advanceStudents(dt);
     if(this.status==='playing'&&this.elapsed+EPS>=this.duration)this._finish('lost','timeout');
   }

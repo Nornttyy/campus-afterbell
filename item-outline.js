@@ -11,7 +11,7 @@ export function createItemOutline(renderer){
   let selected=null,pairs=[];const size=new T.Vector2(),clearColor=new T.Color();
   function select(object){
     if(selected===object)return;selected=object;maskScene.clear();pairs=[];
-    if(object)object.traverse(o=>{let excluded=false;for(let p=o;p&&p!==object;p=p.parent)if(p.name==='player-drawer-items'||!p.visible)excluded=true;if(o.isMesh&&o.visible&&!excluded){const proxy=new T.Mesh(o.geometry,white);proxy.matrixAutoUpdate=false;proxy.frustumCulled=false;maskScene.add(proxy);pairs.push([o,proxy]);}});
+    if(object)object.traverse(o=>{let excluded=false;for(let p=o;p&&p!==object;p=p.parent)if(p.name==='player-drawer-items'||(!p.visible&&!p.userData.rigidInstanceSource))excluded=true;if(o.isMesh&&(o.visible||o.userData.rigidInstanceSource)&&!excluded){const proxy=new T.Mesh(o.geometry,white);proxy.matrixAutoUpdate=false;proxy.frustumCulled=false;maskScene.add(proxy);pairs.push([o,proxy]);}});
   }
   function render(camera){
     if(!selected||!pairs.length)return;

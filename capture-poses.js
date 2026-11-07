@@ -14,10 +14,30 @@ const STRUGGLE_KEYS=[
   {t:1.82,roll:.20,left:[.20,.12,.14],right:[-.22,-.08,.17],pitch:-.47},
   {t:2,roll:.24,left:[.20,.13,.12],right:[-.24,-.07,.15],pitch:-.50},
 ];
+// A sampled pose is not a separate gesture. Smoothstep on every interval made
+// the wrists brake to zero at all eight samples. Periodic, monotone Hermite
+// tangents keep each pull travelling through intermediate poses without
+// enlarging the observed range or adding elastic overshoot.
+const STRUGGLE_CHANNELS=Array.from({length:8},(_,channel)=>{
+ const read=key=>channel===0?key.roll:channel===1?key.pitch:channel<5?key.left[channel-2]:key.right[channel-5];
+ const values=STRUGGLE_KEYS.slice(0,-1).map(read),n=values.length;
+ const slopes=values.map((value,i)=>{
+  const p=(i+n-1)%n,next=(i+1)%n;
+  const before=STRUGGLE_KEYS[i].t-(i?STRUGGLE_KEYS[p].t:STRUGGLE_KEYS[p].t-2);
+  const after=(next?STRUGGLE_KEYS[next].t:2)-STRUGGLE_KEYS[i].t;
+  const a=(value-values[p])/before,b=(values[next]-value)/after;
+  if(a*b<=0)return 0;
+  const w1=2*after+before,w2=after+2*before;
+  return(w1+w2)/(w1/a+w2/b);
+ });
+ return{values,slopes};
+});
 export function strugglePose(time){
   const t=((time%2)+2)%2;let i=0;while(i<STRUGGLE_KEYS.length-2&&t>STRUGGLE_KEYS[i+1].t)i++;
-  const a=STRUGGLE_KEYS[i],b=STRUGGLE_KEYS[i+1],f=T.MathUtils.smoothstep(t,a.t,b.t);
-  return{roll:T.MathUtils.lerp(a.roll,b.roll,f),pitch:T.MathUtils.lerp(a.pitch,b.pitch,f),left:a.left.map((n,j)=>T.MathUtils.lerp(n,b.left[j],f)),right:a.right.map((n,j)=>T.MathUtils.lerp(n,b.right[j],f))};
+  const duration=STRUGGLE_KEYS[i+1].t-STRUGGLE_KEYS[i].t,f=(t-STRUGGLE_KEYS[i].t)/duration,f2=f*f,f3=f2*f;
+  const sample=({values,slopes})=>{const next=(i+1)%values.length;return(2*f3-3*f2+1)*values[i]+(f3-2*f2+f)*duration*slopes[i]+(-2*f3+3*f2)*values[next]+(f3-f2)*duration*slopes[next];};
+  const values=STRUGGLE_CHANNELS.map(sample);
+  return{roll:values[0],pitch:values[1],left:values.slice(2,5),right:values.slice(5)};
 }
 function rotateInCharacterSpace(group,bone,x,y,z,weight){
   if(!bone)return;bone.updateWorldMatrix(true,false);
