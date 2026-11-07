@@ -1,6 +1,7 @@
 export const TEACHER_EYE_HEIGHT=1.95;
 // World footprint: classroom, side corridor, office and the opposite lift lobby.
-export const ROOM=Object.freeze({minX:-5.80,maxX:8.25,minZ:-9.35,maxZ:12.75});
+export const CORRIDOR=Object.freeze({minX:6.00,maxX:9.15,minZ:-6.50,maxZ:6.40});
+export const ROOM=Object.freeze({minX:-5.80,maxX:CORRIDOR.maxX,minZ:-9.35,maxZ:12.75});
 export const CEILING_HEIGHT=4.51;
 export const TIERED_CEILING_HEIGHT=5.30;
 export const OFFICE=Object.freeze({minX:1.40,maxX:8.25,minZ:6.62,maxZ:12.75,doorX:7.15,doorMinX:6.25,doorMaxX:8.05});
@@ -22,14 +23,14 @@ export const PARTITIONS=Object.freeze([{minX:5.80,maxX:6.00,minZ:-6.72,maxZ:DOOR
 export const LECTERN=Object.freeze({minX:-1.52,maxX:-.17,minZ:5.32,maxZ:6.10});
 export const DOOR_LEAVES=Object.freeze(DOORS.map(d=>Object.freeze({minX:5.93,maxX:7.03,minZ:d.maxZ-.138,maxZ:d.maxZ+.033,minY:.04,maxY:2.88})));
 const V=(minX,maxX,minZ,maxZ,minY=0,maxY=CEILING_HEIGHT)=>Object.freeze({minX,maxX,minZ,maxZ,minY,maxY});
-const boundaries=[V(-6,-5.8,-6.72,6.62),V(-5.8,5.8,-6.72,-6.50),V(-5.8,6.25,6.40,6.62),V(8.25,8.45,-9.55,12.95),V(1.20,1.40,6.62,12.95),V(1.4,8.45,12.75,12.95),V(6.0,6.25,6.4,6.7),V(8.05,8.45,6.4,6.7),V(6.0,6.12,-9.55,-6.50),V(6.12,8.45,-9.55,-9.35),V(-5.8,6.12,-9.55,-6.5)];
+const boundaries=[V(-6,-5.8,-6.72,6.62),V(-5.8,5.8,-6.72,-6.50),V(-5.8,6.25,6.40,6.62),V(CORRIDOR.maxX,CORRIDOR.maxX+.20,-6.72,6.62),V(8.25,8.45,-9.55,-6.50),V(8.25,8.45,6.40,12.95),V(1.20,1.40,6.62,12.95),V(1.4,8.45,12.75,12.95),V(6.0,6.25,6.4,6.7),V(8.05,CORRIDOR.maxX+.20,6.4,6.7),V(8.25,CORRIDOR.maxX+.20,-6.72,-6.50),V(6.0,6.12,-9.55,-6.50),V(6.12,8.45,-9.55,-9.35),V(-5.8,6.12,-9.55,-6.5)];
 // End doorway headers do not obstruct a character or a thrown item below them.
 const officeLeaves=[V(6.215,6.285,6.66,7.50,.01,2.95),V(8.015,8.085,6.66,7.50,.01,2.95)];
 const headers=[...DOORS.map(d=>V(5.785,6.015,d.minZ,d.maxZ,2.89)),V(6.25,8.05,6.4,6.7,3.02),V(6.12,8.25,-6.72,-6.50,3.12),V(6.12,8.25,-9.35,-6.72,3.12)];
 export const WALL_VOLUMES=Object.freeze([...PARTITIONS.map(d=>Object.freeze({...d,minY:0,maxY:CEILING_HEIGHT})),...DOOR_LEAVES,...officeLeaves,...boundaries,...headers]);
 // Shared with thrown-item physics. Only the tiered classroom roof rises; the
 // corridor and office keep their lower ceilings. These do not affect walking.
-const fixedCeilings=Object.freeze([V(6.0,8.45,-6.85,6.75,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(1.305,8.355,6.53,12.85,CEILING_HEIGHT,CEILING_HEIGHT+.16)]);
+const fixedCeilings=Object.freeze([V(6.0,CORRIDOR.maxX+.20,-6.85,6.75,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(1.305,8.355,6.53,12.85,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(5.955,8.405,-9.455,-6.505,3.12,3.22)]);
 const flatCeilings=Object.freeze([V(-6.04,6.04,-6.84,6.74,CEILING_HEIGHT,CEILING_HEIGHT+.16),...fixedCeilings]);
 const raisedCeilings=Object.freeze([V(-6.04,6.04,-6.84,6.74,TIERED_CEILING_HEIGHT,TIERED_CEILING_HEIGHT+.16),...fixedCeilings]);
 const raisedUpperWalls=Object.freeze([V(-6.0,-5.8,-6.81,6.71,4.46,TIERED_CEILING_HEIGHT),V(5.8,6.0,-6.81,6.71,4.46,TIERED_CEILING_HEIGHT),V(-5.91,5.91,-6.81,-6.63,4.46,TIERED_CEILING_HEIGHT),V(-5.91,5.91,6.53,6.71,4.46,TIERED_CEILING_HEIGHT)]);
@@ -37,7 +38,7 @@ const flatEnclosure=Object.freeze([...WALL_VOLUMES,...flatCeilings]),raisedEnclo
 export function ceilingVolumes(map='classroom'){return map==='tiered'?raisedCeilings:flatCeilings;}
 export function enclosureVolumes(map='classroom'){return map==='tiered'?raisedEnclosure:flatEnclosure;}
 export const WALLS=Object.freeze([...PARTITIONS,...DOOR_LEAVES,...officeLeaves,...boundaries]);
-export const OFFICE_SOLIDS=Object.freeze([V(1.44,2.12,7.25,10.48,0,2.78),V(2.20,4.45,11.20,12.10,0,.95),V(7.62,8.24,8.35,11.75,0,1.03),V(7.60,8.24,2.10,3.72,0,2.28),V(2.95,3.65,10.38,11.13,0,1.12),V(5.17,7.03,11.665,12.335,0,2.25)]);
+export const OFFICE_SOLIDS=Object.freeze([V(1.44,2.12,7.25,10.48,0,2.78),V(2.20,4.45,11.20,12.10,0,.95),V(7.62,8.24,8.35,11.75,0,1.03),V(8.50,9.14,4.10,5.72,0,2.28),V(2.95,3.65,10.38,11.13,0,1.12),V(5.17,7.03,11.665,12.335,0,2.25)]);
 export function floorHeight(x,z,map='classroom'){
  if(Math.abs(x)<=3.15&&z>=4.525&&z<=6.40)return .16;
  if(map!=='tiered'||x>=5.8||x< -5.8||z< -6.5||z>=1.89)return 0;
@@ -57,7 +58,7 @@ export function floorTiles(map='tiered'){
  const zs=[-6.5,-3.75,-3.57,-1.93,-1.75,-.11,.07,1.71,1.89];
  const out=[];for(let i=0;i<xs.length-1;i++)for(let j=0;j<zs.length-1;j++){const h=floorHeight((xs[i]+xs[i+1])/2,(zs[j]+zs[j+1])/2,map);if(h>0)out.push({minX:xs[i],maxX:xs[i+1],minZ:zs[j],maxZ:zs[j+1],height:h});}return out;
 }
-export function walkableFootprint(x,z,r=.18){return (x>=-5.8+r&&x<=8.25-r&&z>=-6.5+r&&z<=6.4-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=6.4-r&&z<=OFFICE.maxZ-r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=LIFT.minZ+r&&z<=-6.20);}
+export function walkableFootprint(x,z,r=.18){return (x>=-5.8+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=6.4-r&&z<=OFFICE.maxZ-r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=LIFT.minZ+r&&z<=-6.20);}
 export function clearWallSegment(a,b){
  for(const w of WALLS){let lo=0,hi=1;for(const axis of ['X','Z']){const k=axis.toLowerCase(),d=b[k]-a[k];if(Math.abs(d)<1e-8){if(a[k]<w['min'+axis]||a[k]>w['max'+axis]){lo=2;break;}}else{let u=(w['min'+axis]-a[k])/d,v=(w['max'+axis]-a[k])/d;if(u>v)[u,v]=[v,u];lo=Math.max(lo,u);hi=Math.min(hi,v);}}if(lo<=hi&&hi>=0&&lo<=1)return false;}
  return true;

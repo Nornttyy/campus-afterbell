@@ -6,14 +6,15 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch {}
 const volume = (value, fallback) => Number.isFinite(+value) ? Math.min(100,Math.max(0,+value)) : fallback;
 const settings = { ...defaults, music:volume(saved.music,25), sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:saved.quality==='low'?'low':'high', motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion, character:['boy','girl','glasses'].includes(saved.character)?saved.character:'boy' };
-let scene, game, sceneReady=false, openingButton=null, draftCharacter=settings.character;
+let scene, game, sceneReady=false, worldPromise=null, disposed=false, openingButton=null, draftCharacter=settings.character;
 let roundOptions={role:saved.role==='teacher'?'teacher':'student',map:['classroom','night','tiered','computer'].includes(saved.map)?saved.map:'classroom'};
 const mapNames={classroom:'白天教室',night:'晚自习',tiered:'阶梯教室',computer:'机房'};
 function syncRoundOptions(){
   $$('[data-role]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.role===roundOptions.role)));
   $$('[data-map]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.map===roundOptions.map)));
   $('#choose-mode strong').textContent=mapNames[roundOptions.map]+' · '+(roundOptions.role==='teacher'?'老师':'学生');
-  scene?.setMap(roundOptions.map);
+  $('#room-map').textContent=mapNames[roundOptions.map];
+  $('#room-role').textContent=roundOptions.role==='teacher'?'老师':'学生';
 }
 let toastTimer=0;
 function toast(message){ clearTimeout(toastTimer); $('#toast').textContent=message; $('#toast').classList.add('show'); toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2600); }
@@ -48,13 +49,30 @@ class MenuAudio {
       const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type=hiss?'lowpass':'bandpass';filter.frequency.setValueAtTime(hiss?2200:impact?750:1600,t);filter.frequency.exponentialRampToValueAtTime(hiss?600:impact?280:600,t+duration);filter.Q.value=.7;gain.gain.value=(hiss?.16:impact?.23:.11)*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
       if(impact)this.tone(290,t,.085,.08*volume,this.fx,'triangle');return;
     }
+    if(kind==='flash-burst'||kind==='ink-splash'){
+      const flash=kind==='flash-burst',duration=flash?.34:.26,buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate),data=buffer.getChannelData(0);
+      for(let i=0;i<data.length;i++){const x=i/data.length;data[i]=(Math.random()*2-1)*Math.exp(-x*(flash?10:5))*(flash?1:.5+.5*Math.sin(x*28)**2);}
+      const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type='lowpass';filter.frequency.setValueAtTime(flash?3200:1200,t);filter.frequency.exponentialRampToValueAtTime(flash?650:180,t+duration);gain.gain.value=(flash?.26:.20)*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
+      this.tone(flash?1450:640,t+.02,flash?.8:.08,flash?.045:.08,this.fx);return;
+    }
     if(kind==='bell'){for(let i=0;i<3;i++)for(const f of [784,1046,1568])this.tone(f,t+i*.19,.6,.15,this.fx);return;}
     if(kind==='complete'){this.tone(780,t,.14,.17,this.fx);this.tone(1050,t+.07,.22,.12,this.fx);return;}
     if(kind==='step'){this.tone(96,t,.075,.16,this.fx,'triangle');return;}
     if(kind==='warning'){this.tone(430,t,.12,.12,this.fx,'triangle');return;}
+    if(kind==='bubble'){this.tone(280,t,.09,.06*volume,this.fx);return;}
+    if(kind==='blow'){
+      const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*.52),c.sampleRate),data=buffer.getChannelData(0);
+      for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/data.length);
+      const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type='lowpass';filter.frequency.value=750;gain.gain.value=.055*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};return;
+    }
+    if(kind==='drink'){
+      const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*.24),c.sampleRate),data=buffer.getChannelData(0);
+      for(let i=0;i<data.length;i++){const x=i/data.length;data[i]=(Math.random()*2-1)*Math.sin(Math.PI*x)*(.3+.7*Math.sin(x*22)**2);}
+      const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type='lowpass';filter.frequency.setValueAtTime(850,t);filter.frequency.exponentialRampToValueAtTime(300,t+.24);gain.gain.value=.13*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};return;
+    }
     const duration=kind==='caught'?.25:kind==='note'?.21:.10,buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate),data=buffer.getChannelData(0);
-    for(let i=0;i<data.length;i++){const x=i/data.length;data[i]=(Math.random()*2-1)*Math.exp(-x*(kind==='caught'?7:4))*(kind==='snack'?(.4+.6*Math.sin(x*37)**2):1);}
-    const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type='bandpass';filter.frequency.value=kind==='caught'?130:kind==='phone'?820:kind==='note'?1900:2600;filter.Q.value=.65;gain.gain.value=kind==='caught'?.8:.28;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
+    for(let i=0;i<data.length;i++){const x=i/data.length;data[i]=(Math.random()*2-1)*Math.exp(-x*(kind==='caught'?7:4))*(['snack','burger'].includes(kind)?(.4+.6*Math.sin(x*37)**2):1);}
+    const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type='bandpass';filter.frequency.value=kind==='caught'?130:kind==='phone'?820:kind==='note'?1900:kind==='burger'?1400:2600;filter.Q.value=.65;gain.gain.value=(kind==='caught'?.8:kind==='burger'?.18:.28)*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
     if(kind==='caught')this.tone(80,t,.18,.3,this.fx,'triangle');
   }
   async pause(){if(this.context?.state==='running')try{await this.context.suspend();}catch{}}
@@ -67,17 +85,17 @@ function applySettings(){
   $$('[data-quality]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.quality===settings.quality)));
   document.body.classList.toggle('reduce-motion',!settings.motion);scene?.setQuality(settings.quality);scene?.setMotion(settings.motion);syncSound();
 }
-function renderCharacter(){ $$('[data-character]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.character===draftCharacter)));scene?.setCharacter(draftCharacter); }
+function renderCharacter(){ $$('[data-character]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.character===draftCharacter))); }
 function openSheet(id,button){
   if(game?.active)return;for(const open of $$('dialog[open]'))open.close();openingButton=button;const dialog=$(id);
   if(id==='#character-dialog'){draftCharacter=settings.character;renderCharacter();}
   dialog.showModal();audio.click('open');
 }
 for(const [button,id] of [['#choose-mode','#mode-dialog'],['#choose-character','#character-dialog'],['#open-settings','#settings-dialog']])$(button).addEventListener('click',()=>openSheet(id,$(button)));
-for(const dialog of $$('#mode-dialog, #character-dialog, #settings-dialog')){
+for(const dialog of $$('#mode-dialog, #character-dialog, #settings-dialog, #room-dialog')){
   dialog.querySelectorAll('.close').forEach(button=>button.addEventListener('click',()=>{audio.click('back');dialog.close();}));
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
-  dialog.addEventListener('close',()=>{if(dialog.id==='character-dialog')scene?.setCharacter(settings.character);openingButton?.focus({preventScroll:true});});
+  dialog.addEventListener('close',()=>{if(!game?.active)openingButton?.focus({preventScroll:true});});
 }
 $('#select-classroom').addEventListener('click',()=>{$('#mode-dialog').close();Object.assign(settings,roundOptions);persist();syncRoundOptions();});
 $$('[data-role]').forEach(b=>b.addEventListener('click',()=>{roundOptions.role=b.dataset.role;syncRoundOptions();}));
@@ -91,8 +109,20 @@ $('#motion-toggle').addEventListener('change',e=>{settings.motion=e.target.check
 $('#sound-toggle').addEventListener('click',()=>{settings.muted=!settings.muted;syncSound();persist();});
 $('#fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('当前浏览器暂不支持全屏');}catch{toast('当前窗口无法全屏，请在浏览器中打开');}});
 document.addEventListener('fullscreenchange',()=>{$('#fullscreen').setAttribute('aria-label',document.fullscreenElement?'退出全屏':'全屏');});
-function startGame(){if(!sceneReady||!game){toast('教室还在准备');return;}game.start(roundOptions);}
+function startGame(){
+  if(disposed||game?.active)return;
+  syncRoundOptions();$('#room-character').textContent={boy:'男同学',girl:'女同学',glasses:'眼镜同学'}[settings.character];
+  openSheet('#room-dialog',$('#enter-classroom'));ensureWorld();
+}
 $('#enter-classroom').addEventListener('click',startGame);
+$('#room-enter').addEventListener('click',()=>{
+  if(!sceneReady||!game){ensureWorld();return;}
+  // This final click supplies the user activation required by Pointer Lock.
+  // Asset preparation never starts a round or silently enters after a dialog closes.
+  $('#room-dialog').close();$('#classroom').hidden=false;
+  scene.setMap(roundOptions.map);scene.setCharacter(settings.character);scene.setActive(true);
+  game.start({...roundOptions});
+});
 document.addEventListener('keydown',e=>{if(e.repeat)return;if(e.key==='Enter'&&!$('dialog[open]')&&!game?.active&&!["BUTTON","INPUT","SELECT"].includes(document.activeElement?.tagName)){e.preventDefault();startGame();}});
 document.addEventListener('pointerdown',()=>audio.start(),{passive:true});
 document.addEventListener('keydown',()=>audio.start());
@@ -100,20 +130,36 @@ document.addEventListener('click',e=>{if(e.target.closest('button'))audio.click(
 document.addEventListener('visibilitychange',()=>{if(document.hidden)audio.pause();else if(audio.started)audio.start();});
 applySettings();
 
-const loadStep=(width,label)=>{$('#loading-fill').style.width=width+'%';$('#load-status').textContent=label;};
-let loaderClosed=false;
-function finishLoad(){if(loaderClosed)return;loaderClosed=true;$('#loading-fill').style.width='100%';$('#loader').classList.add('leaving');setTimeout(()=>$('#loader').hidden=true,650);}
-$('#skip-load').addEventListener('click',finishLoad);
-const slowTimer=setTimeout(()=>{$('#skip-load').hidden=false;$('#load-status').textContent='教室还在准备，可以先查看菜单';},7000);
-async function init(){
-  try{
-    loadStep(20,'正在打开教室');const module=await import('./classroom.js?v=classroom-31');loadStep(58,'摆好课桌，打开窗户');
-    scene=await module.createClassroom($('#classroom'));
-    const {createClassroomGame}=await import('./classroom-game.js?v=classroom-31');game=createClassroomGame({scene,audio,settings,onExit:()=>$('#enter-classroom').focus({preventScroll:true})});
-    applySettings();syncRoundOptions();scene.setCharacter(settings.character);sceneReady=true;document.body.classList.add('scene-ready');loadStep(100,'同学们已入座');
-    setTimeout(finishLoad,350);
-  }catch(error){console.error('Classroom unavailable:',error);$('#classroom').hidden=true;$('#enter-classroom').disabled=true;$('#enter-classroom').querySelector('strong').textContent='教室暂不可用';finishLoad();toast('三维场景未能打开，仍可查看菜单与设置');}
-  finally{clearTimeout(slowTimer);}
+const loadStep=(width,label)=>{$('#room-load-fill').style.width=width+'%';$('#room-load-status').textContent=label;};
+function showMenu(){
+  scene?.setActive(false);$('#classroom').hidden=true;
+  $('#enter-classroom').focus({preventScroll:true});
 }
-init();
-window.addEventListener('pagehide',e=>{if(!e.persisted){game?.dispose();scene?.dispose();audio.dispose();}});
+function ensureWorld(){
+  if(disposed)return Promise.resolve(null);
+  if(sceneReady)return Promise.resolve(scene);
+  if(worldPromise)return worldPromise;
+  $('#room-enter').disabled=true;$('#room-enter').textContent='准备中…';$('#room-load').dataset.state='loading';loadStep(12,'正在准备教室');
+  worldPromise=(async()=>{
+    let prepared=null;
+    try{
+      const [module,controller]=await Promise.all([import('./classroom.js?v=classroom-33'),import('./classroom-game.js?v=classroom-33')]);
+      if(disposed)return null;
+      loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
+      if(disposed){prepared.dispose();return null;}
+      scene=prepared;scene.setActive(false);
+      game=controller.createClassroomGame({scene,audio,settings,onExit:showMenu});
+      applySettings();sceneReady=true;document.body.classList.add('scene-ready');
+      loadStep(100,'准备好了');$('#room-load').dataset.state='ready';$('#room-enter').disabled=false;$('#room-enter').textContent='进入教室';
+      return scene;
+    }catch(error){
+      prepared?.dispose();scene=null;game=null;sceneReady=false;worldPromise=null;
+      if(disposed)return null;
+      console.error('Classroom unavailable:',error);$('#classroom').hidden=true;
+      $('#room-load').dataset.state='error';loadStep(0,'教室加载失败，请重试');$('#room-enter').disabled=false;$('#room-enter').textContent='重新准备';return null;
+    }
+  })();
+  return worldPromise;
+}
+document.body.classList.add('menu-ready');
+window.addEventListener('pagehide',e=>{if(!e.persisted){disposed=true;game?.dispose();scene?.dispose();audio.dispose();}});
