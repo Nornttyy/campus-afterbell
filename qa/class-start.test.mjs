@@ -63,3 +63,16 @@ test('preparation seats are reserved for their owners; class-time free-seat chan
  assert.equal(r.interact(),'stood');peer.seated=false;peer.seatId=null;peer.x=7;peer.z=0;Object.assign(r.player,{x:otherSeat.x,z:otherSeat.z});
  assert.equal(r.interact(),'seated');assert.equal(r.player.seatId,otherSeat.id);
 });
+
+
+test('gathering pupils leave the initial camera and bell sightline clear in both roles',()=>{
+ for(const Round of [ClassroomRound,TeacherRound]){
+  const s=new Round().start({gathering:true}),p=s.player,dx=START_BELL.x-p.x,dz=START_BELL.z-p.z,len2=dx*dx+dz*dz;
+  for(const pupil of s.students.filter(x=>x.isTeammate||x.isPlayer&&x.id!==p.id)){
+   assert.equal(blocked(pupil.x,pupil.z,.30),false);
+   assert.ok(Math.hypot(pupil.x-p.x,pupil.z-p.z)>1.1,'a pupil head overlaps the spawn camera');
+   const t=Math.max(0,Math.min(1,((pupil.x-p.x)*dx+(pupil.z-p.z)*dz)/len2));
+   assert.ok(Math.hypot(pupil.x-p.x-t*dx,pupil.z-p.z-t*dz)>.65,'a pupil head obscures the bell');
+  }
+ }
+});
