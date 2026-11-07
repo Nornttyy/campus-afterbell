@@ -30,3 +30,30 @@ Immutable source: art-source/tripo-models/student-girl-rigged-20261106/original.
 Original color and baked lighting retained; ten local classroom animation clips.
 Source metadata, editable Blender scenes and export script are retained locally.
 These Tripo-derived assets are not described as CC0 or as original-game assets.
+
+Tripo prop imports (2026-11-07)
+User-selected public Tripo models exported through the authenticated Tripo download flow.
+These third-party models are not described as CC0 or as original-game assets.
+Original GLBs remain in local art-source/tripo-props-20261107; runtime files are optimized adaptations.
+
+burger-v1.glb
+Creator: kbx2026
+Source: https://studio.tripo3d.ai/3d-model/一个汉堡-093b3c80-2b14-468d-9edc-d7934de04668
+
+drink-v1.glb
+Creator: cyx960402
+Source: https://studio.tripo3d.ai/3d-model/一個外表平滑無凹凸的經典鋁罐可樂罐-細節外觀完全跟現實可樂罐一樣-上下邊要往裡面縮-上方灌頂-要做出拉環還有喝飲料的那個口-下方罐底也要往上-a5bb1f81-85e2-4289-b890-3e3c51832943
+
+snack-v1.glb
+Creator: zy2254541265
+Source: https://studio.tripo3d.ai/3d-model/一包辣条-9cdc81dd-75b3-4076-a206-4302a3934792
+
+ink-v1.glb
+Creator: jikekzp1271
+Source: https://studio.tripo3d.ai/3d-model/一个放置在深棕色木质书桌上的玻璃墨水瓶-旁边是一支羽毛笔-墨水瓶呈菱形-玻璃材质清澈透明-里面深黑色的墨水宛如一汪深邃的湖水-瓶身有精细的切-02f1a12b-a8be-48e2-97e7-d3808a9bc660
+
+desk-v2.glb, chair-v2.glb
+Creator: candyzoe15
+Source: https://studio.tripo3d.ai/3d-model/課桌椅-ad24e92f-f337-41b6-9258-2e1c265ae351
+
+Edits: food/bottle geometry reduction, preserved or baked original PBR detail, uniform size normalization. Ink quill removed. Desk/chair separated; desk top kept proportional, straight leg sections shortened, original drawer front retained with a functional hollow tray and pull.

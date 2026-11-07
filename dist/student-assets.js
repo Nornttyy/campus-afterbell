@@ -1,9 +1,24 @@
-import {createStudentHandMotion} from './hand-motion.js?v=classroom-34';
-import {createCapturePose} from './capture-poses.js?v=classroom-34';
+import {createStudentHandMotion} from './hand-motion.js?v=props-35';
+import {createCapturePose} from './capture-poses.js?v=props-35';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS} from './game-actors.js?v=classroom-34';
+import {createDeskItem,THROWABLE_ITEM_KINDS} from './game-actors.js?v=props-35';
+import {propContact} from './prop-assets.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
+// Surface anchors measured from the authored Snack/throw pose: the midpoint of
+// the old prop's closest surfaces to the actual skinned index and thumb tips.
+// Moving the replacement around that anchor preserves the original grip while
+// keeping its proportions, hand animation and wrist orientation unchanged.
+const heldSurface={
+ boy:{snack:[-.05518,.07367,.03026],drink:[-.02955,.06281,.02890],burger:[-.05521,.05100,.05354],ink:[-.02026,.04977,.03294]},
+ girl:{snack:[-.05740,.01915,.03099],drink:[-.03418,.01742,.02794],burger:[-.06268,.02983,.05301],ink:[-.02751,.01201,.03941]}
+};
+function fitHeldSurface(prop,kind,variant){
+ const point=heldSurface[variant==='girl'?'girl':'boy'][kind];
+ if(!point||!prop.userData.contactFit)return;
+ const original=V(...point),replacement=propContact(prop,original);
+ prop.position.add(original.sub(replacement).applyQuaternion(prop.quaternion));
+}
 function cloneSkin(source){
   const copy=source.clone(true),map=new Map();
   function pair(a,b){map.set(a,b);a.children.forEach((c,i)=>pair(c,b.children[i]));}pair(source,copy);
@@ -11,7 +26,7 @@ function cloneSkin(source){
 }
 export async function loadStudentAssets(){
  const loader=new GLTFLoader(),files=['student-boy-v2','student-girl-v2','student-glasses-v1','hand-left-v1','hand-right-v1'];
- const [boy,girl,glasses,left,right]=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=classroom-34`,import.meta.url).href)));
+ const [boy,girl,glasses,left,right]=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=props-35`,import.meta.url).href)));
  return {createStudent:(options={})=>{const source=options.glasses&&options.variant!=='girl'?glasses:options.variant==='girl'?girl:boy;return createRiggedStudent({scene:cloneSkin(source.scene),animations:source.animations},options);},createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)};
 }
 export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glasses=false}={}){
@@ -30,9 +45,9 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
   anchor.name=side+'-student-hand';group.add(anchor);
   anchor.userData.attachments={phone:{position:[0,.075,-.035],rotation:[0,Math.PI,0]},note:{position:[0,.055,-.02],rotation:[0,Math.PI,0]}};
  }
- const foods=Object.fromEntries(['snack','drink','burger'].map(kind=>{const prop=createDeskItem(kind);prop.position.set(0,kind==='burger'?.047:.065,-.035);prop.rotation.y=Math.PI;prop.visible=false;grips.left.add(prop);return[kind,prop];}));
+ const foods=Object.fromEntries(['snack','drink','burger'].map(kind=>{const prop=createDeskItem(kind);prop.position.set(0,kind==='burger'?.047:.065,-.035);prop.rotation.y=Math.PI;fitHeldSurface(prop,kind,variant);prop.visible=false;grips.left.add(prop);return[kind,prop];}));
  const throwables={};
- function ensureThrowable(kind){if(!throwables[kind]){const prop=createDeskItem(kind);prop.position.set(0,.061,-.028);prop.rotation.y=Math.PI;prop.visible=false;grips.left.add(prop);throwables[kind]=prop;}return throwables[kind];}
+ function ensureThrowable(kind){if(!throwables[kind]){const prop=createDeskItem(kind);prop.position.set(0,.061,-.028);prop.rotation.y=Math.PI;fitHeldSurface(prop,kind,variant);prop.visible=false;grips.left.add(prop);throwables[kind]=prop;}return throwables[kind];}
  const pencil=new T.Group();pencil.name='held-writing-pencil';pencil.position.set(-.015,.105,.065);pencil.rotation.x=2.15;grips.right.add(pencil);
  const barrel=new T.Mesh(new T.CylinderGeometry(.005,.005,.23,8),new T.MeshStandardMaterial({color:'#b66a28',roughness:.8}));pencil.add(barrel);
  const tip=new T.Mesh(new T.ConeGeometry(.005,.014,8),new T.MeshStandardMaterial({color:'#34332e',roughness:.85}));tip.position.y=-.122;tip.rotation.z=Math.PI;pencil.add(tip);

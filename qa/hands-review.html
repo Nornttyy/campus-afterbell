@@ -6,8 +6,9 @@
 <button id="hold" aria-pressed="false">拿起</button><button id="pause" aria-pressed="false">暂停</button><button id="step">前进一帧</button><button id="stand">站立</button><label>蓄力 <input id="charge" type="range" min="0" max="1" step=".01" value="0" style="width:80px"></label><button id="throw">投掷</button><output></output>
 </nav><script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=classroom-34';
-import {createDeskHands} from '../dist/game-actors.js?v=classroom-34';
+import {loadStudentAssets} from '../dist/student-assets.js?v=props-35';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js';
+import {createDeskHands} from '../dist/game-actors.js?v=props-35';
 const canvas=document.querySelector('canvas'),renderer=new T.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.12;
 const scene=new T.Scene();scene.background=new T.Color('#dde6e7');
@@ -15,6 +16,7 @@ scene.add(new T.HemisphereLight('#f5f7fc','#9d9279',1.1));
 const sun=new T.DirectionalLight('#fff2d5',3.1);sun.position.set(-4,6,5);scene.add(sun);
 const fill=new T.DirectionalLight('#fff0dc',.95);fill.position.set(5,4,6);scene.add(fill);
 const camera=new T.PerspectiveCamera(65,1,.04,20);scene.add(camera);
+await loadPropAssets(CLASSROOM_PROP_SOURCES);
 const assets=await loadStudentAssets();const hands=createDeskHands({createHand:assets.createHand});camera.add(hands.group);
 let time=0,holding=false,paused=false,action='snack',last=0,seated=true,throwAt=-Infinity;
 const out=document.querySelector('output'),hold=document.querySelector('#hold'),pause=document.querySelector('#pause');

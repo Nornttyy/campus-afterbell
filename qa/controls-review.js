@@ -1,7 +1,7 @@
-import {createClassroom} from '../dist/classroom.js?v=classroom-34';
-import {createClassroomGame} from '../dist/classroom-game.js?v=classroom-34';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=classroom-34';
-import {attachReviewLog} from './review-event-log.js?v=classroom-34';
+import {createClassroom} from '../dist/classroom.js?v=props-35';
+import {createClassroomGame} from '../dist/classroom-game.js?v=props-35';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=props-35';
+import {attachReviewLog} from './review-event-log.js?v=props-35';
 class ReviewRound extends ClassroomRound{
   reset(){return super.reset(11);}
   start(){super.start();this.teacher.x=this.teacher.z=30;this._thinkAt=this._plan.until=Infinity;this._plan.route=[];for(const s of this.students)if(s.isTeammate)s._decisionAt=Infinity;return this.snapshot();}
@@ -23,3 +23,7 @@ document.addEventListener('mouseup',e=>{
   const s=round.snapshot();canvas.dataset.beforeRelease=JSON.stringify({holding:s.holding,progress:s.actionProgress,carrying:s.drawer.drawnSlot,projectiles:s.projectiles.length});
 },true);
 const holdReview=document.createElement('button');holdReview.id='qa-charge';holdReview.textContent='保持蓄力（检视）';document.querySelector('#qa-controls').append(holdReview);holdReview.onclick=()=>round.hold(true);
+// Deterministic asset review only; these controls are not shipped in dist.
+const propSet=document.createElement('button');propSet.textContent='新物品抽屉';propSet.id='qa-prop-set';document.querySelector('#qa-controls').append(propSet);
+propSet.onclick=()=>{round.returnItem();if(!round.snapshot().drawer.open)round.toggleDrawer();for(const [id,action]of ['burger','drink','snack'].entries())round.player._slots[id]={id,action,progress:0,readyAt:0,uses:0};round.setLook(0,1.13);document.querySelector('#qa-pitch').value='1.13';};
+const cleanReview=document.createElement('button');cleanReview.textContent='隐藏检视工具';document.querySelector('#qa-controls').append(cleanReview);cleanReview.onclick=()=>{document.querySelector('#qa-controls').style.display='none';document.querySelector('#qa-event-log').style.display='none';};

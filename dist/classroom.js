@@ -1,19 +1,20 @@
-import {instanceRigidProps} from './rigid-instances.js?v=classroom-34';
-import {createBubbleEffects} from './bubble-effects.js?v=classroom-34';
-import {buildReferenceCampus} from './reference-campus.js?v=classroom-34';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=classroom-34';
-import {createRoomVariants} from './room-variants.js?v=classroom-34';
+import {instanceRigidProps} from './rigid-instances.js?v=props-35';
+import {createBubbleEffects} from './bubble-effects.js?v=props-35';
+import {buildReferenceCampus} from './reference-campus.js?v=props-35';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=props-35';
+import {createRoomVariants} from './room-variants.js?v=props-35';
 import * as THREE from './vendor/three.module.js';
-import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=classroom-34';
-import {createSmokeEffects} from './smoke-effects.js?v=classroom-34';
-import {createItemOutline} from './item-outline.js?v=classroom-34';
-import {createStudent} from './characters.js?v=classroom-34';
-import {createTeacher,createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=classroom-34';
-import {loadStudentAssets} from './student-assets.js?v=classroom-34';
-import {loadDeskModel} from './imported-actors.js?v=classroom-34';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,walkRoute} from './classroom-layout.js?v=classroom-34';
+import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=props-35';
+import {createSmokeEffects} from './smoke-effects.js?v=props-35';
+import {createItemOutline} from './item-outline.js?v=props-35';
+import {createStudent} from './characters.js?v=props-35';
+import {createTeacher,createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=props-35';
+import {loadStudentAssets} from './student-assets.js?v=props-35';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js';
+import {loadDeskModel} from './imported-actors.js?v=props-35';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,walkRoute} from './classroom-layout.js?v=props-35';
 
-// This room, its textures and props are built locally as editable 3D geometry.
+// Editable classroom geometry with generated surfaces and imported game assets.
 export async function createClassroom(canvas, {onReady,active=true,snapEntry=false}={}) {
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
@@ -28,7 +29,9 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const itemOutline=createItemOutline(renderer),itemRay=new THREE.Raycaster(),itemPointer=new THREE.Vector2(0,0);let hoveredSlot=null,pointerPresent=false;
   const room=new THREE.Group();scene.add(room);
   const dynamic=new THREE.Group();scene.add(dynamic);
-  const [deskAsset,studentAsset,surfaceAsset]=await Promise.allSettled([loadDeskModel(),loadStudentAssets(),loadCampusSurfaces()]);
+  const [deskAsset,studentAsset,surfaceAsset,propAsset]=await Promise.allSettled([loadDeskModel(),loadStudentAssets(),loadCampusSurfaces(),loadPropAssets(CLASSROOM_PROP_SOURCES)]);
+  canvas.dataset.propAssets=JSON.stringify(propAsset.status==='fulfilled'?propAsset.value.loaded:[]);
+  if(propAsset.status==='rejected'||propAsset.value.failed.length)console.error('Prop asset failed to load',propAsset.reason||propAsset.value.failed);
   // Build navigation grids during loading, before the first teacher decision.
   walkRoute(BOARD,SEATS[0],.20);walkRoute(BOARD,SEATS[0],.23);
   const importedStudents=studentAsset.status==='fulfilled'?studentAsset.value:null;
@@ -36,7 +39,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   if(!importedStudents)console.error('Student model failed to load',studentAsset.reason);
   const importedDesk=deskAsset.status==='fulfilled'?deskAsset.value:null;
   if(!importedDesk)console.error('Desk model failed to load',deskAsset.reason);
-  canvas.dataset.deskAsset=importedDesk?'cc0-adapted-v1':'fallback';
+  canvas.dataset.deskAsset=importedDesk?.source||'fallback';
   const assets=new Set(), materials=new Set();
   const surfaces=surfaceAsset.status==='fulfilled'?surfaceAsset.value:null;
   if(surfaces)for(const map of Object.values(surfaces))assets.add(map);
@@ -160,7 +163,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   function pen(parent,x,y,z,color,rotation=0){const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=rotation;parent.add(g);cylinder(color,[0,0,0],[.012,.26,.012],[Math.PI/2,0,0],g);cylinder(M.steel,[0,0,.145],[.006,.027,.006],[Math.PI/2,0,0],g);cylinder(M.white,[0,0,-.10],[.013,.043,.013],[Math.PI/2,0,0],g);}
   const backpack=mat('#354f72'),zipper=mat('#c8c5a9'),deskTray=mat('#d2d6cc',{metalness:.12,roughness:.52}),drawerFront=mat('#e6e7d9',{metalness:.06,roughness:.48});
   // Clone and tune the imported material once; every desk keeps its UV atlas and batching.
-  if(importedDesk){const woodMaterials=new Map();importedDesk.body.traverse(o=>{
+  if(importedDesk&&!importedDesk.source?.startsWith('tripo')){const woodMaterials=new Map();importedDesk.body.traverse(o=>{
     if(!o.isMesh||!/wood|top|table/i.test(o.material?.name||''))return;
     const original=o.material;let laminate=woodMaterials.get(original);
     if(!laminate){laminate=original.clone();laminate.color.setRGB(3.85,2.55,.86);laminate.roughness=.34;laminate.normalScale?.set(.45,.45);woodMaterials.set(original,laminate);materials.add(laminate);}
@@ -184,7 +187,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     }
     drawerRecords.set(seed,{group:drawer,x,z,open:0});
     if(!importedDesk)for(const a of [-.47,.47])for(const b of [-.23,.23]){box(M.steel,[a,.814,b],[.09,.026,.10],null,g);cylinder(M.dark,[a,.832,b],[.009,.012,.009],null,g);}
-    if(seed%4===0)book(drawer,-.27,.654,-.035,M.red,.06);
+    if(seed%4===0)book(drawer,-.27,(importedDesk?.drawerFloor??.65)+.002,-.035,M.red,.06);
     // The reference has thin exercise books and a few loose pens, not textbook piles.
     if(seed%3!==1){const closed=book(g,-.44,.875,-.23,[M.bookBlue,M.green,M.red][seed%3],.08);closed.scale.set(.8,1,.8);}
     const cover=uprightBook(dynamic);cover.position.set(x,.88,z-.28);cover.rotation.y=rot;cover.visible=coveredSeats.has(seed);deskBooks.set(seed,cover);
@@ -196,7 +199,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     return g;
   }
   const chairPanel=new THREE.BufferGeometry(),cp=[],ci=[];for(let side=0;side<2;side++)for(let row=0;row<2;row++)for(let i=0;i<=16;i++){const x=-.28+i*.035;cp.push(x,.76+row*.28,-.22+.052*(1-(x/.28)**2)+(side?-.018:.018));}const addQuad=(a,b,c,d)=>ci.push(a,b,d,b,c,d);for(let i=0;i<16;i++){addQuad(i,i+1,18+i,17+i);addQuad(34+i,51+i,52+i,35+i);addQuad(i,34+i,35+i,i+1);addQuad(17+i,18+i,52+i,51+i);}addQuad(0,17,51,34);addQuad(16,50,67,33);chairPanel.setAttribute('position',new THREE.Float32BufferAttribute(cp,3));chairPanel.setIndex(ci);chairPanel.computeVertexNormals();assets.add(chairPanel);
-  function chair(x,z,rot=0,parent=room){const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;parent.add(g);contact(0,0,.80,.9,g);rounded(M.wood,[0,.4125,0],[.56,.055,.51],.020,null,g);for(const a of [-.23,.23]){pipe(M.steel,[[a,.03,.19],[a,.12,.19],[a,.41,.17],[a,.49,.12],[a,.49,-.13],[a,.41,-.19],[a,.03,-.22]],.023,g);pipe(M.steel,[[a,.42,-.17],[a,.52,-.21],[a,1.00,-.23]],.021,g);for(const b of [-.22,.19])rounded(M.dark,[a,.022,b],[.058,.043,.063],.008,null,g);}mesh(chairPanel,M.wood,[0,0,0],[1,1,1],null,g);for(const x of [-.22,.22])cylinder(M.steel,[x,.91,-.164],[.014,.008,.014],[Math.PI/2,0,0],g);pipe(M.steel,[[-.23,.23,-.21],[0,.23,-.21],[.23,.23,-.21]],.017,g);return g;}
+  function chair(x,z,rot=0,parent=room){const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;parent.add(g);contact(0,0,.80,.9,g);if(importedDesk?.chair){g.add(importedDesk.chair.clone(true));return g;}rounded(M.wood,[0,.4125,0],[.56,.055,.51],.020,null,g);for(const a of [-.23,.23]){pipe(M.steel,[[a,.03,.19],[a,.12,.19],[a,.41,.17],[a,.49,.12],[a,.49,-.13],[a,.41,-.19],[a,.03,-.22]],.023,g);pipe(M.steel,[[a,.42,-.17],[a,.52,-.21],[a,1.00,-.23]],.021,g);for(const b of [-.22,.19])rounded(M.dark,[a,.022,b],[.058,.043,.063],.008,null,g);}mesh(chairPanel,M.wood,[0,0,0],[1,1,1],null,g);for(const x of [-.22,.22])cylinder(M.steel,[x,.91,-.164],[.014,.008,.014],[Math.PI/2,0,0],g);pipe(M.steel,[[-.23,.23,-.21],[0,.23,-.21],[.23,.23,-.21]],.017,g);return g;}
   // Every playable seat uses the exact collision-layout coordinates.
   const seatFurniture=new Map(),furnitureRows=new Map();
   for(const seat of SEATS){let group=furnitureRows.get(seat.row);if(!group){group=new THREE.Group();group.name='furniture-row-'+seat.row;scene.add(group);furnitureRows.set(seat.row,group);}desk(seat.deskX,seat.deskZ,seat.id,0,false,group);chair(seat.x,seat.z,0,group);seatFurniture.set(seat.id,group);}
@@ -290,7 +293,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const drawerSlotProps=Array.from({length:3},(_,index)=>{
     const slot=new THREE.Group();slot.name='drawer-slot-'+index;slot.position.set((index-1)*.28,.680,-.16);drawerItems.add(slot);
     const props=new Map(DESK_ITEM_KINDS.map(action=>{
-      const prop=createDeskItem(action);prop.rotation.set(action==='burger'?0:-Math.PI/2,0,index===1?.04:index===0?-.07:.08);prop.position.y=action==='note'?.016:action==='smoke'?.042:action==='drink'?.045:action==='burger'?.062:0;prop.visible=false;slot.add(prop);
+      const prop=createDeskItem(action);prop.rotation.set(action==='burger'?0:-Math.PI/2,0,(index===1?.04:index===0?-.07:.08)+(prop.userData.propAsset&&action!=='burger'?Math.PI:0));restDeskItem(prop,(importedDesk?.drawerFloor??.65)-slot.position.y);prop.visible=false;slot.add(prop);
       prop.traverse(o=>{if(o.geometry)assets.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m));});
       return[action,prop];
     }));return{group:slot,props};
