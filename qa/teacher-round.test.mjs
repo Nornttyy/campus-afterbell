@@ -32,7 +32,7 @@ test('smoke prevents grabbing; pause freezes chalk and reset clears captures',()
  r.smokes=[];r.throwChalk();const before=r.snapshot().chalks;r.pause();r.step(3);assert.deepEqual(r.snapshot().chalks,before);r.reset();assert.equal(r.snapshot().chalks.length,0);assert.equal(r.snapshot().caughtCount,0);assert.equal(r.teacher.carriedId,null);
 });
 test('teacher victory requires all five bound, not merely stunned or carried',()=>{
- const r=setup();let index=0;for(const id of r._team){const s=r.students[id];aim(r,s);r._stun(s);r.grabStudent();assert.equal(r.status,'playing');const post=DETENTION[index++];r.player.x=post.x;r.player.z=post.z-1.1;r.setLook(0,0);r.step(.4);assert.ok(r.bindStudent());}assert.equal(r.status,'lost');assert.equal(r.snapshot().caughtCount,5);
+ const r=setup();let index=0;for(const id of r._team){const s=r.students[id];aim(r,s);r._stun(s);r.grabStudent();assert.equal(r.status,'playing');const post=DETENTION[index++];r.player.x=post.x;r.player.z=post.z-1.1;r.setLook(0,0);r.step(.4);assert.ok(r.bindStudent());}r.step(1/60);assert.equal(r.status,'lost');assert.equal(r.snapshot().caughtCount,5);
 });
 function computer(){const r=new ClassroomRound({map:'computer',seed:7,target:100000});r.start();r.teacher.x=r.teacher.z=30;r._plan.until=Infinity;r._thinkAt=Infinity;for(const s of r.students)if(s.isTeammate)s._decisionAt=Infinity;return r;}
 test('PC gameplay requires starting a computer and holding; Q stops it without consuming drawer items',()=>{

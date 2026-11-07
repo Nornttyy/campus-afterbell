@@ -5,7 +5,7 @@
   <meta name="theme-color" content="#f1eedf"><meta name="description" content="下课别走：阳光教室里的校园捣蛋游戏。观察老师，和四位 AI 同学配合，偷偷完成课堂小动作。">
   <title>下课别走 · 校园派对</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232d786c'/%3E%3Cpath d='M16 18h32v25H16z' fill='%23fff6dd'/%3E%3Cpath d='M25 49h14M32 43v6M24 27h16M24 34h10' stroke='%232d786c' stroke-width='4'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=classroom-31">
+  <link rel="stylesheet" href="./style.css?v=classroom-33">
 
 </head>
 <body>
@@ -28,9 +28,9 @@
 </defs></svg>
 
 <main id="game">
-  <div class="scene-fallback" aria-hidden="true"></div>
-  <canvas id="classroom" tabindex="0" aria-label="阳光教室的三维场景"></canvas>
-  <div class="scene-shade" aria-hidden="true"></div>
+  <div class="menu-illustration" aria-hidden="true"><img src="./assets/menu-reference-33.jpg" alt="" fetchpriority="high" decoding="async"></div>
+  <canvas id="classroom" tabindex="0" aria-label="教室游戏画面" hidden></canvas>
+  <svg class="menu-paper" viewBox="0 0 560 1000" preserveAspectRatio="none" aria-hidden="true"><path fill="#f9d98e" d="M0 0H558C521 60 439 88 399 178S452 287 409 357S359 433 407 514S451 603 389 687S354 786 405 873S370 954 391 1000H0Z"/><path fill="#fff8dc" d="M0 0H512C476 57 398 91 362 174S415 289 371 358S322 435 369 515S413 603 351 687S316 786 367 873S332 954 353 1000H0Z"/></svg>
   <div class="screen-grain" aria-hidden="true"></div>
   <div id="menu" class="menu-shell">
     <header class="topbar"><span></span>
@@ -40,7 +40,7 @@
       <div class="brand"><h1 class="title-image"><img src="./assets/title-logo.png" alt="下课别走" width="1250" height="1250"></h1></div>
       <div class="menu-controls">
         <button class="mode-summary" id="choose-mode" aria-haspopup="dialog"><span class="mode-book"><svg><use href="#i-book"/></svg></span><span><strong>课堂捣蛋</strong></span><span class="mode-switch"><svg><use href="#i-arrow"/></svg></span></button>
-        <button class="primary-button" id="enter-classroom"><span><strong>开始上课</strong></span><svg><use href="#i-arrow"/></svg></button>
+        <button class="primary-button" id="enter-classroom" aria-haspopup="dialog"><span><strong>开始游戏</strong></span><svg><use href="#i-arrow"/></svg></button>
         <div class="secondary-row"><button class="paper-button" id="choose-character" aria-haspopup="dialog"><svg><use href="#i-person"/></svg>我的同学</button><button class="paper-button" id="open-settings" aria-haspopup="dialog"><svg><use href="#i-settings"/></svg>设置</button></div>
       </div>
     </section>
@@ -49,7 +49,7 @@
   </div>
 
   <section id="play-ui" hidden aria-label="课堂游戏">
-    <header class="play-top"><div class="round-clock"><svg><use href="#i-person"/></svg><strong id="round-clock">5 / 5</strong></div><div id="teacher-stamina" class="stamina-meter" hidden><div><span>体力</span><strong id="stamina-number">100%</strong></div><div class="stamina-track"><i id="stamina-fill"></i></div></div><div class="round-goal"><div><span>捣乱值</span><strong id="round-score">0</strong><small id="round-target">/ 100</small></div><div class="goal-track"><i id="score-fill"></i></div></div><button class="icon-button" id="pause-game" aria-label="暂停游戏"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button></header>
+    <header class="play-top"><div class="round-clock"><svg><use href="#i-person"/></svg><strong id="round-clock">5 / 5</strong></div><div id="teacher-stamina" class="stamina-meter" hidden><div><span>体力</span><strong id="stamina-number">100%</strong></div><div class="stamina-track"><i id="stamina-fill"></i></div></div><div class="round-goal"><div><span>捣乱值</span><strong id="round-score">0</strong><small id="round-target">/ 100</small></div><div class="goal-track"><i id="score-fill"></i></div></div><span id="lesson-time" class="lesson-time"></span><button class="icon-button" id="pause-game" aria-label="暂停游戏"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button></header>
     <i id="crosshair" hidden aria-hidden="true"></i>
     <div id="use-progress" role="progressbar" aria-label="物品使用进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="use-ring-shadow" cx="24" cy="24" r="19"/><circle class="use-ring-track" cx="24" cy="24" r="19"/><circle id="use-progress-fill" cx="24" cy="24" r="19" pathLength="100"/></svg></div><div id="round-feedback" aria-live="polite"></div>
     <div id="speech" hidden role="status"><b id="speech-name"></b><span id="speech-text"></span></div>
@@ -57,10 +57,16 @@
     <div id="drawer-hint"></div>
   </section>
   <dialog id="pause-dialog" class="sheet round-sheet" aria-labelledby="pause-title"><h2 id="pause-title">暂停</h2><details class="controls-guide"><summary>操作</summary><p id="student-controls">中心瞄准 · E 开桌 / 拿取 / 竖放书本<br>Q 放回 · 长按左键使用<br>烟雾弹：点击抛出 / 长按蓄力，松手投掷<br>空格起身 / 坐下 · WASD 移动<br>靠近被绑同学，按住 E 解救<br>C 蹲下 · ESC 暂停<br>机房：E 打开电脑游戏 · Q 切回课件</p><p id="teacher-controls" hidden>WASD 移动 · 鼠标转向<br>左键投粉笔 · 眩晕后靠近，E 抓住<br>带到木桩按 E 绑住 · Q 放下<br>黑板前按住 E 写板书恢复体力<br>对准已绑同学按 E 释放<br>C 蹲下 · ESC 暂停</p></details><button class="primary-button" id="resume-game">继续上课</button><button class="paper-button" id="restart-game">重新开始</button><button class="paper-button" id="leave-game">返回主菜单</button></dialog>
-  <dialog id="result-dialog" class="sheet round-sheet" aria-labelledby="result-title"><span class="result-bell"><svg><use href="#i-bell"/></svg></span><h2 id="result-title">下课啦！</h2><div class="result-number"><strong id="result-score">0</strong><span id="result-goal">捣乱值</span></div><p id="result-detail"></p><p id="result-actions"></p><button class="primary-button" id="retry-game">再上一节</button><button class="paper-button" id="result-menu">返回主菜单</button></dialog>
+  <dialog id="result-dialog" class="sheet round-sheet" aria-labelledby="result-title"><span class="result-bell"><svg><use href="#i-bell"/></svg></span><h2 id="result-title">下课啦！</h2><div class="result-number"><strong id="result-score">0</strong><span id="result-goal">捣乱值</span></div><p id="result-detail"></p><p id="result-actions"></p><button class="primary-button" id="retry-game">返回走廊</button><button class="paper-button" id="result-menu">返回主菜单</button></dialog>
 
-  <div id="loader" class="loader"><div class="loader-card"><svg class="loader-bell"><use href="#i-bell"/></svg><p>下课别走</p><span id="load-status">正在打开教室</span><div class="loading-track"><span id="loading-fill"></span></div></div><button id="skip-load" class="paper-button" hidden>查看菜单</button></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="room-dialog" class="sheet room-sheet" aria-labelledby="room-title">
+    <div class="sheet-top"><h2 id="room-title">本地 AI 试玩</h2><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
+    <dl class="room-summary"><div><dt>地图</dt><dd id="room-map">白天教室</dd></div><div><dt>身份</dt><dd id="room-role">学生</dd></div><div><dt>同学</dt><dd id="room-character">男同学</dd></div></dl>
+    <div id="room-load" class="room-load" data-state="loading"><span id="room-load-status" role="status" aria-live="polite">正在准备教室</span><div class="loading-track"><span id="room-load-fill"></span></div></div>
+    <button class="primary-button compact" id="room-enter" disabled>准备中…</button>
+  </dialog>
 
   <dialog id="mode-dialog" class="sheet mode-sheet" aria-labelledby="mode-title"><div class="sheet-top"><div><h2 id="mode-title">选择玩法</h2></div><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
     <fieldset class="round-options"><legend>你的身份</legend><div class="segmented" role="group" aria-label="身份"><button data-role="student" aria-pressed="true">学生</button><button data-role="teacher" aria-pressed="false">老师</button></div></fieldset>
@@ -81,5 +87,5 @@
     </div><button class="primary-button compact close" id="settings-done"><span>完成</span><svg><use href="#i-check"/></svg></button>
   </dialog>
 </main>
-<script type="module" src="./app.js?v=classroom-31"></script>
+<script type="module" src="./app.js?v=classroom-33"></script>
 </body></html>

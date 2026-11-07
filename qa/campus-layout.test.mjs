@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SEATS,DETENTION,DOORS,DOOR_LEAVES,TEACHER_EYE_HEIGHT,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,ceilingVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight} from '../dist/classroom-layout.js';
+import {SEATS,DETENTION,DOORS,DOOR_LEAVES,CORRIDOR,TEACHER_EYE_HEIGHT,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,ceilingVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight} from '../dist/classroom-layout.js';
 import {ClassroomRound,canSee} from '../dist/classroom-rules.js';
 import {TeacherRound,chalkHit} from '../dist/teacher-rules.js';
 import {createSmokeProjectile,stepSmokeProjectile} from '../dist/smoke-physics.js';
@@ -164,4 +164,42 @@ test('teacher starts in the clear office aisle facing through the exit, with spa
   const end=moveInRoom(p,forward.x-p.x,forward.z-p.z,.23);
   assert.ok(Math.hypot(end.x-forward.x,end.z-forward.z)<1e-8,'straight movement through the exit is unobstructed');
   assert.equal(chalkHit({x:p.x,y:TEACHER_EYE_HEIGHT,z:p.z},{x:forward.x,y:TEACHER_EYE_HEIGHT,z:forward.z},[],[],'classroom'),null);
+});
+
+test('widened corridor is usable, with solid returns beside unchanged office and lift doors',()=>{
+ assert.ok(Math.abs(CORRIDOR.maxX-CORRIDOR.minX-3.15)<1e-9);
+ for(const z of [-5,-3,0,2,3.5])assert.equal(blocked(8.8,z,.23),false);
+ assert.ok(moveInRoom({x:8,z:0},2,0,.23).x<9,'outer wall must stop the player');
+ for(const z of [-6.3,6.2]){
+  const towardEnd=z<0?-1:1,a={x:8.8,z},b={x:8.8,z:z+towardEnd*.8};
+  assert.equal(clearWallSegment(a,b),false,'widening cannot open a gap beside an end room');
+  assert.equal(chalkHit({...a,y:1.5},{...b,y:1.5},[],[],'classroom')?.kind,'wall');
+ }
+ assert.ok(walkRoute({x:8.8,z:-4.5},{x:7.15,z:8},.23).length);
+ assert.ok(walkRoute({x:8.8,z:0},{x:7.15,z:-8},.23).length);
+ assert.equal(blocked(8.8,4.5,.23),true,'end cabinet has a matching collision solid');
+ assert.equal(blocked(7.8,2.5,.23),false,'old floating cabinet collision must be removed');
+ assert.ok(ceilingVolumes().some(v=>v.minX<8.8&&v.maxX>8.8&&v.minY===CEILING_HEIGHT));
+});
+
+test('rendered corridor walls, bell pier, lift header and widened floor agree with collision',async()=>{
+ const T=await import('../dist/vendor/three.module.js'),{buildReferenceCampus}=await import('../dist/reference-campus.js');
+ const scene=new T.Scene(),room=new T.Group();scene.add(room);const assets=new Set(),materials=new Set();
+ const mat=(color,options={})=>{const m=new T.MeshStandardMaterial({color,...options});materials.add(m);return m;};
+ const mesh=(geometry,material,position,scale=[1,1,1],rotation=null,parent=room)=>{const o=new T.Mesh(geometry,material);o.position.set(...position);o.scale.set(...scale);if(rotation)o.rotation.set(...rotation);o.castShadow=true;parent.add(o);return o;};
+ const box=(m,p,s,r=null,parent=room)=>mesh(new T.BoxGeometry(...s),m,p,[1,1,1],r,parent);
+ const rounded=(m,p,s,_radius,r=null,parent=room)=>box(m,p,s,r,parent);
+ const cylinder=(m,p,s,r=null,parent=room)=>mesh(new T.CylinderGeometry(s[0],s[2],s[1],8),m,p,[1,1,1],r,parent);
+ const texture=()=>new T.Texture(),base=mat('#ffffff'),M=new Proxy({},{get:()=>base});
+ const campus=buildReferenceCampus({scene,room,mat,mesh,box,rounded,cylinder,texture,M,assets,materials,floorMat:base});campus.enclosure.visible=true;campus.attachUpperArchitecture();scene.updateMatrixWorld(true);
+ const hit=(p,d,filter=()=>true)=>new T.Raycaster(new T.Vector3(...p),new T.Vector3(...d),0,2).intersectObject(scene,true).find(h=>h.object.material&&filter(h.object));
+ const opaque=o=>!o.material.transparent;
+ assert.ok(Math.abs(hit([8.8,2,0],[1,0,0],opaque).point.x-CORRIDOR.maxX)<1e-5,'long wall is missing or in old narrow position');
+ assert.ok(Math.abs(hit([6.4,1.52,2.60],[-1,0,0],opaque).point.x-6.0)<1e-5,'bell has no masonry behind it');
+ const glazing=hit([6.3,2,0],[-1,0,0],o=>o.material.transparent&&o.material.opacity>.5);assert.ok(glazing&&glazing.distance<.5,'classroom partition must have frosted lower glazing');
+ assert.ok(Math.abs(hit([7.18,4,-5.8],[0,0,-1],opaque).point.z+6.49)<1e-5,'lift fascia leaves a sky hole');
+ assert.ok(Math.abs(hit([8.8,4,0],[0,1,0],opaque).point.y-CEILING_HEIGHT)<1e-5,'wide corridor ceiling does not reach the wall');
+ const floor=hit([8.8,.8,0],[0,-1,0],o=>o.material===base);assert.ok(floor&&Math.abs(floor.point.y+.01)<1e-6);
+ assert.ok(Math.abs(floor.uv.x-floor.point.x/1.6)<1e-6&&Math.abs(floor.uv.y-floor.point.z/1.6)<1e-6,'new floor uses a different texture scale');
+ scene.traverse(o=>o.geometry?.dispose());for(const m of materials)m.dispose();for(const a of assets)a.dispose?.();
 });

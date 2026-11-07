@@ -116,7 +116,7 @@ test('student gesture smoothing follows elapsed time even when scene updates are
 });
 
 test('held objects stay in their palm grip while wrists, view pitch and body pose move',()=>{
-  const configs=[['snack','snack-packet',0],['phone','handheld-phone',0],['note','folded-note',1]];
+  const configs=[['snack','snack-packet',0],['drink','red-drink-can',0],['burger','layered-burger',0],['phone','handheld-phone',0],['note','folded-note',1]];
   for(const [action,name,index]of configs){
     const actor=createDeskHands(),hand=deskHands(actor)[index],prop=actor.group.getObjectByName(name);
     assert.ok(prop,`Missing ${name}.`);let baseline=null,samples=0;

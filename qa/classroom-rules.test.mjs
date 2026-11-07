@@ -13,7 +13,7 @@ function useAvailable(round,state=round.snapshot()){
   if(state.player.caught)return;
   if(!state.drawer.open)round.toggleDrawer();
   if(!state.drawer.slots[state.drawer.selectedSlot].action){const slot=state.drawer.slots.find(slot=>slot.action);if(slot)round.selectSlot(slot.id);}
-  if(state.holding&&state.selected==='smoke'&&state.actionProgress>=.5)round.releaseUse();else takeAndUse(round);
+  if(state.holding&&CLASSROOM_ACTIONS[state.selected]?.releaseToUse&&state.actionProgress>=.5)round.releaseUse();else takeAndUse(round);
 }
 function quietFixture(seed=73){
   const round=new ClassroomRound({seed,target:100000});round.start();
@@ -75,6 +75,7 @@ test('book protection is directional and weakens when the teacher approaches or 
 
 test('heard noise can be remembered without visual evidence or a red card',()=>{
   const r=new ClassroomRound({target:100000});r.start();r._plan.until=100;
+  r.player._slots[0].action='snack';
   r.toggleDrawer();assert.equal(r.selectAction('snack'),true);takeAndUse(r);r.step(5);
   const s=r.snapshot(),memory=s.teacher.memory.find(m=>m.id===PLAYER_SEAT);
   assert.ok(memory&&memory.lastHeard!==null);assert.equal(memory.evidence,0);assert.equal(memory.confirmed,false);
@@ -83,7 +84,7 @@ test('heard noise can be remembered without visual evidence or a red card',()=>{
 });
 
 test('movement collides with desks, can use an aisle, and standing actions earn no points',()=>{
-  const r=new ClassroomRound({target:100000});r.start();r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
+  const r=new ClassroomRound({target:100000});r.start();r.player._slots[0].action='snack';r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
   takeAndUse(r);r.setMovement(0,1);r.step(2);
   let s=r.snapshot();const desk=DESKS[PLAYER_SEAT];assert.ok(s.player.z<=desk.minZ-.18+1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
   r.setMovement(-1,0);r.step((r.player.x-AISLES[1])/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,1);r.step(2);
@@ -106,7 +107,7 @@ test('four classmates plan and complete actual actions; ordinary NPCs never scor
   assert.ok(completed.every(e=>FRIEND_SEATS.includes(e.studentId)&&e.actor==='ai'));
   assert.equal(new Set(s.students.filter(s=>s.isTeammate).map(s=>s.personality)).size,4);
   assert.ok(new Set(s.students.filter(s=>s.isTeammate).map(s=>s.action)).size>1);
-  for(const npc of s.students.filter(s=>!s.isPlayer&&!s.isTeammate)){assert.equal(npc.action,null);assert.equal(npc.holding,false);assert.deepEqual(npc.completed,{snack:0,note:0,phone:0,smoke:0,computer:0});}
+  for(const npc of s.students.filter(s=>!s.isPlayer&&!s.isTeammate)){assert.equal(npc.action,null);assert.equal(npc.holding,false);assert.deepEqual(npc.completed,{snack:0,note:0,phone:0,drink:0,burger:0,smoke:0,flash:0,ink:0,computer:0});}
   for(const memory of s.teacher.memory.filter(m=>!FRIEND_SEATS.includes(m.id)&&m.id!==PLAYER_SEAT))assert.equal(memory.evidence,0);
   assert.equal(events.some(e=>e.type==='speech'),false);
 });
@@ -145,7 +146,7 @@ test('confirmed identification survives hiding, stuns, physically escorts and bi
   const s=advanceUntil(r,s=>s.player.caught,35);
   assert.ok(s.elapsed-windup>=.7-DT-1e-6);assert.ok(s.elapsed>before);
   assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.ok(Math.abs(s.player.z-(DETENTION[0].z-.30))<1e-9);
-  assert.equal(takeAndUse(r),false);assert.equal(r.interact(),false);assert.equal(r.setMovement(1,0),false);assert.equal(r.setLook(1,0),true);
+  assert.equal(r.takeSlot(0),false);assert.equal(r.hold(true),true);assert.equal(r.snapshot().player.bubble.blowing,true);r.hold(false);assert.equal(r.interact(),false);assert.equal(r.setMovement(1,0),false);assert.equal(r.setLook(1,0),true);
   const events=r.drainEvents();assert.equal(events.filter(e=>e.type==='bound'&&e.studentId===PLAYER_SEAT).length,1);assert.equal(events.filter(e=>e.type==='chalk'&&e.studentId===PLAYER_SEAT).length,1);
   assert.equal(events.some(e=>e.type==='finish'),false);
 });
@@ -154,6 +155,7 @@ test('teacher victory requires all five team members, with one terminal event',(
   const r=new ClassroomRound({target:100000});r.start();
   for(const [index,id] of [PLAYER_SEAT,...FRIEND_SEATS].entries()){
     focusSeat(r,id);advanceUntil(r,s=>s.students[id].caught,45);
+    if(index===4&&r.status==='playing')r.step(DT);
     assert.equal(r.snapshot().status,index===4?'lost':'playing');
   }
   const s=r.snapshot();assert.equal(s.caughtCount,5);assert.equal(s.resultReason,'all-caught');
@@ -204,10 +206,12 @@ test('drawers start with three independent seeded draws, permit repeats, and can
   }
   assert.ok(mixes.size>6,'The pool must be sampled with replacement, rather than just shuffled.');
   assert.ok([...mixes].some(mix=>new Set(mix.split(',')).size<3));assert.ok([...mixes].some(mix=>mix.includes('smoke')));
+  for(const kind of ['drink','burger'])assert.ok([...mixes].some(mix=>mix.split(',').includes(kind)),`${kind} must be in ordinary drawers`);
 });
 
 test('a stocked item must be taken from an open drawer, then may be held while closed or standing',()=>{
   const r=quietFixture();
+  r.player._slots.forEach((slot,index)=>slot.action=['note','snack','snack'][index]);
   assert.equal(takeAndUse(r),false);assert.equal(r.selectSlot(1),true);assert.equal(r.snapshot().drawer.open,false);assert.equal(takeAndUse(r),false);
   assert.equal(r.toggleDrawer(),true);assert.equal(takeAndUse(r),true);assert.equal(r.snapshot().drawer.drawnSlot,1);
   assert.equal(r.toggleDrawer(),true);r.step(1);assert.equal(r.snapshot().holding,true);assert.equal(r.snapshot().actionProgress,.333333);
@@ -272,7 +276,7 @@ test('invalid inputs are harmless and removed help skill is unavailable',()=>{
 });
 
 test('E takes without using, left release retains the item, Q returns without duplicating stock',()=>{
- const r=quietFixture(1);r.toggleDrawer();const original=r.snapshot().drawer.slots;
+ const r=quietFixture(1);r.player._slots[1].action='phone';r.toggleDrawer();const original=r.snapshot().drawer.slots;
  assert.equal(r.hold(true),false,'Left click must not take from the drawer');
  assert.equal(r.takeSlot(1),true);assert.equal(r.snapshot().drawer.drawnSlot,1);assert.equal(r.snapshot().holding,false);
  r.step(1);assert.equal(r.snapshot().actionProgress,0);assert.equal(r.snapshot().score,0);
@@ -288,13 +292,28 @@ test('E takes without using, left release retains the item, Q returns without du
 });
 
 // Measure the public interaction clock, including an interrupted hold.
-test('snack, phone and note complete at exactly three active held seconds',()=>{
- for(const action of ['snack','phone','note']){
+test('ordinary drawer actions complete at exactly three active held seconds',()=>{
+ for(const action of ['snack','phone','note','drink','burger']){
   const r=quietFixture();Object.assign(r.player._slots[0],{action,progress:0,readyAt:0});r.toggleDrawer();r.takeSlot(0);
   assert.equal(CLASSROOM_ACTIONS[action].duration,3);r.step(5);assert.equal(r.snapshot().actionProgress,0);
   r.hold(true);r.step(1);r.hold(false);r.step(2);assert.equal(r.snapshot().completed[action],0);
   r.hold(true);r.step(2-DT);assert.equal(r.snapshot().completed[action],0);assert.ok(r.snapshot().actionProgress<1);
-  r.step(DT);assert.equal(r.snapshot().completed[action],1);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.snapshot().drawer.drawnSlot,null);
+  r.step(DT);assert.equal(r.snapshot().completed[action],1);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.snapshot().drawer.drawnSlot,null);assert.equal(r.snapshot().score,CLASSROOM_ACTIONS[action].points);
+ }
+});
+
+test('classmates use drinks and burgers through the same stock, scoring and refill rules',()=>{
+ for(const kind of ['drink','burger']){
+  const r=quietFixture(),actor=r.students[FRIEND_SEATS[0]];actor._decisionAt=0;
+  for(const slot of actor._slots)Object.assign(slot,{action:kind,readyAt:0,progress:0});
+  const done=advanceUntil(r,s=>s.students[actor.id].completed[kind]===1,10);
+  const event=r.drainEvents().find(e=>e.type==='complete'&&e.studentId===actor.id);
+  assert.equal(event.action,kind);assert.equal(event.actor,'ai');assert.equal(event.points,3);assert.equal(done.score,3);
+  assert.deepEqual(done.students[actor.id].drawer.slots[event.slotId],{id:event.slotId,action:null,readyIn:3});
+  assert.equal(done.completed[kind],0,'AI statistics must not count as player completions');
+  assert.ok(Object.values(done.students[actor.id].completed).every(Number.isFinite));
+  r.step(3-DT);assert.equal(r.snapshot().students[actor.id].drawer.slots[event.slotId].action,null);
+  r.step(DT);assert.ok(r.snapshot().students[actor.id].drawer.slots[event.slotId].action);
  }
 });
 

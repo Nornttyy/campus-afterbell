@@ -72,7 +72,7 @@ for(const seated of [true,false])test(`phone presses use real index flexion and 
 });
 
 test('imported palms keep rigid object contact while taking, standing and looking around',()=>{
-  for(const [action,name,side]of [['snack','snack-packet','left'],['phone','handheld-phone','left'],['note','folded-note','right'],['smoke','smoke-canister','left']]){
+  for(const [action,name,side]of [['snack','snack-packet','left'],['drink','red-drink-can','left'],['burger','layered-burger','left'],['phone','handheld-phone','left'],['note','folded-note','right'],['smoke','smoke-canister','left']]){
     const actor=makeHands(),hand=actor.getHand(side),prop=actor.group.getObjectByName(name);
     assert.ok(prop,`Missing ${name}`);let baseline=null;
     for(let frame=1;frame<230;frame++){

@@ -14,7 +14,7 @@ body{margin:0;background:#e7ecea;font:14px system-ui;color:#243431}canvas{displa
 <output id="label">加载模型</output>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=classroom-31';
+import {loadStudentAssets} from '../dist/student-assets.js?v=classroom-33';
 const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(1);renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.05;document.body.append(renderer.domElement);
 const scene=new T.Scene();scene.background=new T.Color('#e7ecea');scene.add(new T.HemisphereLight('#fff5e9','#9ca8a4',2));const light=new T.DirectionalLight('#fff7eb',2.5);light.position.set(3,5,4);scene.add(light);
 const camera=new T.PerspectiveCamera(34,innerWidth/innerHeight,.01,30),pivot=new T.Group();scene.add(pivot);

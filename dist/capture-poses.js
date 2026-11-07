@@ -79,15 +79,21 @@ export function createCapturePose(group,bones){
   return{
     restore(){for(const [bone,q]of saved)bone.quaternion.copy(q);for(const [bone,p]of savedPositions)bone.position.copy(p);saved.clear();savedPositions.clear();},
     state:()=>({kind:lastKind,age,weight}),
-    apply(kind,time,dt){
-      if(kind!==inputKind||time<enteredAt){
+    apply(kind,time,dt,{startedAt=null,reset=false}={}){
+      const rewound=reset||time<enteredAt;
+      if(rewound){weight=0;inputKind=lastKind='free';outputs.clear();positionOutputs.clear();for(const side of ['Left','Right']){delete lastWrists[side];delete entryWrists[side];}}
+      const changed=rewound||kind!==inputKind||(Number.isFinite(startedAt)&&startedAt!==enteredAt);
+      if(changed){
         lastKind=confined(kind)?kind:confined(inputKind)?'recovering':'free';
         for(const side of ['Left','Right'])if(lastWrists[side])entryWrists[side]=lastWrists[side].clone();
-        enteredAt=time;inputKind=kind;
+        enteredAt=Number.isFinite(startedAt)?Math.min(time,startedAt):time;inputKind=kind;
       }
       age=Math.max(0,time-enteredAt);
+      // State changes are tracked even while the mesh is culled. If the
+      // transition finished off camera, restore its current pose immediately.
+      const resumed=rewound||(changed&&age>.65);
       const active=confined(kind)||(lastKind==='recovering'&&age<.65);
-      weight=T.MathUtils.damp(weight,active?1:0,13,dt);if(weight<.001){outputs.clear();positionOutputs.clear();if(!active)lastKind='free';return;}
+      weight=resumed?(active?1:0):T.MathUtils.damp(weight,active?1:0,13,dt);if(weight<.001){outputs.clear();positionOutputs.clear();if(!active)lastKind='free';return resumed;}
       for(const bone of Object.values(bones))saved.set(bone,bone.quaternion.clone());
       if(bones.Hips)savedPositions.set(bones.Hips,bones.Hips.position.clone());
       group.updateMatrixWorld(true);
@@ -160,7 +166,7 @@ export function createCapturePose(group,bones){
         else if(help){rotateInCharacterSpace(group,bones.Head,.12,wave*.035,0,weight);}}
       // Blend the solved local joints across pose changes, including carried → bound.
       // The mixer remains the untouched base; previous IK never feeds back into it.
-      const ease=1-Math.exp(-(stunned?12:7.5)*dt);
+      const ease=resumed?1:1-Math.exp(-(stunned?12:7.5)*dt);
       for(const bone of Object.values(bones)){
         const previous=outputs.get(bone)||saved.get(bone);
         bone.quaternion.copy(previous.clone().slerp(bone.quaternion,ease));
@@ -169,6 +175,7 @@ export function createCapturePose(group,bones){
       for(const [bone,p]of savedPositions){const previous=positionOutputs.get(bone)||p;bone.position.copy(previous.clone().lerp(bone.position,ease));positionOutputs.set(bone,bone.position.clone());}
       group.updateMatrixWorld(true);
       for(const side of ['Left','Right'])if(bones[side+'Hand'])lastWrists[side]=group.worldToLocal(bones[side+'Hand'].getWorldPosition(V()));
+      return resumed;
     }
   };
 }

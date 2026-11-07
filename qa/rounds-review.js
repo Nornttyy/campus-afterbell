@@ -1,12 +1,14 @@
-import {createClassroom} from '../dist/classroom.js?v=classroom-31';
-import {createClassroomGame} from '../dist/classroom-game.js?v=classroom-31';
-import {TeacherRound} from '../dist/teacher-rules.js?v=classroom-31';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=classroom-31';
-import {DETENTION} from '../dist/classroom-layout.js?v=classroom-31';
+import {createClassroom} from '../dist/classroom.js?v=classroom-33';
+import {createClassroomGame} from '../dist/classroom-game.js?v=classroom-33';
+import {TeacherRound} from '../dist/teacher-rules.js?v=classroom-33';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=classroom-33';
+import {DETENTION} from '../dist/classroom-layout.js?v=classroom-33';
+import {attachReviewLog} from './review-event-log.js?v=classroom-33';
 const params=new URLSearchParams(location.search),teacher=params.get('role')!=='student',map=params.get('map')||'classroom';
 const canvas=document.querySelector('#classroom'),scene=await createClassroom(canvas),round=new (teacher?TeacherRound:ClassroomRound)({seed:44,map,target:100000});
 const audio={apply(){},start(){},click(){},effect(){}};
 const game=createClassroomGame({scene,audio,round});
+attachReviewLog(round);
 document.body.classList.add('scene-ready');document.querySelector('#loader').remove();
 document.querySelector('#enter-classroom').onclick=()=>{
  game.start();for(const s of round.students)s._decisionAt=Infinity;
@@ -30,3 +32,5 @@ document.querySelector('#qa-corridor').onclick=()=>viewpoint(7.12,5.1,Math.PI,.0
 document.querySelector('#qa-glasses').onclick=()=>{const s=round.students[16];viewpoint(s.x,s.z+1.45,Math.PI,.27);};
 
 const boardReview=document.createElement('button');boardReview.id='qa-board';boardReview.textContent='黑板前（体力 50）';document.querySelector('#qa-controls').append(boardReview);boardReview.onclick=()=>{round.player.x=2.0;round.player.z=5.40;round.setLook(0,-.16);round.teacher.stamina=50;};
+
+const boundReview=document.createElement('button');boundReview.id='qa-bound-player';boundReview.textContent='自己绑柱';document.querySelector('#qa-controls').append(boundReview);boundReview.onclick=()=>{if(teacher)return;round.teacher.x=round.player.x;round.teacher.z=round.player.z+.9;round._stun(round.player);round._grab(round.player);round.teacher.x=DETENTION[0].x;round.teacher.z=DETENTION[0].z-1.1;round._bind(0);round.teacher.x=round.teacher.z=30;round._plan.route=[];round.setLook(Math.PI,0);};
