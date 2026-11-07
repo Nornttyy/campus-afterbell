@@ -231,7 +231,17 @@ export function createTeacher(){
     });
     chalk.visible=write>.15;
   }
-  update(0);return{group,update};
+  function gripNeck(worldPoint){
+    const wrist=body.worldToLocal(worldPoint.clone()),side=wrist.x<0?-1:1,shoulder=v(side*.238,1.485,0),elbow=shoulder.clone().lerp(wrist,.48).add(v(side*.12,-.10,-.035));
+    arms[side<0?0:1].pose(shoulder,elbow,wrist,{curl:.75,rx:-.7,ry:0,rz:-.12});chalk.visible=false;
+  }
+  function castChalk(progress){
+    if(progress<=0)return;
+    const release=clamp((progress-.68)/.32,0,1),lift=THREE.MathUtils.smoothstep(progress/.3,0,1);
+    const shoulder=v(.238,1.485,0),elbow=v(.28,1.22,.02).lerp(v(.32,1.59-release*.19,.14+release*.12),lift),wrist=v(.27,.995,0).lerp(v(.27,1.77-release*.33,.26+release*.29),lift);
+    arms[1].pose(shoulder,elbow,wrist,{curl:.78,rx:.3-release*.7,rz:0});chalk.visible=false;
+  }
+  update(0);return{group,update,getHand:side=>arms[side==='right'?1:0].hand.group,gripNeck,castChalk};
 }
 
 function snackProp(){

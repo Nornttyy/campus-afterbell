@@ -1,5 +1,6 @@
+import {createCapturePose} from './capture-poses.js?v=restraint-26';
 import * as T from './vendor/three.module.js';
-import {createDeskItem} from './game-actors.js?v=classroom-25';
+import {createDeskItem} from './game-actors.js?v=restraint-26';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 function cloneSkin(source){
@@ -9,7 +10,7 @@ function cloneSkin(source){
 }
 export async function loadStudentAssets(){
  const loader=new GLTFLoader(),files=['student-boy-v2','student-girl-v2','hand-left-v1','hand-right-v1'];
- const [boy,girl,left,right]=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=classroom-25`,import.meta.url).href)));
+ const [boy,girl,left,right]=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=restraint-26`,import.meta.url).href)));
  return {createStudent:(options={})=>{const source=options.variant==='girl'?girl:boy;return createRiggedStudent({scene:cloneSkin(source.scene),animations:source.animations},options);},createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)};
 }
 function addGlasses(model,head){
@@ -41,7 +42,7 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
  const mixer=new T.AnimationMixer(model),actions={},weights={};
  for(const clip of gltf.animations){const a=mixer.clipAction(clip);actions[clip.name]=a;a.setEffectiveWeight(0).play();a.time=(seed*.17)%clip.duration;weights[clip.name]=0;}
  const mapping={resting:'Sit',writing:'Write',computer:'Write',snack:'Snack',phone:'Phone',note:'Note',thinking:'Think',chat:'Think',hero:'Think'};
- let mood='writing',last=null,moving=0,held=false,isSeated=seated;
+ let mood='writing',last=null,moving=0,held=false,isSeated=seated,captivity='free';const capturePose=createCapturePose(group,bones);
  const grips={left:new T.Group(),right:new T.Group()};
  for(const [side,anchor]of Object.entries(grips)){
   anchor.name=side+'-student-hand';group.add(anchor);
@@ -60,14 +61,14 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
    // Match walk playback to movement speed within the supported clip range.
    a.setEffectiveTimeScale(name.startsWith('Walk')?T.MathUtils.clamp(moving/.475,.1,3.8):1);
   }
-  mixer.update(dt);group.updateMatrixWorld(true);group.getWorldQuaternion(inv).invert();
+  capturePose.restore();mixer.update(dt);capturePose.apply(captivity==='free'&&mood==='rescuing'?'rescuing':captivity,t,dt);group.updateMatrixWorld(true);group.getWorldQuaternion(inv).invert();
   for(const [side,a]of Object.entries(grips)){
    const b=bones[side==='left'?'LeftHand':'RightHand'];b.getWorldPosition(pos);a.position.copy(group.worldToLocal(pos));const prefix=side==='left'?'Left':'Right',center=bones[prefix+'HandMiddle1'].getWorldPosition(V()),index=bones[prefix+'HandIndex1'].getWorldPosition(V()),pinky=bones[prefix+'HandPinky1'].getWorldPosition(V());
    const y=center.sub(b.getWorldPosition(V())).normalize(),x=index.sub(pinky),thumb=bones[prefix+'HandThumb1'].getWorldPosition(V()).sub(bones[prefix+'HandMiddle1'].getWorldPosition(V()));thumb.addScaledVector(y,-thumb.dot(y));if(x.dot(thumb)<0)x.negate();x.multiplyScalar(side==='left'?1:-1).addScaledVector(y,-x.dot(y)).normalize();const z=V().crossVectors(x,y).normalize();q.setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));a.quaternion.copy(inv).multiply(q);a.userData.gripWeight=(weights.Phone||0)+(weights.Note||0)+(weights.Carry||0)+(weights.WalkCarry||0);
   }
-  snack.visible=(weights.Snack||0)>.6;pencil.visible=mood!=='computer'&&(weights.Write||0)>.6;
+  snack.visible=captivity==='free'&&(weights.Snack||0)>.6;pencil.visible=captivity==='free'&&mood!=='computer'&&(weights.Write||0)>.6;
  }
- update(0);return{group,head,bones,update,seated,setMood:m=>mood=m,setMotion:({seated=isSeated,speed=moving,carrying=held}={})=>{isSeated=seated;moving=Math.max(0,speed);held=carrying;},getHand:s=>grips[s],dispose(){mixer.stopAllAction();mixer.uncacheRoot(model);},diagnostics:()=>({clips:Object.keys(actions),weights:{...weights},asset:group.userData.asset,glasses})};
+ update(0);return{group,head,bones,update,seated,setMood:m=>mood=m,setMotion:({seated=isSeated,speed=moving,carrying=held,restraint='free'}={})=>{captivity=restraint;isSeated=seated;moving=Math.max(0,speed);held=carrying;},getHand:s=>grips[s],dispose(){mixer.stopAllAction();mixer.uncacheRoot(model);},diagnostics:()=>({clips:Object.keys(actions),weights:{...weights},asset:group.userData.asset,glasses})};
 }
 export function createRiggedPalm(gltf,side,scale=1){
  const group=new T.Group();group.name=side<0?'left-desk-hand':'right-desk-hand';group.userData.asset='tripo-palm-only';group.userData.fingersPerHand=4;
