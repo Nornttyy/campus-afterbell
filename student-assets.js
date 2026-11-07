@@ -1,6 +1,7 @@
-import {createCapturePose} from './capture-poses.js?v=restraint-26';
+import {createStudentHandMotion} from './hand-motion.js?v=map-30c';
+import {createCapturePose} from './capture-poses.js?v=map-30c';
 import * as T from './vendor/three.module.js';
-import {createDeskItem} from './game-actors.js?v=restraint-26';
+import {createDeskItem} from './game-actors.js?v=map-30c';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 function cloneSkin(source){
@@ -9,40 +10,19 @@ function cloneSkin(source){
   source.traverse(o=>{if(o.isSkinnedMesh){const n=map.get(o);n.skeleton=o.skeleton.clone();n.skeleton.bones=o.skeleton.bones.map(b=>map.get(b));n.bindMatrix.copy(o.bindMatrix);n.bind(n.skeleton,n.bindMatrix);n.frustumCulled=false;}});return copy;
 }
 export async function loadStudentAssets(){
- const loader=new GLTFLoader(),files=['student-boy-v2','student-girl-v2','hand-left-v1','hand-right-v1'];
- const [boy,girl,left,right]=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=restraint-26`,import.meta.url).href)));
- return {createStudent:(options={})=>{const source=options.variant==='girl'?girl:boy;return createRiggedStudent({scene:cloneSkin(source.scene),animations:source.animations},options);},createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)};
-}
-function addGlasses(model,head){
- // A real frame fitted in bind space; head.attach preserves its world transform.
- const g=new T.Group();g.name='round-student-glasses';model.add(g);
- const rim=new T.MeshStandardMaterial({color:'#22262b',roughness:.52});
- const lens=new T.MeshStandardMaterial({color:'#e5f5e9',roughness:.22,metalness:.08,transparent:true,opacity:.13,depthWrite:false});
- for(const sign of [-1,1]){
-  const frame=new T.Mesh(new T.TorusGeometry(.080,.0055,8,40),rim);frame.position.set(sign*.079,.812,.174);g.add(frame);
-  const glass=new T.Mesh(new T.CircleGeometry(.075,40),lens);glass.position.copy(frame.position);glass.position.z+=.002;g.add(glass);
-  const shine=new T.BufferGeometry(),vertices=[];
-  // Two diagonal reflections clipped to the circular lenses.
-  for(const [lo,hi]of [[-.026,-.008],[.004,.010]])for(let i=0;i<40;i++){
-   const x=-.075+i*.15/40,nx=x+.15/40;
-   const range=(v)=>{const edge=Math.sqrt(Math.max(0,.075**2-v*v));return[Math.max(-edge,v*.4+lo),Math.min(edge,v*.4+hi)];};
-   const [a,b]=range(x),[d,e]=range(nx);if(b>a&&e>d)vertices.push(x,a,0,nx,d,0,x,b,0,x,b,0,nx,d,0,nx,e,0);
-  }
-  shine.setAttribute('position',new T.Float32BufferAttribute(vertices,3));shine.computeVertexNormals();const streak=new T.Mesh(shine,new T.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.32,depthWrite:false}));streak.position.copy(glass.position);streak.position.z+=.0008;g.add(streak);
-  const temple=new T.Mesh(new T.CylinderGeometry(.004,.004,.145,8),rim);temple.rotation.x=Math.PI/2;temple.position.set(sign*.159,.812,.098);g.add(temple);
- }
- const bridge=new T.Mesh(new T.CylinderGeometry(.004,.004,.022,8),rim);bridge.rotation.z=Math.PI/2;bridge.position.set(0,.817,.174);g.add(bridge);
- model.updateWorldMatrix(true,true);head.attach(g);return g;
+ const loader=new GLTFLoader(),files=['student-boy-v2','student-girl-v2','student-glasses-v1','hand-left-v1','hand-right-v1'];
+ const [boy,girl,glasses,left,right]=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=map-30c`,import.meta.url).href)));
+ return {createStudent:(options={})=>{const source=options.glasses&&options.variant!=='girl'?glasses:options.variant==='girl'?girl:boy;return createRiggedStudent({scene:cloneSkin(source.scene),animations:source.animations},options);},createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)};
 }
 export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glasses=false}={}){
- const group=new T.Group();group.name=`student-${variant}-tripo`;group.userData.asset=`student-${variant}-v2`;
+ const group=new T.Group();group.name=`student-${variant}-tripo`;group.userData.asset=glasses&&variant!=='girl'?'student-glasses-v1':`student-${variant}-v2`;
  const model=gltf.scene;model.scale.setScalar(1.80);group.add(model);
  const bones={};model.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig[:_]?/,'')]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;}});
- const head=bones.Head;if(glasses&&variant==='boy')addGlasses(model,head);
+ const head=bones.Head;
  const mixer=new T.AnimationMixer(model),actions={},weights={};
  for(const clip of gltf.animations){const a=mixer.clipAction(clip);actions[clip.name]=a;a.setEffectiveWeight(0).play();a.time=(seed*.17)%clip.duration;weights[clip.name]=0;}
  const mapping={resting:'Sit',writing:'Write',computer:'Write',snack:'Snack',phone:'Phone',note:'Note',thinking:'Think',chat:'Think',hero:'Think'};
- let mood='writing',last=null,moving=0,held=false,isSeated=seated,captivity='free';const capturePose=createCapturePose(group,bones);
+ let mood='writing',last=null,moving=0,held=false,isSeated=seated,captivity='free';const capturePose=createCapturePose(group,bones),handMotion=createStudentHandMotion(group,bones,{seed});
  const grips={left:new T.Group(),right:new T.Group()};
  for(const [side,anchor]of Object.entries(grips)){
   anchor.name=side+'-student-hand';group.add(anchor);
@@ -61,14 +41,14 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
    // Match walk playback to movement speed within the supported clip range.
    a.setEffectiveTimeScale(name.startsWith('Walk')?T.MathUtils.clamp(moving/.475,.1,3.8):1);
   }
-  capturePose.restore();mixer.update(dt);capturePose.apply(captivity==='free'&&mood==='rescuing'?'rescuing':captivity,t,dt);group.updateMatrixWorld(true);group.getWorldQuaternion(inv).invert();
+  handMotion.restore();capturePose.restore();mixer.update(dt);capturePose.apply(captivity==='free'&&mood==='rescuing'?'rescuing':captivity,t,dt);handMotion.apply({time:t,dt,mood,restraint:captivity,moving,carrying:held,capture:capturePose.state()});group.updateMatrixWorld(true);group.getWorldQuaternion(inv).invert();
   for(const [side,a]of Object.entries(grips)){
    const b=bones[side==='left'?'LeftHand':'RightHand'];b.getWorldPosition(pos);a.position.copy(group.worldToLocal(pos));const prefix=side==='left'?'Left':'Right',center=bones[prefix+'HandMiddle1'].getWorldPosition(V()),index=bones[prefix+'HandIndex1'].getWorldPosition(V()),pinky=bones[prefix+'HandPinky1'].getWorldPosition(V());
    const y=center.sub(b.getWorldPosition(V())).normalize(),x=index.sub(pinky),thumb=bones[prefix+'HandThumb1'].getWorldPosition(V()).sub(bones[prefix+'HandMiddle1'].getWorldPosition(V()));thumb.addScaledVector(y,-thumb.dot(y));if(x.dot(thumb)<0)x.negate();x.multiplyScalar(side==='left'?1:-1).addScaledVector(y,-x.dot(y)).normalize();const z=V().crossVectors(x,y).normalize();q.setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));a.quaternion.copy(inv).multiply(q);a.userData.gripWeight=(weights.Phone||0)+(weights.Note||0)+(weights.Carry||0)+(weights.WalkCarry||0);
   }
   snack.visible=captivity==='free'&&(weights.Snack||0)>.6;pencil.visible=captivity==='free'&&mood!=='computer'&&(weights.Write||0)>.6;
  }
- update(0);return{group,head,bones,update,seated,setMood:m=>mood=m,setMotion:({seated=isSeated,speed=moving,carrying=held,restraint='free'}={})=>{captivity=restraint;isSeated=seated;moving=Math.max(0,speed);held=carrying;},getHand:s=>grips[s],dispose(){mixer.stopAllAction();mixer.uncacheRoot(model);},diagnostics:()=>({clips:Object.keys(actions),weights:{...weights},asset:group.userData.asset,glasses})};
+ update(0);return{group,head,bones,update,seated,setMood:m=>mood=m,setMotion:({seated=isSeated,speed=moving,carrying=held,restraint='free'}={})=>{captivity=restraint;isSeated=seated;moving=Math.max(0,speed);held=carrying;},getHand:s=>grips[s],dispose(){mixer.stopAllAction();mixer.uncacheRoot(model);},diagnostics:()=>({clips:Object.keys(actions),weights:{...weights},asset:group.userData.asset,glasses,hands:handMotion.diagnostics(),capture:capturePose.state()})};
 }
 export function createRiggedPalm(gltf,side,scale=1){
  const group=new T.Group();group.name=side<0?'left-desk-hand':'right-desk-hand';group.userData.asset='tripo-palm-only';group.userData.fingersPerHand=4;
@@ -84,6 +64,7 @@ export function createRiggedPalm(gltf,side,scale=1){
  let curl=.1;
  function bend(finger,amount){for(let i=1;i<=3;i++){const b=bones[prefix+'Hand'+finger+i];if(!b)continue;b.quaternion.copy(rest.get(b)).multiply(new T.Quaternion().setFromAxisAngle(axis.get(b),-amount*[.62,.87,.62][i-1]));}}
  function setCurl(a){curl=T.MathUtils.clamp(a,0,1);for(const f of ['Index','Middle','Pinky'])bend(f,curl);for(let i=1;i<=3;i++){const b=bones[prefix+'HandThumb'+i];b.quaternion.copy(rest.get(b));}}
+ function setFingerCurl(finger,a){if(['Index','Middle','Pinky'].includes(finger))bend(finger,T.MathUtils.clamp(a,0,1));}
  function pointIndex(a=1){bend('Index',curl*(1-T.MathUtils.clamp(a,0,1)));}
  function indexTip(){group.updateMatrixWorld(true);mesh.skeleton.update();const p=V().fromBufferAttribute(positions,tipVertex);mesh.applyBoneTransform(tipVertex,p);mesh.localToWorld(p);return group.worldToLocal(p);}
  function aimThumb(target,amount=1){
@@ -96,5 +77,5 @@ export function createRiggedPalm(gltf,side,scale=1){
   root.quaternion.premultiply(parentQ.clone().invert().multiply(worldDelta).multiply(parentQ));
  }
  function opposeThumb(amount=1){aimThumb(indexTip().add(V(side*.01,-.008,.012)),amount);}
- setCurl(.1);return{group,setCurl,pointIndex,indexTip,aimThumb,opposeThumb};
+ setCurl(.1);return{group,setCurl,setFingerCurl,pointIndex,indexTip,aimThumb,opposeThumb};
 }

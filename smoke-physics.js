@@ -1,18 +1,38 @@
-import {ROOM,DESKS} from './classroom-layout.js';
+import {ROOM,DESKS,WALL_VOLUMES,LECTERN,CEILING_HEIGHT,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=map-30c';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-const tables=DESKS.map(d=>({...d,minY:.80,maxY:.895}));
+const colliderCache=new Map();
+function tablesFor(map='classroom'){if(!colliderCache.has(map))colliderCache.set(map,[...DESKS.map(d=>{const h=floorHeight((d.minX+d.maxX)/2,(d.minZ+d.maxZ)/2,map);return{...d,minY:h+.80,maxY:h+.895};}),...WALL_VOLUMES,...OFFICE_SOLIDS,...floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})),{...LECTERN,minY:.16,maxY:1.15}]);return colliderCache.get(map);}
 
-export function createSmokeProjectile(actor,id,charge=0){
+function safeRelease(origin,hand,map){
+  const tables=tablesFor(map);
+  let travel=1;
+  // Sweep the canister out from the player rather than spawning beyond a wall.
+  for(const box of tables){
+    let lo=0,hi=1;
+    for(const axis of ['x','y','z']){
+      const d=hand[axis]-origin[axis],min=box['min'+axis.toUpperCase()]-R,max=box['max'+axis.toUpperCase()]+R;
+      if(Math.abs(d)<1e-9){if(origin[axis]<min||origin[axis]>max){lo=2;break;}}
+      else{const a=(min-origin[axis])/d,b=(max-origin[axis])/d;lo=Math.max(lo,Math.min(a,b));hi=Math.min(hi,Math.max(a,b));}
+    }
+    if(lo<=hi&&lo<=1&&hi>=0)travel=Math.min(travel,Math.max(0,lo-.002));
+  }
+  const p=Object.fromEntries(['x','y','z'].map(axis=>[axis,origin[axis]+(hand[axis]-origin[axis])*travel]));
+  p.x=clamp(p.x,ROOM.minX+R,ROOM.maxX-R);p.z=clamp(p.z,ROOM.minZ+R,ROOM.maxZ-R);
+  p.y=clamp(p.y,floorHeight(p.x,p.z,map)+R,CEILING_HEIGHT-R);return p;
+}
+
+export function createSmokeProjectile(actor,id,charge=0,map='classroom'){
   charge=clamp(Number.isFinite(charge)?charge:0,0,1);
   const yaw=actor.yaw||0,pitch=actor.pitch||0,elevation=clamp(.66-pitch,-.8,1.2),speed=5.2+2.8*charge;
   // Release from the left palm, in the same look basis as the first-person camera.
   // Horizontal aim adds an upward lob; looking down still permits a close throw.
-  const eye=actor.seated?1.43-(actor.crouched?.24:0):actor.crouched?1.02:1.65;
+  const eye=floorHeight(actor.x,actor.z,map)+(actor.seated?1.43-(actor.crouched?.24:0):actor.crouched?1.02:1.65);
   const forward=.55*Math.cos(pitch)-.06*Math.sin(pitch);
-  return{id,ownerId:actor.id,charge,x:actor.x+Math.sin(yaw)*forward+Math.cos(yaw)*.14,
-    y:eye-.55*Math.sin(pitch)-.06*Math.cos(pitch),z:actor.z+Math.cos(yaw)*forward-Math.sin(yaw)*.14,
+  const release=safeRelease({x:actor.x,y:eye,z:actor.z},{x:actor.x+Math.sin(yaw)*forward+Math.cos(yaw)*.14,
+    y:eye-.55*Math.sin(pitch)-.06*Math.cos(pitch),z:actor.z+Math.cos(yaw)*forward-Math.sin(yaw)*.14},map);
+  return{id,ownerId:actor.id,charge,map,...release,
     vx:Math.sin(yaw)*Math.cos(elevation)*speed,vy:Math.sin(elevation)*speed,
     vz:Math.cos(yaw)*Math.cos(elevation)*speed,age:0,firstImpact:null,bounces:0,
     spinX:0,spinZ:0,settled:false,restTime:0,emitting:false};
@@ -20,6 +40,7 @@ export function createSmokeProjectile(actor,id,charge=0){
 
 // Small swept steps keep a thrown canister from tunnelling through desk slabs.
 export function stepSmokeProjectile(p,dt){
+  const map=p.map||'classroom',tables=tablesFor(map);
   let impacts=[];
   const count=Math.max(1,Math.ceil(dt/.008)),h=dt/count;
   for(let i=0;i<count;i++){
@@ -30,8 +51,8 @@ export function stepSmokeProjectile(p,dt){
     // flatten the arc or change its apex; collisions start a new ballistic leg.
     p.x+=p.vx*h;p.y+=p.vy*h-.5*GRAVITY*h*h;p.z+=p.vz*h;p.vy-=GRAVITY*h;
     let normal=null;
-    if(p.y<R){p.y=R;normal=[0,1,0];}
-    else if(p.y>4.28-R){p.y=4.28-R;normal=[0,-1,0];}
+    if(p.y<floorHeight(p.x,p.z,map)+R){p.y=floorHeight(p.x,p.z,map)+R;normal=[0,1,0];}
+    else if(p.y>CEILING_HEIGHT-R){p.y=CEILING_HEIGHT-R;normal=[0,-1,0];}
     if(p.x<ROOM.minX+R){p.x=ROOM.minX+R;normal=[1,0,0];}
     else if(p.x>ROOM.maxX-R){p.x=ROOM.maxX-R;normal=[-1,0,0];}
     if(p.z<ROOM.minZ+R){p.z=ROOM.minZ+R;normal=[0,0,1];}

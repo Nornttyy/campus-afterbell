@@ -1,5 +1,5 @@
-import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from './smoke-physics.js?v=restraint-26';
-import { ROOM, SEATS, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, moveInRoom, walkRoute, blocked } from './classroom-layout.js?v=restraint-26';
+import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from './smoke-physics.js?v=map-30c';
+import { ROOM, SEATS, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, moveInRoom, walkRoute, blocked, clearWallSegment, CAMPUS_MAPS } from './classroom-layout.js?v=map-30c';
 
 /** Local prototype tuning, NOT verified original-game balance values. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:100, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:1.8, crouchSpeed:.85, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
@@ -23,7 +23,7 @@ function segmentDistance(p,a,b){const dx=b.x-a.x,dz=b.z-a.z,l=dx*dx+dz*dz,t=l?cl
 export function canSee(observer,target,smokes=[]){
   if(distance(observer,target)>(observer.viewRange??DEVELOPMENT_TUNING.viewRange))return false;
   if(Math.abs(angle(heading(observer,target)-observer.yaw))>(observer.fov??DEVELOPMENT_TUNING.fov)*Math.PI/360)return false;
-  return !smokes.some(s=>s.remaining>0&&(s.density??1)>.3&&segmentDistance(s,observer,target)<s.radius);
+  return clearWallSegment(observer,target)&&!smokes.some(s=>s.remaining>0&&(s.density??1)>.3&&segmentDistance(s,observer,target)<s.radius);
 }
 /** Upright desk books reduce distant frontal prop visibility, not all visibility. */
 export function propVisibility(observer,target,smokes=[]){
@@ -38,7 +38,7 @@ export function propVisibility(observer,target,smokes=[]){
 
 export class ClassroomRound{
   constructor({seed=73,duration=Infinity,target=DEVELOPMENT_TUNING.target,map='classroom'}={}){
-    this.map=['classroom','night','computer'].includes(map)?map:'classroom';
+    this.map=CAMPUS_MAPS.includes(map)?map:'classroom';
     this.seed=seedNumber(seed);this.duration=valid(duration)&&duration>0?Math.min(duration,3600):Infinity;
     this.target=valid(target)&&target>0?Math.min(target,100000):DEVELOPMENT_TUNING.target;this.reset();
   }
@@ -186,7 +186,7 @@ export class ClassroomRound{
     this._observe('noise-heard',actor.id,`${actor.name}所在位置传来声响。`);
   }
   _throwSmoke(actor,charge){
-    const projectile=createSmokeProjectile(actor,this._smokeId++,charge);this.projectiles.push(projectile);
+    const projectile=createSmokeProjectile(actor,this._smokeId++,charge,this.map);this.projectiles.push(projectile);
     this._hear(actor,.35,'throw');this._events.push({type:'smoke-throw',studentId:actor.id,x:projectile.x,y:projectile.y,z:projectile.z});
   }
   _completeAction(actor,slot){
@@ -293,9 +293,7 @@ export class ClassroomRound{
     }
   }
   _routeTo(point){
-    const t=this.teacher,aisle=AISLES.reduce((a,x)=>Math.abs(x-point.x)<Math.abs(a-point.x)?x:a,AISLES[0]),route=[];
-    if(Math.abs(t.x-aisle)>.15){if(Math.abs(t.z-BOARD.z)>.1)route.push({x:t.x,z:BOARD.z});route.push({x:aisle,z:BOARD.z});}
-    route.push({x:aisle,z:clamp(point.z,ROOM.minZ+.3,BOARD.z)});return route.filter(p=>distance(t,p)>.05);
+    const t=this.teacher;return walkRoute(t,point,.23).filter(p=>distance(t,p)>.06);
   }
   _setPlan(intent,targetId,point,utility){
     const route=point?this._routeTo(point):[],routeLength=route.reduce((sum,p,i)=>sum+distance(i?route[i-1]:this.teacher,p),0);
@@ -359,14 +357,14 @@ export class ClassroomRound{
     this._events.push({type:'stunned',studentId:actor.id});return true;
   }
   _grab(actor){
-    if(!actor||this.teacher.carriedId!==null||actor.captivity!=='stunned'||this.elapsed>=actor._chalkUntil||distance(this.teacher,actor)>1.55)return false;
+    if(!actor||this.teacher.carriedId!==null||actor.captivity!=='stunned'||this.elapsed>=actor._chalkUntil||distance(this.teacher,actor)>1.55||!clearWallSegment(this.teacher,actor))return false;
     this._stopActor(actor);actor.captivity='carried';actor.seated=false;actor.seatId=null;actor.crouched=false;actor._grabAt=this.elapsed;actor._grabStart={x:actor.x,z:actor.z};
     this.teacher.carriedId=actor.id;this._escortRoute=null;this._escortPost=null;
     this._events.push({type:'grabbed',studentId:actor.id});return true;
   }
   _bind(postId){
     const actor=this.students[this.teacher.carriedId],post=DETENTION.find(p=>p.id===postId);
-    if(!actor||!post||distance(this.teacher,post)>1.55||this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))return false;
+    if(!actor||!post||distance(this.teacher,post)>1.55||!clearWallSegment(this.teacher,post)||this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))return false;
     actor.captivity='bound';actor.caught=true;actor.postId=post.id;actor.x=post.x;actor.z=post.z-.30;actor.yaw=Math.PI;actor._boundAt=this.elapsed;actor._chalkUntil=0;actor.mood='bound';
     this.teacher.carriedId=null;this._escortRoute=null;this._escortPost=null;this._plan.until=0;this._thinkAt=0;
     const memory=this._memory.get(actor.id);if(memory){memory.detained=true;memory.x=actor.x;memory.z=actor.z;}
@@ -394,7 +392,7 @@ export class ClassroomRound{
     for(const s of this.students)if(s.captivity==='stunned'&&this.elapsed>=s._chalkUntil){s.captivity='free';s.mood='reading';}
     const s=this.students[this.teacher.carriedId];
     if(s){const t=this.teacher,forward=.60,right=-.42,target={x:t.x+Math.sin(t.yaw)*forward+Math.cos(t.yaw)*right,z:t.z+Math.cos(t.yaw)*forward-Math.sin(t.yaw)*right};
-      const blend=clamp((this.elapsed-s._grabAt)/.32,0,1),ease=blend*blend*(3-2*blend);s.x=s._grabStart.x+(target.x-s._grabStart.x)*ease;s.z=s._grabStart.z+(target.z-s._grabStart.z)*ease;s.yaw=t.yaw;
+      const blend=clamp((this.elapsed-s._grabAt)/.32,0,1),ease=blend*blend*(3-2*blend);s.x=s._grabStart.x+(target.x-s._grabStart.x)*ease;s.z=s._grabStart.z+(target.z-s._grabStart.z)*ease;s.yaw+=angle(t.yaw+Math.PI-s.yaw)*(1-Math.exp(-dt*14));
     }
     if(this._rescueId!==null){const target=this.rescueTarget();if(target?.id!==this._rescueId){this.setRescue(null);return;}this._rescueProgress=clamp(this._rescueProgress+dt/1.6,0,1);if(this._rescueProgress>=1-EPS){this._release(target,this.player);this.setRescue(null);}}
   }
@@ -424,7 +422,7 @@ export class ClassroomRound{
     }
     if(!target)return false;
     s.mood='walking';s.holding=false;
-    if(distance(s,target)>.95){this._follow(s,s._rescueRoute,1.45,dt);return true;}
+    if(distance(s,target)>.95||!clearWallSegment(s,target)){s._helpProgress=0;this._follow(s,s._rescueRoute,1.45,dt);return true;}
     s.yaw=heading(s,target);s.mood='rescuing';s._helpProgress=(s._helpProgress||0)+dt;
     if(s._helpProgress>=1.6){this._release(target,s);s._rescueTarget=null;s._rescueRoute=null;s._helpProgress=0;s._returnRoute=walkRoute(s,SEATS[s.id]);}return true;
   }

@@ -1,5 +1,5 @@
-import {ClassroomRound} from './classroom-rules.js?v=restraint-26';
-import {ROOM,SEATS,BOARD,DETENTION,TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=restraint-26';
+import {ClassroomRound} from './classroom-rules.js?v=map-30c';
+import {ROOM,SEATS,BOARD,DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,WALL_VOLUMES,LECTERN,OFFICE_SOLIDS,floorTiles,clearWallSegment,floorHeight} from './classroom-layout.js?v=map-30c';
 
 // Segment tests share real desk/book/monitor positions with the renderer.
 // Chalk speed, cooldown and stagger are local tuning, not measured original values.
@@ -16,14 +16,20 @@ export function segmentBox(a,b,box){
 export function chalkHit(a,b,students,books,map){
   let nearest=null;
   const test=(box,kind,id)=>{const t=segmentBox(a,b,box);if(t!==null&&(!nearest||t<nearest.t))nearest={t,kind,id};};
+  for(const [id,wall] of WALL_VOLUMES.entries())test(wall,'wall',id);
+  for(const solid of OFFICE_SOLIDS)test(solid,'wall',-1);
+  for(const tile of floorTiles(map))test({...tile,minY:0,maxY:tile.height},'wall',-1);
+  test({...LECTERN,minY:.16,maxY:1.15},'desk',-1);
   for(const s of SEATS){
-    test({minX:s.x-.61,maxX:s.x+.61,minY:.58,maxY:.865,minZ:s.deskZ-.4,maxZ:s.deskZ+.4},'desk',s.id);
-    if(map==='computer')test({minX:s.x-.33,maxX:s.x+.33,minY:1.03,maxY:1.43,minZ:s.deskZ-.06,maxZ:s.deskZ+.05},'desk',s.id);
-    else if((books[s.id]?.amount??0)>.5)test({minX:s.x-.34,maxX:s.x+.34,minY:.88,maxY:1.35,minZ:s.deskZ-.30,maxZ:s.deskZ-.26},'desk',s.id);
+    const base=floorHeight(s.x,s.z,map);
+    test({minX:s.x-.61,maxX:s.x+.61,minY:base+.58,maxY:base+.865,minZ:s.deskZ-.4,maxZ:s.deskZ+.4},'desk',s.id);
+    if(map==='computer')test({minX:s.x-.33,maxX:s.x+.33,minY:base+1.03,maxY:base+1.43,minZ:s.deskZ-.06,maxZ:s.deskZ+.05},'desk',s.id);
+    else if((books[s.id]?.amount??0)>.5)test({minX:s.x-.34,maxX:s.x+.34,minY:base+.88,maxY:base+1.35,minZ:s.deskZ-.30,maxZ:s.deskZ-.26},'desk',s.id);
   }
   for(const s of students){
     if(s.caught||s.captivity==='carried')continue;
-    test({minX:s.x-.24,maxX:s.x+.24,minY:s.seated?.82:.65,maxY:s.seated?1.64:1.88,minZ:s.z-.23,maxZ:s.z+.23},'student',s.id);
+    const base=floorHeight(s.x,s.z,map);
+    test({minX:s.x-.24,maxX:s.x+.24,minY:base+(s.seated?.82:.65),maxY:base+(s.seated?1.64:1.88),minZ:s.z-.23,maxZ:s.z+.23},'student',s.id);
   }
   return nearest;
 }
@@ -40,7 +46,7 @@ export class TeacherRound extends ClassroomRound{
       s._slots=s.isTeammate?Array.from({length:3},(_,id)=>({id,action:this._drawItem(),readyAt:0,progress:0})):[];
       s._decisionAt=this._range(1,6);s._chalkUntil=0;
     }
-    this.player={id:-1,x:BOARD.x,z:BOARD.z,yaw:Math.PI,pitch:.05,seated:false,crouched:false,caught:false,captivity:'free',seatId:null,holding:false,
+    this.player={id:-1,...TEACHER_SPAWN,seated:false,crouched:false,caught:false,captivity:'free',seatId:null,holding:false,
       _slots:[],_selectedSlot:0,_drawnSlot:null,_drawerOpen:false};
     this.selected='chalk';this.chalks=[];this._chalkId=0;this._nextThrow=0;this._lastThrow=-100;this.wrongGrabs=0;
     Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw,phase:'watching',intent:'player',warning:false});
@@ -63,14 +69,15 @@ export class TeacherRound extends ClassroomRound{
   throwChalk(){
     if(!this._inputAllowed()||this.elapsed<this._nextThrow||this.teacher.carriedId!==null)return false;
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
-    this.chalks.push({id:this._chalkId++,x:p.x,y:p.crouched?1.02:TEACHER_EYE_HEIGHT,z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
+    this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?1.02:TEACHER_EYE_HEIGHT),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
     this._lastThrow=this.elapsed;this._nextThrow=this.elapsed+.72;this._events.push({type:'chalk-throw'});return true;
   }
   aimedStudent(range=9){
-    const p=this.player,a={x:p.x,y:p.crouched?1.02:TEACHER_EYE_HEIGHT,z:p.z},cp=Math.cos(p.pitch);
+    const p=this.player,a={x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?1.02:TEACHER_EYE_HEIGHT),z:p.z},cp=Math.cos(p.pitch);
     const b={x:a.x+Math.sin(p.yaw)*cp*range,y:a.y-Math.sin(p.pitch)*range,z:a.z+Math.cos(p.yaw)*cp*range};
     const hit=chalkHit(a,b,this.students,this.books,this.map);
     if(hit?.kind!=='student')return null;
+    if(!clearWallSegment(a,this.students[hit.id]))return null;
     // Opaque smoke masks the intervening part of the ray, not the whole room.
     const end={x:a.x+(b.x-a.x)*hit.t,y:a.y+(b.y-a.y)*hit.t,z:a.z+(b.z-a.z)*hit.t};
     for(const s of this.smokes){if(s.density<.3)continue;const dx=end.x-a.x,dz=end.z-a.z,len=dx*dx+dz*dz,t=len?Math.max(0,Math.min(1,((s.x-a.x)*dx+(s.z-a.z)*dz)/len)):0;if(Math.hypot(a.x+dx*t-s.x,a.z+dz*t-s.z)<s.radius)return null;}
@@ -78,7 +85,7 @@ export class TeacherRound extends ClassroomRound{
   }
   bindTarget(){
     if(this.teacher.carriedId===null)return null;
-    const p=this.player;return DETENTION.find(post=>Math.hypot(p.x-post.x,p.z-post.z)<1.55&&Math.abs(Math.atan2(Math.sin(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw),Math.cos(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw)))<.85&&!this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))||null;
+    const p=this.player;return DETENTION.find(post=>Math.hypot(p.x-post.x,p.z-post.z)<1.55&&clearWallSegment(p,post)&&Math.abs(Math.atan2(Math.sin(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw),Math.cos(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw)))<.85&&!this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))||null;
   }
   grabStudent(){
     if(!this._inputAllowed()||this.teacher.carriedId!==null)return false;
@@ -100,7 +107,7 @@ export class TeacherRound extends ClassroomRound{
         }
         this._events.push({type:'chalk-hit',kind:hit.kind,x:c.x,y:c.y,z:c.z});
       }else Object.assign(c,next);
-      if(c.age>1.3||c.y<.02||c.x<ROOM.minX||c.x>ROOM.maxX||c.z<ROOM.minZ||c.z>ROOM.maxZ)c.dead=true;
+      if(c.age>1.3||c.y<floorHeight(c.x,c.z,this.map)+.02||c.x<ROOM.minX||c.x>ROOM.maxX||c.z<ROOM.minZ||c.z>ROOM.maxZ)c.dead=true;
     }
     this.chalks=this.chalks.filter(c=>!c.dead);
   }
