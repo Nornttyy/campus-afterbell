@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>开局流程检查</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#edf1ee;color:#263a33;font:14px system-ui,sans-serif}body{display:flex;flex-direction:column}fieldset{border:0;margin:0;padding:9px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:7px;background:#f8faf8;border-bottom:1px solid #b9c8c0}button,select{font:inherit;border:1px solid #aabcb2;background:white;color:inherit;border-radius:5px;padding:7px 10px;min-height:34px}button:active,button[aria-pressed=true]{background:#c5e1d1}button:disabled{opacity:.45}.divider{width:1px;height:26px;background:#bbc9c2;margin:0 3px}main{position:relative;flex:1;min-height:100px}canvas{display:block;width:100%;height:100%;outline:none}#status{position:absolute;top:12px;left:12px;display:grid;grid-template-columns:auto auto;gap:4px 16px;padding:10px 13px;background:#f7faf3ed;border:1px solid #b4c5b9;border-radius:5px;pointer-events:none;font-variant-numeric:tabular-nums}#status b{font-weight:650}#message{padding:7px 12px;min-height:34px;background:#f8faf8;border-top:1px solid #c4cec8}#viewHint{font-size:12px;color:#4c6759;margin-left:auto}#loading{position:absolute;inset:0;display:grid;place-items:center;background:#e9eee9f2;font-size:18px}#loading[hidden]{display:none}@media(max-width:850px){#viewHint{width:100%;margin-left:0}#status{font-size:12px;gap:3px 10px}}
+</style>
+<fieldset id="controls" disabled>
+ <select id="map" aria-label="地图"><option value="classroom">白天教室</option><option value="night">夜间教室</option><option value="tiered">阶梯教室</option><option value="computer">机房</option></select>
+ <select id="role" aria-label="玩家身份"><option value="student">学生 / AI老师</option><option value="teacher">老师 / 玩家控制</option></select>
+ <button id="reset">重置集合</button><button id="bell">按铃</button><button id="pause">继续</button><button id="to29">快进到29秒</button><button id="step">推进1秒</button>
+ <span class="divider"></span>
+ <select id="view" aria-label="检视视角"><option value="corridor">走廊</option><option value="front">教室前方</option><option value="rear">教室后方</option><option value="office">办公室</option><option value="follow">老师跟随</option><option value="player">真实玩家视角</option></select>
+ <span id="viewHint">检视镜头不移动角色。拖动画面转向，WASD移动镜头。</span>
+</fieldset>
+<main><canvas id="canvas" tabindex="0" aria-label="真实开局场景"></canvas>
+ <div id="status" aria-live="off"><span>阶段</span><b id="stage">—</b><span>准备剩余</span><b id="countdown">—</b><span>准备已过</span><b id="stageElapsed">—</b><span>在座人数</span><b id="seated">—</b><span>玩家是否在座</span><b id="playerSeated">—</b><span>课堂计时</span><b id="classElapsed">—</b><span>场景计时</span><b id="sceneElapsed">—</b><span>老师坐标</span><b id="teacherPosition">—</b><span>老师行为</span><b id="teacherIntent">—</b><span>规则状态</span><b id="paused">—</b></div>
+ <div id="loading">正在加载真实场景…</div>
+</main>
+<div id="message" role="status">加载完成后，从暂停的集合状态开始。</div>
+<script type="module">
+import {createClassroom} from '../dist/classroom.js?v=classroom-34';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=classroom-34';
+import {TeacherRound} from '../dist/teacher-rules.js?v=classroom-34';
+import {CAMPUS_MAPS,blocked,moveInRoom,clearWallSegment} from '../dist/classroom-layout.js?v=classroom-34';
+
+const $=id=>document.getElementById(id),canvas=$('canvas'),controls=$('controls'),mapSelect=$('map'),roleSelect=$('role'),viewSelect=$('view'),message=$('message');
+const query=new URL(location.href).searchParams;
+mapSelect.value=CAMPUS_MAPS.includes(query.get('map'))?query.get('map'):'classroom';
+roleSelect.value=query.get('role')==='teacher'?'teacher':'student';
+const fixedViews={corridor:{x:7.65,z:4.18,yaw:Math.PI,pitch:.04},front:{x:1.42,z:4.18,yaw:Math.PI,pitch:.04},rear:{x:1.42,z:-5.55,yaw:0,pitch:.10},office:{x:6.72,z:7.85,yaw:-.47,pitch:.02}};
+let scene=null,round=null,last=0,raf=0,disposed=false,drag=null,observer={...fixedViews.corridor},history=[];
+const keys=new Set(),stageNames={gathering:'集合',seating:'入座准备',class:'正式课堂'};
+function say(text){message.textContent=text;}
+function observeEvents(){for(const event of round.drainEvents()){history.push({...event,at:round.snapshot().sceneElapsed});if(event.type==='school-bell')scene.playFeedback('bell');}if(history.length>120)history.splice(0,history.length-120);}
+function snapshot(){return round.snapshot();}
+function updateLabels(s){
+ $('stage').textContent=stageNames[s.stage]||s.stage;
+ $('countdown').textContent=s.stage==='seating'?`${s.stageTimeLeft.toFixed(3)} 秒`:'—';
+ $('stageElapsed').textContent=s.stage==='seating'?`${s.stageElapsed.toFixed(3)} 秒`:'—';
+ $('seated').textContent=`${s.students.filter(p=>p.seated&&!p.caught).length} / ${s.students.length}`;
+ $('playerSeated').textContent=s.player.seated?'是':'否';
+ $('classElapsed').textContent=`${s.elapsed.toFixed(3)} 秒`;$('sceneElapsed').textContent=`${s.sceneElapsed.toFixed(3)} 秒`;
+ $('teacherPosition').textContent=`x ${s.teacher.x.toFixed(3)} · z ${s.teacher.z.toFixed(3)}`;
+ $('teacherIntent').textContent=`${s.teacher.phase} / ${s.teacher.intent}`;
+ $('paused').textContent=s.paused?'暂停':s.status==='playing'?'运行':s.status;
+ $('pause').textContent=s.paused?'继续':'暂停';$('pause').setAttribute('aria-pressed',String(s.paused));
+ $('bell').disabled=s.stage!=='gathering'||s.status!=='playing';$('to29').disabled=s.stage!=='seating'||s.stageElapsed>=29;
+ $('step').disabled=s.status!=='playing';
+ canvas.dataset.qaStage=s.stage;canvas.dataset.qaSeated=String(s.students.filter(p=>p.seated&&!p.caught).length);canvas.dataset.qaCountdown=String(s.stageTimeLeft);
+}
+function renderSnapshot(){
+ const s=snapshot();updateLabels(s);
+ if(viewSelect.value==='player'){scene.setGameplay(s);return s;}
+ if(viewSelect.value==='follow'){
+  const t=s.teacher,forward={x:Math.sin(t.yaw),z:Math.cos(t.yaw)},right={x:Math.cos(t.yaw),z:-Math.sin(t.yaw)};
+  const candidates=[[-1.8,.75],[-1.8,-.75],[-1.3,0],[0,1.5],[0,-1.5]].map(([f,r])=>({x:t.x+forward.x*f+right.x*r,z:t.z+forward.z*f+right.z*r}));
+  const position=candidates.find(p=>!blocked(p.x,p.z,.08)&&clearWallSegment(p,t))||{x:t.x,z:t.z};
+  observer={...position,yaw:Math.atan2(t.x-position.x,t.z-position.z),pitch:.04};
+ }
+ // Only the rendering copy gets a spectator camera. No student/teacher
+ // position, pose, route, decision timer, stage or clock is written by QA.
+ const view={...s,player:{...s.player,...observer,id:-999,seated:false,seatId:null,crouched:false,computerActive:false},holding:false};
+ scene.setGameplay(view);return s;
+}
+function reset(){
+ keys.clear();drag=null;history=[];const Round=roleSelect.value==='teacher'?TeacherRound:ClassroomRound;
+ round=new Round({map:mapSelect.value,seed:33});round.start({gathering:true});round.pause(true);
+ scene.setGameplay(null);scene.setMap(mapSelect.value);observer={...(fixedViews[viewSelect.value]||fixedViews.corridor)};last=performance.now();observeEvents();renderSnapshot();
+ say(roleSelect.value==='teacher'?'集合已重置并暂停。此身份使用真人老师规则，不会自动演示AI老师进门。':'集合已重置并暂停。按铃后可逐秒检查学生入座和AI老师进门。');
+}
+function ring(){
+ if(round.stage!=='gathering')return false;
+ const wasPaused=round.paused;round.pause(false);const result=round.startBell();round.pause(wasPaused);observeEvents();renderSnapshot();
+ say(result?'已通过真实按铃判定，进入30秒入座准备。':'按铃未通过真实距离/朝向判定；没有强制切换阶段。');return result;
+}
+function advance(seconds){
+ if(!Number.isFinite(seconds)||seconds<=0||round.status!=='playing')return snapshot();
+ round.pause(false);let left=seconds;
+ // Chunking calls the same fixed-step path as production and respects its
+ // public dt limit. Never assign stageElapsed or any seating/teacher state.
+ while(left>1e-8&&round.status==='playing'){const dt=Math.min(left,.25);round.step(dt);left-=dt;}
+ round.pause(true);last=performance.now();observeEvents();const s=renderSnapshot();say(`已用真实规则推进 ${seconds.toFixed(3)} 秒并暂停。`);return s;
+}
+function to29(){const s=snapshot();if(s.stage!=='seating'){say('请先按铃。');return s;}return advance(Math.max(0,29-s.stageElapsed));}
+function setView(value){if(value!=='follow'&&value!=='player'&&!fixedViews[value])return false;viewSelect.value=value;keys.clear();drag=null;if(fixedViews[value])observer={...fixedViews[value]};renderSnapshot();say(value==='player'?'真实玩家镜头；键鼠检视不会改动角色。':value==='follow'?'跟随老师位置的检视镜头，老师仍由真实规则驱动。':'检视镜头已切换，角色和计时保持不变。');return true;}
+function pauseToggle(){round.pause(!round.paused);last=performance.now();renderSnapshot();}
+$('reset').onclick=reset;$('bell').onclick=ring;$('pause').onclick=pauseToggle;$('to29').onclick=to29;$('step').onclick=()=>advance(1);
+mapSelect.onchange=reset;roleSelect.onchange=reset;viewSelect.onchange=()=>setView(viewSelect.value);
+function keydown(e){if(e.target.closest?.('button,select,input'))return;if(['KeyW','KeyA','KeyS','KeyD'].includes(e.code)){e.preventDefault();keys.add(e.code);}}
+function keyup(e){keys.delete(e.code);}
+function blur(){keys.clear();drag=null;}
+function pointerDown(e){if(['follow','player'].includes(viewSelect.value)||e.button!==0)return;canvas.focus();drag={x:e.clientX,y:e.clientY,id:e.pointerId};canvas.setPointerCapture?.(e.pointerId);}
+function pointerMove(e){if(!drag||e.pointerId!==drag.id)return;observer.yaw-=(e.clientX-drag.x)*.003;observer.pitch=Math.max(-1.2,Math.min(1.2,observer.pitch+(e.clientY-drag.y)*.0025));drag.x=e.clientX;drag.y=e.clientY;renderSnapshot();}
+function pointerUp(e){if(drag&&e.pointerId===drag.id)drag=null;}
+window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',blur);
+canvas.addEventListener('pointerdown',pointerDown);canvas.addEventListener('pointermove',pointerMove);canvas.addEventListener('pointerup',pointerUp);canvas.addEventListener('pointercancel',pointerUp);
+function frame(now){
+ if(disposed)return;const dt=Math.min(.25,Math.max(0,(now-last)/1000));last=now;
+ if(!round.paused){round.step(dt);observeEvents();}
+ if(!['follow','player'].includes(viewSelect.value)){
+  const f=Number(keys.has('KeyW'))-Number(keys.has('KeyS')),r=Number(keys.has('KeyD'))-Number(keys.has('KeyA')),norm=Math.max(1,Math.hypot(f,r));
+  if(f||r){const dx=(Math.sin(observer.yaw)*f-Math.cos(observer.yaw)*r)*2.3*dt/norm,dz=(Math.cos(observer.yaw)*f+Math.sin(observer.yaw)*r)*2.3*dt/norm;Object.assign(observer,moveInRoom(observer,dx,dz,.08));}
+ }
+ renderSnapshot();raf=requestAnimationFrame(frame);
+}
+function dispose(){if(disposed)return;disposed=true;cancelAnimationFrame(raf);scene?.dispose();keys.clear();window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);canvas.removeEventListener('pointerdown',pointerDown);canvas.removeEventListener('pointermove',pointerMove);canvas.removeEventListener('pointerup',pointerUp);canvas.removeEventListener('pointercancel',pointerUp);}
+window.addEventListener('pagehide',dispose,{once:true});
+try{
+ scene=await createClassroom(canvas,{active:true,snapEntry:true});if(disposed){scene.dispose();}else{
+  controls.disabled=false;$('loading').hidden=true;reset();
+  window.startQA={get round(){return round;},get scene(){return scene;},get history(){return history.map(e=>({...e}));},snapshot,reset,ring,advance,to29,setView,pause:pauseToggle,dispose};
+  window.qaReady=true;raf=requestAnimationFrame(frame);
+ }
+}catch(error){controls.disabled=true;$('loading').textContent=`加载失败：${error.message}`;say('未启动规则，请检查控制台后刷新重试。');console.error(error);}
+</script>
+</html>

@@ -143,7 +143,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=classroom-33'),import('./classroom-game.js?v=classroom-33')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=classroom-34'),import('./classroom-game.js?v=classroom-34')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}

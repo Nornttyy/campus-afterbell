@@ -1,8 +1,8 @@
-import {bindHeldUseInput} from './held-use-input.js?v=classroom-33';
-import {createVisionEffects} from './vision-effects.js?v=classroom-33';
-import {ClassroomRound} from './classroom-rules.js?v=classroom-33';
+import {bindHeldUseInput} from './held-use-input.js?v=classroom-34';
+import {createVisionEffects} from './vision-effects.js?v=classroom-34';
+import {ClassroomRound} from './classroom-rules.js?v=classroom-34';
 
-import {TeacherRound} from './teacher-rules.js?v=classroom-33';
+import {TeacherRound} from './teacher-rules.js?v=classroom-34';
 
 // Input/UI only. Perception, movement and team results live in rules.
 export function createClassroomGame({scene,audio,onExit,round:providedRound=null}){

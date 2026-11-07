@@ -1,16 +1,17 @@
-import {instanceRigidProps} from './rigid-instances.js?v=classroom-33';
-import {createBubbleEffects} from './bubble-effects.js?v=classroom-33';
-import {buildReferenceCampus} from './reference-campus.js?v=classroom-33';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=classroom-33';
-import {createRoomVariants} from './room-variants.js?v=classroom-33';
+import {instanceRigidProps} from './rigid-instances.js?v=classroom-34';
+import {createBubbleEffects} from './bubble-effects.js?v=classroom-34';
+import {buildReferenceCampus} from './reference-campus.js?v=classroom-34';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=classroom-34';
+import {createRoomVariants} from './room-variants.js?v=classroom-34';
 import * as THREE from './vendor/three.module.js';
-import {createSmokeEffects} from './smoke-effects.js?v=classroom-33';
-import {createItemOutline} from './item-outline.js?v=classroom-33';
-import {createStudent} from './characters.js?v=classroom-33';
-import {createTeacher,createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=classroom-33';
-import {loadStudentAssets} from './student-assets.js?v=classroom-33';
-import {loadDeskModel} from './imported-actors.js?v=classroom-33';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,walkRoute} from './classroom-layout.js?v=classroom-33';
+import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=classroom-34';
+import {createSmokeEffects} from './smoke-effects.js?v=classroom-34';
+import {createItemOutline} from './item-outline.js?v=classroom-34';
+import {createStudent} from './characters.js?v=classroom-34';
+import {createTeacher,createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=classroom-34';
+import {loadStudentAssets} from './student-assets.js?v=classroom-34';
+import {loadDeskModel} from './imported-actors.js?v=classroom-34';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,walkRoute} from './classroom-layout.js?v=classroom-34';
 
 // This room, its textures and props are built locally as editable 3D geometry.
 export async function createClassroom(canvas, {onReady,active=true,snapEntry=false}={}) {
@@ -27,7 +28,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const itemOutline=createItemOutline(renderer),itemRay=new THREE.Raycaster(),itemPointer=new THREE.Vector2(0,0);let hoveredSlot=null,pointerPresent=false;
   const room=new THREE.Group();scene.add(room);
   const dynamic=new THREE.Group();scene.add(dynamic);
-  const [deskAsset,studentAsset]=await Promise.allSettled([loadDeskModel(),loadStudentAssets()]);
+  const [deskAsset,studentAsset,surfaceAsset]=await Promise.allSettled([loadDeskModel(),loadStudentAssets(),loadCampusSurfaces()]);
   // Build navigation grids during loading, before the first teacher decision.
   walkRoute(BOARD,SEATS[0],.20);walkRoute(BOARD,SEATS[0],.23);
   const importedStudents=studentAsset.status==='fulfilled'?studentAsset.value:null;
@@ -37,6 +38,10 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   if(!importedDesk)console.error('Desk model failed to load',deskAsset.reason);
   canvas.dataset.deskAsset=importedDesk?'cc0-adapted-v1':'fallback';
   const assets=new Set(), materials=new Set();
+  const surfaces=surfaceAsset.status==='fulfilled'?surfaceAsset.value:null;
+  if(surfaces)for(const map of Object.values(surfaces))assets.add(map);
+  else console.error('Generated classroom surfaces failed to load',surfaceAsset.reason);
+  canvas.dataset.surfaceAssets=surfaces?'generated-34':'fallback';
   const mat=(color,more={})=>{const m=new THREE.MeshStandardMaterial({color,roughness:.82,...more});materials.add(m);return m;};
   const M={wall:mat('#f0efe7'),trim:mat('#6caaa6'),blue:mat('#387487'),wood:mat('#de9c24'),edge:mat('#ac6c25'),steel:mat('#d0d4cc',{metalness:.22,roughness:.38}),dark:mat('#444f54'),paper:mat('#fff8e5'),red:mat('#ca6a55'),green:mat('#7b9f75'),bookBlue:mat('#7b9ebc'),yellow:mat('#e9c861'),leaf:mat('#69ad3e',{emissive:'#86b934',emissiveIntensity:.12}),soil:mat('#544334'),pot:mat('#c77757'),curtain:mat('#b9dce0',{side:THREE.DoubleSide}),white:mat('#f5f2e7'),black:mat('#303d3b')};
   const boxGeo=new THREE.BoxGeometry(1,1,1), sphereGeo=new THREE.SphereGeometry(1,14,10), cylGeo=new THREE.CylinderGeometry(1,1,1,12);assets.add(boxGeo);assets.add(sphereGeo);assets.add(cylGeo);
@@ -98,7 +103,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   });}
   const printMat=mat('#ffffff',{map:exercisePrint(false),roughness:.94}),printRightMat=mat('#ffffff',{map:exercisePrint(true),roughness:.94});
   // Terrazzo is a warm cement field with sparse irregular aggregates, not white confetti.
-  const floorTexture=texture(1024,1024,(c,w,h)=>{
+  const floorTexture=surfaces?.floor||texture(1024,1024,(c,w,h)=>{
     let seed=123;const rand=()=>{seed=seed*16807%2147483647;return seed/2147483647;};
     const pixels=c.createImageData(w,h);
     for(let i=0;i<pixels.data.length;i+=4){const v=(rand()-.5)*7;pixels.data[i]=182+v;pixels.data[i+1]=184+v;pixels.data[i+2]=176+v;pixels.data[i+3]=255;}
@@ -111,9 +116,10 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     // Grout belongs to the surface texture, including the elevated terrace treads.
     c.strokeStyle='#858c83';c.lineWidth=1.4;for(const q of [0,512,1024]){c.beginPath();c.moveTo(q,0);c.lineTo(q,h);c.moveTo(0,q);c.lineTo(w,q);c.stroke();}
   });
-  floorTexture.wrapS=floorTexture.wrapT=THREE.RepeatWrapping;floorTexture.repeat.set(1,1);
-  const floorBump=floorTexture.clone();floorBump.colorSpace=THREE.NoColorSpace;assets.add(floorBump);
-  const floorMat=mat('#ffffff',{map:floorTexture,bumpMap:floorBump,bumpScale:.004,roughness:.73});
+  floorTexture.wrapS=floorTexture.wrapT=surfaces?THREE.MirroredRepeatWrapping:THREE.RepeatWrapping;floorTexture.repeat.set(surfaces?2:1,surfaces?2:1);
+  const floorBump=surfaceHeight(floorTexture,assets,surfaces?2:1,surfaces?2:1);
+  const floorMat=mat(surfaces?'#e3e5de':'#ffffff',{map:floorTexture,bumpMap:floorBump,bumpScale:surfaces?.0009:.004,roughness:.88,roughnessMap:surfaces?floorBump:null});
+  if(surfaces)addTerrazzoGrout(floorMat);
   const mainFloorGeometry=new THREE.BoxGeometry(14.5,.2,14),floorPosition=mainFloorGeometry.attributes.position,floorUv=mainFloorGeometry.attributes.uv;
   for(let i=0;i<floorUv.count;i++)floorUv.setXY(i,(floorPosition.getX(i)+1.25)/1.6,(floorPosition.getZ(i)-.5)/1.6);
   assets.add(mainFloorGeometry);mesh(mainFloorGeometry,floorMat,[1.25,-.11,-.5]);
@@ -121,7 +127,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const contactMat=new THREE.MeshBasicMaterial({map:contactTexture,transparent:true,depthWrite:false,opacity:.62});materials.add(contactMat);
   function contact(x,z,w=1.7,d=1.2,parent=room){const g=new THREE.PlaneGeometry(w,d);assets.add(g);const o=mesh(g,contactMat,[x,-.001,z],[1,1,1],[-Math.PI/2,0,0],parent);o.castShadow=false;}
 
-  const campus=buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat});
+  const campus=buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces});
   const {enclosure:teachingEnd,ceilingMaterial,curtains,setNight:setCampusNight}=campus;
   // A physical wall button, selected through the same centre ray as desks.
   const startBellModel=new THREE.Group();startBellModel.name='school-start-bell';teachingEnd.add(startBellModel);
@@ -219,8 +225,8 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const hiddenScale=new THREE.Vector3(0,0,0),unitScale=new THREE.Vector3(1,1,1),posePosition=new THREE.Vector3();
   function rememberActor(actor){actor.group.traverse(o=>{if(o.geometry)assets.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m));});return actor;}
   function actorFor(record,standing){
-    const key=record.variant+'_'+Boolean(record.glasses);let actor=record.actors.get(key);
-    if(!actor){actor=rememberActor(importedStudents?importedStudents.createStudent({variant:record.variant,glasses:record.glasses,seated:!standing,seed:record.seed}):createStudent({variant:record.variant,seated:!standing,mood:'writing',seed:record.seed,scale:1}));actor.group.visible=false;actor.group.traverse(o=>{if(o.isMesh){o.castShadow=o.geometry.attributes.position.count>1600;o.receiveShadow=true;}});record.group.add(actor.group);record.actors.set(key,actor);}
+    const key=record.variant+'_'+Boolean(record.glasses)+(importedStudents?'':'_'+standing);let actor=record.actors.get(key);
+    if(!actor){actor=rememberActor(importedStudents?importedStudents.createStudent({variant:record.variant,glasses:record.glasses,seated:!standing,seed:record.seed}):createStudent({variant:record.variant,seated:!standing,mood:standing?'resting':'writing',seed:record.seed,scale:1}));actor.group.visible=false;actor.group.traverse(o=>{if(o.isMesh){o.castShadow=o.geometry.attributes.position.count>1600;o.receiveShadow=true;}});record.group.add(actor.group);record.actors.set(key,actor);}
     return actor;
   }
   function materialParts(object){
@@ -247,7 +253,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   }
   function templateFor(record,standing){
     const key=record.variant+'_'+record.seed+'_'+standing;let template=actorTemplates.get(key);if(template)return template;
-    const source=rememberActor(createStudent({variant:record.variant,seated:!standing,mood:'writing',seed:record.seed,scale:1}));source.update(0,0);source.group.updateMatrixWorld(true);
+    const source=rememberActor(createStudent({variant:record.variant,seated:!standing,mood:standing?'resting':'writing',seed:record.seed,scale:1}));source.update(0,0);source.group.updateMatrixWorld(true);
     const headObjects=new Set();source.head.traverse(o=>headObjects.add(o));const buckets=new Map();
     source.group.traverseVisible(o=>{if(!o.isMesh)return;const isHead=headObjects.has(o);for(const {material,geometry}of materialParts(o)){const key=material.uuid+'_'+isHead;let bucket=buckets.get(key);if(!bucket){bucket={material,head:isHead,parts:[]};buckets.set(key,bucket);}geometry.applyMatrix4(o.matrixWorld);bucket.parts.push(geometry);}});
     template={meshes:[],count:0,pivot:source.head.getWorldPosition(new THREE.Vector3())};
@@ -455,7 +461,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     teacher.group.visible=state.role!=='teacher';
     gameplay=state;
   }
-  const moodMap={carried:'resting',bound:'resting',stunned:'thinking',rescuing:'rescuing',reading:'writing',writing:'writing',thinking:'thinking',snack:'snack',drink:'drink',burger:'burger',note:'note',phone:'phone',computer:'computer',smoke:'smoke',flash:'flash',ink:'ink',caught:'resting',resting:'resting',alert:'thinking'};
+  const moodMap={standing:'resting',walking:'resting',carried:'resting',bound:'resting',stunned:'thinking',rescuing:'rescuing',reading:'writing',writing:'writing',thinking:'thinking',snack:'snack',drink:'drink',burger:'burger',note:'note',phone:'phone',computer:'computer',smoke:'smoke',flash:'flash',ink:'ink',caught:'resting',resting:'resting',alert:'thinking'};
   const pupilFrustum=new THREE.Frustum(),pupilView=new THREE.Matrix4(),pupilBounds=new THREE.Sphere(new THREE.Vector3(),1.15);
   function updatePupils(state,animationTime,dt){
     camera.updateMatrixWorld();pupilFrustum.setFromProjectionMatrix(pupilView.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));
@@ -487,17 +493,17 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     for(const record of candidates)if(FRIEND_SEATS.includes(record.seat.id)&&!['writing','reading','resting'].includes(record.currentMood)&&record.distance<8)detailed.add(record.seat.id);
     for(const template of actorTemplates.values())template.count=0;
     for(const record of pupilRecords){
-      const id=record.seat.id,near=record.group.visible&&(detailed.has(id)||importedStudents),prop=friendProps.get(id);
+      const id=record.seat.id,student=snapshots.get(id),standing=record.caught||student?.seated===false,near=record.group.visible&&(detailed.has(id)||importedStudents),prop=friendProps.get(id);
       for(const actor of record.actors.values())actor.group.visible=false;
       if(near){
-        const actor=actorFor(record,record.caught||snapshots.get(id)?.seated===false);record.actor=actor;actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||'writing');const student=snapshots.get(id);actor.setMotion?.({seated:!record.caught&&student?.seated!==false,speed:student?.mood==='walking'?1.35:0,carrying:student?.drawer?.drawnSlot!=null,restraint:record.motionKind,restraintStartedAt:record.motionAt,throwProgress:student?.progress||0,throwAge:student?.itemThrowAge??Infinity});
+        const actor=actorFor(record,standing);record.actor=actor;actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||(standing?'resting':'writing'));actor.setMotion?.({seated:!standing,speed:student?.mood==='walking'?1.35:0,carrying:student?.drawer?.drawnSlot!=null,restraint:record.motionKind,restraintStartedAt:record.motionAt,throwProgress:student?.progress||0,throwAge:student?.itemThrowAge??Infinity});
         const articulating=['carried','bound','stunned','rescuing'].includes(student?.captivity)||student?.mood==='rescuing';
         // Every visible pupil animates continuously; off-camera actors are culled above.
         const interval=quality==='low'&&!articulating&&record.distance>7?1/30:0;
         if(animationTime<record.lastUpdate||animationTime-record.lastUpdate>=interval||record.lastMood!==record.currentMood){actor.update(animationTime,dt);record.lastUpdate=animationTime;record.lastMood=record.currentMood;}
 
       }else if(record.group.visible){
-        const template=templateFor(record,record.caught),index=template.count++;
+        const template=templateFor(record,standing),index=template.count++;
         record.group.updateMatrix();pupilMatrix.copy(record.group.matrix);
         const t=Math.floor(animationTime*12)/12+id*.7,pivot=template.pivot;
         headMatrix.makeTranslation(pivot.x,pivot.y,pivot.z);poseRotation.setFromEuler(poseEuler.set(Math.sin(t*.8)*.018,Math.sin(t*.6)*.045,0));headMatrix.multiply(new THREE.Matrix4().makeRotationFromQuaternion(poseRotation));headMatrix.multiply(new THREE.Matrix4().makeTranslation(-pivot.x,-pivot.y,-pivot.z));headMatrix.premultiply(pupilMatrix);

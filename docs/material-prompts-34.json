@@ -1,0 +1,17 @@
+{
+  "tool": "built-in image_gen",
+  "assets": [
+    {
+      "asset": "floor",
+      "prompt": "Generate a single 2048x2048 square SEAMLESS TILEABLE diffuse/albedo texture for the actual floor of a bright stylized 3D Chinese school classroom game. Close-up directly overhead orthographic surface only, no room, no perspective. Fine polished pale cool gray terrazzo with subtly green-gray cement binder, irregular tiny crushed white/ivory/dark gray marble chips, mostly 2-8mm fragments, a few 12mm. Dense varied real embedded stone texture but restrained contrast, clean maintained school floor, lightly worn smooth surface, tactile and gently stylized not photoreal dirt. Uniform material across the entire square; NO grout lines, NO rectangular tiles, NO vignette, NO baked lighting/shadows/reflections, no scratches in a repetitive pattern, no large colored stones, no text. Seamless edges in both directions. Output only the usable material texture filling the canvas."
+    },
+    {
+      "asset": "wall",
+      "prompt": "Generate a single 2048x2048 square SEAMLESS TILEABLE diffuse/albedo texture for warm off-white painted plaster walls in a bright stylized 3D classroom game. Orthographic front-facing flat surface only, not a scene. Closely examine smooth eggshell paint: very fine subtle roller stipple, quiet mineral grain, tiny low-contrast variations, maintained school wall, clean ivory/off-white (#e9e7df feel) with neutral slightly green-gray undertone, NOT orange/beige. Tactile restrained hand-finished paint surface. No cracks, no peeling, no mold, no graffiti, no text, no skirting, no edges, no vignette, no baked directional light or shadows. Equal brightness in all areas. Seamless opposite edges. Only one square uniform wall material."
+    },
+    {
+      "asset": "board",
+      "prompt": "Generate a single 2048x2048 square SEAMLESS TILEABLE material albedo texture of an empty dark forest-green classroom chalkboard, surface only, orthographic flat front view. Gentle realistic dense fine slate grain with soft erased chalk dust traces, subtle overlapping horizontal felt eraser strokes, clean enough for clear white writing that will be added later in engine. Dark muted pine/green overall, subtle light gray-green thin dry dust at low opacity, not cloudy white. The surface should feel smooth matte and tactile in a bright stylized 3D school game. NO existing letters, symbols, formulas, writing, frame, objects, scratches, large stains, perspective, lighting, shadows, reflections or vignette. All edges should tile seamlessly in both directions. Only the full-frame square material."
+    }
+  ]
+}

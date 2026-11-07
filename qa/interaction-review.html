@@ -4,7 +4,7 @@
 <label>种子 <input id="seed" type="number" value="11"></label><label>低头 <input id="pitch" type="number" min="-1.15" max="1.3" step=".05" value="0.75"></label><label>左右 <input id="yaw" type="number" step=".05" value="0"></label>
 <button id="interact">E 交互</button><button id="back">Q 放回</button><button id="use">按住使用</button><button id="pause">暂停</button><button id="restart">重新开始</button><label>蓄力秒数 <input id="charge" type="number" min="0" max="5" step=".1" value=".6"></label><button id="throw-review">投掷检视</button><button id="step">推进 0.1 秒</button><button id="record">录制完整投掷</button><a id="recording" hidden download="smoke-ground-23.webm">下载实录</a>
 </nav><output>加载中</output><script type="module">
-import {createClassroom} from '../dist/classroom.js?v=classroom-33';import {ClassroomRound} from '../dist/classroom-rules.js?v=classroom-33';
+import {createClassroom} from '../dist/classroom.js?v=classroom-34';import {ClassroomRound} from '../dist/classroom-rules.js?v=classroom-34';
 const canvas=document.querySelector('canvas'),scene=await createClassroom(canvas),round=new ClassroomRound({seed:73,target:100000}),output=document.querySelector('output');
 let paused=false,last=performance.now();function reset(){paused=false;round.reset(Number(document.querySelector('#seed').value));round.start();round.teacher.x=30;round.teacher.z=30;round._thinkAt=Infinity;round._plan.route=[];round._plan.until=Infinity;for(const a of round.students)if(a.isTeammate)a._decisionAt=Infinity;round.setLook(Number(yaw.value),Number(pitch.value));}const pitch=document.querySelector('#pitch'),yaw=document.querySelector('#yaw');reset();
 function sync(){round.pause(false);round.setLook(Number(yaw.value),Number(pitch.value));round.pause(paused);}pitch.oninput=sync;yaw.oninput=sync;

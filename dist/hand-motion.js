@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {strugglePose} from './capture-poses.js?v=classroom-33';
+import {strugglePose} from './capture-poses.js?v=classroom-34';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 // Pose the palm using the actual digit bases. The female right rig has its
 // transverse axis reversed, so a left/right sign alone is not sufficient.
