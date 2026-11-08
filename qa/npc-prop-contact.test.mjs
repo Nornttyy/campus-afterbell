@@ -2,16 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
-import {createRiggedStudent} from '../dist/student-assets.js';
+import {STUDENT_ASSETS,createRiggedStudent} from '../dist/student-assets.js';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js';
+import {createDeskItem} from '../dist/game-actors.js';
 
 const V=(...a)=>new T.Vector3(...a);
 await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry(new URL(url).pathname.split('/').pop())}});
 
 // Use the real skinned fingertip, rather than testing a configured anchor
 // against itself. The final phalanx direction selects its outermost tip.
-function fingertip(actor,finger){
- const bone=actor.bones['LeftHand'+finger+'3'],origin=bone.getWorldPosition(V());
+function fingertip(actor,finger,side='Left'){
+ const bone=actor.bones[side+'Hand'+finger+'3'],origin=bone.getWorldPosition(V());
  const axis=origin.clone().sub(bone.parent.getWorldPosition(V())).normalize();
  let maximum=-Infinity,tip=null;
  actor.group.traverse(mesh=>{
@@ -37,15 +38,32 @@ function surfaceDistance(prop,worldPoint){
    a.fromBufferAttribute(position,index?index.getX(i):i);
    b.fromBufferAttribute(position,index?index.getX(i+1):i+1);
    c.fromBufferAttribute(position,index?index.getX(i+2):i+2);
-   triangle.closestPointToPoint(point,q);squared=Math.min(squared,q.distanceToSquared(point));
+   triangle.closestPointToPoint(point,q);mesh.localToWorld(q);squared=Math.min(squared,q.distanceToSquared(worldPoint));
   }
  });
  return Math.sqrt(squared);
 }
 
+for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: new user model actually touches every held prop without resizing it`,async()=>{
+ for(const kind of ['snack','drink','burger','ink','smoke','flash','phone','note']){
+  const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:true});actor.setMood(kind);actor.setMotion({carrying:true});
+  for(let i=0;i<180;i++)actor.update(i/60);
+  actor.group.updateMatrixWorld(true);actor.group.traverse(o=>{if(o.isSkinnedMesh)o.skeleton.update();});
+  const side=kind==='note'?'right':'left',anchor=actor.getHand(side);
+  let prop=anchor.children.find(o=>o.visible&&(o.userData.propAsset||['smoke-canister','flash-perforated-canister'].includes(o.name)));
+  if(['phone','note'].includes(kind)){prop=createDeskItem(kind);const attachment=anchor.userData.attachments[kind];prop.position.fromArray(attachment.position);prop.rotation.fromArray(attachment.rotation);anchor.add(prop);actor.group.updateMatrixWorld(true);}
+  assert.ok(prop,`${kind} never appears`);
+  const position=prop.position.clone(),rotation=prop.quaternion.clone();
+  for(const finger of ['Index','Thumb'])assert.ok(surfaceDistance(prop,fingertip(actor,finger,side==='left'?'Left':'Right'))<.012,`${variant} ${kind} ${finger}: visible gap exceeds 12 mm`);
+  assert.deepEqual(prop.scale.toArray(),[1,1,1],'Fit must not resize the imported item');
+  for(let i=180;i<210;i++){actor.update(i/60);assert.ok(prop.position.distanceTo(position)<1e-8);assert.ok(prop.quaternion.angleTo(rotation)<1e-7);}
+  actor.dispose();
+ }
+});
+
 for(const variant of ['boy','girl'])for(const kind of ['snack','drink','burger','ink']){
  test(`${variant} ${kind}: replacement retains NPC contact without deforming the mesh or changing the clip`,async()=>{
-  const actor=createRiggedStudent(await loadGeometry(`student-${variant}-v2.glb`),{variant,seated:true});
+  const actor=createRiggedStudent(await loadGeometry(`student-${variant}-v3.glb`),{variant,seated:true});
   actor.setMood(kind);actor.setMotion({carrying:true});for(let i=0;i<200;i++)actor.update(i/60);
   actor.group.updateMatrixWorld(true);actor.group.traverse(mesh=>{if(mesh.isSkinnedMesh)mesh.skeleton.update();});
   const prop=actor.getHand('left').children.find(child=>child.visible&&child.userData.propAsset);assert.ok(prop);

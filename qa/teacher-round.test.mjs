@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {TeacherRound,chalkHit} from '../dist/teacher-rules.js';
 import {ClassroomRound} from '../dist/classroom-rules.js';
-import {SEATS,DETENTION} from '../dist/classroom-layout.js';
+import {SEATS,DETENTION,BOARD} from '../dist/classroom-layout.js';
 function setup(){const r=new TeacherRound({seed:44,target:100000});r.start();for(const s of r.students)s._decisionAt=Infinity;return r;}
 function aim(r,s,dist=1.4){r.player.x=s.x;r.player.z=s.z+dist;r.setLook(Math.PI,Math.atan2(.46,dist));}
 test('teacher has five hidden random students and does not automatically observe or capture them',()=>{
@@ -35,8 +35,8 @@ test('teacher victory requires all five bound, not merely stunned or carried',()
  const r=setup();let index=0;for(const id of r._team){const s=r.students[id];aim(r,s);r._stun(s);r.grabStudent();assert.equal(r.status,'playing');const post=DETENTION[index++];r.player.x=post.x;r.player.z=post.z-1.1;r.setLook(0,0);r.step(.4);assert.ok(r.bindStudent());}r.step(1/60);assert.equal(r.status,'lost');assert.equal(r.snapshot().caughtCount,5);
 });
 function computer(){const r=new ClassroomRound({map:'computer',seed:7,target:100000});r.start();r.teacher.x=r.teacher.z=30;r._plan.until=Infinity;r._thinkAt=Infinity;for(const s of r.students)if(s.isTeammate)s._decisionAt=Infinity;return r;}
-test('PC gameplay requires starting a computer and holding; Q stops it without consuming drawer items',()=>{
- const r=computer(),slots=r.snapshot().drawer.slots;r.hold(true);r.step(4);assert.equal(r.score,0);assert.ok(r.startComputer());r.hold(true);r.step(1.5);assert.equal(r.score,0);r.hold(false);r.step(3);assert.equal(r.score,0);r.hold(true);r.step(1.5);assert.equal(r.score,2.5);assert.equal(r.completed.computer,1);assert.deepEqual(r.snapshot().drawer.slots,slots);assert.ok(r.stopComputer());assert.equal(r.snapshot().player.computerActive,false);r.step(4);assert.equal(r.score,2.5);
+test('PC desktop and study never score; actual snake food earns one and closing preserves drawer stock',()=>{
+ const r=computer(),slots=r.snapshot().drawer.slots;r.hold(true);r.step(4);assert.equal(r.score,0);assert.ok(r.startComputer());r.hold(true);r.step(4);assert.equal(r.score,0);assert.equal(r.computerApp('study'),true);r.step(2);assert.equal(r.score,0);assert.equal(r.computerApp('snake'),true);r.step(.65);assert.equal(r.score,1);assert.equal(r.completed.computer,1);assert.deepEqual(r.snapshot().drawer.slots,slots);assert.ok(r.stopComputer());assert.equal(r.snapshot().player.computerActive,false);r.step(4);assert.equal(r.score,1);
 });
 test('PC gameplay cannot start in a classroom, standing, paused or holding a drawer item',()=>{
  const normal=new ClassroomRound();normal.start();assert.equal(normal.startComputer(),false);const r=computer();r.interact();assert.equal(r.startComputer(),false);r.interact();r.pause();assert.equal(r.startComputer(),false);r.pause(false);r.toggleDrawer();r.takeSlot(0);assert.equal(r.startComputer(),false);
@@ -57,7 +57,7 @@ test('correct binding restores twenty stamina once; holding and dropping do not 
 
 test('blackboard writing restores stamina, and releasing, moving or pausing stops it',()=>{
  const r=setup();r.teacher.stamina=20;assert.equal(r.setWriting(true),false);
- Object.assign(r.player,{x:1.25,z:5.55,yaw:0,pitch:0});assert.equal(r.canWriteBoard(),true);assert.ok(r.setWriting(true));r.step(2);
+ Object.assign(r.player,{x:BOARD.x,z:BOARD.z-.35,yaw:0,pitch:0});assert.equal(r.canWriteBoard(),true);assert.ok(r.setWriting(true));r.step(2);
  assert.ok(Math.abs(r.teacher.stamina-40)<.001);assert.equal(r.snapshot().teacher.phase,'board');assert.equal(r.snapshot().teacher.writing,true);
  assert.equal(r.throwChalk(),false);r.setWriting(false);r.step(1);assert.ok(Math.abs(r.teacher.stamina-39)<.001);
  r.setWriting(true);r.setMovement(1,0);r.step(.1);assert.equal(r.teacher.writing,false);r.setMovement(0,0);
@@ -67,7 +67,7 @@ test('blackboard writing restores stamina, and releasing, moving or pausing stop
 });
 
 test('blackboard facing accepts full turns without accepting a genuinely sideways view',()=>{
- const r=setup();Object.assign(r.player,{x:1.25,z:5.55,pitch:0});
+ const r=setup();Object.assign(r.player,{x:BOARD.x,z:BOARD.z-.35,pitch:0});
  for(const turns of [-8,-2,0,2,8]){
    r.player.yaw=turns*Math.PI*2+.4;r.teacher.stamina=20;
    assert.equal(r.canWriteBoard(),true);assert.equal(r.snapshot().writeBoardAvailable,true);assert.equal(r.setWriting(true),true);

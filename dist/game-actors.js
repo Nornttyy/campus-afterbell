@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.js';
+import {CRAWL_TUNING} from './crawl-profile.js?v=solo-51';
 import {clonePropAsset,propContact} from './prop-assets.js';
 export {loadPropAssets} from './prop-assets.js';
 
@@ -411,8 +412,51 @@ function burgerProp(){
   batch(group);return group;
 }
 
-export const THROWABLE_ITEM_KINDS=Object.freeze(['smoke','flash','ink']);
-export const DESK_ITEM_KINDS=Object.freeze(['snack','drink','burger','note','phone',...THROWABLE_ITEM_KINDS]);
+// Hand-sized meshes retain authored proportions; the same instance geometry
+// is used on desks, in palms and for thrown objects.
+function bananaProp(peel=false){
+ const g=new THREE.Group();g.name=peel?'banana-peel':'curved-banana';
+ const skin=mat('bananaSkin','#f9ce32',.65),light=mat('bananaInner','#ffedab',.87),tip=mat('bananaTip','#77573b',.9);
+ if(!peel){
+  const path=new THREE.CatmullRomCurve3([v(-.075,-.11,0),v(-.030,-.085,0),v(.010,-.025,0),v(.016,.048,0),v(-.010,.108,0)]),geo=new THREE.TubeGeometry(path,28,.027,10,false),p=geo.attributes.position;
+  for(let i=0;i<p.count;i++){const t=Math.floor(i/11)/28,c=path.getPointAt(Math.min(1,t)),f=.22+.78*Math.pow(Math.sin(Math.PI*t),.55);p.setXYZ(i,c.x+(p.getX(i)-c.x)*f,c.y+(p.getY(i)-c.y)*f,c.z+(p.getZ(i)-c.z)*f);}geo.computeVertexNormals();mesh(g,geo,skin);
+  curve(g,tip,[[-.010,.104,0],[-.018,.126,.002]],.008);oval(g,tip,[-.075,-.11,0],[.006,.006,.006]);
+  curve(g,light,[[-.060,-.101,.012],[-.018,-.067,.024],[.012,-.010,.026],[.014,.055,.023]],.0016);
+ }else{
+  for(let i=0;i<3;i++){const arm=new THREE.Group();g.add(arm);arm.rotation.y=i*Math.PI*2/3;
+   const shape=new THREE.Shape();shape.moveTo(-.012,.072);shape.quadraticCurveTo(-.045,.014,-.033,-.086);shape.quadraticCurveTo(0,-.13,.031,-.09);shape.quadraticCurveTo(.040,.012,.012,.072);shape.closePath();
+   const geo=new THREE.ExtrudeGeometry(shape,{depth:.006,bevelEnabled:true,bevelSize:.002,bevelThickness:.001,bevelSegments:2,curveSegments:12}),pos=geo.attributes.position;
+   for(let j=0;j<pos.count;j++){const y=pos.getY(j),t=Math.max(0,(.072-y)/.2);pos.setZ(j,pos.getZ(j)+t*t*.09);pos.setY(j,y*.5);}geo.computeVertexNormals();mesh(arm,geo,skin);const inner=geo.clone();inner.translate(0,0,.0015);mesh(arm,inner,light);}
+  curve(g,tip,[[0,.033,0],[0,.060,0]],.009);g.userData.throwableKind='bananaPeel';
+ }
+ batch(g);return g;
+}
+function garlicProp(){
+ const g=new THREE.Group();g.name='garlic-clove';const ivory=mat('garlicIvory','#f0e4cf',.82),ridge=mat('garlicRidge','#d9bfab',.91);
+ const points=[[0,-.054],[.017,-.054],[.032,-.043],[.038,-.019],[.031,.012],[.019,.039],[.006,.061],[0,.066]].map(p=>new THREE.Vector2(...p));
+ const geo=new THREE.LatheGeometry(points,24),p=geo.attributes.position;for(let i=0;i<p.count;i++){const y=p.getY(i);p.setX(i,p.getX(i)+(y+.054)**2*1.8);p.setZ(i,p.getZ(i)*.76);}geo.computeVertexNormals();mesh(g,geo,ivory);
+ curve(g,ridge,[[0,-.053,.002],[.005,-.025,.028],[.008,.015,.021],[.022,.056,.004]],.001);oval(g,ridge,[0,-.054,0],[.017,.003,.012]);batch(g);return g;
+}
+function gumProp(){
+ const g=new THREE.Group();g.name='bubblegum-wrapper';const paper=mat('gumWrapper','#f484b9',.61),ends=mat('gumCream','#fff5e1',.74),pink=mat('gumPink','#cd4c87',.66);
+ mesh(g,rounded(.085,.055,.022,.006),paper);for(const side of [-1,1]){const strip=mesh(g,rounded(.021,.045,.008,.002),ends,[side*.05,0,0]);strip.rotation.y=side*.3;for(let i=-2;i<=2;i++)cube(g,pink,[side*.05,i*.007,.005],[.018,.001,.001]);}
+ oval(g,ends,[0,0,.014],[.025,.018,.002]);oval(g,pink,[0,0,.016],[.012,.012,.002]);batch(g);return g;
+}
+function lunchProp(){
+ const g=new THREE.Group();g.name='teacher-lunchbox';const steel=mat('lunchSteel','#b8c7c8',.38,.45),rice=mat('lunchRice','#fff5dc',.9),veg=mat('lunchGreens','#6a9a3a',.82),meat=mat('lunchMeat','#b87339',.83);
+ mesh(g,rounded(.215,.050,.14,.017),steel);mesh(g,rounded(.194,.022,.130,.011),mat('lunchInner','#657b7e',.47,.25),[0,.027,0]);
+ mesh(g,rounded(.110,.026,.113,.012),rice,[-.034,.039,0]);cube(g,steel,[.026,.045,0],[.004,.026,.127]);
+ for(let i=0;i<5;i++){const a=i*2.1;oval(g,veg,[.065+.014*Math.cos(a),.045,-.036+.013*Math.sin(a)],[.014,.010,.012]);}for(let i=0;i<3;i++)mesh(g,rounded(.040,.014,.022,.005),meat,[.065,.043,.006+i*.023],[1,1,1],[0,.12,0]);
+ for(let i=0;i<20;i++){const x=-.077+(i%5)*.019,z=-.042+Math.floor(i/5)*.027;oval(g,rice,[x,.054,z],[.0035,.0015,.008]);}batch(g);return g;
+}
+function penProp(){
+ const g=new THREE.Group();g.name='red-school-pen';const red=mat('penBody','#c42c29',.42),silver=mat('penClip','#dde1df',.3,.72),ink=mat('penTip','#252d34',.51);
+ mesh(g,new THREE.CylinderGeometry(.005,.005,.134,12),red);mesh(g,new THREE.ConeGeometry(.005,.016,12),silver,[0,-.075,0],[1,1,1],[0,0,Math.PI]);mesh(g,new THREE.ConeGeometry(.0015,.005,8),ink,[0,-.085,0],[1,1,1],[0,0,Math.PI]);mesh(g,new THREE.CylinderGeometry(.006,.006,.037,12),red,[0,.052,0]);cube(g,silver,[.005,.052,.002],[.002,.027,.003]);batch(g);return g;
+}
+
+export const THROWABLE_ITEM_KINDS=Object.freeze(['smoke','flash','ink','bananaPeel']);
+export const FOOD_ITEM_KINDS=Object.freeze(['snack','drink','burger','banana','garlic','gum','lunch']);
+export const DESK_ITEM_KINDS=Object.freeze([...FOOD_ITEM_KINDS,'pen','note','phone',...THROWABLE_ITEM_KINDS]);
 
 export function createDeskItem(action){
   const imported=clonePropAsset(action);if(imported)return imported;
@@ -424,14 +468,22 @@ export function createDeskItem(action){
   if(action==='ink')return inkProp();
   if(action==='drink')return drinkProp();
   if(action==='burger')return burgerProp();
+  if(action==='banana'||action==='bananaPeel')return bananaProp(action==='bananaPeel');
+  if(action==='garlic')return garlicProp();
+  if(action==='gum')return gumProp();
+  if(action==='lunch')return lunchProp();
+  if(action==='pen')return penProp();
   throw new RangeError(`Unknown desk item: ${action}`);
 }
 
 export function createDeskHands({createHand}={}){
   const group=new THREE.Group();group.name='first-person-school-hands';
-  // The view model contains palms and fingers only. No arm/sleeve meshes are created.
+  // Use the imported hand and short forearm as one continuous source mesh.
   const arms=[-1,1].map(side=>{
     const hand=createHand?createHand(side,1.38):articulatedHand(side,1.38,-1,skin);
+    // New source palms are metric and larger than the old isolated view mesh.
+    // Frame only the first-person copy; never resize the full-body character.
+    hand.group.scale.multiplyScalar(hand.group.userData.firstPersonScale??1);
     const arm=new THREE.Group();group.add(arm);arm.add(hand.group);
     return {group:arm,hand,pose(position,{curl=.15,rx=0,ry=0,rz=0}={}){hand.group.position.copy(position);hand.group.rotation.set(rx,ry,rz);hand.setCurl(curl);}};
   });
@@ -446,17 +498,18 @@ export function createDeskHands({createHand}={}){
   for(const kind of THROWABLE_ITEM_KINDS)grips[kind]={position:grips.snack.position.clone(),rotation:grips.snack.rotation.clone()};
   grips.drink={position:v(0,0,0),rotation:new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,.90,.08))};
   grips.burger={position:v(0,0,0),rotation:new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,.90,.08))};
-  const gripBack={flash:v(-.029,-.018,-.026),ink:v(-.032,-.020,-.028),smoke:v(-.028,-.018,-.025),snack:v(-.028,-.018,-.025),drink:v(-.028,-.025,-.032),burger:v(-.096,-.032,-.035),phone:v(-.018,-.015,-.014),note:v(.010,.013,-.006)};
-  for(const action of DESK_ITEM_KINDS){const hand=arms[action==='note'?1:0].hand;hand.setCurl(['snack','drink','burger',...THROWABLE_ITEM_KINDS].includes(action)?.80:action==='phone'?.78:.72);if(action==='note')hand.pointIndex(.25);grips[action].position.copy(hand.indexTip()).sub(propContact(props[action],gripBack[action]).multiplyScalar(1/hand.group.scale.x).applyQuaternion(grips[action].rotation));}
+  for(const kind of ['banana','garlic','gum','lunch','pen'])grips[kind]={position:v(0,0,0),rotation:grips.snack.rotation.clone()};
+  const gripBack={banana:v(-.013,-.030,-.022),bananaPeel:v(-.012,.016,-.012),garlic:v(-.023,-.016,-.020),gum:v(-.030,0,-.010),lunch:v(-.085,-.016,-.045),pen:v(-.003,.018,-.004),flash:v(-.029,-.018,-.026),ink:v(-.032,-.020,-.028),smoke:v(-.028,-.018,-.025),snack:v(-.028,-.018,-.025),drink:v(-.028,-.025,-.032),burger:v(-.096,-.032,-.035),phone:v(-.018,-.015,-.014),note:v(.010,.013,-.006)};
+  for(const action of DESK_ITEM_KINDS){const hand=arms[action==='note'?1:0].hand;hand.setCurl([...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(action)?.80:action==='phone'?.78:.72);if(action==='note')hand.pointIndex(.25);grips[action].position.copy(hand.indexTip()).sub(propContact(props[action],gripBack[action]).multiplyScalar(1/hand.group.scale.x).applyQuaternion(grips[action].rotation));}
   function attachToGrip(prop,hand,anchor){hand.updateMatrix();prop.position.copy(anchor.position).applyMatrix4(hand.matrix);prop.quaternion.copy(hand.quaternion).multiply(anchor.rotation);}
-  let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0,using=0,throwCharge=0,releaseCharge=0,wasReleasing=false;
+  let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0,using=0,throwCharge=0,releaseCharge=0,wasReleasing=false,notePass=0,noteProgress=0,noteConsumed=false;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
-  function update(time,{action='snack',holding=false,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false}={}){
-    if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=using=throwCharge=releaseCharge=0;wasReleasing=false;}
+  function update(time,{action='snack',holding=false,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,movement=0,walkPhase=0,crawlBlend=0}={}){
+    if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=using=throwCharge=releaseCharge=notePass=noteProgress=0;wasReleasing=noteConsumed=false;}
     const dt=lastTime===null?1/60:clamp(time-lastTime,0,.08);lastTime=time;
     const requested=DESK_ITEM_KINDS.includes(action)?action:'snack';
-    if(extension<.001&&active!==requested){active=requested;useTime=0;}
+    if(extension<.001){notePass=noteProgress=0;noteConsumed=false;if(active!==requested){active=requested;useTime=0;}}
     const engaged=carrying&&!caught&&active===requested;
     focus=smooth(focus,engaged&&seated?1:0,dt,7);
     standing=smooth(standing,seated?0:1,dt,9);
@@ -467,12 +520,19 @@ export function createDeskHands({createHand}={}){
     if(engaged&&holding&&use>.94)useTime+=dt;else if(extension<.05)useTime=0;
     using=smooth(using,engaged&&holding?1:0,dt,14);
     // The whole held food moves vertically; no separate bite or mouth reach.
-    const foodBob=.034*Math.sin(useTime*Math.PI*2/1.05)*using;
-    const pass=active==='note'?ease(p,.62,.96):0;
+    const foodBob=(active==='pen'?0:.034)*Math.sin(useTime*Math.PI*2/1.05)*using;
+    // The rules clear progress on completion. Keep the hand's already reached
+    // passing pose while it withdraws; resetting it moved the wrist 27 cm in
+    // one frame and made the consumed paper reappear in front of the player.
+    if(active==='note'){
+      if(!carrying&&noteProgress>.96&&p<.001)noteConsumed=true;
+      if(engaged){notePass=Math.max(notePass,ease(p,.62,.96));noteProgress=p;}
+    }
+    const pass=active==='note'?notePass:0;
     const tapCycle=(useTime%1.72)/1.72,tapPress=ease(tapCycle,.28,.43)*(1-ease(tapCycle,.48,.65))*using;
     const tapIndex=Math.floor(useTime/1.72),tapTravel=ease(tapCycle,0,.23),tapX=THREE.MathUtils.lerp(.012+.022*Math.sin((tapIndex-1)*2.4),.012+.022*Math.sin(tapIndex*2.4),tapTravel),tapY=THREE.MathUtils.lerp(-.018+.025*Math.cos((tapIndex-1)*1.7),-.018+.025*Math.cos(tapIndex*1.7),tapTravel);
     const tapContact=v(tapX,tapY,.017+.018*(1-tapPress));
-    const throwable=THROWABLE_ITEM_KINDS.includes(active),motionAction=throwable?'smoke':active;
+    const throwable=THROWABLE_ITEM_KINDS.includes(active),motionAction=throwable?'smoke':active==='lunch'?'burger':['banana','garlic','gum','pen'].includes(active)?'snack':active;
     const releasing=throwable&&throwAge>=0&&throwAge<.34;
     if(releasing&&!wasReleasing)releaseCharge=throwCharge;
     if(!releasing)throwCharge=smooth(throwCharge,throwable&&engaged?ease(p):0,dt,14);
@@ -505,7 +565,9 @@ export function createDeskHands({createHand}={}){
       phone:[v(-.20,-.28,-.53),v(.09,-.27,-.50)],
       note:[v(-.10,-.31,-.51),v(.19+pass*.20,-.30+pass*.015,-.54)]
     };
-    wrists.forEach((w,i)=>{w.lerp(standingTargets[motionAction][i],standing);if(crouched){w.y-=.055;w.z+=.12*(1-reach)*(1-use);}w.y-=alertValue*.006;w.lerp(v((i?1:-1)*.285,-.24,-.52),idleWeight);});
+    // Rest at the lower edge of the view; the same palm mesh moves forward
+    // to take an object instead of changing size or covering the aim point.
+    wrists.forEach((w,i)=>{w.lerp(standingTargets[motionAction][i],standing);if(crouched){w.y-=.055;w.z+=.12*(1-reach)*(1-use);}w.y-=alertValue*.006;w.lerp(v((i?1:-1)*.24,-.34,-.62),idleWeight);});
     if(releasing)wrists[0].lerp(v(-.125,-.57,-.44).lerp(v(-.15,-.25,-.70),standing),throwStroke);
     const poses={
       smoke:[{curl:.80,rx:-.94,ry:-.83,rz:-.22},{curl:.10,rx:-Math.PI/2,ry:0,rz:0}],
@@ -542,21 +604,22 @@ export function createDeskHands({createHand}={}){
       // and releasing an object rather than a constant idle wrist oscillation.
       pose.curl=THREE.MathUtils.lerp(pose.curl,.18,idleWeight);
       if(holding&&active==='note')pose.rz+=use*side*.035*Math.sin(useTime*3.2);
+      if(active==='pen'&&i===0){pose.rz+=using*.055*Math.sin(useTime*7);pose.rx+=using*.03*Math.cos(useTime*5);pose.curl=.82*grip+.10*(1-grip);}
       arm.pose(w,pose);
       if(arm.hand.setFingerCurl){
         arm.hand.setFingerCurl('Middle',pose.curl);arm.hand.setFingerCurl('Pinky',pose.curl+grip*.025);
       }
       if(active==='phone'&&i===1)posePhoneIndex(arm.hand,pose.curl);
       if(active==='note'&&i===1)arm.hand.pointIndex(grip*.25);
-      arm.hand.opposeThumb(grip*(releasing&&i===0?1-ease(throwAge,.035,.12):1)*(active==='note'&&i===0?1-pass:['snack','drink','burger',...THROWABLE_ITEM_KINDS].includes(active)&&i===1?0:1),active);
+      arm.hand.opposeThumb(grip*(releasing&&i===0?1-ease(throwAge,.035,.12):1)*(active==='note'&&i===0?1-pass:[...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(active)&&i===1?0:1),active);
     });
     const visible=extension>.62&&!caught;
     for(const kind of THROWABLE_ITEM_KINDS){props[kind].visible=visible&&active===kind&&carrying;attachToGrip(props[kind],arms[0].hand.group,grips[kind]);}
     props.snack.visible=visible&&active==='snack';
     attachToGrip(props.snack,arms[0].hand.group,grips.snack);
-    for(const kind of ['drink','burger']){props[kind].visible=visible&&active===kind;attachToGrip(props[kind],arms[0].hand.group,grips[kind]);}
+    for(const kind of ['drink','burger','banana','garlic','gum','lunch','pen']){props[kind].visible=visible&&active===kind;attachToGrip(props[kind],arms[0].hand.group,grips[kind]);}
     props.phone.visible=visible&&active==='phone';attachToGrip(props.phone,arms[0].hand.group,grips.phone);
-    props.note.visible=visible&&active==='note';attachToGrip(props.note,arms[1].hand.group,grips.note);
+    props.note.visible=visible&&active==='note'&&!noteConsumed;attachToGrip(props.note,arms[1].hand.group,grips.note);
     function contactPoint(prop,p){prop.updateMatrix();return p.clone().applyMatrix4(prop.matrix);}
     function fitSecondaryHand(i,prop,p,amount){
       const arm=arms[i],hand=arm.hand.group,target=contactPoint(prop,p),tip=arm.hand.indexTip().multiplyScalar(hand.scale.x).applyQuaternion(hand.quaternion);
@@ -569,23 +632,65 @@ export function createDeskHands({createHand}={}){
     if(active==='snack')thumbAt(0,props.snack,v(-.052,-.020,.025),grip);
     if(active==='drink')thumbAt(0,props.drink,v(-.030,-.025,.032),grip);
     if(active==='burger')thumbAt(0,props.burger,v(-.096,-.025,.035),grip);
+    if(['banana','garlic','gum','lunch','pen'].includes(active))thumbAt(0,props[active],gripBack[active].clone().setZ(-gripBack[active].z),grip);
     if(active==='phone'){thumbAt(0,props.phone,v(-.030,-.010,.017),grip);arms[1].hand.opposeThumb(grip,'phone');}
     if(active==='note'){thumbAt(0,props.note,v(-.057,-.012,.006),grip*(1-pass));thumbAt(1,props.note,v(.040,-.012,.006),grip);}
     props.note.userData.flap.rotation.x=-Math.PI*ease(p,0,.58);
-    // Keep held palms in camera space during free look. Inspecting the teacher
-    // must not throw the hands offscreen or move the aiming camera.
+    // Pose the held palms inside the viewmodel anchor. The outer view layer
+    // decides whether that anchor follows the view or the seated body.
     const pitch=freeLook?.78:clamp((Number.isFinite(viewPitch)?viewPitch:.08)+.85*focus,-1.40,1.40),drop=.12*focus+(!freeLook&&seated&&crouched?.24:0);
     const deskAnchor=(1-idleWeight)*(1-standing);group.rotation.x=pitch*deskAnchor;group.position.set(0,drop*Math.cos(pitch)*deskAnchor,drop*Math.sin(pitch)*deskAnchor);
+    // A one-handed pickup must not make the empty hand rummage through the
+    // drawer too. Keep that palm relaxed in the anchor while the working
+    // hand and its desk-space parent turn towards the item.
+    if([...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(active)){
+      const hand=arms[1].hand;group.updateMatrix();
+      hand.group.position.set(.24,-.34,-.62).applyMatrix4(group.matrix.clone().invert());
+      hand.group.quaternion.copy(group.quaternion).invert().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-.65,0,.11)));
+      hand.setCurl(.18);
+    }
     computerBlend=smooth(computerBlend,computer&&!caught?1:0,dt,10);
     if(computerBlend>.001){
       group.rotation.x*=1-computerBlend;group.position.multiplyScalar(1-computerBlend);
       for(let i=0;i<2;i++){const hand=arms[i].hand,beat=typing?Math.sin(time*10+i*2.4):0;hand.group.position.lerp(v(i?.17:-.17,-.285+Math.max(0,beat)*.008,-.59),computerBlend);hand.group.quaternion.slerp(new THREE.Quaternion().setFromEuler(new THREE.Euler(-1.14,0,i?.08:-.08)),computerBlend);hand.setCurl(.16+Math.max(0,-beat)*.18);hand.pointIndex(.2);}
       for(const prop of Object.values(props))prop.visible=false;
     }
+    if(!seated&&!caught&&!computer){
+      const crawl=clamp(crawlBlend,0,1),stride=clamp(movement,0,1),phase=Number.isFinite(walkPhase)?walkPhase:0;
+      // Alternating support follows distance travelled. No ticking in place,
+      // no camera shake, and a held object keeps its exact palm-relative fit.
+      const follow=[],twoHanded=extension>.01&&['phone','note'].includes(active),primary=active==='note'?1:0,secondaryBefore=twoHanded?(arms[1-primary].hand.group.updateMatrix(),arms[1-primary].hand.group.matrix.clone()):null;
+      arms.forEach((arm,i)=>{
+        const hand=arm.hand.group,before=hand.matrix.clone();hand.updateMatrix();before.copy(hand.matrix);
+        const beat=Math.sin(phase+(i?Math.PI:0)),empty=extension<.01||(i===1&&!['phone','note'].includes(active));
+        if(crawl>.001&&empty){
+          hand.position.lerp(v(i?.22:-.22,.04-CRAWL_TUNING.eyeHeight+Math.max(0,beat)*.023*stride,-.93+beat*.045*stride),crawl);
+          hand.quaternion.slerp(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2+beat*.065*stride,0,i?.09:-.09)),crawl);
+          arm.hand.setCurl(THREE.MathUtils.lerp(.18,.12+Math.max(0,beat)*.10*stride,crawl));
+        }
+        const amplitude=stride*(1-crawl)*(empty?1:.20),side=i?1:-1;
+        // The arm travels in an oval, then the wrist rolls with a small lag.
+        // One complete swing is a left/right step pair, never a rapid shake.
+        const lag=Math.sin(phase+(i?Math.PI:0)-.42);
+        hand.position.x+=side*(.010*Math.cos(phase))*amplitude;
+        hand.position.y+=(beat*.026+Math.cos(phase*2)*.009)*amplitude;
+        hand.position.z+=beat*.070*amplitude;
+        hand.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(lag*.42*amplitude,side*lag*.58*amplitude,side*beat*.24*amplitude)));
+        if(empty&&crawl<.01)arm.hand.setCurl(.18+(.045+.035*Math.sin(phase+(i?Math.PI:0)-.7))*amplitude);
+        hand.updateMatrix();follow[i]=hand.matrix.clone().multiply(before.invert());
+      });
+      if(twoHanded){const delta=follow[primary],secondary=arms[1-primary].hand.group;delta.clone().multiply(secondaryBefore).decompose(secondary.position,secondary.quaternion,secondary.scale);follow[1-primary]=delta;}
+      for(const kind of DESK_ITEM_KINDS){const prop=props[kind],delta=follow[kind==='note'?1:0];prop.updateMatrix();delta.clone().multiply(prop.matrix).decompose(prop.position,prop.quaternion,prop.scale);}
+    }
+    // Reserve the centre for aiming. The wrists sit below the lower edge;
+    // the short source forearms enter from the bottom instead of floating.
+    // Leave the thumb tips above the frame while the forearm still exits at
+    // the bottom. A larger seated drop clipped almost the entire thumb.
+    group.position.y-=THREE.MathUtils.lerp(.12,.085,standing)*(1-clamp(crawlBlend,0,1));
   }
   update(0);return{group,update,getHand:side=>arms[side==='left'?0:1].hand,getFocus(){return focus;},getDebug(){
-    const camera=group.parent?.isCamera?group.parent:null,prop=props[active];
+    const camera=group.userData.viewCamera||(group.parent?.isCamera?group.parent:null),prop=props[active];
     const position=prop.getWorldPosition(v(0,0,0));if(camera)position.project(camera);
-    return{palmsOnly:true,idleHandsVisible:extension<.001,focus:Number(focus.toFixed(3)),extension:Number(extension.toFixed(3)),active,visible:prop.visible,propNDC:position.toArray().map(n=>Number(n.toFixed(3))),groupPitch:Number(group.rotation.x.toFixed(3))};
+    return{palmsOnly:!arms[0].hand.group.userData.shortForearm,idleHandsVisible:extension<.001,focus:Number(focus.toFixed(3)),extension:Number(extension.toFixed(3)),active,visible:prop.visible,propNDC:position.toArray().map(n=>Number(n.toFixed(3))),groupPitch:Number(group.rotation.x.toFixed(3))};
   }};
 }

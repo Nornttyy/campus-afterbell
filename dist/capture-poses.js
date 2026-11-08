@@ -100,16 +100,16 @@ export function createCapturePose(group,bones){
       const phase=age*4.0,wave=Math.sin(phase),bound=lastKind==='bound',carried=lastKind==='carried',help=lastKind==='rescuing',stunned=lastKind==='stunned',recover=lastKind==='recovering',struggle=carried?strugglePose(age):null;
       const baseFeet={};for(const side of ['Left','Right'])if(bones[side+'Foot'])baseFeet[side]=group.worldToLocal(bones[side+'Foot'].getWorldPosition(V()));
       if(stunned){
-        // A hit first tips the chest/head backward and to one side, then the
-        // knees soften and the forearms hang. It is not a thinking/idle clip.
-        // This follows the visible 1565.75–1566.25 s hit reaction, not an
-        // invented measurement of its exact timing.
+        // All stuns use the same seated-on-floor silhouette. Lower the hips
+        // to an anatomical target, then solve feet forward and hands bracing.
+        // The pose transition system eases into/out of this without teleporting.
         const impact=Math.exp(-age*5),sway=Math.sin(age*2.6)*.025;
-        offsetPelvis(-(.028+.016*impact)*weight);
-        rotateInCharacterSpace(group,bones.Spine1,-.10-.11*impact,0,.075+sway,weight);
-        rotateInCharacterSpace(group,bones.Spine2,-.09-.10*impact,0,.04+sway*.4,weight);
-        rotateInCharacterSpace(group,bones.Neck,-.06,0,-.055,weight);
-        rotateInCharacterSpace(group,bones.Head,-.10-.08*impact,.035,-.09,weight);
+        const hip=bones.Hips?group.worldToLocal(bones.Hips.getWorldPosition(V())).y:.9;
+        offsetPelvis((.34-hip)*weight);
+        rotateInCharacterSpace(group,bones.Spine1,-.12-.08*impact,0,.045+sway,weight);
+        rotateInCharacterSpace(group,bones.Spine2,-.08,0,.025+sway*.4,weight);
+        rotateInCharacterSpace(group,bones.Neck,-.04,0,-.055,weight);
+        rotateInCharacterSpace(group,bones.Head,.08+.035*Math.sin(age*2.3),.04,-.075,weight);
       }
       if(carried){
         // Lift one shoulder and drop the other before solving the arms. The
@@ -138,7 +138,7 @@ export function createCapturePose(group,bones){
           const offset=carried?struggle[side.toLowerCase()]:null;
           let target=carried?shoulder.clone().add(V(...offset))
             :bound?V(...POST_GRIP[side.toLowerCase()])
-            :stunned?shoulder.clone().add(V(sign*.10,-.27,.10+sign*.025))
+            :stunned?V(sign*.34,.23,-.14)
             :recover?V(sign*.28,.72,.08)
             :V(sign*.15,.94+Math.sin(phase+sign)*.022,.35);
           if((bound||recover)&&age<.52&&entryWrists[side]){
@@ -150,7 +150,7 @@ export function createCapturePose(group,bones){
           }
           const pole=carried?shoulder.clone().add(V(sign*.45,offset[1]*.35,-.10))
             :bound?V(sign*.43,.86,-.12)
-            :stunned?V(sign*.45,.79,-.04)
+            :stunned?V(sign*.52,.42,-.16)
             :V(sign*.54,.9,.05);
           limb(group,bones[side+'Arm'],bones[side+'ForeArm'],bones[side+'Hand'],target,pole,weight);
         }
@@ -158,7 +158,8 @@ export function createCapturePose(group,bones){
           const kick=Math.max(0,Math.sin(phase+sign*1.57));
           limb(group,bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],V(sign*(bound?.16:.19),.12+kick*(carried?.18:.009),kick*(carried?.19:.012)),V(sign*.2,.4,.55),weight);
         }
-        if((stunned||recover)&&baseFeet[side])limb(group,bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],baseFeet[side],V(sign*.18,.36,.45),weight);
+        if(stunned)limb(group,bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],V(sign*.22,.19,.55),V(sign*.30,.42,.40),weight);
+        else if(recover&&baseFeet[side])limb(group,bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],baseFeet[side],V(sign*.18,.36,.45),weight);
       }
       if(bones.Head){
         if(carried)rotateInCharacterSpace(group,bones.Head,struggle.pitch*.65,0,-struggle.roll*.12,weight);
@@ -172,7 +173,7 @@ export function createCapturePose(group,bones){
         bone.quaternion.copy(previous.clone().slerp(bone.quaternion,ease));
         outputs.set(bone,bone.quaternion.clone());
       }
-      for(const [bone,p]of savedPositions){const previous=positionOutputs.get(bone)||p;bone.position.copy(previous.clone().lerp(bone.position,ease));positionOutputs.set(bone,bone.position.clone());}
+      for(const [bone,p]of savedPositions){const previous=positionOutputs.get(bone)||p;bone.position.copy(previous.clone().lerp(bone.position,resumed?1:1-Math.exp(-6*dt)));positionOutputs.set(bone,bone.position.clone());}
       group.updateMatrixWorld(true);
       for(const side of ['Left','Right'])if(bones[side+'Hand'])lastWrists[side]=group.worldToLocal(bones[side+'Hand'].getWorldPosition(V()));
       return resumed;

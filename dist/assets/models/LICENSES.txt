@@ -57,3 +57,20 @@ Creator: candyzoe15
 Source: https://studio.tripo3d.ai/3d-model/課桌椅-ad24e92f-f337-41b6-9258-2e1c265ae351
 
 Edits: food/bottle geometry reduction, preserved or baked original PBR detail, uniform size normalization. Ink quill removed. Desk/chair separated; desk top kept proportional, straight leg sections shortened, original drawer front retained with a functional hollow tray and pull.
+
+User replacement characters (2026-11-08, revision 40)
+student-boy-v4.glb, student-girl-v4.glb, student-ponytail-v1.glb, student-glasses-v2.glb, teacher-v2.glb
+All five characters were generated, textured and rigged by the user in Tripo and exported with permission.
+Immutable originals and source URLs/checksums: art-source/tripo-exports-20261108/导出清单.json.
+The full-body runtime assets retain the original embedded images, geometry, UVs and skin weights.
+Local changes: world alignment and classroom animation clips, using the actual supplied skeletons.
+Animations are locally reconstructed; they are not original-game animation data.
+hand-left-v2.glb, hand-right-v2.glb are cropped palms from the new boy source, with capped wrists and preserved original UV texture.
+No removal of baked lighting or repainting of the user-approved character designs.
+These user-supplied Tripo assets are not represented as CC0 or licensed original-game models.
+
+User-selected Tripo props, downloaded 2026-11-08:
+banana-v1.glb: https://studio.tripo3d.ai/3d-model/生成一个香蕉-c5dffdd0-9ac0-4962-9c14-960be9f66179 (creator santacelau).
+garlic-v1.glb: https://studio.tripo3d.ai/3d-model/一个风格化的大蒜瓣-是蒜瓣-不是一整个大蒜-02d07cfd-5947-4faa-98fc-381e9c129a37 (creator shionmoe97).
+User explicitly requested these models. Exported using the connected Tripo account. Source files retained in art-source/tripo-props-20261108. Availability to export is not a license review; confirm applicable Tripo/creator commercial terms before publishing commercially.
+Game versions preserve source appearance with reduced geometry and baked source textures; 6000 and3500 triangles respectively. No original game's assets are claimed.

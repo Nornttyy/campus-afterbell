@@ -17,10 +17,15 @@ if not head:
  api('contents/README.md',{'message':'Initialize classroom project','content':data,'branch':'main'},method='PUT')
  head=api('git/ref/heads/main')
 parent=head['object']['sha']
+# A locally cached SHA may have belonged to an abandoned upload that GitHub
+# garbage-collected. Only skip uploads for blobs reachable from the live source.
+remote_commit=api('git/commits/'+parent)
+remote_tree=api('git/trees/'+remote_commit['tree']['sha']+'?recursive=1')
+remote_blobs={entry['sha'] for entry in remote_tree.get('tree',[]) if entry['type']=='blob'}
 files=subprocess.check_output(['git','ls-files','-z'],cwd=root).decode().strip('\0').split('\0')
 def upload(name):
  content=(root/name).read_bytes(); sha=hashlib.sha1(b'blob '+str(len(content)).encode()+b'\0'+content).hexdigest()
- if state['blobs'].get(name)==sha:return name,sha
+ if state['blobs'].get(name)==sha and sha in remote_blobs:return name,sha
  result=api('git/blobs',{'content':base64.b64encode(content).decode(),'encoding':'base64'})
  assert result['sha']==sha,(name,result['sha'],sha)
  return name,sha
@@ -39,7 +44,7 @@ def publish_branch(branch,entries):
   if old['tree']['sha']==tree['sha']:
    print(branch+' is already up to date',flush=True)
    return parents[0]
- commit=api('git/commits',{'message':'Publish playable classroom and refined interaction','tree':tree['sha'],'parents':parents})
+ commit=api('git/commits',{'message':'Publish single-player classroom, current characters and scene seam fixes','tree':tree['sha'],'parents':parents})
  if current:
   assert api('git/ref/heads/'+branch)['object']['sha']==parents[0],'Remote changed during upload'
   api('git/refs/heads/'+branch,{'sha':commit['sha'],'force':False},method='PATCH')

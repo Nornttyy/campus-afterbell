@@ -7,8 +7,8 @@ import {loadGeometry} from './gltf-geometry.mjs';
 const V=()=>new T.Vector3();
 const sides=['Left','Right'],fingers=['Index','Middle','Pinky','Thumb'];
 const cases=[
-  {name:'boy',file:'student-boy-v2.glb',variant:'boy'},
-  {name:'girl',file:'student-girl-v2.glb',variant:'girl'},
+  {name:'boy',file:'student-boy-v3.glb',variant:'boy'},
+  {name:'girl',file:'student-girl-v3.glb',variant:'girl'},
   {name:'glasses',file:'student-glasses-v1.glb',variant:'boy',glasses:true},
 ];
 
@@ -174,7 +174,7 @@ for(const spec of cases)test(`${spec.name}: actual four-finger skin bends inward
   assert.deepEqual(failures,[],`${spec.name}: actual rig regressions`);
 });
 
-for(const spec of cases)test(`${spec.name}: chalk hit tips the body, bound fingers remain outside the post, and release restores the untouched idle pose`,async()=>{
+for(const spec of cases)test(`${spec.name}: stun settles toward the floor, bound fingers remain outside the post, and release restores the untouched idle pose`,async()=>{
   const gltf=await loadGeometry(spec.file),source=inspectSource(gltf);
   const actor=createRiggedStudent(gltf,{variant:spec.variant,glasses:!!spec.glasses,seated:false,seed:.37});
   let time=0;
@@ -193,7 +193,10 @@ for(const spec of cases)test(`${spec.name}: chalk hit tips the body, bound finge
   assert.ok(point('Head').z<idleHead.z-.045,`${spec.name}: head does not recoil after chalk impact`);
   assert.ok(point('Head').x<idleHead.x-.02,`${spec.name}: hit pose remains rigidly symmetrical`);
   assert.ok(point('Hips').y<idleHip.y-.015,`${spec.name}: knees never soften after impact`);
-  for(const side of sides)assert.ok(point(side+'Foot').distanceTo(idleFeet[side])<.025,`${spec.name} ${side}: chalk reaction slides the planted foot`);
+  // November 8: every stun is seated on the floor, so the legs must extend
+  // instead of preserving the old standing-hit planted-foot constraint.
+  for(const side of sides){const foot=point(side+'Foot');assert.ok(foot.z>idleFeet[side].z+.12,`${spec.name} ${side}: legs did not move forward into floor sitting`);assert.ok(foot.y>.025,`${spec.name} ${side}: foot bone sank below the floor`);}
+  assert.ok(point('Hips').y<idleHip.y-.15,`${spec.name}: stun did not lower onto the floor`);
   advance('carried',1.2);advance('bound',1.6);
   // Sample real skinned distal finger surfaces. The former fist pose passed
   // wrist/bone tests while its visible fingers disappeared inside the wood.

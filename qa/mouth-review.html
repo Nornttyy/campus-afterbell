@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>学生嘴部实模检查</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#dde6e7;color:#24353e;font:15px system-ui,sans-serif}
+  nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 20px;background:#fff;position:relative;z-index:2;border-bottom:1px solid #b8c7ca}
+  label{display:flex;align-items:center;gap:7px}select,button{font:inherit;padding:8px 12px;border:1px solid #9daeb3;border-radius:5px;background:#fff;color:inherit}button{cursor:pointer}
+  h1{font-size:17px;margin:0 16px 0 0}#labels{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;padding:13px 0 8px;font-weight:650}
+  #views{height:min(76vh,40vw);min-height:310px;position:relative;margin:0 14px;border:1px solid #b8c7ca;background:#dde6e7}canvas{display:block;width:100%;height:100%}
+  #views:before,#views:after{content:"";position:absolute;top:0;bottom:0;left:33.333%;width:1px;background:#b8c7ca;pointer-events:none}#views:after{left:66.666%}
+  #status{display:block;margin:12px 20px;line-height:1.6;font-size:13px;font-variant-numeric:tabular-nums;white-space:pre-wrap}#status[data-state="error"]{color:#a52525}
+</style>
+<nav>
+  <h1>学生嘴部 · 实际游戏模型</h1>
+  <label>视角<select id="angle" aria-label="视角"><option value="0">正面</option><option value=".75">斜侧</option><option value="1.5707963267948966">侧面</option></select></label>
+  <label>动作<select id="pose" aria-label="动作"><option value="idle">站立</option><option value="writing">写字</option><option value="carried">被抓</option><option value="bound">绑柱</option></select></label>
+  <button id="pause" type="button" disabled>暂停</button><button id="step" type="button" disabled>前进 0.1 秒</button>
+</nav>
+<div id="labels"><span>男同学</span><span>女同学</span><span>眼镜同学</span></div>
+<main id="views" aria-label="三个学生嘴部实模对照"></main>
+<output id="status" data-state="loading">正在加载游戏模型…</output>
+<script type="module">
+import * as T from '../dist/vendor/three.module.js';
+import {loadStudentAssets} from '../dist/student-assets.js?v=arms-49b';
+
+const views=document.querySelector('#views'),status=document.querySelector('#status'),pose=document.querySelector('#pose'),angle=document.querySelector('#angle'),pauseButton=document.querySelector('#pause'),stepButton=document.querySelector('#step');
+const renderer=new T.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.4));
+renderer.toneMapping=T.NeutralToneMapping;
+renderer.toneMappingExposure=1.12;
+renderer.setScissorTest(true);
+renderer.domElement.id='mouth-review-canvas';
+renderer.domElement.setAttribute('aria-label','男同学、女同学和眼镜同学的脸部');
+views.append(renderer.domElement);
+let width=0,height=0,time=1,last=0,paused=false,ready=false,raf=0;
+const entries=[];
+function resize(){const rect=views.getBoundingClientRect();width=Math.max(3,Math.floor(rect.width));height=Math.max(1,Math.floor(rect.height));renderer.setSize(width,height,false);}
+new ResizeObserver(resize).observe(views);resize();
+
+function applyPose(entry){
+  const mood=pose.value;
+  entry.actor.setMood(mood);
+  entry.actor.setMotion({seated:mood==='writing',speed:0,carrying:false,restraint:['carried','bound'].includes(mood)?mood:'free',restraintStartedAt:0});
+}
+function settlePose(){
+  // Re-enter the real pose pipeline, including its transition, even while the
+  // inspector is paused. No alternative meshes or mock animation are used.
+  time=1;
+  for(const entry of entries){applyPose(entry);entry.actor.update(-1);for(let i=0;i<=60;i++)entry.actor.update(i/60);}
+}
+function frame(now){
+  raf=requestAnimationFrame(frame);
+  const dt=last?Math.min(.06,(now-last)/1000):0;last=now;
+  if(!paused)time+=dt;
+  const reports=[];
+  for(let i=0;i<entries.length;i++){
+    const entry=entries[i],left=Math.floor(i*width/3),right=Math.floor((i+1)*width/3),viewWidth=right-left;
+    applyPose(entry);entry.actor.update(time);entry.pivot.rotation.y=Number(angle.value);entry.scene.updateMatrixWorld(true);
+    const center=entry.actor.bones.Head.getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.20,0));
+    // Match the original student inspector's head-centered camera; preserve
+    // model scale and fit the viewport by camera distance only.
+    entry.camera.aspect=viewWidth/height;
+    const tangent=Math.tan(T.MathUtils.degToRad(entry.camera.fov/2)),distance=Math.max(.95/(2*tangent),.83/(2*tangent*entry.camera.aspect));
+    entry.camera.position.set(center.x,center.y,center.z+distance);entry.camera.lookAt(center);entry.camera.updateProjectionMatrix();
+    renderer.setViewport(left,0,viewWidth,height);renderer.setScissor(left,0,viewWidth,height);renderer.render(entry.scene,entry.camera);
+    const diagnostics=entry.actor.diagnostics();
+    reports.push({key:entry.key,asset:diagnostics.asset,mood:pose.value,angle:Number(angle.value),head:center.toArray(),capture:diagnostics.capture,mouth:diagnostics.mouth??null,weights:diagnostics.weights});
+  }
+  renderer.domElement.dataset.state=JSON.stringify({ready,paused,time:Number(time.toFixed(3)),pose:pose.value,angle:Number(angle.value),actors:reports});
+  status.textContent=`${paused?'已暂停':'播放中'} · ${time.toFixed(2)} 秒 · ${pose.selectedOptions[0].textContent} / ${angle.selectedOptions[0].textContent}\n${reports.map(r=>r.asset).join('  |  ')}`;
+}
+pauseButton.addEventListener('click',()=>{paused=!paused;pauseButton.textContent=paused?'继续':'暂停';pauseButton.setAttribute('aria-pressed',String(paused));});
+stepButton.addEventListener('click',()=>{paused=true;pauseButton.textContent='继续';pauseButton.setAttribute('aria-pressed','true');time+=.1;});
+pose.addEventListener('change',settlePose);
+try{
+  const assets=await loadStudentAssets();
+  for(const [key,options] of [['boy',{variant:'boy'}],['girl',{variant:'girl'}],['glasses',{variant:'boy',glasses:true}]]){
+    const scene=new T.Scene();scene.background=new T.Color('#dde6e7');
+    scene.add(new T.HemisphereLight('#fff5e9','#99a5ad',2));
+    const sunlight=new T.DirectionalLight('#fff4df',2.3);sunlight.position.set(3,4,4);scene.add(sunlight);
+    const pivot=new T.Group(),actor=assets.createStudent({...options,seed:0,seated:false});
+    // createStudent owns the authored 1.80 scale. Keep the same scale here.
+    pivot.add(actor.group);scene.add(pivot);
+    entries.push({key,scene,pivot,actor,camera:new T.PerspectiveCamera(32,1,.01,30)});
+  }
+  settlePose();ready=true;pauseButton.disabled=false;stepButton.disabled=false;status.dataset.state='ready';requestAnimationFrame(frame);
+}catch(error){status.dataset.state='error';status.textContent='模型加载失败：'+error.message;renderer.domElement.dataset.error=String(error.stack||error);console.error(error);}
+window.addEventListener('pagehide',()=>{cancelAnimationFrame(raf);for(const entry of entries)entry.actor.dispose();renderer.dispose();},{once:true});
+</script>
+</html>

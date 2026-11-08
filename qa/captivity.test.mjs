@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ClassroomRound} from '../dist/classroom-rules.js';
+import {ClassroomRound,AI_WALK_SPEEDS} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
 import {DETENTION,SEATS,walkRoute,blocked} from '../dist/classroom-layout.js';
 function quiet(){const r=new ClassroomRound({target:100000,seed:44});r.start();r._thinkAt=r._plan.until=Infinity;r.teacher.x=r.teacher.z=30;for(const s of r.students)s._decisionAt=Infinity;return r;}
@@ -10,7 +10,13 @@ test('teammates need continuous nearby rescue input; walking away cancels; succe
  const r=quiet(),s=r.students[2];bind(r,s);near(r,s);assert.equal(r.rescueTarget().id,2);assert.ok(r.setRescue(2));r.step(.8);assert.equal(s.caught,true);assert.ok(r.snapshot().rescue.progress>.49);r.setRescue(null);r.step(2);assert.equal(s.caught,true);
  r.setRescue(2);r.player.x+=3;r.step(.2);assert.equal(r.snapshot().rescue.id,null);assert.equal(s.caught,true);
  near(r,s);r.setRescue(2);r.pause();const before=r.snapshot();r.step(9);assert.deepEqual(r.snapshot(),before);r.pause(false);r.setRescue(2);r.step(1.6);assert.equal(s.captivity,'free');assert.equal(s.postId,null);assert.equal(r.snapshot().caughtCount,0);assert.ok(!r._memory.get(s.id)?.confirmed);
- r.step(20);assert.equal(s.seated,true);assert.equal(s.seatId,s.id);assert.equal(r.drainEvents().filter(e=>e.type==='rescued').length,1);
+ const route=s._returnRoute;assert.ok(route?.length,'rescued pupil did not receive a route back to their seat');
+ const returnDistance=route.reduce((sum,p,i)=>sum+Math.hypot(p.x-(i?route[i-1].x:s.x),p.z-(i?route[i-1].z:s.z)),0),dt=1/60;
+ // Each waypoint may consume one final simulation tick; the budget follows
+ // the actual route and ordinary speed rather than assuming a 20-second trip.
+ const returnFrames=Math.ceil(returnDistance/AI_WALK_SPEEDS.student/dt)+route.length+1;
+ for(let frame=0;frame<returnFrames&&!s.seated;frame++)r.step(dt);
+ assert.equal(s.seated,true,'rescued pupil did not reach their seat within the physical route budget');assert.equal(s.seatId,s.id);assert.equal(r.drainEvents().filter(e=>e.type==='rescued').length,1);
 });
 test('a bound player cannot rescue themselves, move or use items; AI can free the player and they can move again',()=>{
  const r=quiet(),s=r.player;bind(r,s);assert.equal(r.setMovement(1,0),false);assert.equal(r.hold(true),true);assert.equal(r.snapshot().player.bubble.blowing,true);r.hold(false);assert.equal(r.interact(),false);assert.equal(r.setRescue(s.id),false);

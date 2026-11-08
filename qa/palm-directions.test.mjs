@@ -5,7 +5,7 @@ import {createDeskHands} from '../dist/game-actors.js';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 
-const [left,right]=await Promise.all(['hand-left-v1.glb','hand-right-v1.glb'].map(loadGeometry));
+const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
 const dt=1/60,V=()=>new T.Vector3();
 function makeHands(){return createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});}
 function tick(actor,time,frames,options){for(let i=0;i<frames;i++)actor.update(time+=dt,options);actor.group.updateMatrixWorld(true);return time;}

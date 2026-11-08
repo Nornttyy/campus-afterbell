@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "check": "node qa/menu-audit.mjs dist",
-    "test": "node --test qa/*.test.mjs"
+    "test": "node --test qa/*.test.mjs",
+    "serve:online": "node server/server.js",
+    "test:online": "node --test qa/network-room.test.mjs qa/network-item-sync50.test.mjs"
   }
 }

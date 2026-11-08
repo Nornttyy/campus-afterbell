@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f5">
+  <title>校园动作工坊</title>
+  <link rel="stylesheet" href="./style.css?v=editor-2">
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="./index.html" aria-label="校园动作工坊"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 11 6.5v13L16 29 5 22.5v-13zM5 9.5l11 6.3 11-6.3M16 16v13"/></svg><span>动作工坊<small>校园角色</small></span></a>
+    <div class="project-heading"><input id="project-name" aria-label="动作名称" value="我的动作" maxlength="60"><span id="save-status" role="status">准备中</span></div>
+    <div class="file-actions"><button id="import-project">打开项目</button><button id="export-project">保存项目</button><button id="export-game" class="quiet">导出动作</button><button id="export-glb" class="primary">导出 GLB <span aria-hidden="true">↗</span></button></div>
+    <input id="project-file" type="file" accept=".json,application/json" hidden>
+  </header>
+  <main class="workbench">
+    <aside class="panel bones-panel" aria-label="角色与骨骼">
+      <div class="panel-heading"><h2>角色</h2><span class="eyebrow">CHARACTER</span></div>
+      <label class="field-label" for="model-select">选择角色</label>
+      <select id="model-select"><option value="boy">男同学</option><option value="girl">紫发女同学</option><option value="ponytail">棕马尾女同学</option><option value="glasses">眼镜同学</option><option value="teacher">老师</option></select>
+      <div class="section-heading"><h2>骨骼</h2><span id="bone-count" class="count">—</span></div>
+      <input id="bone-search" type="search" placeholder="搜索手指、手臂…" aria-label="搜索骨骼" autocomplete="off">
+      <nav id="bone-tree" class="bone-tree" aria-label="骨骼列表"></nav>
+      <label class="check-label panel-footer"><input id="show-skeleton" type="checkbox" checked>显示骨骼</label>
+    </aside>
+    <section class="viewport-panel" aria-label="三维动作视图">
+      <div class="viewport-toolbar">
+        <div class="button-group"><button id="undo" title="撤销 · Ctrl / ⌘ Z" aria-label="撤销">↶</button><button id="redo" title="重做 · Ctrl / ⌘ Shift Z" aria-label="重做">↷</button></div>
+        <div class="button-group modes"><button id="mode-rotate" aria-pressed="true">旋转</button><button id="mode-translate" aria-pressed="false" title="位移只用于骨盆">位移</button></div>
+        <select id="view-select" aria-label="观察视角"><option value="perspective">透视</option><option value="front">正面</option><option value="back">背面</option><option value="left">左侧</option><option value="right">右侧</option></select>
+        <button id="mirror-pose" class="push-right" title="镜像当前全身姿势">镜像姿势</button>
+      </div>
+      <div class="viewport-wrap"><canvas id="rig-canvas" tabindex="0" aria-label="角色模型，选择骨骼并拖动旋转环"></canvas><div id="viewport-loading" class="loading"><span class="spinner"></span><strong id="loading-label">加载角色</strong><button id="retry-load" hidden>重新加载</button></div><div class="view-badge"><span id="view-model">男同学</span><span id="view-bone">选择一个关节</span></div><div class="viewport-hint">拖动空白处旋转视角 · 滚轮缩放</div></div>
+    </section>
+    <aside class="panel inspector-panel" aria-label="关节属性">
+      <div class="panel-heading"><h2>关节</h2><div><button id="focus-bone" class="text-button">聚焦</button><button id="reset-bone" class="text-button">重置</button></div></div>
+      <h3 id="selected-bone-label">尚未选择</h3><p id="selected-bone-name" class="bone-id">—</p>
+      <fieldset id="rotation-fields"><legend>旋转 <span>°</span></legend>
+        <div class="axis-field x-axis"><label for="rotation-x">X</label><input id="rotation-x" type="number" step="1" aria-label="X 轴旋转角度"><input id="rotation-x-range" type="range" min="-180" max="180" step="1" value="0" aria-label="拖动 X 轴旋转"></div>
+        <div class="axis-field y-axis"><label for="rotation-y">Y</label><input id="rotation-y" type="number" step="1" aria-label="Y 轴旋转角度"><input id="rotation-y-range" type="range" min="-180" max="180" step="1" value="0" aria-label="拖动 Y 轴旋转"></div>
+        <div class="axis-field z-axis"><label for="rotation-z">Z</label><input id="rotation-z" type="number" step="1" aria-label="Z 轴旋转角度"><input id="rotation-z-range" type="range" min="-180" max="180" step="1" value="0" aria-label="拖动 Z 轴旋转"></div>
+      </fieldset>
+      <fieldset id="position-fields" hidden><legend>骨盆位移 <span>m</span></legend><div class="position-fields"><label>X<input id="position-x" type="number" step="0.01" aria-label="骨盆 X 位移"></label><label>Y<input id="position-y" type="number" step="0.01" aria-label="骨盆 Y 位移"></label><label>Z<input id="position-z" type="number" step="0.01" aria-label="骨盆 Z 位移"></label></div></fieldset>
+      <button id="reset-pose" class="full-width">恢复初始姿势</button>
+      <div class="inspector-section"><h2>已有动作</h2><select id="clip-select" aria-label="已有模型动作"><option value="">加载中</option></select><button id="load-clip" class="full-width">载入到时间轴</button></div>
+      <div class="inspector-section clip-settings"><h2>动作设置</h2><div class="field-row"><label for="duration">时长</label><div class="unit-input"><input id="duration" type="number" min="0.1" max="120" step="0.1" value="2"><span>秒</span></div></div><div class="field-row"><label for="fps">帧率</label><select id="fps"><option>24</option><option selected>30</option><option>60</option></select></div><label class="check-label"><input id="loop" type="checkbox" checked>循环播放</label></div>
+    </aside>
+    <section class="timeline-panel" aria-label="动画时间轴">
+      <div class="timeline-toolbar"><h2>时间轴</h2><div class="transport"><button id="to-start" aria-label="回到开头" title="回到开头">|‹</button><button id="previous-frame" aria-label="上一帧" title="上一帧">‹</button><button id="play" class="play-button" aria-label="播放动画" title="播放 / 暂停 · 空格">▶</button><button id="next-frame" aria-label="下一帧" title="下一帧">›</button><button id="to-end" aria-label="前往结尾" title="前往结尾">›|</button></div><div class="time-input"><input id="current-time" type="number" min="0" step="0.033333" value="0" aria-label="当前时间（秒）"><span id="duration-label">/ 2.00 秒</span></div><label class="check-label autokey"><input id="auto-key" type="checkbox" checked>自动关键帧</label><button id="add-key" class="accent">＋ 关键帧</button><button id="duplicate-key" title="复制选中的关键帧">复制</button><button id="delete-key" title="删除选中的关键帧 · Delete">删除</button></div>
+      <div class="timeline-content"><div class="track-label"><span>全身姿势</span><small id="key-count">0 个关键帧</small></div><div class="track-area"><div id="time-ruler" class="time-ruler" aria-hidden="true"></div><div id="timeline-track" class="timeline-track" tabindex="0" role="slider" aria-label="动画时间轴" aria-valuemin="0" aria-valuemax="2" aria-valuenow="0"><div id="key-markers" class="key-markers"></div><div id="playhead" class="playhead"><span></span></div></div></div></div>
+      <div class="timeline-footer"><span id="timeline-selection">点击时间轴定位</span><span>空格播放 · Ctrl / ⌘ Z 撤销</span></div>
+    </section>
+  </main>
+  <div id="notification" role="status" class="notification" hidden></div>
+  <script type="module" src="./app.js?v=editor-2"></script>
+</body>
+</html>

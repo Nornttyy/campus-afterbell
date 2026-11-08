@@ -5,7 +5,7 @@ import {createDeskItem,createDeskHands,THROWABLE_ITEM_KINDS} from '../dist/game-
 import {createRiggedPalm,createRiggedStudent} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
-const names={smoke:'smoke-canister',flash:'flash-perforated-canister',ink:'ink-glass-bottle'};
+const names={smoke:'smoke-canister',flash:'flash-perforated-canister',ink:'ink-glass-bottle',bananaPeel:'banana-peel'};
 
 test('flash sleeve has actual apertures through to its recessed baffle',()=>{
  const prop=createDeskItem('flash');prop.updateMatrixWorld(true);
@@ -37,7 +37,7 @@ test('all eighteen sesame seeds are visible above the actual upper bun mesh',()=
  }
 });
 
-const [left,right]=await Promise.all(['hand-left-v1.glb','hand-right-v1.glb'].map(loadGeometry));
+const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
 for(const kind of THROWABLE_ITEM_KINDS)test(`${kind}: imported first-person palm maintains grip, winds up and opens on both quick and charged release`,()=>{
  for(const charge of [0,1]){
   const actor=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)}),hand=actor.getHand('left'),prop=actor.group.getObjectByName(names[kind]);let t=0,anchor;
@@ -52,8 +52,8 @@ for(const kind of THROWABLE_ITEM_KINDS)test(`${kind}: imported first-person palm
  }
 });
 
-for(const variant of ['boy','girl'])test(`${variant}: NPC smoke/flash/ink use the left grip and articulated release without changing bone lengths`,async()=>{
- const source=await loadGeometry(`student-${variant}-v2.glb`);let middleRest;
+for(const variant of ['boy','girl'])test(`${variant}: NPC thrown items use the left grip and articulated release without changing bone lengths`,async()=>{
+ const source=await loadGeometry(`student-${variant}-v3.glb`);let middleRest;
  source.scene.traverse(o=>{if(o.name.replace(/^mixamorig[:_]?/,'')==='LeftHandMiddle3')middleRest=o.quaternion.clone();});
  const actor=createRiggedStudent(source,{variant,seated:true}),lengths=new Map(Object.entries(actor.bones).filter(([name])=>/^(Left|Right)(Arm|ForeArm|Hand|UpLeg|Leg|Foot)/.test(name)).map(([,b])=>[b,b.position.clone()]));let t=0;
  for(const kind of THROWABLE_ITEM_KINDS){

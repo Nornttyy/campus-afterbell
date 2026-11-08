@@ -14,7 +14,7 @@ test('ink keeps its full mask until the final two seconds, including nondefault 
   assert.equal(sample(2,10).inkAlpha,1);assert.equal(sample(1,10).inkAlpha,.5);assert.equal(sample(.5,1).inkAlpha,.5);assert.equal(sample(3).inkAge,4);
 });
 test('empty, expired and malformed snapshots cannot produce invalid opacity or a permanent mask',()=>{
-  assert.deepEqual(visionEffectState(null),{flashAlpha:0,inkAlpha:0,inkAge:0});
+  assert.deepEqual(visionEffectState(null),{flashAlpha:0,inkAlpha:0,inkAge:0,gumAlpha:0,gumSize:0});
   for(const player of [{},{flashLeft:NaN,inkLeft:Infinity},{flashLeft:-1,inkLeft:-2},{flashLeft:100,flashDuration:0,flashStrength:2,inkLeft:100,inkDuration:-2}]){
     const s=visionEffectState({player});for(const n of Object.values(s))assert.ok(Number.isFinite(n));assert.ok(s.flashAlpha>=0&&s.flashAlpha<=1&&s.inkAlpha>=0&&s.inkAlpha<=1);
   }
@@ -45,4 +45,10 @@ test('white flash composes over ink, resizing redraws only once and fallback lis
   const painted=canvas.ctx.calls.filter(c=>['drawImage','fillRect'].includes(c.name));assert.deepEqual(painted.map(c=>c.name),['drawImage','fillRect']);assert.equal(painted[1].fill,'#ffffff');
   const count=ink.ctx.calls.length;f.resize(640,800);assert.ok(ink.ctx.calls.length>count);const resizedCount=ink.ctx.calls.length;f.resize(640,800);assert.equal(ink.ctx.calls.length,resizedCount);
   assert.equal(f.events.size,1);effect.dispose();assert.equal(f.events.size,0);
+});
+
+// New head-attached bubble uses its server duration and charge, not a client timer.
+test('attached gum obscures more view for a larger bubble and expires cleanly',()=>{
+ const small=visionEffectState({player:{bubbleLeft:3,bubbleSize:.2}}),large=visionEffectState({player:{bubbleLeft:9,bubbleSize:1}});assert.equal(small.gumAlpha,1);assert.equal(large.gumAlpha,1);assert.ok(large.gumSize>small.gumSize);assert.equal(visionEffectState({player:{bubbleLeft:0,bubbleSize:1}}).gumAlpha,0);
+ const f=fixture(),effect=createVisionEffects(f.host),[canvas]=f.canvases;const snapshot={player:{bubbleLeft:5,bubbleSize:.7}};effect.update(snapshot);assert.equal(canvas.hidden,false);assert.ok(canvas.ctx.calls.some(c=>c.name==='ellipse'));const count=canvas.ctx.calls.length;effect.update(snapshot);assert.equal(canvas.ctx.calls.length,count);effect.update(null);assert.equal(canvas.hidden,true);effect.dispose();
 });

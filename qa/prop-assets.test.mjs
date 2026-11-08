@@ -61,7 +61,7 @@ test('imported prop clones share immutable GPU resources but keep independent tr
 
 test('source prop proportions survive contact fitting and animated palm attachment',async()=>{
  await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:assetLoader});
- const [left,right]=await Promise.all(['hand-left-v1.glb','hand-right-v1.glb'].map(loadGeometry));
+ const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
  const h=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});let time=0;
  for(const kind of Object.keys(propFiles)){
   const prop=h.group.getObjectsByProperty('type','Group').find(o=>o.userData.propAsset?.includes('/'+propFiles[kind]));assert.ok(prop,kind+' missing in held view');

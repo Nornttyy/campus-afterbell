@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound,CLASSROOM_ACTIONS} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
-import {CORRIDOR} from '../dist/classroom-layout.js';
+import {CORRIDOR,BOARD,DOORS} from '../dist/classroom-layout.js';
 import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,effectEye} from '../dist/projectile-effects-rules.js';
 
 const DT=1/60;
@@ -47,8 +47,8 @@ test('flash exposure respects range, head direction, wall occlusion and open doo
  const actor={id:8,x:1.42,z:0,yaw:0,seated:false},origin={x:1.42,y:1.65,z:2};
  const forward=flashExposure(origin,actor),backward=flashExposure(origin,{...actor,yaw:Math.PI});assert.ok(forward>.7);assert.ok(backward>0&&backward<forward*.3);
  assert.equal(flashExposure({...origin,z:9},actor),0);
- assert.equal(flashExposure({x:5.3,y:1.65,z:0},{...actor,x:6.7,z:0,yaw:-Math.PI/2}),0);
- assert.ok(flashExposure({x:5.3,y:1.65,z:4.8},{...actor,x:6.7,z:4.8,yaw:-Math.PI/2})>0);
+ assert.equal(flashExposure({x:6.7,y:1.65,z:0},{...actor,x:8.1,z:0,yaw:-Math.PI/2}),0);
+ assert.ok(flashExposure({x:6.7,y:1.65,z:DOORS[1].center},{...actor,x:8.1,z:DOORS[1].center,yaw:-Math.PI/2})>0);
  assert.ok(flashExposure({x:1.42,y:2.8,z:0},{...actor,pitch:-1.2})>flashExposure({x:1.42,y:2.8,z:0},{...actor,pitch:1.2}));
 });
 
@@ -56,7 +56,7 @@ test('ink shatters on swept character contact or first solid impact, without bou
  const actor={id:8,x:1.42,z:.5,seated:false};
  const hit=projectile('ink',{x:1.42,y:1.5,z:0,vx:0,vy:0,vz:20});const contact=stepThrowableProjectile(hit,.05,[actor]);
  assert.equal(contact.effect.kind,'ink');assert.equal(contact.effect.hitActorId,8);assert.ok(contact.effect.z<actor.z);assert.equal(hit.retired,true);
- for(const values of [{x:5.72,y:1.5,z:0,vx:20,vy:0,vz:0},{x:1.42,y:.08,z:0,vx:0,vy:-2,vz:0}]){
+ for(const values of [{x:7.12,y:1.5,z:0,vx:20,vy:0,vz:0},{x:1.42,y:.08,z:0,vx:0,vy:-2,vz:0}]){
   const p=projectile('ink',values),solid=stepThrowableProjectile(p,.05,[]);assert.equal(solid.effect.kind,'ink');assert.equal(solid.effect.hitActorId,null);assert.equal(p.retired,true);assert.equal(p.emitting,false);
   assert.equal(stepThrowableProjectile(p,.5,[]).effect,null);
  }
@@ -65,7 +65,7 @@ test('ink shatters on swept character contact or first solid impact, without bou
 
 test('ink affects nearby clear views but cannot splash through classroom walls',()=>{
  const actor={id:8,x:1.42,z:0,seated:false};assert.equal(inkExposure({x:1.42,y:1.4,z:1},actor),true);assert.equal(inkExposure({x:1.42,y:1.4,z:3},actor),false);
- assert.equal(inkExposure({x:5.5,y:1.4,z:0},{...actor,x:6.3}),false);
+ assert.equal(inkExposure({x:6.9,y:1.4,z:0},{...actor,x:7.7}),false);
 });
 
 test('both students and teachers receive visual effects; state expires with simulation time and does not lock controls',()=>{
@@ -85,7 +85,7 @@ test('both students and teachers receive visual effects; state expires with simu
 
 test('an ink-covered human teacher can write and throw; the effect is not a stun',()=>{
  const r=new TeacherRound({target:100000});r.start();for(const s of r.students)s._decisionAt=Infinity;
- Object.assign(r.player,{x:1.25,z:5.55,yaw:0,pitch:0});Object.assign(r.teacher,{...r.player,stamina:30});
+ Object.assign(r.player,{x:BOARD.x,z:BOARD.z,yaw:0,pitch:0});Object.assign(r.teacher,{...r.player,stamina:30});
  r._applyProjectileEffect({id:1,ownerId:2},{kind:'ink',...effectEye(r.teacher)});
  assert.equal(r.snapshot().player.inkLeft,7);assert.equal(r.setWriting(true),true);r.step(1);assert.ok(r.teacher.stamina>39);assert.equal(r.snapshot().teacher.writing,true);
  r.setWriting(false);assert.equal(r.throwChalk(),true);assert.equal(r.snapshot().player.inkLeft,6);

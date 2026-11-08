@@ -1,7 +1,7 @@
-import {createClassroom} from '../dist/classroom.js?v=props-35';
-import {createClassroomGame} from '../dist/classroom-game.js?v=props-35';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=props-35';
-import {attachReviewLog} from './review-event-log.js?v=props-35';
+import {createClassroom} from '../dist/classroom.js?v=arms-49b';
+import {createClassroomGame} from '../dist/classroom-game.js?v=mouth-36';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=arms-49b';
+import {attachReviewLog} from './review-event-log.js?v=mouth-36';
 class ReviewRound extends ClassroomRound{
   reset(){return super.reset(11);}
   start(){super.start();this.teacher.x=this.teacher.z=30;this._thinkAt=this._plan.until=Infinity;this._plan.route=[];for(const s of this.students)if(s.isTeammate)s._decisionAt=Infinity;return this.snapshot();}

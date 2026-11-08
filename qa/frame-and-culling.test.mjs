@@ -4,6 +4,7 @@ import * as T from '../dist/vendor/three.module.js';
 import {createClassroomGame} from '../dist/classroom-game.js';
 import {ClassroomRound} from '../dist/classroom-rules.js';
 import {DETENTION} from '../dist/classroom-layout.js';
+import {CRAWL_TUNING} from '../dist/crawl-profile.js';
 import {createRiggedStudent} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 
@@ -16,17 +17,38 @@ function gameFixture(){
     setAttribute(){} removeAttribute(){} focus(){} showModal(){this.open=true;} close(){this.open=false;}
   }
   const doc=new EventTarget(),win=new EventTarget();doc.body=new Element();
-  doc.querySelector=id=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
+  doc.querySelector=id=>{if(id==='#locker-dialog[open]')return null;if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
   const canvas=doc.querySelector('#classroom');doc.pointerLockElement=canvas;
   doc.exitPointerLock=()=>{doc.pointerLockElement=null;};canvas.requestPointerLock=()=>{doc.pointerLockElement=canvas;};
   const globals={document:doc,window:win,performance:{now:()=>now},requestAnimationFrame:fn=>{const id=++nextFrame;callbacks.set(id,fn);return id;},cancelAnimationFrame:id=>callbacks.delete(id)};
   for(const [name,value]of Object.entries(globals)){saved.set(name,Object.getOwnPropertyDescriptor(globalThis,name));Object.defineProperty(globalThis,name,{value,configurable:true,writable:true});}
   const round=new ClassroomRound({target:100000});round._advanceTeacher=()=>{};round._perceive=()=>{};round._hear=()=>{};
   const scene={setGameplay(){},getInteraction:()=>null,playFeedback(){}};
-  const game=createClassroomGame({round,scene,audio:{apply(){},start(){},effect(){},click(){}}});game.start();
+  const game=createClassroomGame({round,scene,sessionFactory:()=>({touch:false,computer:false,axes:()=>({side:0,forward:0,crawl:false}),update(){},reset(){},dispose(){}}),audio:{apply(){},start(){},effect(){},click(){}}});game.start();
   const send=(target,type,props={})=>{const e=new Event(type,{cancelable:true});for(const[k,v]of Object.entries(props))Object.defineProperty(e,k,{value:v});target.dispatchEvent(e);};
-  return{round,doc,send,element:doc.querySelector,tick(seconds){now+=seconds*1000;const pending=[...callbacks.values()];callbacks.clear();for(const fn of pending)fn(now);},close(){game.exit();for(const[name,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name];}}};
+  return{round,doc,win,send,element:doc.querySelector,tick(seconds){now+=seconds*1000;const pending=[...callbacks.values()];callbacks.clear();for(const fn of pending)fn(now);},close(){game.exit();for(const[name,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name];}}};
 }
+
+test('both Shift keys hold crawling, preserve movement and release independently',()=>{
+  const f=gameFixture();try{
+    Object.assign(f.round.player,{x:7,z:0,yaw:0,seated:false,seatId:null});
+    f.send(f.doc,'keydown',{code:'ShiftLeft'});f.send(f.doc,'keydown',{code:'KeyW'});f.tick(.2);
+    assert.equal(f.round.player.crouched,true);assert.ok(Math.abs(f.round.player.z-CRAWL_TUNING.speed*.2)<1e-8);
+    f.send(f.doc,'keydown',{code:'ShiftRight'});f.send(f.doc,'keyup',{code:'ShiftLeft'});assert.equal(f.round.player.crouched,true,'releasing one Shift cancelled the other held Shift');
+    f.send(f.doc,'keyup',{code:'ShiftRight'});assert.equal(f.round.player.crouched,false,'release waits for another frame');
+    const before=f.round.player.z;f.tick(.2);assert.ok(Math.abs(f.round.player.z-before-1.8*.2)<1e-8,'standing movement stayed at crawl speed');
+    f.send(f.doc,'keydown',{code:'ShiftRight'});f.tick(1/60);assert.equal(f.round.player.crouched,true,'right Shift cannot start crawling by itself');
+  }finally{f.close();}
+});
+test('old crouch keys no longer change posture, and focus loss clears crawling',()=>{
+  const f=gameFixture();try{
+    Object.assign(f.round.player,{x:7,z:0,yaw:0,seated:false,seatId:null});
+    for(const code of ['KeyC','ControlLeft','ControlRight']){f.send(f.doc,'keydown',{code});f.tick(1/60);assert.equal(f.round.player.crouched,false);}
+    f.send(f.doc,'keydown',{code:'ShiftLeft'});f.send(f.doc,'keydown',{code:'KeyW'});f.tick(.1);assert.equal(f.round.player.crouched,true);
+    f.send(f.win,'blur');assert.equal(f.round.player.crouched,false);assert.equal(f.round.paused,true);const z=f.round.player.z;
+    f.send(f.element('#resume-game'),'click');f.tick(.2);assert.equal(f.round.player.crouched,false);assert.equal(f.round.player.z,z,'lost keyup left movement stuck after resume');
+  }finally{f.close();}
+});
 
 test('15 and 5 FPS advance the actual rules clock at the same rate as 60 FPS',()=>{
   for(const hz of [60,15,5]){
@@ -51,7 +73,7 @@ test('binding does not snap the next mouse pixel, and rescue movement follows th
 });
 
 for(const variant of ['boy','girl'])test(`${variant}: culling does not replay a completed bind/release transition`,async()=>{
-  const [continuous,culled]=await Promise.all([0,1].map(async()=>createRiggedStudent(await loadGeometry(`student-${variant}-v2.glb`),{variant,seated:false})));
+  const [continuous,culled]=await Promise.all([0,1].map(async()=>createRiggedStudent(await loadGeometry(`student-${variant}-v3.glb`),{variant,seated:false})));
   for(const actor of [continuous,culled]){
     actor.setMood('resting');actor.setMotion({seated:false});for(let i=1;i<=60;i++)actor.update(i/60);
     actor.setMotion({seated:false,restraint:'carried',restraintStartedAt:1});for(let i=61;i<=120;i++)actor.update(i/60);

@@ -6,7 +6,7 @@ import {strugglePose} from '../dist/capture-poses.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 
 const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
-const cases=[['boy','student-boy-v2.glb'],['girl','student-girl-v2.glb'],['glasses','student-glasses-v1.glb']];
+const cases=[['boy','student-boy-v3.glb'],['girl','student-girl-v3.glb'],['glasses','student-glasses-v1.glb']];
 function fingerSamples(actor){
  const samples=[];
  actor.group.traverse(mesh=>{

@@ -74,7 +74,7 @@ test('book protection is directional and weakens when the teacher approaches or 
 });
 
 test('heard noise can be remembered without visual evidence or a red card',()=>{
-  const r=new ClassroomRound({target:100000});r.start();r._plan.until=100;
+  const r=new ClassroomRound({target:100000});r.start();r._plan.until=100;r.teacher.x=r.player.x;r.teacher.z=r.player.z+5;r.teacher.yaw=0;
   r.player._slots[0].action='snack';
   r.toggleDrawer();assert.equal(r.selectAction('snack'),true);takeAndUse(r);r.step(5);
   const s=r.snapshot(),memory=s.teacher.memory.find(m=>m.id===PLAYER_SEAT);
@@ -87,7 +87,7 @@ test('movement collides with desks, can use an aisle, and standing actions earn 
   const r=new ClassroomRound({target:100000});r.start();r.player._slots[0].action='snack';r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
   takeAndUse(r);r.setMovement(0,1);r.step(2);
   let s=r.snapshot();const desk=DESKS[PLAYER_SEAT];assert.ok(s.player.z<=desk.minZ-.18+1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
-  r.setMovement(-1,0);r.step((r.player.x-AISLES[1])/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,1);r.step(2);
+  r.setMovement(-1,0);r.step((r.player.x-AISLES[0])/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,1);r.step(2);
   s=r.snapshot();assert.ok(s.player.z>SEATS[PLAYER_SEAT].z+1);assert.equal(blocked(s.player.x,s.player.z),false);
   assert.equal(s.completed.snack,0);assert.equal(s.holding,true);
   const other=new ClassroomRound();other.start();assert.equal(other.interact(),'stood');assert.equal(other.interact(),'seated');assert.equal(other.snapshot().player.seatId,PLAYER_SEAT);
@@ -107,17 +107,17 @@ test('four classmates plan and complete actual actions; ordinary NPCs never scor
   assert.ok(completed.every(e=>FRIEND_SEATS.includes(e.studentId)&&e.actor==='ai'));
   assert.equal(new Set(s.students.filter(s=>s.isTeammate).map(s=>s.personality)).size,4);
   assert.ok(new Set(s.students.filter(s=>s.isTeammate).map(s=>s.action)).size>1);
-  for(const npc of s.students.filter(s=>!s.isPlayer&&!s.isTeammate)){assert.equal(npc.action,null);assert.equal(npc.holding,false);assert.deepEqual(npc.completed,{snack:0,note:0,phone:0,drink:0,burger:0,smoke:0,flash:0,ink:0,computer:0});}
+  for(const npc of s.students.filter(s=>!s.isPlayer&&!s.isTeammate)){assert.equal(npc.action,null);assert.equal(npc.holding,false);assert.deepEqual(npc.completed,Object.fromEntries(Object.keys(CLASSROOM_ACTIONS).map(k=>[k,0])));}
   for(const memory of s.teacher.memory.filter(m=>!FRIEND_SEATS.includes(m.id)&&m.id!==PLAYER_SEAT))assert.equal(memory.evidence,0);
   assert.equal(events.some(e=>e.type==='speech'),false);
 });
 
 test('teacher revisits remembered individuals and targets only previously seen or heard people',()=>{
-  const r=new ClassroomRound({seed:73,target:100000});r.start();let targeted=0;
-  for(let i=0;i<120*60;i++){r.step(DT);const t=r.snapshot().teacher;if(t.targetId!==null){assert.ok(t.observedIds.includes(t.targetId));targeted++;}}
+  const r=new ClassroomRound({seed:73,target:100000});r.start();let targeted=0,revisited=false,observedEvidence=false;
+  for(let i=0;i<120*60;i++){r.step(DT);const t=r.snapshot().teacher;revisited ||= t.memory.some(m=>m.visits>1&&m.lastHeard!==null);observedEvidence ||= t.memory.some(m=>m.evidence>15);if(t.targetId!==null){assert.ok(t.observedIds.includes(t.targetId));targeted++;}}
   const memories=r.snapshot().teacher.memory;
-  assert.ok(targeted>0);assert.ok(memories.some(m=>m.visits>1&&m.lastHeard!==null));
-  assert.ok(memories.some(m=>m.evidence>15));
+  assert.ok(targeted>0);assert.ok(revisited,'teacher revisited a known source before rescue could clear the memory');
+  assert.ok(observedEvidence);
 });
 
 test('smoke must be thrown from a consumed drawer slot before impact creates a growing cloud',()=>{
@@ -178,7 +178,7 @@ test('three-second pacing permits observation, actual scoring and valid terminal
     const idle=new ClassroomRound({seed});idle.start();idle.step(30);
     assert.equal(idle.snapshot().status,'playing');assert.ok(idle.snapshot().score<40);
     // Isolate defeat from the faster three-second scoring target.
-    const reckless=new ClassroomRound({seed});reckless.start();let s=reckless.snapshot(),walked=0,previous=s.teacher;
+    const reckless=new ClassroomRound({seed});reckless.start();focusSeat(reckless,PLAYER_SEAT);for(const friend of reckless.students.filter(s=>s.isTeammate))friend._decisionAt=.5;let s=reckless.snapshot(),walked=0,previous=s.teacher;
     for(let i=0;i<2400&&s.status==='playing';i++){
       useAvailable(reckless,s);s=reckless.step(.25);
       walked+=Math.hypot(s.teacher.x-previous.x,s.teacher.z-previous.z);previous=s.teacher;
@@ -254,16 +254,16 @@ test('AI completions consume their own stocked slots and empty AI drawers wait f
   for(const id of ids){const actor=r.students[id];actor._decisionAt=0;for(const slot of actor._slots)Object.assign(slot,{action:null,readyAt:3,progress:0});}
   r.step(3-DT);let s=r.snapshot();assert.equal(s.score,0);assert.ok(s.students.filter(actor=>actor.isTeammate).every(actor=>!actor.holding&&actor.drawer.slots.every(slot=>slot.action===null)));
   r.step(DT);assert.ok(r.snapshot().students.filter(actor=>actor.isTeammate).every(actor=>actor.drawer.slots.every(slot=>slot.action)));
-  r.drainEvents();let completions=0;
+  r.drainEvents();let completions=0,earned=0;
   for(let frame=0;frame<35*60;frame++){
     const before=r.snapshot();s=r.step(DT);
-    for(const event of r.drainEvents().filter(event=>event.type==='complete')){
+    const events=r.drainEvents();earned+=events.filter(e=>['complete','gum-score','snake-food'].includes(e.type)).reduce((sum,e)=>sum+(e.points||0),0);for(const event of events.filter(event=>event.type==='complete')){
       completions++;assert.equal(event.actor,'ai');assert.ok(ids.includes(event.studentId));
       const previous=before.students[event.studentId].drawer.slots[event.slotId],actor=s.students[event.studentId],slot=actor.drawer.slots[event.slotId];
-      assert.equal(previous.action,event.action);assert.equal(slot.action,null);assert.equal(slot.readyIn,3);assert.equal(actor.holding,false);
+      assert.equal(previous.action,event.action);assert.equal(slot.action,event.action==='banana'?'bananaPeel':null);assert.equal(slot.readyIn,event.action==='banana'?0:3);assert.equal(actor.holding,false);
     }
   }
-  assert.ok(completions>=4);assert.equal(s.score,s.students.reduce((points,actor)=>points+Object.entries(actor.completed).reduce((sum,[action,count])=>sum+count*CLASSROOM_ACTIONS[action].points,0),0));
+  assert.ok(completions>=4);assert.equal(s.score,earned);
 });
 
 test('invalid inputs are harmless and removed help skill is unavailable',()=>{
@@ -370,7 +370,7 @@ test('book interaction changes real cover, survives leaving the seat, and freeze
  const r=quietFixture(11);const id=r.player.seatId;
  assert.equal(r.snapshot().books[id].raised,true);r.toggleBook();r.step(.25);
  assert.equal(r.snapshot().books[id].amount,0);
- const observer={x:r.player.x,z:r.player.z+5,yaw:Math.PI};
+ const observer={x:r.player.x+Math.sin(r.player.seatYaw)*3,z:r.player.z+Math.cos(r.player.seatYaw)*3,yaw:r.player.seatYaw+Math.PI};
  assert.ok(Math.abs(propVisibility(observer,r.player)-1)<1e-8);
  r.pause(true);assert.equal(r.toggleBook(),false);r.step(1);assert.equal(r.snapshot().books[id].amount,0);
  r.pause(false);r.toggleBook();r.step(.25);assert.ok(propVisibility(observer,r.player)<.3);
@@ -391,7 +391,7 @@ test('AI chalk telegraphs a fixed aim, stays physical and permits dodging during
 });
 
 test('AI chalk cannot cross classroom walls to stun the remembered player',()=>{
-  const r=quietFixture();Object.assign(r.player,{x:7.15,z:0,seated:false,seatId:null});
-  r.chalks.push({id:0,x:5.1,y:1.5,z:0,vx:16,vy:0,vz:0,age:0});r.step(.2);
+  const r=quietFixture();Object.assign(r.player,{x:8.25,z:0,seated:false,seatId:null});
+  r.chalks.push({id:0,x:6.4,y:1.5,z:0,vx:16,vy:0,vz:0,age:0});r.step(.2);
   assert.equal(r.player.captivity,'free');assert.equal(r.chalks.length,0);assert.ok(r.drainEvents().some(e=>e.type==='chalk-hit'&&e.kind==='wall'));
 });

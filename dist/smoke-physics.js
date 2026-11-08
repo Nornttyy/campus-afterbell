@@ -1,12 +1,13 @@
-import {ROOM,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=props-35';
+import {ROOM,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=solo-51';
+import {CRAWL_TUNING} from './crawl-profile.js?v=solo-51';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const colliderCache=new Map();
-function tablesFor(map='classroom'){if(!colliderCache.has(map))colliderCache.set(map,[...DESKS.map(d=>{const h=floorHeight((d.minX+d.maxX)/2,(d.minZ+d.maxZ)/2,map);return{...d,minY:h+.80,maxY:h+.895};}),...enclosureVolumes(map),...OFFICE_SOLIDS,...floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})),{...LECTERN,minY:.16,maxY:1.15}]);return colliderCache.get(map);}
+function tablesFor(map='classroom',layout=null){const key=map,cache=layout?(layout.projectileColliderCache??=new Map()):colliderCache;if(!cache.has(key))cache.set(key,[...(layout?.desks||DESKS).map(d=>{const h=floorHeight((d.minX+d.maxX)/2,(d.minZ+d.maxZ)/2,map);return{...d,minY:h+.80,maxY:h+.895};}),...enclosureVolumes(map,layout),...OFFICE_SOLIDS,...floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})),{...LECTERN,minY:.16,maxY:1.15}]);return cache.get(key);}
 
-function safeRelease(origin,hand,map){
-  const tables=tablesFor(map);
+function safeRelease(origin,hand,map,layout){
+  const tables=tablesFor(map,layout);
   let travel=1;
   // Sweep the canister out from the player rather than spawning beyond a wall.
   for(const box of tables){
@@ -23,15 +24,15 @@ function safeRelease(origin,hand,map){
   p.y=Math.max(p.y,floorHeight(p.x,p.z,map)+R);return p;
 }
 
-export function createSmokeProjectile(actor,id,charge=0,map='classroom'){
+export function createSmokeProjectile(actor,id,charge=0,map='classroom',layout=null){
   charge=clamp(Number.isFinite(charge)?charge:0,0,1);
   const yaw=actor.yaw||0,pitch=actor.pitch||0,elevation=clamp(.66-pitch,-.8,1.2),speed=5.2+2.8*charge;
   // Release from the left palm, in the same look basis as the first-person camera.
   // Horizontal aim adds an upward lob; looking down still permits a close throw.
-  const eye=floorHeight(actor.x,actor.z,map)+(actor.seated?1.43-(actor.crouched?.24:0):actor.crouched?1.02:1.65);
+  const eye=floorHeight(actor.x,actor.z,map)+(actor.seated?1.43:actor.crouched?CRAWL_TUNING.eyeHeight:1.65);
   const forward=.55*Math.cos(pitch)-.06*Math.sin(pitch);
   const release=safeRelease({x:actor.x,y:eye,z:actor.z},{x:actor.x+Math.sin(yaw)*forward+Math.cos(yaw)*.14,
-    y:eye-.55*Math.sin(pitch)-.06*Math.cos(pitch),z:actor.z+Math.cos(yaw)*forward-Math.sin(yaw)*.14},map);
+    y:eye-.55*Math.sin(pitch)-.06*Math.cos(pitch),z:actor.z+Math.cos(yaw)*forward-Math.sin(yaw)*.14},map,layout);
   return{id,ownerId:actor.id,charge,map,...release,
     vx:Math.sin(yaw)*Math.cos(elevation)*speed,vy:Math.sin(elevation)*speed,
     vz:Math.cos(yaw)*Math.cos(elevation)*speed,age:0,firstImpact:null,bounces:0,
@@ -39,8 +40,8 @@ export function createSmokeProjectile(actor,id,charge=0,map='classroom'){
 }
 
 // Small swept steps keep a thrown canister from tunnelling through desk slabs.
-export function stepSmokeProjectile(p,dt){
-  const map=p.map||'classroom',tables=tablesFor(map);
+export function stepSmokeProjectile(p,dt,layout=null){
+  const map=p.map||'classroom',tables=tablesFor(map,layout);
   let impacts=[];
   const count=Math.max(1,Math.ceil(dt/.008)),h=dt/count;
   for(let i=0;i<count;i++){
