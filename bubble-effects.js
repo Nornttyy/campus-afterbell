@@ -29,18 +29,19 @@ export function createBubbleEffects(scene,camera,{floorAt=()=>0}={}){
     own.visible=false;const used=new Set();
     if(state){
       const player=state.player,bubble=player?.bubble;
-      if(bubble?.progress>0&&player.captivity==='bound'){
+      if(bubble?.progress>0){
         const r=radius(bubble.progress);own.visible=true;own.scale.setScalar(r);own.position.set(0,-.13,-.28-r*1.08);own.material.uniforms.fade.value=1;
       }
       for(const student of state.students||[]){
-        if(student.id===player?.id||student.captivity!=='bound'||!(student.bubble?.progress>0))continue;
+        if(student.id===player?.id||student.visible===false||!(student.bubble?.progress>0))continue;
         const key='held-'+student.id,m=get(key),r=radius(student.bubble.progress),yaw=student.yaw||0;
-        m.position.set(student.x+Math.sin(yaw)*(r+.22),1.71+floorAt(student.x,student.z,state.map),student.z+Math.cos(yaw)*(r+.22));
+        m.position.set(student.x+Math.sin(yaw)*(r+.22),(student.seated?1.43:1.71)+floorAt(student.x,student.z,state.map),student.z+Math.cos(yaw)*(r+.22));
         m.scale.setScalar(r);m.material.uniforms.fade.value=1;used.add(key);
       }
       for(const bubble of state.bubbles||[]){
         const key='released-'+bubble.id,m=get(key),r=radius(bubble.charge);
-        m.position.set(bubble.x,bubble.y,bubble.z);m.scale.setScalar(r);m.material.uniforms.fade.value=1-T.MathUtils.smoothstep(bubble.age,Math.max(0,(bubble.lifetime||4)-.7),bubble.lifetime||4);used.add(key);
+        const attached=bubble.attachedId!==undefined&&bubble.attachedId!==null,actor=attached?(bubble.attachedId===-1?state.teacher:state.students?.find(s=>s.id===bubble.attachedId)):null,yaw=actor?.yaw||0;
+        m.position.set(bubble.x+Math.sin(yaw)*(attached?.18:0),bubble.y,bubble.z+Math.cos(yaw)*(attached?.18:0));m.scale.set(r,attached?r*.88:r,attached?r*.72:r);if(attached&&bubble.attachedId===player?.id){m.visible=false;}else m.visible=true;m.material.uniforms.fade.value=1-T.MathUtils.smoothstep(bubble.age,Math.max(0,(bubble.lifetime||4)-.7),bubble.lifetime||4);used.add(key);
       }
     }
     for(const [key,m]of pooled){if(!used.has(key)){m.removeFromParent();m.material.dispose();pooled.delete(key);}}

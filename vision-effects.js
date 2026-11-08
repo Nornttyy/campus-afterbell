@@ -13,6 +13,8 @@ export function visionEffectState(snapshot){
     flashAlpha:flashLeft>0?strength*smooth(flashLeft/flashDuration/(2.5/7)):0,
     inkAlpha:inkLeft>0?smooth(inkLeft/Math.min(2,inkDuration)):0,
     inkAge:inkLeft>0?Math.max(0,inkDuration-inkLeft):0,
+    gumAlpha:Number.isFinite(p.bubbleLeft)&&p.bubbleLeft>0?smooth(p.bubbleLeft/Math.min(1.2,2+8*clamp(p.bubbleSize||0))):0,
+    gumSize:Number.isFinite(p.bubbleLeft)&&p.bubbleLeft>0?clamp(p.bubbleSize||0):0,
   };
 }
 
@@ -66,6 +68,17 @@ function paintDrips(c,w,h,age){
   c.restore();
 }
 
+function paintGum(c,w,h,size,alpha){
+  c.save();c.globalAlpha=alpha;c.translate(w*.5,h*.48);
+  const radius=Math.min(w,h)*(.28+.35*size);c.scale(radius*1.18,radius);
+  const body=c.createRadialGradient(-.28,-.35,.06,0,0,1.12);
+  body.addColorStop(0,'rgba(255,213,156,.84)');body.addColorStop(.48,'rgba(248,159,85,.95)');body.addColorStop(.82,'rgba(246,136,65,.98)');body.addColorStop(1,'rgba(255,200,136,.78)');
+  c.fillStyle=body;c.beginPath();c.ellipse(0,0,1,1,0,0,Math.PI*2);c.fill();
+  c.strokeStyle='rgba(255,230,187,.9)';c.lineWidth=.018;c.stroke();
+  c.fillStyle='rgba(255,249,223,.65)';c.beginPath();c.ellipse(-.36,-.48,.14,.26,-.6,0,Math.PI*2);c.fill();
+  c.fillStyle='rgba(255,246,223,.45)';c.beginPath();c.ellipse(-.55,-.12,.045,.08,-.2,0,Math.PI*2);c.fill();c.restore();
+}
+
 export function createVisionEffects(host){
   const doc=host.ownerDocument||document,win=doc.defaultView||globalThis.window;
   const canvas=doc.createElement('canvas'),ink=doc.createElement('canvas'),c=canvas.getContext('2d'),inkContext=ink.getContext('2d');
@@ -83,11 +96,12 @@ export function createVisionEffects(host){
   }
   function draw(){
     if(!alive||!c||!inkContext)return;
-    const dripAge=Math.floor(state.inkAge*24)/24,key=[width,height,state.flashAlpha.toFixed(4),state.inkAlpha.toFixed(4),dripAge].join('|');
+    const dripAge=Math.floor(state.inkAge*24)/24,key=[width,height,state.flashAlpha.toFixed(4),state.inkAlpha.toFixed(4),state.gumAlpha.toFixed(4),state.gumSize.toFixed(4),dripAge].join('|');
     if(key===lastKey)return;lastKey=key;c.clearRect(0,0,width,height);
-    canvas.hidden=state.inkAlpha<=0&&state.flashAlpha<=0;
+    canvas.hidden=state.inkAlpha<=0&&state.flashAlpha<=0&&state.gumAlpha<=0;
     if(canvas.hidden)return;
     if(state.inkAlpha>0){c.globalAlpha=state.inkAlpha;c.drawImage(ink,0,0,width,height);paintDrips(c,width,height,dripAge);}
+    if(state.gumAlpha>0){paintGum(c,width,height,state.gumSize,state.gumAlpha);}
     if(state.flashAlpha>0){c.globalAlpha=state.flashAlpha;c.fillStyle='#ffffff';c.fillRect(0,0,width,height);}
     c.globalAlpha=1;
   }

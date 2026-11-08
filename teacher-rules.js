@@ -1,8 +1,9 @@
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=props-35';
-import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,clearWallSegment,floorHeight} from './classroom-layout.js?v=props-35';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=solo-51';
+import {CRAWL_TUNING} from './crawl-profile.js?v=solo-51';
+import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=solo-51';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=props-35';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=solo-51';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
@@ -13,7 +14,7 @@ export class TeacherRound extends ClassroomRound{
     for(const s of this.students){
       s.isPlayer=false;s.isTeammate=this._team.has(s.id);s.name='同学';
       s._profile=s.isTeammate?{caution:this._range(.3,.85),helpful:.5,distraction:this._range(0,.7)}:null;
-      s._slots=s.isTeammate?Array.from({length:3},(_,id)=>({id,action:this._drawItem(),readyAt:0,progress:0})):[];
+      s._slots=s.isTeammate?Array.from({length:mapKind(this.map)==='computer'?1:3},(_,id)=>({id,action:this._drawItem(),readyAt:0,progress:0})):[];
       s._decisionAt=this._range(1,6);s._chalkUntil=0;
     }
     this.player={id:-1,...TEACHER_SPAWN,seated:false,crouched:false,caught:false,captivity:'free',seatId:null,holding:false,
@@ -33,23 +34,23 @@ export class TeacherRound extends ClassroomRound{
   hold(value){if(!value){this.holding=false;return false;}return this.throwChalk();}
   releaseUse(){this.holding=false;return false;}
   toggleDrawer(){return false;} toggleBook(){return false;} takeSlot(){return false;}
-  returnItem(){return false;} interact(){return false;} startComputer(){return false;}
+  returnItem(){return false;} interact(seatId=null){if(this.player.seated)return super.interact();return seatId==='office-chair'?this.sitOfficeChair():false;} startComputer(){return false;}
   _perceive(){} // The human observes. No evidence meter, memory-based aim or auto-capture.
   _hear(){} // Sound cues stay spatial; they must not reveal hidden identity to the UI.
   throwChalk(){
     if(!this._classInputAllowed()||this._writing||this.elapsed<this._nextThrow||this.teacher.carriedId!==null)return false;
-    if(this.teacher.stamina<=0){this._events.push({type:'stamina-low'});return false;}
+    if(this.teacher.stamina<10||this._restrained(this.player)){this._events.push({type:'stamina-low'});return false;}
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
-    this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?1.02:TEACHER_EYE_HEIGHT),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
-    this._lastThrow=this.elapsed;this._nextThrow=this.elapsed+.72;this._events.push({type:'chalk-throw'});return true;
+    this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?CRAWL_TUNING.eyeHeight:TEACHER_EYE_HEIGHT),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
+    this.teacher.stamina=Math.max(0,this.teacher.stamina-10);this._lastThrow=this.elapsed;this._nextThrow=this.elapsed+.72;this._events.push({type:'chalk-throw'});return true;
   }
   aimedStudent(range=9){
     if(this.stage!=='class')return null;
-    const p=this.player,a={x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?1.02:TEACHER_EYE_HEIGHT),z:p.z},cp=Math.cos(p.pitch);
+    const p=this.player,a={x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?CRAWL_TUNING.eyeHeight:TEACHER_EYE_HEIGHT),z:p.z},cp=Math.cos(p.pitch);
     const b={x:a.x+Math.sin(p.yaw)*cp*range,y:a.y-Math.sin(p.pitch)*range,z:a.z+Math.cos(p.yaw)*cp*range};
-    const hit=chalkHit(a,b,this.students,this.books,this.map);
+    const hit=chalkHit(a,b,this.students,this.books,this.map,this.layout);
     if(hit?.kind!=='student')return null;
-    if(!clearWallSegment(a,this.students[hit.id]))return null;
+    if(!clearWallSegment(a,this.students[hit.id],this.layout))return null;
     // Opaque smoke masks the intervening part of the ray, not the whole room.
     const end={x:a.x+(b.x-a.x)*hit.t,y:a.y+(b.y-a.y)*hit.t,z:a.z+(b.z-a.z)*hit.t};
     for(const s of this.smokes){if(s.density<.3)continue;const dx=end.x-a.x,dz=end.z-a.z,len=dx*dx+dz*dz,t=len?Math.max(0,Math.min(1,((s.x-a.x)*dx+(s.z-a.z)*dz)/len)):0;if(Math.hypot(a.x+dx*t-s.x,a.z+dz*t-s.z)<s.radius)return null;}
@@ -57,12 +58,12 @@ export class TeacherRound extends ClassroomRound{
   }
   bindTarget(){
     if(this.teacher.carriedId===null)return null;
-    const p=this.player;return DETENTION.find(post=>Math.hypot(p.x-post.x,p.z-post.z)<1.55&&clearWallSegment(p,post)&&Math.abs(Math.atan2(Math.sin(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw),Math.cos(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw)))<.85&&!this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))||null;
+    const p=this.player;return DETENTION.find(post=>Math.hypot(p.x-post.x,p.z-post.z)<1.55&&clearWallSegment(p,post,this.layout)&&Math.abs(Math.atan2(Math.sin(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw),Math.cos(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw)))<.85&&!this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))||null;
   }
   grabStudent(){
     if(!this._classInputAllowed()||this._writing||this.teacher.carriedId!==null)return false;
     const s=this.aimedStudent(1.55);if(!s||s.captivity!=='stunned')return false;
-    Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw});return this._grab(s);
+    Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw});const grabbed=this._grab(s);if(grabbed)this.player.crouched=false;return grabbed;
   }
   bindStudent(){const post=this.bindTarget();if(!this._classInputAllowed()||!post)return false;return this._bind(post.id);}
   dropStudent(){if(!this._classInputAllowed())return false;const s=this.students[this.teacher.carriedId];if(!s)return false;this._release(s);return true;}
@@ -81,12 +82,12 @@ export class TeacherRound extends ClassroomRound{
   releaseTarget(){
     if(this.teacher.carriedId!==null)return null;
     const p=this.player;
-    return this.students.filter(s=>s.captivity==='bound'&&Math.hypot(s.x-p.x,s.z-p.z)<1.65&&clearWallSegment(p,s)&&Math.abs(Math.atan2(Math.sin(Math.atan2(s.x-p.x,s.z-p.z)-p.yaw),Math.cos(Math.atan2(s.x-p.x,s.z-p.z)-p.yaw)))<.62).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0]||null;
+    return this.students.filter(s=>s.captivity==='bound'&&Math.hypot(s.x-p.x,s.z-p.z)<1.65&&clearWallSegment(p,s,this.layout)&&Math.abs(Math.atan2(Math.sin(Math.atan2(s.x-p.x,s.z-p.z)-p.yaw),Math.cos(Math.atan2(s.x-p.x,s.z-p.z)-p.yaw)))<.62).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0]||null;
   }
   releaseBoundStudent(){const s=this.releaseTarget();if(!this._classInputAllowed()||!s)return false;return this._release(s);}
   canWriteBoard(){
     const p=this.player,yaw=Math.atan2(Math.sin(p.yaw),Math.cos(p.yaw));
-    return this.stage==='class'&&this.teacher.carriedId===null&&Math.abs(p.x)<3.5&&p.z>4.95&&p.z<6.25&&Math.abs(yaw)<.85&&p.pitch<.45&&p.pitch>-.85;
+    return this.stage==='class'&&!p.crouched&&this.teacher.carriedId===null&&Math.abs(p.x-BOARD.x)<3.5&&p.z>BOARD.z-1&&p.z<BOARD.z+.65&&Math.abs(yaw)<.85&&p.pitch<.45&&p.pitch>-.85;
   }
   setWriting(value){
     if(!value){this._writing=false;this.teacher.writing=false;this.teacher.writeProgress=0;return false;}
@@ -96,6 +97,7 @@ export class TeacherRound extends ClassroomRound{
   pause(value=true){if(value)this.setWriting(false);return super.pause(value);}
   _advanceTeacher(dt){
     const p=this.player,t=this.teacher;
+    if((t._chalkUntil||0)>this.elapsed+1e-9){t.phase='stunned';t.writing=false;this._writing=false;p.captivity='stunned';return;}if(p.captivity==='stunned'){p.captivity='free';t.captivity='free';}
     if(this._writing&&(!this.canWriteBoard()||Math.hypot(this._movement.x,this._movement.z)>.01))this.setWriting(false);
     // +10/sec is visible in 09:14-09:18; passive fatigue remains local tuning.
     t.stamina=Math.max(0,Math.min(100,t.stamina+dt*(this._writing?10:-1)));
