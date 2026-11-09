@@ -84,7 +84,9 @@ test('heard noise can be remembered without visual evidence or a red card',()=>{
 });
 
 test('movement collides with desks, can use an aisle, and standing actions earn no points',()=>{
-  const r=new ClassroomRound({target:100000});r.start();r.player._slots[0].action='snack';r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
+  // This case measures a fixed static aisle route. Independently scheduled AI
+  // drawers are covered by drawer-collision58 rather than changing its distance.
+  const r=quietFixture();r.player._slots[0].action='snack';r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
   takeAndUse(r);r.setMovement(0,1);r.step(2);
   let s=r.snapshot();const desk=DESKS[PLAYER_SEAT];assert.ok(s.player.z<=desk.minZ-.18+1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
   r.setMovement(-1,0);r.step((r.player.x-AISLES[0])/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,1);r.step(2);
@@ -114,6 +116,11 @@ test('four classmates plan and complete actual actions; ordinary NPCs never scor
 
 test('teacher revisits remembered individuals and targets only previously seen or heard people',()=>{
   const r=new ClassroomRound({seed:73,target:100000});r.start();let targeted=0,revisited=false,observedEvidence=false;
+  // Begin with a real visible phone use, rather than depending on a random AI
+  // exposing a prop along one particular patrol route before its drawer closes.
+  Object.assign(r.teacher,{x:r.player.x,z:r.player.z-.9,yaw:0});
+  assert.equal(blocked(r.teacher.x,r.teacher.z,.23,r.layout),false);assert.equal(canSee(r.teacher,r.player,[],r.layout),true);
+  r.player._slots[0].action='phone';r.toggleDrawer();assert.equal(r.selectSlot(0),true);takeAndUse(r);
   for(let i=0;i<120*60;i++){r.step(DT);const t=r.snapshot().teacher;revisited ||= t.memory.some(m=>m.visits>1&&m.lastHeard!==null);observedEvidence ||= t.memory.some(m=>m.evidence>15);if(t.targetId!==null){assert.ok(t.observedIds.includes(t.targetId));targeted++;}}
   const memories=r.snapshot().teacher.memory;
   assert.ok(targeted>0);assert.ok(revisited,'teacher revisited a known source before rescue could clear the memory');

@@ -22,7 +22,15 @@ parent=head['object']['sha']
 remote_commit=api('git/commits/'+parent)
 remote_tree=api('git/trees/'+remote_commit['tree']['sha']+'?recursive=1')
 remote_blobs={entry['sha'] for entry in remote_tree.get('tree',[]) if entry['type']=='blob'}
-files=subprocess.check_output(['git','ls-files','-z'],cwd=root).decode().strip('\0').split('\0')
+index=subprocess.check_output(['git','ls-files','--stage','-z'],cwd=root).decode().strip('\0').split('\0')
+file_modes={}
+for entry in index:
+ metadata,name=entry.split('\t',1)
+ mode,_,stage=metadata.split()
+ assert stage=='0',f'Unresolved index entry: {name}'
+ assert mode in ('100644','100755'),f'Unsupported file mode {mode}: {name}'
+ file_modes[name]=mode
+files=list(file_modes)
 def upload(name):
  content=(root/name).read_bytes(); sha=hashlib.sha1(b'blob '+str(len(content)).encode()+b'\0'+content).hexdigest()
  if state['blobs'].get(name)==sha and sha in remote_blobs:return name,sha
@@ -33,7 +41,7 @@ entries=[]
 with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
  for name,sha in pool.map(upload,files):
   state['blobs'][name]=sha;statepath.write_text(json.dumps(state))
-  entries.append({'path':name,'mode':'100644','type':'blob','sha':sha})
+  entries.append({'path':name,'mode':file_modes[name],'type':'blob','sha':sha})
   print('Uploaded',name,flush=True)
 def publish_branch(branch,entries):
  current=api('git/ref/heads/'+branch,allow404=True)
@@ -44,7 +52,7 @@ def publish_branch(branch,entries):
   if old['tree']['sha']==tree['sha']:
    print(branch+' is already up to date',flush=True)
    return parents[0]
- commit=api('git/commits',{'message':'Update classroom roles, room settings, movement and multiplayer fixes','tree':tree['sha'],'parents':parents})
+ commit=api('git/commits',{'message':'Refine drawer and desk hand poses, classroom daylight and teacher preparation rules','tree':tree['sha'],'parents':parents})
  if current:
   assert api('git/ref/heads/'+branch)['object']['sha']==parents[0],'Remote changed during upload'
   api('git/refs/heads/'+branch,{'sha':commit['sha'],'force':False},method='PATCH')

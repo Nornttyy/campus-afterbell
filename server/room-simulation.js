@@ -41,7 +41,7 @@ class SharedRound extends TeacherRound{
  _advancePreparation(dt){
   this._moveGuests(dt);super._advancePreparation(dt);
   // The selected teacher waits inside the office for the full countdown.
-  if(this.stage==='seating'){Object.assign(this.player,Layout.TEACHER_SPAWN,{seated:false});Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw,officeLocked:true});}
+  if(this.stage==='seating'){Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw,officeLocked:true});}
   else this.teacher.officeLocked=false;
  }
  _advance(dt){this.teacher.officeLocked=false;this._moveGuests(dt);super._advance(dt);}
@@ -173,7 +173,6 @@ export class CampusRoom{
   if(command==='setMovement'&&args.some(n=>Math.abs(n)>1.001))throw new RoomError(400,'无效移动');
   if(['hold','setCrouch','setWriting','setDrawerOpen','setBookRaised','setOfficeDrawerOpen'].includes(command)&&typeof args[0]!=='boolean')throw new RoomError(400,'无效状态');
   if(['takeSlot','selectSlot'].includes(command)&&(!Number.isInteger(args[0])||args[0]<0||args[0]>3||!member.context.player._slots[args[0]]))throw new RoomError(400,'无效物品位置');
-  if(member.role==='teacher'&&this.sim.stage==='seating'&&['setMovement','hold','throwChalk'].includes(command))return false;
   // The teacher is not in the student array while a pupil's context is active.
   // Check the selected physical chair across every role before any implicit sit.
   let officeChairId=null;

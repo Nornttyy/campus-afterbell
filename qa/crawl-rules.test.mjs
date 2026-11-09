@@ -1,3 +1,4 @@
+import {teacherViewHeight} from '../dist/camera-height58.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound,chalkHit} from '../dist/classroom-rules.js';
@@ -6,8 +7,8 @@ import {CRAWL_TUNING} from '../dist/crawl-profile.js';
 import {BOARD,floorHeight} from '../dist/classroom-layout.js';
 import {effectEye,createThrowableProjectile,stepThrowableProjectile} from '../dist/projectile-effects-rules.js';
 
-test('crawling is a free standing posture in both roles and pause clears it',()=>{
- for(const Round of [ClassroomRound,TeacherRound]){
+test('crawling is a free standing posture for students and pause clears it',()=>{
+ for(const Round of [ClassroomRound]){
   const r=new Round();r.start({gathering:true});Object.assign(r.player,{x:7,z:0,seated:false,yaw:0});
   assert.equal(r.setCrouch(true),true);r.setMovement(0,1);r.step(.5);
   assert.ok(Math.abs(r.player.z-CRAWL_TUNING.speed*.5)<1e-8);assert.equal(r.snapshot().player.crouched,true);
@@ -33,9 +34,9 @@ test('crawling uses floor-level projectile exposure and hit heights, including t
  }
 });
 
-test('crawling teachers throw chalk from the low view and stand to carry or write',()=>{
- const r=new TeacherRound();r.start();Object.assign(r.player,{x:7,z:0,yaw:0,pitch:0});assert.equal(r.setCrouch(true),true);
- assert.equal(r.throwChalk(),true);assert.equal(r.chalks[0].y,CRAWL_TUNING.eyeHeight);
- Object.assign(r.player,{x:BOARD.x,z:BOARD.z});assert.equal(r.canWriteBoard(),false);r.setCrouch(false);assert.equal(r.canWriteBoard(),true);
+test('teachers reject crawl, retain their standing view, and can throw chalk and write',()=>{
+ const r=new TeacherRound();r.start();Object.assign(r.player,{x:7,z:0,yaw:0,pitch:0});assert.equal(r.setCrouch(true),false);assert.equal(r.player.crouched,false);
+ assert.equal(r.throwChalk(),true);assert.equal(r.chalks[0].y,teacherViewHeight(r.player));
+ Object.assign(r.player,{x:BOARD.x,z:BOARD.z});assert.equal(r.canWriteBoard(),true);
  r.teacher.carriedId=2;assert.equal(r.setCrouch(true),false);
 });

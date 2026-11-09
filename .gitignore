@@ -16,3 +16,5 @@ docs/reference-media/
 art-source/
 qa/recordings/
 scripts/models/__pycache__/
+__pycache__/
+qa/.tmp-*

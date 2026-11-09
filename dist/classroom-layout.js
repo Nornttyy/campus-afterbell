@@ -51,7 +51,7 @@ export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
   // Give facing desks a real seam without resizing their authored geometry.
   blocks.forEach(({x,z},i)=>{const n=counts[i];if(n===4){for(const dz of [-.44,.44])for(const dx of [-.625,.625])add(x+dx,z+dz,dz>0?Math.PI:0);}else if(n===2){const loose=pattern==='mixed'&&random()>.5;for(const dx of loose?[-1.05,1.05]:[-.64,.64])add(x+dx,z,0);}});
  }
- const seats=raw.map((s,id)=>Object.freeze({...s,id,row:Math.floor(id/6),col:id%6,x:s.deskX-Math.sin(s.yaw)*.78,z:s.deskZ-Math.cos(s.yaw)*.78,pattern,map:mapKind(map)==='tiered'?'tiered':'classroom'}));
+ const seats=raw.map((s,id)=>Object.freeze({...s,id,row:Math.floor(id/6),col:id%6,x:s.deskX-Math.sin(s.yaw)*.78,z:s.deskZ-Math.cos(s.yaw)*.78,pattern,map:mapKind(map)}));
  return Object.freeze(seats);
 }
 export const SEATS=createSeatLayout(73);
@@ -79,7 +79,7 @@ export function ceilingVolumes(map='classroom'){return mapKind(map)==='tiered'?r
 // The teacher laptop is only present on computer floors. Separate base and
 // lid bounds avoid treating the air above its keyboard as a solid monitor.
 const laptopVolumes=Object.freeze([V(-1.175,-.515,7.395,7.825,1.1475,1.1975),V(-1.175,-.515,7.354,7.429,1.1835,1.570)]);
-export function enclosureVolumes(map='classroom',context=null){return [...(context?.wallVolumes||WALL_VOLUMES),...(mapKind(map)==='tiered'?raisedUpperWalls:[]),...ceilingVolumes(map),...(mapKind(map)==='computer'?laptopVolumes:[])];}
+export function enclosureVolumes(map='classroom',context=null){return [...(context?.wallVolumes||WALL_VOLUMES),...(mapKind(map)==='tiered'?raisedUpperWalls:[]),...ceilingVolumes(map),...(mapKind(map)==='computer'?laptopVolumes:[]),...(context?.dynamicSolids||[])];}
 export const OFFICE_SOLIDS=Object.freeze([
  V(OFFICE.minX+.04,OFFICE.minX+.68,10.10,20.08,0,2.78),
  ...OFFICE_DESKS.map(d=>V(d.x-d.width/2,d.x+d.width/2,d.z-d.depth/2,d.z+d.depth/2,0,.985)),
@@ -105,7 +105,7 @@ export function clearWallSegment(a,b,context=null){
  for(const w of context?.walls||WALLS){let lo=0,hi=1;for(const axis of ['X','Z']){const k=axis.toLowerCase(),d=b[k]-a[k];if(Math.abs(d)<1e-8){if(a[k]<w['min'+axis]||a[k]>w['max'+axis]){lo=2;break;}}else{let u=(w['min'+axis]-a[k])/d,v=(w['max'+axis]-a[k])/d;if(u>v)[u,v]=[v,u];lo=Math.max(lo,u);hi=Math.min(hi,v);}}if(lo<=hi&&hi>=0&&lo<=1)return false;}return true;
 }
 // The shipped Tripo top is 1.200 × .849m, with its top at .875m.
-export function deskSolids(seats=SEATS){return seats.map(s=>V(s.deskX-.60,s.deskX+.60,s.deskZ-.425,s.deskZ+.425,0,.875));}
+export function deskSolids(seats=SEATS){return seats.map(s=>{const halfWidth=mapKind(s.map)==='computer'?.61:.60;return V(s.deskX-halfWidth,s.deskX+halfWidth,s.deskZ-.425,s.deskZ+.425,0,.875);});}
 export function chairBackSolids(seats=SEATS){return [...seats.map(s=>{const z=s.z-Math.cos(s.yaw||0)*.325;return V(s.x-.281,s.x+.281,z-.057,z+.057,.42,.99);}),...OFFICE_CHAIRS.map(c=>V(c.x-.35,c.x+.35,c.z-.36,c.z-.24,.45,1.13))];}
 export const DESKS=Object.freeze(deskSolids());
 export function createLayoutContext(seats=SEATS,doorState={}){
@@ -119,7 +119,7 @@ export function updateLayoutDoors(context,{officeLocked=context.officeLocked??fa
  else for(const x of [OFFICE.doorMinX,OFFICE.doorMaxX])leaves.push(V(x-.092,x+.092,8.91,9.81,0,3.02));
  if(elevatorClosed)leaves.push(V(LIFT.minX,LIFT.maxX,-10.22,-9.98,.02,3.12));
  context.walls=[...baseWalls,...leaves];context.wallVolumes=[...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...leaves,...headers];
- context.walkSolids=[...context.desks,...context.chairBacks,...context.walls,LECTERN,...OFFICE_SOLIDS];context.routeGrids.clear();context.projectileColliderCache?.clear();return context;
+ context.walkSolids=[...context.desks,...context.chairBacks,...context.walls,LECTERN,...OFFICE_SOLIDS,...(context.dynamicSolids||[])];context.routeGrids.clear();context.projectileColliderCache?.clear();return context;
 }
 const defaultLayout=createLayoutContext();
 export function blocked(x,z,radius=.18,context=defaultLayout){return !walkableFootprint(x,z,radius)||(context?.walkSolids||defaultLayout.walkSolids).some(d=>x>d.minX-radius&&x<d.maxX+radius&&z>d.minZ-radius&&z<d.maxZ+radius);}
@@ -133,11 +133,38 @@ export function chairExit(seat,radius=.18,context=defaultLayout){
   }
   return null;
 }
+function movementStepClear(x,z,nextX,nextZ,radius,context){
+  const dynamic=context.dynamicSolids||[],inside=(d,px,pz)=>px>d.minX-radius&&px<d.maxX+radius&&pz>d.minZ-radius&&pz<d.maxZ+radius;
+  if(!dynamic.some(d=>inside(d,x,z)))return !blocked(nextX,nextZ,radius,context);
+  // A drawer may open while someone is beside it. Only that newly overlapping
+  // dynamic geometry permits an outward step; static walls/desks remain solid.
+  // Merge touching intervals so adjacent drawers cannot demand opposite exits.
+  const at={x,z},spans={};
+  for(const axis of ['x','z']){
+    const other=axis==='x'?'z':'x',key=axis.toUpperCase(),cross=other.toUpperCase();let min=at[axis],max=min,changed=true;
+    const ranges=dynamic.filter(d=>at[other]>d['min'+cross]-radius&&at[other]<d['max'+cross]+radius);
+    while(changed){changed=false;for(const d of ranges){const lo=d['min'+key]-radius,hi=d['max'+key]+radius;if(lo<=max+1e-9&&hi>=min-1e-9&&(lo<min||hi>max)){min=Math.min(min,lo);max=Math.max(max,hi);changed=true;}}}
+    spans[axis]={min,max};
+  }
+  const statics=context.walkSolids.filter(d=>!dynamic.includes(d)),exits=[];
+  for(const axis of ['x','z'])for(const sign of [-1,1]){
+    const other=axis==='x'?'z':'x',key=axis.toUpperCase(),cross=other.toUpperCase(),edge=spans[axis][sign<0?'min':'max']+sign*1e-8;
+    const target={...at,[axis]:edge},lo=Math.min(at[axis],edge),hi=Math.max(at[axis],edge);
+    if(!walkableFootprint(target.x,target.z,radius)||statics.some(d=>at[other]>d['min'+cross]-radius&&at[other]<d['max'+cross]+radius&&hi>d['min'+key]-radius&&lo<d['max'+key]+radius))continue;
+    exits.push({axis,sign,distance:Math.abs(edge-at[axis])});
+  }
+  const nearest=Math.min(...exits.map(e=>e.distance)),axis=nextX!==x?'x':'z',sign=Math.sign(axis==='x'?nextX-x:nextZ-z);
+  if(!exits.some(e=>e.axis===axis&&e.sign===sign&&e.distance<=nearest+1e-9))return false;
+  if(!walkableFootprint(nextX,nextZ,radius))return false;
+  const coordinate=axis==='x'?nextX:nextZ,span=spans[axis];
+  return !context.walkSolids.some(d=>inside(d,nextX,nextZ)&&(!dynamic.includes(d)||coordinate<span.min||coordinate>span.max));
+}
 export function moveInRoom(pos,dx,dz,radius=.18,context=defaultLayout){
   // Swept substeps prevent crossing a thin desk when a frame arrives late.
+  context??=defaultLayout;
   const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.08));
   let x=pos.x,z=pos.z;
-  for(let i=0;i<steps;i++){if(!blocked(x+dx/steps,z,radius,context))x+=dx/steps;if(!blocked(x,z+dz/steps,radius,context))z+=dz/steps;}
+  for(let i=0;i<steps;i++){if(dx&&movementStepClear(x,z,x+dx/steps,z,radius,context))x+=dx/steps;if(dz&&movementStepClear(x,z,x,z+dz/steps,radius,context))z+=dz/steps;}
   return{x,z};
 }
 

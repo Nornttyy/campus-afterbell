@@ -50,9 +50,9 @@ test('E takes a harmless twirling pen, toggles writing, and Q returns without op
   f.key('KeyQ');f.advance(.1);assert.equal(f.rendered.player.penTaken,false);assert.equal(f.rendered.player.penWriting,false);assert.equal(f.rendered.drawer.drawnSlot,null);assert.equal(f.rendered.drawer.open,false);
  }finally{f.close();}
 });
-test('computer E entry, app command and arrow keys score real snake food and preserve one five-second slot',()=>{
+test('computer E entry, app command and arrow keys score real snake food and preserve one three-second slot',()=>{
  const f=fixture({map:'computer7'});try{f.target({kind:'computer'});f.key('KeyE');f.advance(.1);assert.equal(f.rendered.player.computerActive,true);assert.equal(f.rendered.player.computer.app,'desktop');f.commands.app('snake');f.advance(.65);assert.equal(f.round.score,1);assert.equal(f.rendered.player.computer.snake.score,1);f.key('ArrowUp');f.advance(.16);assert.equal(f.rendered.player.computer.snake.direction,'up');f.key('KeyQ');f.advance(.1);assert.equal(f.rendered.player.computer.app,'desktop');assert.equal(f.rendered.player.computerActive,true);f.key('KeyQ');f.advance(.1);assert.equal(f.rendered.player.computerActive,false);
-  f.take('burger');f.mouse(true);f.advance(3);f.mouse(false);assert.equal(f.rendered.drawer.slots.length,1);assert.equal(f.rendered.drawer.slots[0].readyIn,5);f.advance(5);assert.ok(f.rendered.drawer.slots[0].action);
+  f.take('burger');f.mouse(true);f.advance(3);f.mouse(false);assert.equal(f.rendered.drawer.slots.length,1);assert.equal(f.rendered.drawer.slots[0].readyIn,3);f.advance(3-1/60);assert.equal(f.rendered.drawer.slots[0].action,null);f.advance(1/60);assert.ok(f.rendered.drawer.slots[0].action);
  }finally{f.close();}
 });
 test('teacher production left click requires but does not consume stamina and is blocked while stunned',()=>{

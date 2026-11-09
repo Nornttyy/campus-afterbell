@@ -24,8 +24,8 @@ test('AI departs early one at a time, follows real paths at normal speed and gra
 test('manual free seating is allowed before class and an arriving AI chooses another seat',()=>{
  const r=new ClassroomRound();r.start({gathering:true});r.startBell();const seat=r.seats[2];Object.assign(r.player,{x:seat.x,z:seat.z});assert.equal(r.interact(2),'seated');assert.equal(r.toggleDrawer(),false);r.step(30);assert.equal(r.player.seatId,2);assert.notEqual(r.students[2]._targetSeatId,2);assert.equal(r.students.filter(s=>s.seated&&s.seatId===2).length,1);assert.equal(r.toggleDrawer(),true);
 });
-test('human teacher is teleported to the office before preparation and cannot throw early',()=>{
- const r=new TeacherRound();r.start({gathering:true});assert.equal(r.throwChalk(),false);r.startBell();assert.equal(r.player.x,TEACHER_SPAWN.x);assert.equal(r.player.z,TEACHER_SPAWN.z);assert.equal(r.layout.officeLocked,true);r.step(30);assert.equal(r.stage,'class');assert.equal(r.teacher.stamina,100);assert.equal(r.throwChalk(),true);assert.equal(r.teacher.stamina,100,'throwing chalk is free under the current stamina rule');
+test('human teacher is teleported to the office before preparation and may practise chalk',()=>{
+ const r=new TeacherRound();r.start({gathering:true});assert.equal(r.throwChalk(),true);r.startBell();assert.equal(r.player.x,TEACHER_SPAWN.x);assert.equal(r.player.z,TEACHER_SPAWN.z);assert.equal(r.layout.officeLocked,true);r.step(30);assert.equal(r.stage,'class');assert.equal(r.teacher.stamina,100);assert.equal(r.throwChalk(),true);assert.equal(r.teacher.stamina,100,'throwing chalk is free under the current stamina rule');
 });
 test('AI teacher exits only after preparation, follows a continuous physical path and ignores evidence while entering',()=>{
  const r=new ClassroomRound();r.start({gathering:true});r.startBell();r.step(30);assert.equal(r.teacher.intent,'enter');const budget=r._teacherEntryLength/AI_WALK_SPEEDS.teacherEntry;r._hear(r.player,4);assert.equal(r._memory.size,0);let steps=0;

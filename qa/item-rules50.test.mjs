@@ -34,10 +34,10 @@ test('office stock is only lunch, refills after three seconds and survives leavi
  const r=quiet();r.interact();Object.assign(r.player,{x:OFFICE_CHAIR.x,z:OFFICE_CHAIR.z});assert.equal(r.openOfficeDrawer(),true);assert.equal(r.snapshot().drawer.office,true);assert.deepEqual(r.snapshot().drawer.slots.map(s=>s.action),['lunch']);assert.equal(r.takeSlot(0),true);r.hold(true);r.step(3);assert.equal(r.score,3);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);r.interact();r.step(3);assert.equal(r.officeSlots[0].action,'lunch');
  const normal=r.seats.find(s=>!r.students.some(p=>p.seated&&p.seatId===s.id));Object.assign(r.player,normal);assert.equal(r.interact(normal.id),'seated');assert.equal(r.snapshot().drawer.office,false);assert.equal(r.snapshot().drawer.slots.length,3);
 });
-test('computer room has a desktop and snake scores only real food, with one five-second drawer slot',()=>{
+test('computer room has a desktop and snake scores only real food, with one three-second drawer slot',()=>{
  const r=quiet('computer7');assert.equal(r.player._slots.length,1);assert.equal(r.startComputer(),true);assert.equal(r.snapshot().player.computer.app,'desktop');r.hold(true);r.step(3);assert.equal(r.score,0);assert.equal(r.computerApp('study'),true);r.step(2);assert.equal(r.score,0);
  assert.equal(r.computerApp('snake'),true);r.step(.65);assert.equal(r.score,1);assert.equal(r.snapshot().player.computer.snake.score,1);assert.equal(r.snakeDirection('left'),false);assert.equal(r.computerApp('snake'),true);assert.equal(r.snapshot().player.computer.snake.score,1,'reopening must not reroll an active snake');
- r.stopComputer();stock(r,'burger');r.hold(true);r.step(3);assert.equal(r.snapshot().drawer.slots[0].readyIn,5);r.step(5-DT);assert.equal(r.player._slots[0].action,null);r.step(DT);assert.ok(r.player._slots[0].action);
+ r.stopComputer();stock(r,'burger');r.hold(true);r.step(3);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);r.step(3-DT);assert.equal(r.player._slots[0].action,null);r.step(DT);assert.ok(r.player._slots[0].action);
 });
 test('snake rejects reverse turns, stops on collisions and never spawns food inside its body',()=>{
  const s=createSnake(4);assert.equal(turnSnake(s,'left'),false);assert.equal(stepSnake(s,.64),1);assert.equal(s.score,1);assert.ok(!s.body.some(p=>p.x===s.food.x&&p.y===s.food.y));stepSnake(s,5);assert.equal(s.alive,false);const score=s.score;stepSnake(s,5);assert.equal(s.score,score);
@@ -55,7 +55,7 @@ test('stunning a pupil returns the temporary pen to its desk without changing dr
  const r=quiet(),seatId=r.player.seatId,before=r.snapshot().drawer.slots;assert.equal(r.takePen(),true);r.hold(true);r.step(.7);assert.equal(r._stun(r.player),true);assert.equal(r.snapshot().player.penTaken,false);assert.equal(r.player._drawnSlot,null);assert.equal(r.player._slots.some(s=>s.temporary),false);assert.deepEqual(r.snapshot().drawer.slots,before);r.step(5);assert.equal(r.interact(seatId),'seated');assert.equal(r.takePen(),true,'the desk pen must be usable again after recovering');
 });
 test('teacher chalk requires positive stamina but does not consume it; stun sits and blocks casts, ink only blinds',()=>{
- const r=quiet('classroom',TeacherRound);r.teacher.stamina=20;assert.equal(r.throwChalk(),true);assert.equal(r.teacher.stamina,20);r.elapsed=1;assert.equal(r.throwChalk(),true);assert.equal(r.teacher.stamina,20);r.teacher.stamina=0;r.elapsed=2;assert.equal(r.throwChalk(),false);
+ const r=quiet('classroom',TeacherRound);r.teacher.stamina=20;assert.equal(r.throwChalk(),true);assert.equal(r.teacher.stamina,20);r.step(1);assert.equal(r.throwChalk(),true);assert.equal(r.teacher.stamina,20);r.teacher.stamina=0;r.step(1);assert.equal(r.throwChalk(),false);
  r.teacher.stamina=100;r._stunAny(r.teacher,4,'bananaPeel');assert.equal(r.snapshot().teacher.phase,'stunned');assert.ok(r.snapshot().teacher.stunLeft>=4);assert.equal(r.throwChalk(),false);r.step(4);assert.equal(r.player.captivity,'free');
  r._applyProjectileEffect({id:1,ownerId:0},{kind:'ink',x:r.teacher.x,y:1.9,z:r.teacher.z,hitActorId:-1});assert.ok(r.snapshot().teacher.inkLeft>0);assert.equal(r.throwChalk(),true);
 });

@@ -1,7 +1,7 @@
 export const BACKWARD_SPEED_RATIO=.6;
 // One normal pace per role, shared by humans and AI. Arrival deadlines never
-// change these values. Carrying someone and crawling have separate slow states.
-export const NORMAL_WALK_SPEEDS=Object.freeze({student:1.8,teacher:2.2,teacherCarrying:1.15});
+// change these values. Carrying a pupil preserves the teacher's normal pace.
+export const NORMAL_WALK_SPEEDS=Object.freeze({student:1.8,teacher:2.2,teacherCarrying:2.2});
 export function normalWalkSpeed(actor){return actor?.id===-1?NORMAL_WALK_SPEEDS.teacher:NORMAL_WALK_SPEEDS.student;}
 // Keep the approved, unhurried source gait while movement uses role-specific
 // game speeds. A higher world speed must not turn the arms into a rapid cycle.

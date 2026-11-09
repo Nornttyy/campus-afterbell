@@ -4,7 +4,7 @@ import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 const names=Object.freeze({snack:'snack-packet',drink:'red-drink-can',burger:'layered-burger',ink:'ink-glass-bottle',banana:'curved-banana',bananaPeel:'banana-peel',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox',pen:'red-school-pen'});
 const templates=new Map();
 export const CLASSROOM_PROP_SOURCES=Object.freeze(Object.fromEntries(['snack','drink','burger','ink','banana','garlic'].map(kind=>[kind,`./assets/models/${kind}-v1.glb?v=mouth-36`])));
-const referenceSizes={snack:[.1721,.209,.056],drink:[.088,.1756,.0904],burger:[.2159,.1409,.2129],ink:[.094,.1575,.0975],banana:[.13,.25,.06],bananaPeel:[.20,.14,.20],garlic:[.09,.12,.06],gum:[.13,.06,.03],lunch:[.22,.07,.15],pen:[.014,.17,.014]};
+const referenceSizes={snack:[.1721,.209,.056],drink:[.088,.1756,.0904],burger:[.2159,.1409,.2129],ink:[.094,.1575,.0975],banana:[.13,.25,.06],bananaPeel:[.20,.14,.20],garlic:[.09,.12,.06],gum:[.13,.06,.03],lunch:[.22,.07,.15],pen:[.023,.175,.023]};
 
 // Move the contact point, not the imported mesh: wider/shorter source props keep
 // their authored proportions while the thumb and index meet the actual surface.

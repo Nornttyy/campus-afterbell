@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-57';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-58';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {CampusRoom} from '../server/room-simulation.js';
@@ -14,7 +14,7 @@ test('first person pen continuously writes on the page without a mouse hold or c
   if(i<120)continue;assert.equal(pen.visible,true);assert.deepEqual(pen.scale.toArray(),[1,1,1]);
   const tip=pen.localToWorld(new T.Vector3(0,-.0875,0));tips.push(tip);
   assert.ok(Math.abs(tip.y-(.88+Math.abs(tip.x)*Math.tan(.14)+.005-1.43))<1e-5,'pen tip left the sloping paper surface');
-  assert.ok(tip.z<-.69&&tip.z>-.76&&tip.x>.10&&tip.x<.17,'pen writes outside the page');
+  assert.ok(tip.z<-.675&&tip.z>-.775&&tip.x>.075&&tip.x<.195,'pen writes outside the page');
  }
  assert.ok(Math.max(...tips.map(p=>p.x))-Math.min(...tips.map(p=>p.x))>.05,'pen must draw continuous strokes');
  for(let i=301;i<370;i++)h.update(i/60,{action:'pen',carrying:false,seated:true,freeLook:true});assert.equal(pen.visible,false);

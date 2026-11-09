@@ -1,5 +1,21 @@
 import * as T from './vendor/three.module.js';
 
+// A single compartment fits beside the existing tower without changing the
+// workstation footprint. Contents keep their original GLB size and transforms.
+export const COMPUTER_DRAWER55=Object.freeze({floor:.62,itemZ:-.25,travel:.24});
+export function buildComputerDrawer55({parent,box,rounded,mat,id='computer-drawer',bakeStatic=()=>{}}){
+ const group=new T.Group();group.name=id;parent.add(group);
+ const tray=mat('#a8b6b3',{metalness:.12,roughness:.55}),front=mat('#d1d5cb',{roughness:.68}),handle=mat('#3e5055',{roughness:.55});
+ rounded(tray,[0,.614,-.08],[.54,.012,.65],.003,null,group);
+ for(const side of[-1,1])box(tray,[side*.264,.695,-.08],[.012,.15,.65],null,group);
+ box(tray,[0,.695,.239],[.54,.15,.012],null,group);
+ rounded(front,[0,.695,-.405],[.56,.15,.024],.006,null,group);
+ for(const x of[-.10,.10])box(handle,[x,.701,-.433],[.016,.016,.035],null,group);
+ rounded(handle,[0,.701,-.454],[.22,.022,.022],.006,null,group);
+ bakeStatic(group);
+ return{group,open:0,...COMPUTER_DRAWER55};
+}
+
 // Physical hardware only. Display content has one owner, computer-screen55.
 // Dimensions are authored in metres rather than scaling classroom furniture.
 export function buildDesktop55({parent,box,rounded,mat,x=0,y=0,z=0,id='computer',bakeStatic=()=>{}}){

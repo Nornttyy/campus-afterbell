@@ -1,3 +1,4 @@
+import {teacherViewHeight} from '../dist/camera-height58.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound,AI_WALK_SPEEDS} from '../dist/classroom-rules.js';
@@ -30,7 +31,7 @@ test('a used post cannot take another pupil; rescue makes exactly that post reus
 test('stun expires without a grab; a carried pupil does not teleport to a post and Q releases them',()=>{
  const r=new TeacherRound({target:100000,seed:44});r.start();for(const s of r.students)s._decisionAt=Infinity;const s=r.students[[...r._team][0]];
  r._stun(s);r.step(5.1);assert.equal(s.captivity,'free');
- r.player.x=s.x;r.player.z=s.z+1.2;r.setLook(Math.PI,Math.atan2(.46,1.2));r._stun(s);assert.ok(r.grabStudent());r.step(.4);const z=s.z;r.setMovement(.4,0);r.step(1);assert.ok(Math.abs(s.z-z)<.1);assert.equal(s.caught,false);assert.ok(r.dropStudent());assert.equal(s.captivity,'free');assert.equal(r.teacher.carriedId,null);
+ r.player.x=s.x;r.player.z=s.z+1.2;r.setLook(Math.PI,Math.atan2(teacherViewHeight(r.player)-1.49,1.2));r._stun(s);assert.ok(r.grabStudent());r.step(.4);const z=s.z;r.setMovement(.4,0);r.step(1);assert.ok(Math.abs(s.z-z)<.1);assert.equal(s.caught,false);assert.ok(r.dropStudent());assert.equal(s.captivity,'free');assert.equal(r.teacher.carriedId,null);
 });
 test('routes between seats and posts stay clear of all desk collision volumes',()=>{
  for(const id of [0,2,9,16,27,29]){const route=walkRoute(SEATS[id],{x:DETENTION[0].x,z:DETENTION[0].z-1.1});assert.ok(route.length>0);assert.ok(route.every(p=>!blocked(p.x,p.z,.2)));assert.ok(Math.hypot(route.at(-1).x-DETENTION[0].x,route.at(-1).z-(DETENTION[0].z-1.1))<.1);}

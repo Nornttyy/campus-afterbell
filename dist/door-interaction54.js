@@ -1,4 +1,4 @@
-import {DOORS,DOOR_LEAVES} from './classroom-layout.js?v=campus-57';
+import {DOORS,DOOR_LEAVES} from './classroom-layout.js?v=campus-58';
 // Test the actual open/closed leaf, rather than an invisible doorway centre.
 export function reachesRearDoor(player,layout){
  const index=DOORS.findIndex(d=>d.id==='rear'),door=DOORS[index],leaf=layout.rearDoorClosed?{minX:7.20,maxX:7.40,minZ:door.minZ,maxZ:door.maxZ}:DOOR_LEAVES[index];

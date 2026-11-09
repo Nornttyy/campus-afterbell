@@ -14,7 +14,7 @@ export function createReferenceHUD({document:doc=globalThis.document,root}){
  $('#resume-game').textContent='继续游戏';$('#leave-game').textContent='退出游戏';
  const settings=make('button','paper-button','设置');settings.id='pause-settings';settings.addEventListener('click',()=>{$('#settings-dialog')?.showModal();});pause.insertBefore(settings,$('#leave-game'));if(details)pause.insertBefore(details,$('#leave-game'));
  $('#student-controls').textContent='WASD 移动 · 鼠标转向\nE 拿取 / 打开 / 坐下\nQ 放回 / 关闭 / 起身\n拿笔后 E 切换转笔和写字\n长按左键使用 · 投掷物松开抛出\n对准后门按住 E 开门 / Q 关门\n按住 E 解救 · Shift 爬行\n机房方向键 / WASD 控制贪吃蛇\nM 麦克风 · ESC 暂停';
- $('#teacher-controls').textContent='WASD 移动 · 鼠标转向\n左键投粉笔 · E 抓住眩晕同学\n木桩前 E 绑住 · Q 放下\n黑板前按住 E 写字\nE 开门 / Q 关门 · Shift 爬行\nM 麦克风 · ESC 暂停';
+ $('#teacher-controls').textContent='WASD 移动 · 鼠标转向\n左键投粉笔 · E 抓住眩晕同学\n木桩前 E 绑住 · Q 放下\n黑板前按住 E 写字\nE 开门 / Q 关门\nM 麦克风 · ESC 暂停';
  const summary=make('div','result-summary'),scoreBox=result.querySelector('.result-number'),caughtBox=make('div','result-number');
  const caught=make('strong'),caughtLabel=make('span',null,'被捕人数');caught.id='result-caught';caughtBox.append(caught,caughtLabel);summary.append(scoreBox,caughtBox);result.insertBefore(summary,$('#result-detail'));
  const table=make('div','result-ranking');table.setAttribute('aria-label','本局成绩');result.insertBefore(table,$('#retry-game'));

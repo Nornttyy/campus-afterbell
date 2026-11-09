@@ -16,7 +16,7 @@ for(const role of ['student','teacher'])test(`solo ${role}: no server, all-human
  assert.equal(r.setMovement(0,1),false);assert.equal(r.interact(0),false);assert.equal(r.startBell(),false);assert.equal(r.travelFloor('computer'),false);
  r.step(2.99);assert.equal(r.map,'classroom');assert.ok(r.elevator.remaining>0);
  assert.deepEqual({x:r.player.x,z:r.player.z},pose);assert.equal(r.snapshot().elevator.doorAmount,0);
- r.step(.01);assert.equal(r.map,'night');assert.equal(r.seed,seed);assert.deepEqual(r.seats,seats);
+ r.step(.01);assert.equal(r.map,'night');assert.equal(r.seed,seed);assert.deepEqual(r.seats,seats.map(s=>({...s,map:'night'})));
  assert.deepEqual({x:r.player.x,z:r.player.z},pose);assert.equal(r.layout.elevatorClosed,false);assert.equal(r.snapshot().elevator.doorAmount,1);
  assert.equal(r.elevator.used,true);assert.equal(r.travelFloor('computer'),false);assert.equal(r.snapshot().role,role);
  r._finish('won','mischief');r.returnToGathering();assert.equal(r.elevator.used,false);assert.equal(r.map,'night');

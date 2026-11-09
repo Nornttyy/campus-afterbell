@@ -1,0 +1,23 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>微机抽屉58 · 正式场景检视</title>
+<style>html,body{margin:0;height:100%;font:14px sans-serif;background:#ddd}canvas{display:block;width:100vw;height:100vh}nav{position:fixed;top:8px;left:8px;right:8px;display:flex;gap:6px;flex-wrap:wrap;background:#fffe;padding:8px;border-radius:6px}button,select{font:inherit;padding:7px}output{position:fixed;bottom:8px;left:8px;background:#fffe;padding:8px;max-width:90vw;white-space:pre-wrap}i{position:fixed;top:50%;left:50%;width:4px;height:4px;background:#fff;border:1px solid #123;border-radius:50%}[hidden]{display:none!important}</style>
+<canvas></canvas><nav><select id="food"><option value="burger">汉堡</option><option value="snack">辣条</option><option value="drink">饮料</option><option value="banana">香蕉</option><option value="garlic">大蒜</option></select><button id="reset">新局（真实随机库存）</button><button id="drawer">看抽屉</button><button id="screen">看电脑</button><button id="e">E 交互</button><button id="q">Q 返回</button><button id="use">按住食用／松开投掷</button><button id="hide">隐藏工具（` 恢复）</button></nav><i></i><output>加载正式教室与真实 GLB…</output>
+<script type="module">
+import {createClassroom} from '../dist/classroom.js?v=campus-58';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-58';
+import {interactionIntent} from '../dist/interaction-intent54.js?v=campus-58';
+const canvas=document.querySelector('canvas'),out=document.querySelector('output'),nav=document.querySelector('nav');let error='',round,last=performance.now();
+window.addEventListener('error',e=>error=e.message);window.addEventListener('unhandledrejection',e=>error=String(e.reason?.stack||e.reason));
+const renderer=await createClassroom(canvas,{snapEntry:true});
+function look(kind){const p=round.player,seat=round.seats[p.seatId];if(!seat)return;const open=round.snapshot().drawer.open,z=kind==='screen'?.122:open?-.49:-.454,y=kind==='screen'?1.22:open?.68:.701;round.setLook(seat.yaw,Math.atan2(1.43-y,.78+z));}
+function reset(){const food=document.querySelector('#food').value;for(let seed=0;seed<256;seed++){const candidate=new ClassroomRound({map:'computer',seed,target:10000});if(candidate.player._slots[0].action===food){round=candidate;break;}}
+ // Only the QA patrol is disabled so the complete 3+3-second cycle can be observed.
+ // Inventory, E targeting, renderer, holding, item use and refill use production code.
+ round.start();round._advanceTeacher=()=>{};round._perceive=()=>{};for(const actor of round.students)actor._decisionAt=Infinity;look('drawer');renderer.setGameplay(round.snapshot());}
+function key(code){const intent=interactionIntent(round.snapshot(),renderer.getInteraction(),code);if(intent&&typeof round[intent.method]==='function')return round[intent.method](...intent.args);return false;}
+document.querySelector('#reset').onclick=reset;document.querySelector('#food').onchange=reset;document.querySelector('#drawer').onclick=()=>look('drawer');document.querySelector('#screen').onclick=()=>look('screen');document.querySelector('#e').onclick=()=>key('E');document.querySelector('#q').onclick=()=>key('Q');
+const use=document.querySelector('#use');use.onpointerdown=e=>{use.setPointerCapture(e.pointerId);round.hold(true);};use.onpointerup=()=>{if(['bananaPeel','smoke','ink','flash'].includes(round.selected))round.releaseUse();else round.hold(false);};use.onpointercancel=()=>round.hold(false);
+document.querySelector('#hide').onclick=()=>{nav.hidden=out.hidden=true;};window.addEventListener('keydown',e=>{if(e.code==='Backquote'){nav.hidden=!nav.hidden;out.hidden=nav.hidden;}if(e.target.matches('select'))return;if(!e.repeat&&e.code==='KeyE')key('E');if(!e.repeat&&e.code==='KeyQ')key('Q');});
+let dragging=false;canvas.onpointerdown=e=>{dragging=true;canvas.setPointerCapture(e.pointerId);};canvas.onpointerup=()=>dragging=false;canvas.onpointermove=e=>{if(dragging)round.setLook(round.player.yaw-e.movementX*.004,round.player.pitch+e.movementY*.004);};window.addEventListener('blur',()=>{dragging=false;round.hold(false);});
+reset();window.computerDrawer58={renderer,get round(){return round;},look,key};
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;round.step(dt);const s=round.snapshot();renderer.setGameplay(s);out.textContent=error?'ERROR '+error:JSON.stringify({seed:round.seed,seats:s.seats.length,interaction:renderer.getInteraction(),drawer:s.drawer,renderedOpen:canvas.dataset.drawerOpen,renderedItems:canvas.dataset.drawerItems,holding:s.holding,eating:s.player.eating,progress:s.actionProgress,computerActive:s.player.computerActive,completed:s.completed,elapsed:s.elapsed})+'\n看抽屉 → E打开 → 看抽屉重新对准食品 → E拿取 → 按住食用3秒 → 空格等待3秒。拖动画面转头。';requestAnimationFrame(frame);}requestAnimationFrame(frame);
+</script></html>

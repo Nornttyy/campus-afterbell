@@ -1,5 +1,5 @@
-import {playCampusFoley} from './foley-audio54.js?v=campus-57';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-57';
+import {playCampusFoley} from './foley-audio54.js?v=campus-58';
+import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-58';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -60,7 +60,7 @@ function ensureCharacterPreview(){
   characterPreviewPromise=(async()=>{
     let renderer=null,observer=null;
     try{
-      const [T,{loadStudentAssets}]=await Promise.all([import('./vendor/three.module.js'),import('./student-assets.js?v=campus-57')]);
+      const [T,{loadStudentAssets}]=await Promise.all([import('./vendor/three.module.js'),import('./student-assets.js?v=campus-58')]);
       const assets=await loadStudentAssets();if(disposed)return null;
       renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
       renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.08;
@@ -191,7 +191,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-57'),import('./classroom-game.js?v=campus-57')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-58'),import('./classroom-game.js?v=campus-58')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}

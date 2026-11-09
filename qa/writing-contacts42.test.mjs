@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {STUDENT_ASSETS,createRiggedStudent} from '../dist/student-assets.js';
+import {fingerPadSurfaceDistance} from './prop-contact-helpers.mjs';
 import {handFrame} from '../dist/hand-motion.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 const V=(...x)=>new T.Vector3(...x);
@@ -21,7 +22,7 @@ for(const [role,{file}]of Object.entries(STUDENT_ASSETS))test(`${role}: seated s
    const nib=pencil.localToWorld(V(0,-.129,0)),pageHeight=.88+.005/Math.cos(.14)+Math.abs(nib.x)*Math.tan(.14);
    assert.ok(nib.z>.44&&nib.z<.89&&Math.abs(nib.x)<.31,`${role}: pencil misses the actual folded-book footprint ${nib.toArray()}`);
    assert.ok(Math.abs(nib.y-pageHeight)<.003,`${role}: pencil tip floats above or penetrates the page by ${nib.y-pageHeight} m`);
-   for(const finger of ['Index','Thumb']){let gap=Infinity;for(const s of samples.Right){if(s.joint!=='RightHand'+finger+'3')continue;const p=pencil.worldToLocal(point(s));if(p.y<-.115||p.y>.115)continue;gap=Math.min(gap,Math.abs(Math.hypot(p.x,p.z)-.005));}assert.ok(gap<.003,`${role}: actual ${finger} skin does not contact pencil barrel (${gap} m)`);}
+   for(const finger of ['Index','Thumb']){const gap=fingerPadSurfaceDistance(actor.group.getObjectByName('school-writing-pen'),actor,finger,'Right');assert.ok(gap<.003,`${role}: actual ${finger} skin does not contact the shared pen surface (${gap} m)`);}
   }
  }
  actor.dispose();

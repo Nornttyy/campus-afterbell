@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-57';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-57';
-import {surfaceHeight,drawBoardSurface,setWallSurfaceUV} from './surface-materials.js?v=campus-57';
-import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-57';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-58';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-58';
+import {surfaceHeight,drawBoardSurface,setWallSurfaceUV} from './surface-materials.js?v=campus-58';
+import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-58';
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
 export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces=null,artwork={},bakeStatic=()=>{}}){
  const enclosure=new T.Group();enclosure.name='classroom-cutaway-walls';scene.add(enclosure);

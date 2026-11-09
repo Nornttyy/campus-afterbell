@@ -1,10 +1,11 @@
+import {teacherViewHeight} from '../dist/camera-height58.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {TeacherRound,chalkHit} from '../dist/teacher-rules.js';
 import {ClassroomRound} from '../dist/classroom-rules.js';
 import {SEATS,DETENTION,BOARD} from '../dist/classroom-layout.js';
 function setup(){const r=new TeacherRound({seed:44,target:100000});r.start();for(const s of r.students)s._decisionAt=Infinity;return r;}
-function aim(r,s,dist=1.4){r.player.x=s.x;r.player.z=s.z+dist;r.setLook(Math.PI,Math.atan2(.46,dist));}
+function aim(r,s,dist=1.4){r.player.x=s.x;r.player.z=s.z+dist;r.setLook(Math.PI,Math.atan2(teacherViewHeight(r.player)-1.49,dist));}
 test('teacher has five hidden random students and does not automatically observe or capture them',()=>{
  const a=setup(),b=new TeacherRound({seed:45});assert.equal(a._team.size,5);assert.notDeepEqual([...a._team],[...b._team]);assert.equal(a.students.filter(s=>s.isPlayer).length,0);
  assert.equal(a.snapshot().role,'teacher');assert.equal(a.snapshot().player.seated,false);a.step(20);assert.equal(a._memory.size,0);assert.equal(a.snapshot().caughtCount,0);

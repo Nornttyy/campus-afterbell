@@ -30,7 +30,7 @@ test('two independent HTTP peers share authoritative room, roles, movement, reco
   assert.equal(teacher.students.some(s=>s.networkHuman||s.drawer||s.isTeammate),false);assert.equal(teacher.room.members.some(m=>m.id!==teacher.room.selfId&&Object.hasOwn(m,'studentId')),false);
   assert.equal(teacher.officeLocked,true);assert.equal(teacher.player.x,TEACHER_SPAWN.x);assert.equal(student.role,'student');
   const before=student.player.z;await command(b,'setMovement',[0,1]);await second.wait(m=>m.type==='state'&&m.data.player.z>before+.08);
-  assert.equal((await command(a,'setMovement',[0,1])).data.results[0],false,'teacher cannot leave during preparation');
+  assert.equal((await command(a,'setMovement',[0,1])).data.results[0],true,'teacher can walk inside the locked office during preparation');
   assert.equal((await api(base,`/api/voice?room=${a.room.code}`,{to:'outside-room',kind:'offer',payload:{}},a.token)).status,400);
   await api(base,`/api/voice?room=${a.room.code}`,{to:b.room.selfId,kind:'mute',payload:{muted:true}},a.token);
   assert.equal((await second.wait(m=>m.type==='voice')).data.from,a.room.selfId);

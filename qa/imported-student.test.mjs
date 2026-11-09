@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createRiggedPalm,createRiggedStudent} from '../dist/student-assets.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-57';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-58';
 import {createFirstPersonView,sampleFirstPersonMotion} from '../dist/first-person-view.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 const [student,left,right]=await Promise.all(['student-boy-v3.glb','hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
@@ -71,9 +71,9 @@ test('ten student clips deform the imported skin within the classroom bounds',()
   const bounds=new T.Box3().setFromObject(a.group,true);assert.ok(bounds.max.y<2&&bounds.min.y>-.08);assert.ok(bounds.getSize(new T.Vector3()).x<1.4);
  }
 });
-test('actual palm and finger skin is visible along the bottom at the default seated and standing view',()=>{
+test('real desk-supported palms are visible looking at the desk; standing palms stay low in the default view',()=>{
  for(const seated of [true,false]){
-  const rig=viewRig(seated);for(let i=0;i<180;i++)rig.tick();
+  const rig=viewRig(seated);for(let i=0;i<180;i++)rig.tick({pitch:seated?.55:.08});
   for(const side of ['left','right']){
    const parts=projectedSkinParts(rig.h.getHand(side),rig.camera);
    // A wrist origin can be offscreen while the actual fingers are visible.
@@ -84,8 +84,8 @@ test('actual palm and finger skin is visible along the bottom at the default sea
     assert.ok(visible.length/points.length>=minimum,`${seated?'seated':'standing'} ${side} ${part}: only ${visible.length}/${points.length} vertices visible`);
    }
    const points=Object.values(parts).flat(),top=Math.max(...points.map(p=>p.y));
-   assert.ok(top>-.85&&top<-.4,`${side}: palm moved away from the lower screen: ${top}`);
-   assert.ok(points.every(p=>Math.abs(p.x)<.55&&p.z>-1&&p.z<1),'hand escaped horizontal framing or camera depth');
+   assert.ok(top>-.85&&top<(seated?.5:-.4),`${side}: palm moved away from the lower screen: ${top}`);
+   assert.ok(points.every(p=>Math.abs(p.x)<(seated?.95:.55)&&p.z>-1&&p.z<1),'hand escaped horizontal framing or camera depth');
   }
   assert.equal(rig.h.getDebug().idleHandsVisible,true);
  }

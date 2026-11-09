@@ -1,30 +1,32 @@
-import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-57';
-import {gameplayFov} from './view-tuning55.js?v=campus-57';
-import {setCharacterNight} from './character-materials.js?v=campus-57';
-import {createStaminaVision} from './stamina-vision55.js?v=campus-57';
-import {createSoundCues} from './sound-cue55.js?v=campus-57';
-import {createChalkPowder} from './chalk-powder55.js?v=campus-57';
-import {createSurveillanceView} from './surveillance-view54.js?v=campus-57';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-57';
-import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-57';
-import {instanceRigidProps} from './rigid-instances.js?v=campus-57';
-import {createItemEffects50} from './item-effects50.js?v=campus-57';
-import {createBubbleEffects} from './bubble-effects.js?v=campus-57';
-import {loadCampusArtwork} from './campus-artwork.js?v=campus-57';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-57';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-57';
-import {createRoomVariants} from './room-variants.js?v=campus-57';
-import {createComputerScreenContent} from './computer-screen55.js?v=campus-57';
+import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-58';
+import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-58';
+import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-58';
+import {gameplayFov} from './view-tuning55.js?v=campus-58';
+import {setCharacterNight} from './character-materials.js?v=campus-58';
+import {createStaminaVision} from './stamina-vision55.js?v=campus-58';
+import {createSoundCues} from './sound-cue55.js?v=campus-58';
+import {createChalkPowder} from './chalk-powder55.js?v=campus-58';
+import {createSurveillanceView} from './surveillance-view54.js?v=campus-58';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-58';
+import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-58';
+import {instanceRigidProps} from './rigid-instances.js?v=campus-58';
+import {createItemEffects50} from './item-effects50.js?v=campus-58';
+import {createBubbleEffects} from './bubble-effects.js?v=campus-58';
+import {loadCampusArtwork} from './campus-artwork.js?v=campus-58';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-58';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-58';
+import {createRoomVariants} from './room-variants.js?v=campus-58';
+import {createComputerScreenContent} from './computer-screen55.js?v=campus-58';
 import * as THREE from './vendor/three.module.js';
-import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-57';
-import {createSmokeEffects} from './smoke-effects.js?v=campus-57';
-import {createItemOutline} from './item-outline.js?v=campus-57';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-57';
-import {loadStudentAssets} from './student-assets.js?v=campus-57';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-57';
-import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-57';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-57';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-57';
+import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-58';
+import {createSmokeEffects} from './smoke-effects.js?v=campus-58';
+import {createItemOutline} from './item-outline.js?v=campus-58';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-58';
+import {loadStudentAssets} from './student-assets.js?v=campus-58';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-58';
+import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-58';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-58';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-58';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
 
@@ -250,7 +252,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     }
     return book;
   }
-  function pen(parent,x,y,z,color,rotation=0){const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=rotation;parent.add(g);cylinder(color,[0,0,0],[.012,.26,.012],[Math.PI/2,0,0],g);cylinder(M.steel,[0,0,.145],[.006,.027,.006],[Math.PI/2,0,0],g);cylinder(M.white,[0,0,-.10],[.013,.043,.013],[Math.PI/2,0,0],g);g.traverse(o=>{if(o.isMesh)o.userData.animated=true;});return g;}
+  function pen(parent,x,y,z,color,rotation=0){const g=createDeskItem('pen');g.position.set(x,y,z);g.rotation.set(Math.PI/2,rotation,0);parent.add(g);g.traverse(o=>{if(o.isMesh)o.userData.animated=true;});return g;}
   const deskTray=mat('#d2d6cc',{metalness:.12,roughness:.52}),drawerFront=mat('#e6e7d9',{metalness:.06,roughness:.48});
   // Clone and tune the imported material once; every desk keeps its UV atlas and batching.
   if(importedDesk&&!importedDesk.source?.startsWith('tripo')){const woodMaterials=new Map();importedDesk.body.traverse(o=>{
@@ -350,10 +352,10 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const pageFlipMaterial=printRightMat.clone();pageFlipMaterial.side=THREE.DoubleSide;materials.add(pageFlipMaterial);
   const pageFlips=new THREE.InstancedMesh(pageFlipGeometry,pageFlipMaterial,SEATS.length);pageFlips.castShadow=false;pageFlips.receiveShadow=true;pageFlips.frustumCulled=false;pageFlips.instanceMatrix.setUsage(THREE.DynamicDrawUsage);dynamic.add(pageFlips);
   // The windows admit directional sunlight; broad fill only keeps the shaded faces readable.
-  const ambient=new THREE.HemisphereLight('#eaf2f5','#f3ece0',1.55);scene.add(ambient);
+  const ambient=new THREE.HemisphereLight(ROOM_LIGHTING.day.sky,ROOM_LIGHTING.day.ground,ROOM_LIGHTING.day.ambient);scene.add(ambient);
   const sun=new THREE.DirectionalLight('#fff2d7',4.2);sun.position.set(-17,7.4,7);sun.target.position.set(0,.65,-2);scene.add(sun,sun.target);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-19,right:19,top:16,bottom:-16,near:1,far:65});sun.shadow.bias=-.00015;sun.shadow.normalBias=.012;sun.shadow.radius=3.0;sun.shadow.intensity=.9;
-  const fill=new THREE.DirectionalLight('#f4edda',.80);fill.position.set(5,4,6);scene.add(fill);
-  canvas.dataset.lighting='window-contrast-56';
+  const fill=new THREE.DirectionalLight('#f4edda',ROOM_LIGHTING.day.fill);fill.position.set(5,4,6);scene.add(fill);
+  canvas.dataset.lighting='bright-interior-58';
   // No flat additive rectangles: window mullions now create real sun/shadow shapes.
   // Batch fixed props by material. Animated pupils, curtain cloth and fans stay separate.
   function bakeStatic(group){
@@ -386,7 +388,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   bakeStatic(teachingEnd);
   bakeStatic(campus.ceilingRig);bakeStatic(campus.upperWalls);campus.attachUpperArchitecture();
   // Light from the seated side illuminates faces and chalk without washing the floor.
-  const teachingFill=new THREE.DirectionalLight('#e7eff3',.35);
+  const teachingFill=new THREE.DirectionalLight('#e7eff3',ROOM_LIGHTING.day.teaching);
   teachingFill.position.set(0,3.0,-3.0);teachingFill.target.position.set(0,2.25,5.3);
   teachingEnd.add(teachingFill,teachingFill.target);
   const teacher=rememberActor(teacherAsset.value);canvas.dataset.teacherAsset=teacher.group.userData.asset||'teacher-v2';
@@ -404,7 +406,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   // The teacher uses its own original skin, forearms and skeleton.
   const teacherHands=createDeskHands({createHand:importedStudents?.createTeacherHand});teacherHands.group.visible=false;
   const firstPersonView=createFirstPersonView(renderer,camera,[hands.group,teacherHands.group]);
-  let firstPersonMotion=null,eyeHeight=null;
+  let firstPersonMotion=null,eyeHeight=null,firstPersonDrawer=null;
   const rightPalm=teacherHands.group.getObjectByName('right-desk-hand');
   const fpChalk=cylinder(M.paper,[.035,.075,-.025],[.007,.073,.007],[0,0,.8],rightPalm);
   const leftPalm=teacherHands.group.getObjectByName('left-desk-hand');
@@ -416,7 +418,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     if(state&&!isTeacher&&state.player.captivity==='carried'){for(const [side,x]of [['left',-.22],['right',.22]]){const hand=hands.getHand(side),sign=x<0?-1:1,phase=state.elapsed*4+sign*1.8,wave=Math.sin(phase),pull=.5+.5*Math.sin(phase-.6);hand.group.position.set(x+sign*pull*.025,-.25+wave*.035,-.42+pull*.018);hand.group.rotation.set(-.48+pull*.20,sign*(.20+wave*.25),sign*(.08+pull*.17));hand.setCurl(.51+.15*pull);hand.opposeThumb(.58+.1*pull);}}
     if(isTeacher){
       const stunned=state.player.stunLeft>0||state.player.captivity==='stunned';
-      teacherHands.update(state.elapsed,{seated:Boolean(state.player.seated),carrying:false,freeLook:true,office:Boolean(state.player.officeChair),computer:Boolean(state.player.computerActive),typing:Boolean(state.holding),movement:firstPersonMotion?.amount||0,walkPhase:firstPersonMotion?.phase||0,crawlBlend:firstPersonMotion?.crawlBlend||0});
+      teacherHands.update(state.elapsed,{drawer:firstPersonDrawer,eyeHeight:firstPersonEyeHeight(state.player,'teacher'),seated:Boolean(state.player.seated),carrying:false,freeLook:true,office:Boolean(state.player.officeChair),computer:Boolean(state.player.computerActive),typing:Boolean(state.player.computerActive),movement:firstPersonMotion?.amount||0,walkPhase:firstPersonMotion?.phase||0,crawlBlend:firstPersonMotion?.crawlBlend||0});
       const age=state.throwAge,throwing=!stunned&&age>=0&&age<.58,wind=throwing?THREE.MathUtils.smoothstep(age,0,.11):0,release=throwing?THREE.MathUtils.smoothstep(age,.11,.20):0,recover=throwing?THREE.MathUtils.smoothstep(age,.25,.58):0;
       const extension=release*(1-recover),writing=!stunned&&Boolean(state.teacher.writing);
       const grip=teacherHands.getHand('right');
@@ -462,9 +464,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     mapVariant=CAMPUS_MAPS.includes(value)?value:'classroom';variants.setMap(mapVariant);campus.setMap(mapVariant);setSeats(currentSeats,true);
     const night=mapKind(mapVariant)==='night';setCampusNight(night);
     setCharacterNight(scene,night);firstPersonView.setNight(night);
-    ambient.intensity=night?.30:1.55;sun.intensity=night?.035:4.2;fill.intensity=night?.055:.80;teachingFill.intensity=night?.055:.35;lampMat.emissiveIntensity=night?.015:.85;
-    ambient.color.set(night?'#7890c5':'#eaf2f5');ambient.groundColor.set(night?'#9ca5b5':'#f3ece0');sun.color.set(night?'#7084ac':'#fff2d7');
-    ceilingMaterial.color.set(night?'#3c4b67':'#f1eee5');scene.background.set(night?'#0a1428':'#d2e7e9');scene.fog.color.set(night?'#15223a':'#e3edf1');canvas.dataset.map=mapVariant;
+    applyRoomLighting(night,{ambient,sun,fill,teachingFill,lampMat,ceilingMaterial,scene});canvas.dataset.map=mapVariant;
   }
   // Gestures come from the imported rig; its real hand anchor carries the chalk.
   const teacherHand=teacher.getHand('right');
@@ -562,7 +562,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     teacher.group.visible=state.stage!=='gathering'&&state.role!=='teacher'&&state.teacher?.visible!==false;
     gameplay=state;
   }
-  const moodMap={standing:'resting',walking:'resting',carried:'resting',bound:'resting',stunned:'thinking',rescuing:'rescuing',reading:'writing',writing:'writing',thinking:'thinking',snack:'snack',drink:'drink',burger:'burger',phone:'phone',computer:'computer',smoke:'smoke',flash:'flash',ink:'ink',banana:'banana',bananaPeel:'bananaPeel',garlic:'garlic',gum:'gum',lunch:'lunch',pen:'pen',caught:'resting',resting:'resting',alert:'thinking'};
+  const moodMap={standing:'resting',walking:'resting',carried:'resting',bound:'resting',stunned:'thinking',rescuing:'rescuing',listening:'listening','computer-idle':'computer-idle',reading:'reading',writing:'writing',thinking:'thinking',snack:'snack',drink:'drink',burger:'burger',phone:'phone',computer:'computer',smoke:'smoke',flash:'flash',ink:'ink',banana:'banana',bananaPeel:'bananaPeel',garlic:'garlic',gum:'gum',lunch:'lunch',pen:'pen',caught:'resting',resting:'resting',alert:'thinking'};
   const pupilFrustum=new THREE.Frustum(),pupilView=new THREE.Matrix4(),pupilBounds=new THREE.Sphere(new THREE.Vector3(),1.15);
   function updatePupils(state,animationTime,dt){
     camera.updateMatrixWorld();pupilFrustum.setFromProjectionMatrix(pupilView.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));
@@ -598,12 +598,12 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       const id=record.seat.id,student=snapshots.get(id),standing=record.caught||student?.seated===false,near=record.group.visible&&(detailed.has(id)||importedStudents),prop=friendProps.get(id);
       for(const actor of record.actors.values())actor.group.visible=false;
       if(near){
-        const actor=actorFor(record,standing),headLook=captureHeadLook(student,record.group.rotation.y);record.actor=actor;actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||(standing?'resting':'writing'));actor.setMotion?.({crawling:Boolean(student?.crouched&&standing),seated:!standing,speed:record.worldMotion.speed,carrying:student?.carrying??(student?.drawer?.drawnSlot!=null),heldAction:student?.heldAction,using:Boolean(Object.hasOwn(student||{},'eating')&&['snack','drink','burger','banana','garlic','lunch'].includes(student?.heldAction||student?.action)?student.eating:student?.holding),penWriting:Boolean(student?.penWriting),penTwirling:Boolean(student?.penTwirling),lookYaw:headLook.yaw,lookPitch:headLook.pitch,restraint:record.motionKind,restraintStartedAt:record.motionAt,throwProgress:student?.progress||0,throwAge:student?.itemThrowAge??Infinity});
+        const actor=actorFor(record,standing),headLook=captureHeadLook(student,record.group.rotation.y);record.actor=actor;actor.setStudyBook?.(deskBooks.get(student?.seatId??record.seat.id));actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||(standing?'resting':'writing'));actor.setMotion?.({crawling:Boolean(student?.crouched&&standing),seated:!standing,speed:record.worldMotion.speed,carrying:student?.carrying??(student?.drawer?.drawnSlot!=null),heldAction:student?.heldAction,using:Boolean(Object.hasOwn(student||{},'eating')&&['snack','drink','burger','banana','garlic','lunch'].includes(student?.heldAction||student?.action)?student.eating:student?.holding),penWriting:Boolean(student?.penWriting),penTwirling:Boolean(student?.penTwirling),lookYaw:headLook.yaw,lookPitch:headLook.pitch,restraint:record.motionKind,restraintStartedAt:record.motionAt,throwProgress:student?.progress||0,throwAge:student?.itemThrowAge??Infinity});
         const articulating=['carried','bound','stunned','rescuing'].includes(student?.captivity)||student?.mood==='rescuing';
         // Every visible pupil animates continuously; off-camera actors are culled above.
         const interval=quality==='low'&&!articulating&&record.distance>7?1/30:0;
         if(animationTime<record.lastUpdate||animationTime-record.lastUpdate>=interval||record.lastMood!==record.currentMood){actor.update(animationTime,dt);record.lastUpdate=animationTime;record.lastMood=record.currentMood;}
-
+        if(actor.studyBookVisible?.()){const source=deskBooks.get(student?.seatId??record.seat.id);if(source)source.visible=false;}
       }
       record.currentSeatId=student?.seatId??record.seat.id;
       if(prop){
@@ -627,6 +627,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     pageFlips.instanceMatrix.needsUpdate=true;
   }
   function updateDrawers(state,dt,handState=null){
+    variants.updateDrawers(state,dt);
     const seat=state?.player?.seated&&!state.player.caught?state.player.seatId:null;
     const otherOpen=new Set((state?.students||[]).filter(s=>s.seated&&!s.caught&&(s.drawerOpen??s.drawer?.open)).map(s=>s.seatId));
     for(const [id,drawer] of drawerRecords){
@@ -638,14 +639,14 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     // after the selected slot changes. The same object must not appear twice.
     if(!handState?.visible)raisedSlot=null;
     else if(state?.drawer?.drawnSlot!=null&&handState.active===state.drawer.slots[state.drawer.drawnSlot]?.action)raisedSlot=state.drawer.drawnSlot;
-    const inventory=state?.drawer,officeSeat=Boolean(state?.player?.officeChair),host=officeSeat?(campus.officeDrawers.get(state?.player?.officeDeskId)||campus.officeDrawer):seat===null?null:drawerRecords.get(seat)?.group;
+    const inventory=state?.drawer,officeSeat=Boolean(state?.player?.officeChair),computerDrawer=!officeSeat&&mapKind(mapVariant)==='computer'?variants.drawers.get(seat):null,host=officeSeat?(campus.officeDrawers.get(state?.player?.officeDeskId)||campus.officeDrawer):seat===null?null:computerDrawer?.group||drawerRecords.get(seat)?.group;
     drawerItems.visible=Boolean(inventory&&host);
-    if(host&&drawerItems.parent!==host)host.add(drawerItems);drawerItems.position.y=officeSeat?-.77:0;drawerSlotProps.forEach((slot,index)=>slot.group.position.x=(inventory?.slots?.length===1?0:index-1)*.28);
+    if(host&&drawerItems.parent!==host)host.add(drawerItems);drawerItems.position.y=officeSeat?-.77:computerDrawer?computerDrawer.floor-(importedDesk?.drawerFloor??.65):0;drawerSlotProps.forEach((slot,index)=>{slot.group.position.x=(inventory?.slots?.length===1?0:index-1)*.28;slot.group.position.z=computerDrawer?.itemZ??-.16;});
     const signature=inventory?inventory.slots.map((slot,index)=>`${slot.action||''}:${index===raisedSlot}`).join('|'):'';
     if(signature!==drawerItemSignature){drawerItemSignature=signature;drawerSlotProps.forEach((slot,index)=>{
       for(const [action,prop]of slot.props)prop.visible=Boolean(inventory?.slots[index]?.action===action&&index!==raisedSlot);
     });}
-    canvas.dataset.drawerOpen=String(seat===null?0:Number(drawerRecords.get(seat)?.open.toFixed(3)||0));
+    canvas.dataset.drawerOpen=String(seat===null?0:Number((computerDrawer||drawerRecords.get(seat))?.open.toFixed(3)||0));
     canvas.dataset.drawerItems=JSON.stringify(inventory?inventory.slots.map((slot,index)=>({id:index,action:slot.action,visible:Boolean(host&&slot.action&&index!==raisedSlot)})):[]);
   }
   function pickDrawerSlot(){
@@ -654,7 +655,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);
     // Exact mesh hits first; a small local bounds margin makes a garlic clove
     // usable without enlarging the model or allowing a pick through furniture.
-    return pickDrawerItem(itemRay,drawerSlotProps.flatMap(slot=>slot.pickTargets),[room,...furnitureRows.values(),drawerItems.parent]);
+    return pickDrawerItem(itemRay,drawerSlotProps.flatMap(slot=>slot.pickTargets),[room,...furnitureRows.values(),variants.group,drawerItems.parent]);
   }
   const campusTargets=campus.getTargets();
   const isObjectVisible=object=>{for(let n=object;n;n=n.parent)if(!n.visible&&!n.userData.rigidInstanceSource)return false;return true;};
@@ -681,7 +682,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
         const slot=pickDrawerSlot();if(slot!==null)return{kind:'item',slot};
         if(mapKind(mapVariant)==='computer'&&!player.officeChair&&gameplay.drawer?.drawnSlot===null)add(variants.screens.get(player.seatId),{kind:'computer'});
         if(!player.officeChair){
-          const body=mapKind(mapVariant)==='computer'?variants.stations.get(player.seatId):deskTargets.get(player.seatId),drawer=drawerRecords.get(player.seatId)?.group;
+          const body=mapKind(mapVariant)==='computer'?variants.stations.get(player.seatId):deskTargets.get(player.seatId),drawer=(mapKind(mapVariant)==='computer'?variants.drawers:drawerRecords).get(player.seatId)?.group;
           add(body,{kind:'desk'});add(drawer,{kind:'desk'});
           const book=deskBooks.get(player.seatId);if(mapKind(mapVariant)!=='computer'){add(book,{kind:'book'});if(!player.penTaken&&gameplay.drawer?.drawnSlot===null)add(deskPens.get(player.seatId),{kind:'pen',id:player.seatId});}
         }
@@ -690,7 +691,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     candidates.sort((a,b)=>a.hit.distance-b.hit.distance);
     // No selection through walls or an intervening desktop. Repeated prop
     // source meshes stay raycastable even though GPU submission is instanced.
-    const blockers=itemRay.intersectObjects([room,teachingEnd,...furnitureRows.values()],true).filter(h=>isObjectVisible(h.object)&&!h.object.material?.transparent);
+    const blockers=itemRay.intersectObjects([room,teachingEnd,variants.group,...furnitureRows.values()],true).filter(h=>isObjectVisible(h.object)&&!h.object.material?.transparent);
     for(const c of candidates){const barrier=blockers.find(h=>h.distance<c.hit.distance-.035);if(!barrier)return c.result;let ancestor=barrier.object;while(ancestor&&ancestor!==c.object)ancestor=ancestor.parent;if(ancestor===c.object)return c.result;}
     if(preClass)return null;
     if(gameplay.role==='teacher'&&gameplay.releaseStudent!=null)return{kind:'release',id:gameplay.releaseStudent};
@@ -755,7 +756,11 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       drawerFocus=THREE.MathUtils.damp(drawerFocus,seated&&!caught&&gameplay.drawer?.open?1:0,8,activeDt);
       const basePitch=Number.isFinite(player.pitch)?player.pitch:.08,drawerPitch=0;
       firstPersonMotion=sampleFirstPersonMotion(firstPersonMotion,player,gameTime);
-      hands.update(gameTime,{action:gameplay.selected,penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),holding:Boolean(gameplay.holding&&!caught),eating:Boolean(player.eating&&!caught),carrying:gameplay.drawer?.drawnSlot!=null&&!caught,progress:gameplay.actionProgress,alert:feedbackKind==='caught'?feedbackTime/.55:(gameplay.suspicion||0)/150,seated,crouched,caught,freeLook:true,viewPitch:basePitch+drawerPitch,computer:gameplay.player.computerActive,typing:gameplay.holding,office:Boolean(player.officeChair),throwAge:player.itemThrowAge??Infinity,movement:firstPersonMotion.amount,walkPhase:firstPersonMotion.phase,crawlBlend:firstPersonMotion.crawlBlend});
+      const officeTray=player.officeChair?(campus.officeDrawers.get(player.officeDeskId)||campus.officeDrawer):null,deskTrayRecord=mapKind(mapVariant)==='computer'?variants.drawers.get(player.seatId):drawerRecords.get(player.seatId);
+      const previousDrawerAmount=officeTray?Math.max(0,Math.min(1,(-officeTray.position.z-.08)/.52)):deskTrayRecord?.open||0,drawerTarget=gameplay.drawer?.open?1:0;
+      const currentDrawerAmount=THREE.MathUtils.damp(previousDrawerAmount,drawerTarget,officeTray?14:drawerTarget>previousDrawerAmount?12:18,activeDt);
+      firstPersonDrawer=drawerHandTarget({player,drawer:gameplay.drawer,seats:currentSeats,map:mapVariant,amount:currentDrawerAmount});
+      hands.update(gameTime,{drawer:firstPersonDrawer,eyeHeight:firstPersonEyeHeight(player,'student'),action:gameplay.selected,penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),holding:Boolean(gameplay.holding&&!caught),eating:Boolean(player.eating&&!caught),carrying:gameplay.drawer?.drawnSlot!=null&&!caught,progress:gameplay.actionProgress,alert:feedbackKind==='caught'?feedbackTime/.55:(gameplay.suspicion||0)/150,seated,crouched,caught,freeLook:true,viewPitch:basePitch+drawerPitch,computer:gameplay.player.computerActive,typing:Boolean(player.computerActive),bookAmount:!player.officeChair&&mapKind(mapVariant)!=='computer'?(gameplay.books?.find(b=>b.id===player.seatId)?.amount||0):0,office:Boolean(player.officeChair),throwAge:player.itemThrowAge??Infinity,movement:firstPersonMotion.amount,walkPhase:firstPersonMotion.phase,crawlBlend:firstPersonMotion.crawlBlend});
       const focus=THREE.MathUtils.clamp(hands.getFocus?.()||0,0,1),handState=hands.getDebug?.();canvas.dataset.itemReady=String(focus>.92&&gameplay.holding&&(handState?.extension??1)>=.99&&entryTime>=.7);
       const viewFocus=0,extraDrop=0;
       const yaw=Number.isFinite(player.yaw)?player.yaw:0,pitch=THREE.MathUtils.clamp(basePitch,-1.40,1.40);

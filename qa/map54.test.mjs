@@ -66,7 +66,7 @@ test('teacher and student tutorials use independent 2:1 image planes without can
 
 test('round and one-use lift reconstruct terrain-compatible seats while preserving seed, pattern and cabin pose',()=>{
  for(const role of ['student','teacher']){const r=createSoloRound({role,seed:402,map:'classroom'});r.start({gathering:true});Object.assign(r.player,{x:LIFT.x,z:LIFT.z});assert.equal(r.travelFloor('tiered8'),true);r.step(3);assert.equal(r.map,'tiered8');assert.equal(r.seed,402);assert.equal(r.seats[0].pattern,createSeatLayout(402)[0].pattern);assert.deepEqual(r.seats,createSeatLayout(402,null,'tiered8'));assert.deepEqual({x:r.player.x,z:r.player.z},{x:LIFT.x,z:LIFT.z});assert.equal(r.travelFloor('night'),false);}
- for(const map of CAMPUS_MAPS){const r=new ClassroomRound({map,seed:73});assert.deepEqual(r.seats,createSeatLayout(73,null,map));assert.equal(r.layout.map,mapKind(map)==='tiered'?'tiered':'classroom');}
+ for(const map of CAMPUS_MAPS){const r=new ClassroomRound({map,seed:73});assert.deepEqual(r.seats,createSeatLayout(73,null,map));assert.equal(r.layout.map,mapKind(map));}
 });
 
 test('pre-class exterior boundaries stay closed while class and office door rules remain independent',()=>{

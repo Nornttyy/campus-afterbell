@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-57';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-58';
 import {loadGeometry} from './gltf-geometry.mjs';
 const V=(...v)=>new T.Vector3(...v),DT=1/60;
 function tick(actor,t,seconds=2){for(let i=0;i<seconds/DT;i++)actor.update(t+=DT);actor.group.updateMatrixWorld(true);return t;}
@@ -55,7 +55,7 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: in
   actor.setMood(mood);actor.setMotion({seated:true,carrying:false});
   for(let i=0;i<frames;i++){actor.update(time+=DT);actor.group.updateMatrixWorld(true);const next=pose();for(const side of ['Left','Right']){assert.ok(next[side].p.distanceTo(previous[side].p)<.055,`${side} hand jumps when ${mood} is interrupted`);assert.ok(next[side].q.angleTo(previous[side].q)<.50,`${side} wrist snaps when changing to ${mood}`);assert.ok(next[side].p.toArray().every(Number.isFinite));}previous=next;}
  }
- reference.setMood('writing');tick(reference,0,time);reference.group.updateMatrixWorld(true);
+ reference.setMood('writing');let referenceTime=0;for(let f=0;f<Math.round(time/DT);f++)reference.update(referenceTime+=DT);reference.group.updateMatrixWorld(true);
  for(const side of ['Left','Right']){const actual=actor.bones[side+'Hand'],expected=reference.bones[side+'Hand'];assert.ok(actual.getWorldPosition(V()).distanceTo(expected.getWorldPosition(V()))<.001,'stale gesture offsets writing contact');assert.ok(actual.getWorldQuaternion(new T.Quaternion()).angleTo(expected.getWorldQuaternion(new T.Quaternion()))<.01,'stale phone wrist persists in writing');}
  actor.dispose();reference.dispose();
 });

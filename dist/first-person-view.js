@@ -1,7 +1,7 @@
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-57';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-57';
+import {teacherViewHeight} from './camera-height58.js?v=campus-58';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-58';
 import * as T from './vendor/three.module.js';
-import {setCharacterNight} from './character-materials.js?v=campus-57';
+import {setCharacterNight} from './character-materials.js?v=campus-58';
 // Hands follow horizontal body turns, never camera pitch. Seated/restrained
 // hands keep their body heading while the player looks around.
 export function sampleFirstPersonMotion(previous,player,time){
@@ -22,7 +22,7 @@ export function sampleFirstPersonMotion(previous,player,time){
 }
 export function firstPersonEyeHeight(player,role='student'){
  if(player?.stunLeft>0||player?.captivity==='stunned')return role==='teacher'?1.12:1.05;
- const height=player?.seated!==false?1.43:player.crouched?CRAWL_TUNING.eyeHeight:role==='teacher'?TEACHER_EYE_HEIGHT:1.65;
+ const height=role==='teacher'?teacherViewHeight(player):player?.seated!==false?1.43:player.crouched?CRAWL_TUNING.eyeHeight:1.65;
  return height+(['carried','bound'].includes(player?.captivity)?.20:0);
 }
 export function createFirstPersonView(renderer,camera,groups){

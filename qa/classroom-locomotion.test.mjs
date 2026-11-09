@@ -101,7 +101,7 @@ test('teacher patrol and escort walk at their own physical speed with matching r
   }
 });
 
-test('chase, teammate rescue and humans use their role normal speeds; carrying remains slower',()=>{
+test('chase, teammate rescue and humans use their role normal speeds; carrying preserves teacher pace',()=>{
   const chase=new ClassroomRound();chase.start();Object.assign(chase.teacher,{x:corridorX,z:0,yaw:0});
   const target=chase.students.find(s=>!s.isPlayer);Object.assign(target,{x:corridorX,z:4,seated:false,captivity:'stunned'});chase._memory.set(target.id,{confirmed:true});
   assert.equal(chase._advanceStunChase(DT),true);assert.ok(Math.abs(Math.hypot(chase.teacher.x-corridorX,chase.teacher.z)-AI_WALK_SPEEDS.teacherPursuit*DT)<1e-9,'teacher chase uses a different role speed');
@@ -117,5 +117,5 @@ test('chase, teammate rescue and humans use their role normal speeds; carrying r
   }
   const carrying=new TeacherRound();carrying.start();Object.assign(carrying.player,{x:corridorX,z:0,seated:false,yaw:0});
   carrying.teacher.carriedId=0;Object.assign(carrying.students[0],{captivity:'carried',_grabAt:0,_grabStart:{x:corridorX,z:0}});
-  carrying.setMovement(0,1);carrying.step(.5);assert.ok(Math.abs(carrying.player.z-1.15*.5)<1e-8,'AI escort tuning changed human carrying movement');
+  carrying.setMovement(0,1);carrying.step(.5);assert.ok(Math.abs(carrying.player.z-AI_WALK_SPEEDS.teacherPatrol*.5)<1e-8,'AI escort tuning changed human carrying movement');
 });
