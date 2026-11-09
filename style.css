@@ -125,6 +125,8 @@ body.playing .menu-illustration{visibility:hidden}
 #room-enter{justify-content:center;min-height:56px;font-size:22px}
 #room-enter:disabled{background:#d7dee2;color:#65727c;border-color:#84939c;box-shadow:0 3px 0 #84939c;transform:none;filter:none;cursor:wait}
 #room-enter:disabled:after{display:none}
+#room-server-note{padding:10px 12px;background:#edf5f8;border-left:3px solid #528693;color:#375565;line-height:1.5}
+.room-solo{width:100%;justify-content:center;margin-top:12px;min-height:48px;font-size:19px}
 @media(max-width:600px) and (orientation:portrait){.menu-illustration img{object-position:62% center}.room-sheet{padding:20px}}
 @media(max-height:500px){.room-sheet{padding:18px 23px}.room-sheet .sheet-top{margin-bottom:12px}.room-summary{margin-bottom:16px}.room-summary>div{padding:8px 13px}.room-load{margin-bottom:16px;min-height:36px}}
 

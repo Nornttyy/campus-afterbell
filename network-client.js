@@ -1,14 +1,58 @@
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
+const NO_ROOM_SERVICE='这个地址没有多人房间服务，请先玩单人模式，或填写已部署的联机服务器地址。';
+const INVALID_RESPONSE='联机服务器返回了无效数据，请检查服务器地址或稍后重试。';
+const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+const finite=value=>typeof value==='number'&&Number.isFinite(value);
+const text=value=>typeof value==='string'&&value.length>0&&value.length<=160&&!/[<>\u0000-\u001f]/.test(value);
+class RoomConnectionError extends Error{constructor(message,{terminal=true,status=0}={}){super(message);this.name='RoomConnectionError';this.terminal=terminal;this.status=status;}}
+const protocolError=()=>new RoomConnectionError(INVALID_RESPONSE);
+function mime(response){return (response.headers.get('content-type')||'').split(';',1)[0].trim().toLowerCase();}
+function isJSON(response){return /^application\/(?:json|[\w.+-]+\+json)$/.test(mime(response));}
+function httpError(response,body){
+ const status=response.status,terminal=[401,404,405,410].includes(status);
+ const fallback=status===401?'房间连接已失效，请返回大厅重新加入。':status===403?'联机服务器拒绝了此网页的访问。':status===404?'没有找到房间或联机接口，请检查服务器地址和房间号。':status===429?'操作过快，请稍后再试。':'联机服务器暂时不可用，请稍后再试。';
+ return new RoomConnectionError(object(body)&&text(body.error)?body.error:fallback,{status,terminal});
+}
+async function readJSON(response,{health=false,validate=()=>true}={}){
+ if(!isJSON(response)){
+  await response.body?.cancel().catch(()=>{});
+  if(health&&[200,404,405].includes(response.status))throw new RoomConnectionError(NO_ROOM_SERVICE,{status:response.status});
+  if(!response.ok)throw httpError(response);
+  throw protocolError();
+ }
+ let body;try{body=await response.json();}catch(error){if(error.name==='AbortError')throw error;if(!response.ok)throw httpError(response);throw protocolError();}
+ if(!response.ok){if(health&&response.status===404)throw new RoomConnectionError(NO_ROOM_SERVICE,{status:404});throw httpError(response,body);}
+ if(!validate(body))throw protocolError();return body;
+}
+async function requestJSON(url,options={},schema={}){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+ try{return await readJSON(await fetch(url,{...options,signal:controller.signal,cache:'no-store'}),schema);}
+ catch(error){if(error instanceof RoomConnectionError)throw error;throw new RoomConnectionError(error.name==='AbortError'?'联机服务器响应超时，请稍后重试。':'无法连接联机服务器，请检查网络和服务器地址。',{terminal:false});}
+ finally{clearTimeout(timer);}
+}
+function validRoom(room){return object(room)&&/^\d{6}$/.test(room.code)&&typeof room.selfId==='string'&&typeof room.hostId==='string'&&Array.isArray(room.members)&&room.members.length>0&&room.members.length<=16&&room.members.every(m=>object(m)&&typeof m.id==='string'&&typeof m.connected==='boolean'&&['student','teacher'].includes(m.role))&&room.members.some(m=>m.id===room.selfId)&&room.members.some(m=>m.id===room.hostId);}
+function validActor(actor){return object(actor)&&Number.isInteger(actor.id)&&['x','z','yaw'].every(k=>finite(actor[k]));}
+function validState(state,room=null){return object(state)&&validRoom(state.room)&&(!room||state.room.code===room.code&&state.room.selfId===room.selfId)&&['student','teacher'].includes(state.role)&&['ready','playing','won','lost'].includes(state.status)&&['gathering','seating','class'].includes(state.stage)&&typeof state.map==='string'&&validActor(state.player)&&validActor(state.teacher)&&Array.isArray(state.students)&&state.students.every(validActor)&&object(state.drawer)&&Array.isArray(state.drawer.slots)&&state.drawer.slots.every(s=>object(s)&&Number.isInteger(s.id))&&Array.isArray(state.seats)&&Array.isArray(state.books)&&object(state.completed)&&finite(state.score)&&finite(state.target)&&finite(state.elapsed)&&Number.isSafeInteger(state.sequence)&&Array.isArray(state.events)&&state.events.every(e=>object(e)&&typeof e.type==='string');}
+function validSession(result){return object(result)&&typeof result.token==='string'&&result.token.length>=16&&validRoom(result.room)&&validState(result.state,result.room);}
+function readEvent(data,type,room){
+ let message;try{message=JSON.parse(data);}catch{throw protocolError();}
+ if(type==='state'&&!validState(message,room))throw protocolError();
+ if(type==='voice'&&(!object(message)||typeof message.from!=='string'||!['offer','answer','ice','mute'].includes(message.kind)||!object(message.payload)))throw protocolError();
+ if(type==='error'&&(!object(message)||!text(message.message)))throw protocolError();
+ return message;
+}
 export function defaultCampusEndpoint(){
  if(typeof location==='undefined')return 'http://127.0.0.1:8931';
+ if(location.hostname==='github.io'||location.hostname.endsWith('.github.io'))return '';
  return ['localhost','127.0.0.1'].includes(location.hostname)&&location.port!=='8931'?`${location.protocol}//${location.hostname}:8931`:location.origin;
 }
 export async function connectCampusRoom({endpoint=defaultCampusEndpoint(),code='',name='同学',character='boy',rolePreference='student',map='classroom',floor=1,onRoom=()=>{},onError=()=>{},onVoice=()=>{}}={}){
- endpoint=String(endpoint).replace(/\/$/,'');const parsed=new URL(endpoint);if(!['http:','https:'].includes(parsed.protocol))throw new Error('房间地址必须是 HTTP 或 HTTPS');
+ endpoint=String(endpoint??'').trim().replace(/\/+$/,'');if(!endpoint)throw new RoomConnectionError('该网站尚未连接联机服务器，请先玩单人模式，或填写联机服务器地址。');
+ let parsed;try{parsed=new URL(endpoint);}catch{throw new RoomConnectionError('请输入完整的 HTTP 或 HTTPS 联机服务器地址。');}if(!['http:','https:'].includes(parsed.protocol))throw new RoomConnectionError('房间地址必须是 HTTP 或 HTTPS');
  code=String(code).trim();if(code&&!/^\d{6}$/.test(code))throw new Error('请输入六位房间号');
- const response=await fetch(`${endpoint}/api/rooms${code?`/${code}/join`:''}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,character,rolePreference,map,floor})});
- const result=await response.json();if(!response.ok)throw new Error(result.error||'房间连接失败');
+ await requestJSON(`${endpoint}/api/health`,{}, {health:true,validate:value=>object(value)&&value.ok===true&&value.protocol===1&&Number.isInteger(value.rooms)&&value.rooms>=0});
+ const result=await requestJSON(`${endpoint}/api/rooms${code?`/${code}/join`:''}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,character,rolePreference,map,floor})},{validate:validSession});
  return new NetworkRound({endpoint,result,onRoom,onError,onVoice});
 }
 export class NetworkRound{
@@ -17,12 +61,13 @@ export class NetworkRound{
   this.voice=new RoomVoice(this,onVoice);this._timer=setInterval(()=>this._flush(),40);this._listen();this._onRoom(this.room,this._state);
  }
  get player(){return this._look?{...this._state.player,yaw:this._look.yaw,pitch:this._look.pitch}:this._state.player;}get teacher(){return this._state.teacher;}get status(){return this._state.status;}get paused(){return this._localPaused;}get elapsed(){return this._state.elapsed;}get map(){return this._state.map;}
- snapshot(){return {...this._state,...this._interpolatedActors(),player:this.player,paused:this._localPaused||!this._connected,network:true,connection:this._connected?'connected':'connecting',room:this.room};}
+ snapshot(){return {...this._state,...this._interpolatedActors(),player:this.player,paused:this._localPaused||!this._connected,network:true,connection:this._terminalError?'failed':this._connected?'connected':'connecting',room:this.room};}
  step(){return this.snapshot();}reset(){return this.snapshot();}start(){return this.snapshot();}
  drainEvents(){const e=this._events;this._events=[];return e;}
- async _post(path,data){const res=await fetch(`${this.endpoint}${path}?room=${encodeURIComponent(this.room.code)}`,{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${this.token}`},body:JSON.stringify(data)});const out=await res.json();if(!res.ok)throw new Error(out.error||'房间操作失败');return out;}
+ async _post(path,data){try{return await requestJSON(`${this.endpoint}${path}?room=${encodeURIComponent(this.room.code)}`,{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${this.token}`},body:JSON.stringify(data)},{validate:out=>object(out)&&out.ok===true&&(path!=='/api/command'||Array.isArray(out.results)&&out.results.every(value=>typeof value==='boolean'))});}catch(error){if(error.terminal&&!this._closed)this._terminate(error);throw error;}}
+ _terminate(error){if(this._terminalError||this._closed)return;this._terminalError=error;this._connected=false;this._queued=[];this._last={};clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this._controller?.abort();this.voice.close();this._onError(error.message);}
  command(name,...args){
-  if(this._closed)return false;
+  if(this._closed||this._terminalError)return false;
   if(name==='setWriting'&&args[0]===false&&this._state.role!=='teacher')return false;
   if(name==='setRescue'&&args[0]===null&&this._state.role==='teacher')return false;
   if(['setMovement','setLook','setCrouch'].includes(name)){
@@ -33,21 +78,24 @@ export class NetworkRound{
   if(name==='stopComputer'&&!this._state.player.computerActive)return false;
   this._queued.push({name,args,inputSeq});if(this._queued.length>24)this._queued.splice(0,this._queued.length-24);return true;
  }
- async _flush(){if(this._closed||this._busy||!this._queued.length)return;this._busy=true;const commands=this._queued.splice(0,12);try{await this._post('/api/command',{commands});}catch(error){this._onError(error.message);}finally{this._busy=false;}}
+ async _flush(){if(this._closed||this._terminalError||this._busy||!this._queued.length)return;this._busy=true;const commands=this._queued.splice(0,12);try{await this._post('/api/command',{commands});}catch(error){if(error!==this._terminalError&&!this._closed)this._onError(error.message);}finally{this._busy=false;}}
  async _listen(){
-  if(this._closed)return;this._controller=new AbortController();
+  if(this._closed||this._terminalError)return;this._controller=new AbortController();let reader;
   try{
-   const res=await fetch(`${this.endpoint}/api/events?room=${this.room.code}`,{headers:{authorization:`Bearer ${this.token}`},signal:this._controller.signal});if(!res.ok)throw new Error((await res.json()).error||'房间连接中断');
-   const reader=res.body.getReader(),decoder=new TextDecoder();let buffer='';this._connected=true;
-   while(!this._closed){const {value,done}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let index;
-    while((index=buffer.indexOf('\n\n'))>=0){const packet=buffer.slice(0,index);buffer=buffer.slice(index+2);let type='message',data='';for(const line of packet.split('\n')){if(line.startsWith('event: '))type=line.slice(7);if(line.startsWith('data: '))data+=line.slice(6);}if(!data)continue;const message=JSON.parse(data);
+   const res=await fetch(`${this.endpoint}/api/events?room=${this.room.code}`,{headers:{authorization:`Bearer ${this.token}`,accept:'text/event-stream'},signal:this._controller.signal,cache:'no-store'});
+   if(!res.ok){try{await readJSON(res);}catch(error){if(res.status>=400&&res.status<500&&![408,429].includes(res.status))error.terminal=true;throw error;}}
+   if(mime(res)!=='text/event-stream'||!res.body){await res.body?.cancel().catch(()=>{});throw protocolError();}
+   reader=res.body.getReader();const decoder=new TextDecoder();let buffer='';
+   while(!this._closed&&!this._terminalError){const {value,done}=await reader.read();if(done)break;buffer=(buffer+decoder.decode(value,{stream:true})).replace(/\r\n/g,'\n');if(buffer.length>524288)throw protocolError();let index;
+    while((index=buffer.indexOf('\n\n'))>=0){const packet=buffer.slice(0,index);buffer=buffer.slice(index+2);let type='message',data='';for(const line of packet.split('\n')){if(line.startsWith('event:'))type=line.slice(6).trim();if(line.startsWith('data:'))data+=(data?'\n':'')+line.slice(5).trimStart();}if(!data||!['state','voice','error'].includes(type))continue;const message=readEvent(data,type,this.room);if(type==='state')this._connected=true;
      if(type==='state'){const before=this.room,previous=this._state;this._state=message;const actorChanged=previous.player.id!==message.player.id||previous.player.seated!==message.player.seated||previous.map!==message.map;if(actorChanged)this._look=null;else if(this._look&&(message.inputAck?.look||0)>=this._look.sequence)this._look=null;if(previous.map!==message.map||previous.stage!==message.stage)this._frames=[];this._frames.push({time:performance.now(),state:message});if(this._frames.length>5)this._frames.shift();this.room=message.room;this._events.push(...(message.events||[]));this.voice.sync(this.room);if(JSON.stringify(before)!==JSON.stringify(this.room))this._onRoom(this.room,this._state);}
      if(type==='voice')this.voice.receive(message).catch(error=>this._onError('语音连接失败：'+error.message));
      if(type==='error')this._onError(message.message);
     }
    }
-  }catch(error){if(!this._closed&&error.name!=='AbortError')this._onError(error.message);}
-  this._connected=false;if(!this._closed){this._queued=[];this._last={};this._retry=setTimeout(()=>this._listen(),1500);}
+  }catch(error){if(!this._closed&&error.name!=='AbortError'){if(error.terminal)this._terminate(error);else if(!this._terminalError)this._onError(error instanceof RoomConnectionError?error.message:'联机连接中断，正在尝试重新连接。');}}
+  finally{try{await reader?.cancel();}catch{}reader?.releaseLock();}
+  this._connected=false;if(!this._closed&&!this._terminalError){this._queued=[];this._last={};this._retry=setTimeout(()=>this._listen(),1500);}
  }
  _interpolatedActors(){
   const frames=this._frames;if(frames.length<2)return{};const target=performance.now()-70;let a=frames[0],b=frames[frames.length-1];for(let i=1;i<frames.length;i++)if(frames[i].time>=target){a=frames[i-1];b=frames[i];break;}
@@ -78,7 +126,7 @@ class RoomVoice{
   for(const member of this.round.room.members){if(member.id===this.round.room.selfId||!member.connected)continue;const peer=this.peer(member.id);await this.attach(peer);await this.offer(peer);this.signal(member.id,'mute',{muted:false});}
   for(const peer of this.peers.values())peer.audio?.play().catch(()=>{});this.onChange({enabled:true});return true;
  }
- signal(to,kind,payload){return this.round._post('/api/voice',{to,kind,payload}).catch(error=>{if(!this.closed)this.round._onError(error.message);});}
+ signal(to,kind,payload){return this.round._post('/api/voice',{to,kind,payload}).catch(error=>{if(!this.closed&&error!==this.round._terminalError)this.round._onError(error.message);});}
  peer(id){
   if(this.peers.has(id))return this.peers.get(id);
   const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]}),peer={id,pc,makingOffer:false,ignoreOffer:false,polite:this.round.room.selfId.localeCompare(id)>0,pendingIce:[],audio:null};this.peers.set(id,peer);
