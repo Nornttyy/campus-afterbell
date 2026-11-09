@@ -1,13 +1,14 @@
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=solo-51';
-import {createCapturePose} from './capture-poses.js?v=solo-51';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-52';
+import {createCapturePose} from './capture-poses.js?v=campus-52';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-52';
 import {propContact} from './prop-assets.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {useCharacterBaseColor} from './character-materials.js';
-import {createCrawlPose} from './crawl-pose.js?v=solo-51';
-import {createStudentGestures} from './student-gestures.js?v=solo-51';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=solo-51';
+import {createCrawlPose} from './crawl-pose.js?v=campus-52';
+import {createStudentGestures} from './student-gestures.js?v=campus-52';
+import {createSeatedHandClearance} from './seated-hand-clearance.js';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-52';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 export const STUDENT_ASSETS=Object.freeze({
  boy:Object.freeze({file:'student-boy-v4',contact:'boy'}),
@@ -88,10 +89,10 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
  const mixer=new T.AnimationMixer(model),actions={},weights={};
  for(const clip of gltf.animations){const a=mixer.clipAction(clip);actions[clip.name]=a;a.setEffectiveWeight(0).play();a.time=(seed*.17)%clip.duration;weights[clip.name]=0;}
  for(const name of ['Idle','Walk','Sit','Write','Snack','Phone','Note','Think','Carry','WalkCarry'])if(!actions[name])throw new Error(`${group.userData.asset}: missing ${name} clip`);
- const mapping={resting:'Sit',writing:'Write',computer:'Write',snack:'Snack',drink:'Snack',burger:'Snack',banana:'Snack',garlic:'Snack',gum:'Snack',lunch:'Snack',pen:'Snack',bananaPeel:'Sit',phone:'Phone',note:'Note',smoke:'Sit',flash:'Sit',ink:'Sit',thinking:'Think',chat:'Think',hero:'Think'};
+ const mapping={resting:'Sit',writing:'Write',computer:'Write',snack:'Snack',drink:'Snack',burger:'Snack',banana:'Snack',garlic:'Snack',gum:'Snack',lunch:'Snack',pen:'Write',bananaPeel:'Sit',phone:'Phone',note:'Note',smoke:'Sit',flash:'Sit',ink:'Sit',thinking:'Think',chat:'Think',hero:'Think'};
  const nominalWalkSpeed=Number(motionProfile.nominalWalkSpeed)||.475;
  let crawling=false;
- let walkRate=1,mood='writing',last=null,moving=0,held=false,heldAction=null,using=null,isSeated=seated,captivity='free',restraintStartedAt=null,throwProgress=0,throwAge=Infinity,throwBlend=0,lastThrowable=null;
+ let walkRate=1,mood='writing',last=null,moving=0,held=false,heldAction=null,using=null,penWriting=false,isSeated=seated,captivity='free',restraintStartedAt=null,throwProgress=0,throwAge=Infinity,throwBlend=0,lastThrowable=null;
  const crawlPose=createCrawlPose(group,bones),capturePose=createCapturePose(group,bones),handMotion=createStudentHandMotion(group,bones,{seed,authoredNeutral:metric,authoredTableContact:!!motionProfile.writeContact42}),throwSaved=new Map();
  const digitRest=new Map(Object.entries(bones).filter(([name])=>/^LeftHand(?:Index|Middle|Ring|Pinky|Thumb)\d$/.test(name)).map(([,bone])=>[bone,bone.quaternion.clone()]));
  const grips={left:new T.Group(),right:new T.Group()};
@@ -102,6 +103,7 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
  }
  const gestureMotion=metric?createStudentGestures(group,bones,gltf.animations,Object.fromEntries(Object.entries(grips).map(([side,g])=>[side,g.userData.attachments]))):null;
  const walkingArms=metric?createWalkingArmPose(group,bones):null;
+ const seatedClearance=metric?createSeatedHandClearance(group,bones):null;
  const foods=Object.fromEntries(['snack','drink','burger'].map(kind=>{const prop=createDeskItem(kind);prop.position.set(0,kind==='burger'?.047:.065,-.035);prop.rotation.y=Math.PI;fitHeldSurface(prop,kind,variant,metric);prop.visible=false;grips.left.add(prop);return[kind,prop];}));
  function ensureFood(kind){if(!foods[kind]){const prop=createDeskItem(kind);prop.position.set(0,kind==='lunch'?.047:.065,-.035);prop.rotation.y=Math.PI;fitHeldSurface(prop,kind,variant,metric);prop.visible=false;grips.left.add(prop);foods[kind]=prop;}return foods[kind];}
  const throwables={};
@@ -169,8 +171,8 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
  }
  function update(t){
   const reset=last===null||t<last,dt=reset?0:Math.min(.25,t-last);last=t;
-  const itemKind=heldAction||mood,idleCarry=held&&using===false;
-  const target=isSeated?(idleCarry?(THROWABLE_ITEM_KINDS.includes(itemKind)?'Sit':'Snack'):(mapping[mood]||'Sit')):(moving>.03?(held?'WalkCarry':'Walk'):(held?'Carry':'Idle')),alpha=reset?1:1-Math.exp(-dt*10);
+  const itemKind=heldAction||mood,writingPen=isSeated&&(penWriting||itemKind==='pen'),idleCarry=held&&using===false&&!writingPen;
+  const target=isSeated?(writingPen?'Write':idleCarry?(THROWABLE_ITEM_KINDS.includes(itemKind)?'Sit':'Snack'):(mapping[mood]||'Sit')):(moving>.03?(held?'WalkCarry':'Walk'):(held?'Carry':'Idle')),alpha=reset?1:1-Math.exp(-dt*10);
   const desiredRate=T.MathUtils.clamp(moving/nominalWalkSpeed,.1,3.8);walkRate=reset?desiredRate:T.MathUtils.damp(walkRate,desiredRate,16,dt);
   for(const [name,a]of Object.entries(actions)){
    if(reset)a.time=(seed*.17)%a.getClip().duration;
@@ -179,24 +181,24 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
    // Their own duration already contains cadence; do not multiply it a second time.
    a.setEffectiveTimeScale(name.startsWith('Walk')?walkRate:name==='Snack'&&idleCarry?0:1);if(name==='Snack'&&idleCarry)a.time=0;
   }
-  crawlPose.restore();
+  seatedClearance?.restore();crawlPose.restore();
   for(const [bone,rotation]of throwSaved)bone.quaternion.copy(rotation);throwSaved.clear();
   walkingArms?.restore();gestureMotion?.restore();handMotion.restore();capturePose.restore();mixer.update(dt);const resumed=capturePose.apply(captivity==='free'&&mood==='rescuing'?'rescuing':captivity,t,dt,{startedAt:restraintStartedAt,reset});
-  const throwable=THROWABLE_ITEM_KINDS.includes(itemKind),handMood=FOOD_ITEM_KINDS.includes(itemKind)||itemKind==='pen'||throwable?'snack':mood,gestureMood=['banana','garlic','gum','lunch','pen'].includes(itemKind)?'snack':idleCarry?itemKind:mood;
+  const throwable=THROWABLE_ITEM_KINDS.includes(itemKind),handMood=writingPen?'writing':FOOD_ITEM_KINDS.includes(itemKind)||throwable?'snack':mood,gestureMood=writingPen?'writing':['banana','garlic','gum','lunch'].includes(itemKind)?'snack':idleCarry?itemKind:mood;
   handMotion.apply({time:t,dt:resumed?1:dt,reset,seated:isSeated,mood:handMood,restraint:captivity,moving,carrying:held,capture:capturePose.state()});gestureMotion?.apply({time:idleCarry?0:t,dt,reset,seated:isSeated,mood:gestureMood,carrying:held,moving,restraint:captivity,walkTime:actions.Walk.time});
   walkingArms?.apply({weight:(weights.Walk||0)+(weights.WalkCarry||0),seated:isSeated,crawling,restraint:captivity,mood,carrying:held});
-  clearWritingTransition();poseThrow(dt,reset);crawlPose.apply({active:crawling&&!isSeated&&captivity==='free',time:t,dt,speed:moving,reset});group.updateMatrixWorld(true);group.getWorldQuaternion(inv).invert();
+  clearWritingTransition();poseThrow(dt,reset);seatedClearance?.apply({seated:isSeated,crawling,restraint:captivity,transition:1-Math.max(...Object.values(weights)),settledSupport:(weights.Sit||0)+(weights.Write||0)>.999999});crawlPose.apply({active:crawling&&!isSeated&&captivity==='free',time:t,dt,speed:moving,reset});group.updateMatrixWorld(true);group.getWorldQuaternion(inv).invert();
   for(const [side,a]of Object.entries(grips)){
    const b=bones[side==='left'?'LeftHand':'RightHand'];b.getWorldPosition(pos);a.position.copy(group.worldToLocal(pos));const prefix=side==='left'?'Left':'Right',center=bones[prefix+'HandMiddle1'].getWorldPosition(V()),index=bones[prefix+'HandIndex1'].getWorldPosition(V()),pinky=bones[prefix+'HandPinky1'].getWorldPosition(V());
    const y=center.sub(b.getWorldPosition(V())).normalize(),x=index.sub(pinky),thumb=bones[prefix+'HandThumb1'].getWorldPosition(V()).sub(bones[prefix+'HandMiddle1'].getWorldPosition(V()));thumb.addScaledVector(y,-thumb.dot(y));if(x.dot(thumb)<0)x.negate();x.multiplyScalar(side==='left'?1:-1).addScaledVector(y,-x.dot(y)).normalize();const z=V().crossVectors(x,y).normalize();q.setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));a.quaternion.copy(inv).multiply(q);a.userData.gripWeight=(weights.Phone||0)+(weights.Note||0)+(weights.Carry||0)+(weights.WalkCarry||0);
   }
-  if((FOOD_ITEM_KINDS.includes(itemKind)||itemKind==='pen')&&held&&captivity==='free')ensureFood(itemKind);
+  if(FOOD_ITEM_KINDS.includes(itemKind)&&held&&captivity==='free')ensureFood(itemKind);
   for(const [kind,prop]of Object.entries(foods))prop.visible=captivity==='free'&&itemKind===kind&&((weights.Snack||0)>.6||held);
   if(throwable&&held&&captivity==='free')ensureThrowable(itemKind);
   for(const [kind,prop]of Object.entries(throwables))prop.visible=captivity==='free'&&itemKind===kind&&held&&throwBlend>.6&&!(throwAge>=0&&throwAge<.34);
-  pencil.visible=captivity==='free'&&mood!=='computer'&&(weights.Write||0)>.6;
+  pencil.visible=captivity==='free'&&(writingPen||mood!=='computer')&&(weights.Write||0)>.6;
  }
- update(0);return{group,head,bones,update,seated,setMood:m=>{mood=m;if(THROWABLE_ITEM_KINDS.includes(m))lastThrowable=m;},setMotion:({crawling:prone=false,seated=isSeated,speed=moving,carrying=held,heldAction:heldKind=null,using:isUsing=null,restraint='free',restraintStartedAt:startedAt=null,throwProgress:progress=0,throwAge:age=Infinity}={})=>{crawling=Boolean(prone);captivity=restraint;restraintStartedAt=Number.isFinite(startedAt)?startedAt:null;isSeated=seated;moving=Math.max(0,speed);held=carrying;heldAction=heldKind;using=isUsing;if(THROWABLE_ITEM_KINDS.includes(heldAction))lastThrowable=heldAction;throwProgress=T.MathUtils.clamp(Number(progress)||0,0,1);throwAge=Number.isFinite(age)?age:Infinity;},getHand:s=>grips[s],dispose(){mixer.stopAllAction();mixer.uncacheRoot(model);},diagnostics:()=>({clips:Object.keys(actions),weights:{...weights},asset:group.userData.asset,glasses,heldAction,using,animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),crawl:crawlPose.state(),gestures:gestureMotion?.diagnostics(),capture:capturePose.state(),throwing:{kind:lastThrowable,blend:throwBlend,progress:throwProgress,age:throwAge}})};
+ update(0);return{group,head,bones,update,seated,setMood:m=>{mood=m;if(THROWABLE_ITEM_KINDS.includes(m))lastThrowable=m;},setMotion:({crawling:prone=false,seated=isSeated,speed=moving,carrying=held,heldAction:heldKind=null,using:isUsing=null,penWriting:writing=false,restraint='free',restraintStartedAt:startedAt=null,throwProgress:progress=0,throwAge:age=Infinity}={})=>{crawling=Boolean(prone);captivity=restraint;restraintStartedAt=Number.isFinite(startedAt)?startedAt:null;isSeated=seated;moving=Math.max(0,speed);held=carrying;heldAction=heldKind;using=isUsing;penWriting=Boolean(writing);if(THROWABLE_ITEM_KINDS.includes(heldAction))lastThrowable=heldAction;throwProgress=T.MathUtils.clamp(Number(progress)||0,0,1);throwAge=Number.isFinite(age)?age:Infinity;},getHand:s=>grips[s],dispose(){mixer.stopAllAction();mixer.uncacheRoot(model);},diagnostics:()=>({clips:Object.keys(actions),weights:{...weights},asset:group.userData.asset,glasses,heldAction,using,animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),crawl:crawlPose.state(),gestures:gestureMotion?.diagnostics(),clearance:seatedClearance?.diagnostics(),capture:capturePose.state(),throwing:{kind:lastThrowable,blend:throwBlend,progress:throwProgress,age:throwAge}})};
 }
 export function createRiggedPalm(gltf,side,scale=1){
  const group=new T.Group();group.name=side<0?'left-desk-hand':'right-desk-hand';group.userData.asset='tripo-palm-only';group.userData.fingersPerHand=4;

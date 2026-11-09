@@ -1,5 +1,5 @@
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=solo-51';
-import {CRAWL_TUNING} from './crawl-profile.js?v=solo-51';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-52';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-52';
 import * as T from './vendor/three.module.js';
 // Hands follow horizontal body turns, never camera pitch. Seated/restrained
 // hands keep their body heading while the player looks around.

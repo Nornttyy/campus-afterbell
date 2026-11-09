@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {CRAWL_TUNING} from './crawl-profile.js?v=solo-51';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-52';
 import {clonePropAsset,propContact} from './prop-assets.js';
 export {loadPropAssets} from './prop-assets.js';
 
@@ -517,8 +517,9 @@ export function createDeskHands({createHand}={}){
     extension=clamp(extension+dt*(engaged?1/.70:-(caught?1/.20:1/.46)),0,1);
     const idleWeight=1-ease(extension,0,.32);
     const clear=ease(extension,0,.16),lower=ease(extension,.16,.32),reach=ease(extension,.30,.48),pull=ease(extension,.48,.72),grip=ease(extension,.42,.70),use=ease(extension,.70,1),p=clamp(Number(progress)||0,0,1);
-    if(engaged&&holding&&use>.94)useTime+=dt;else if(extension<.05)useTime=0;
-    using=smooth(using,engaged&&holding?1:0,dt,14);
+    const writing=active==='pen'&&engaged&&seated;
+    if(engaged&&(holding||writing)&&use>.94)useTime+=dt;else if(extension<.05)useTime=0;
+    using=smooth(using,engaged&&(holding||writing)?1:0,dt,14);
     // The whole held food moves vertically; no separate bite or mouth reach.
     const foodBob=(active==='pen'?0:.034)*Math.sin(useTime*Math.PI*2/1.05)*using;
     // The rules clear progress on completion. Keep the hand's already reached
@@ -687,6 +688,30 @@ export function createDeskHands({createHand}={}){
     // Leave the thumb tips above the frame while the forearm still exits at
     // the bottom. A larger seated drop clipped almost the entire thumb.
     group.position.y-=THREE.MathUtils.lerp(.12,.085,standing)*(1-clamp(crawlBlend,0,1));
+    if(active==='pen'&&seated&&extension>.001){
+      // The desktop pen goes into the writing hand, not the food hand. Fit
+      // its tip to the open page in body space so looking around cannot move
+      // the writing surface. All dimensions and the imported fingers stay intact.
+      const weight=ease(extension,.20,1),hand=arms[1].hand,pen=props.pen;
+      group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
+      const line=Math.sin(useTime*1.9),x=.135+.029*Math.sin(useTime*7.1),z=-.725+.018*line+.006*Math.sin(useTime*14.2);
+      const tip=v(x,.88+Math.abs(x)*Math.tan(.14)+.005-1.43,z);
+      const penQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.24+.025*Math.sin(useTime*7.1),-.10,-.32));
+      const palmQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(-1.0,.55,.18));
+      const centre=tip.clone().sub(v(0,-.0875,0).applyQuaternion(penQ));
+      const contact=v(0,.018,-.004),index=centre.clone().add(contact.clone().applyQuaternion(penQ));
+      hand.setCurl(.72);hand.setFingerCurl?.('Index',.62);
+      const wrist=index.sub(hand.indexTip().multiplyScalar(hand.group.scale.x).applyQuaternion(palmQ));
+      hand.group.position.lerp(wrist.applyMatrix4(inv),weight);
+      hand.group.quaternion.slerp(invQ.clone().multiply(palmQ),weight);
+      hand.group.updateMatrix();
+      pen.quaternion.copy(invQ).multiply(penQ);
+      pen.position.copy(hand.indexTip().applyMatrix4(hand.group.matrix)).sub(contact.clone().applyQuaternion(pen.quaternion));
+      thumbAt(1,pen,v(.004,.018,.004),weight);
+      // The other hand rests beside the page instead of gripping invisible food.
+      const left=arms[0].hand;left.group.position.lerp(v(-.24,-.46,-.66).applyMatrix4(inv),weight);left.group.quaternion.slerp(invQ.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-1.15,0,-.10))),weight);left.setCurl(.14);
+      pen.visible=extension>.62&&!caught;
+    }
   }
   update(0);return{group,update,getHand:side=>arms[side==='left'?0:1].hand,getFocus(){return focus;},getDebug(){
     const camera=group.userData.viewCamera||(group.parent?.isCamera?group.parent:null),prop=props[active];

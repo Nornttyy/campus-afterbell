@@ -1,9 +1,9 @@
-import {createCapturePose} from './capture-poses.js?v=solo-51';
+import {createCapturePose} from './capture-poses.js?v=campus-52';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=solo-51';
+import {createCrawlPose} from './crawl-pose.js?v=campus-52';
 import {useCharacterBaseColor} from './character-materials.js';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=solo-51';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-52';
 
 export async function loadTeacherModel(){
   const url=new URL('./assets/models/teacher-v2.glb?v=arms-49b',import.meta.url);

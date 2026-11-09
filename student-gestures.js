@@ -1,12 +1,12 @@
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=solo-51';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-52';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const armName=/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/;
 
 // This layer changes joint rotations only. Source geometry, skin weights,
 // calibrated finger grips and held-item dimensions remain untouched.
 export function createStudentGestures(group,bones,clips,attachments){
- const saved=new Map(),previous=new Map(),samplers={},sideBlend={Left:0,Right:0};let blend=0;
+ const saved=new Map(),previous=new Map(),samplers={},sideBlend={Left:0,Right:0};let blend=0,lastMood=null,settled=0;
  const managed=Object.entries(bones).filter(([name])=>armName.test(name)).map(([,b])=>b);
  for(const name of ['Idle','Walk','Sit']){
   const clip=clips.find(c=>c.name===name);samplers[name]=clip?.tracks.filter(t=>t.name.endsWith('.quaternion')).map(track=>{
@@ -42,7 +42,7 @@ export function createStudentGestures(group,bones,clips,attachments){
   // Food keeps the requested small up/down use, never a mouth-reaching action.
   const bob=food?.0175*(1-Math.cos(time*Math.PI/ .6)):0;
   const phone=mood==='phone'&&seated;
-  const local=V(nearCenter?sign*.015:root.x-sign*.025,root.y-(phone?.115:.035)+bob,root.z+reach*(phone?.72:.63)+pass*.024);
+  const local=V(nearCenter?sign*.015:root.x-sign*.025,root.y-(phone?.115:.035)+bob,root.z+reach*(phone?.72:.63)+pass*.024-(phone?.067:0));
   arm(side,group.localToWorld(local));
   // The oversized source head extends below its Head bone. Keep the phone
   // almost flat above the desk, with actual palms below the chin rather than
@@ -63,21 +63,23 @@ export function createStudentGestures(group,bones,clips,attachments){
  return {
   restore(){for(const[b,q]of saved)b.quaternion.copy(q);saved.clear();},
   apply({time,dt,reset,seated,mood,carrying,moving,restraint,walkTime=0}){
-   const ordinary=['phone','note','snack','drink','burger'].includes(mood),active=restraint==='free'&&ordinary&&(seated||carrying);
+   if(mood!==lastMood){lastMood=mood;settled=0;}else settled+=dt;
+   const thinking=seated&&['thinking','chat','hero'].includes(mood),ordinary=thinking||['phone','note','snack','drink','burger'].includes(mood),active=restraint==='free'&&ordinary&&(seated||carrying);
    if(restraint!=='free'){previous.clear();blend=0;sideBlend.Left=sideBlend.Right=0;return;}
    blend=reset?(active?1:0):T.MathUtils.damp(blend,active?1:0,15,dt);
-   for(const side of ['Left','Right']){const owned=active&&(side==='Left'||!seated||mood==='phone'||mood==='note');sideBlend[side]=reset?(owned?1:0):T.MathUtils.damp(sideBlend[side],owned?1:0,15,dt);}
+   for(const side of ['Left','Right']){const owned=active&&(thinking||side==='Left'||!seated||mood==='phone'||mood==='note');sideBlend[side]=reset?(owned?1:0):T.MathUtils.damp(sideBlend[side],owned?1:0,15,dt);}
    if(!active&&blend<.0001){for(const b of managed)previous.set(b,b.quaternion.clone());return;}
    for(const b of managed)saved.set(b,b.quaternion.clone());
    if(active){
-    if(mood==='note'){hold('Right',{seated,mood,time});freeHand('Left',seated,moving,walkTime);}
+    if(thinking){freeHand('Left',true,0,0);freeHand('Right',true,0,0);}
+    else if(mood==='note'){hold('Right',{seated,mood,time});freeHand('Left',seated,moving,walkTime);}
     else {hold('Left',{seated,mood,time,nearCenter:mood==='phone'&&seated});
      if(mood==='phone'&&seated)phoneTap(time);else if(!seated)freeHand('Right',false,moving,walkTime);
     }
    }
    // Follow continuously on entry, interruption and return. Never reset the
    // limb to the beginning of a gesture when a repeated state is received.
-   const alpha=reset?1:1-Math.exp(-(blend>.98?18:6)*dt);
+   const rate=blend>.98?6+12*T.MathUtils.smoothstep(settled,0,.5):6,alpha=reset?1:1-Math.exp(-rate*dt);
    for(const b of managed){const side=b.name.includes('Left')?'Left':'Right',desired=b.quaternion.clone();if(sideBlend[side]<.0001){previous.set(b,desired);continue;}if(!previous.has(b))previous.set(b,saved.get(b).clone());b.quaternion.copy(previous.get(b).slerp(desired,alpha));previous.set(b,b.quaternion.clone());}
    group.updateMatrixWorld(true);
   },

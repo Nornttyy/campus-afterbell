@@ -1,13 +1,14 @@
 import {createSessionUI} from './session-ui.js';
-import {bindHeldUseInput} from './held-use-input.js?v=solo-51';
-import {createVisionEffects} from './vision-effects.js?v=solo-51';
-import {ClassroomRound} from './classroom-rules.js?v=solo-51';
+import {bindHeldUseInput} from './held-use-input.js?v=campus-52';
+import {createVisionEffects} from './vision-effects.js?v=campus-52';
+import {ClassroomRound} from './classroom-rules.js?v=campus-52';
 
-import {TeacherRound} from './teacher-rules.js?v=solo-51';
+import {TeacherRound} from './teacher-rules.js?v=campus-52';
+import {createSoloRound} from './solo-round.js';
 
 // Input/UI only. Perception, movement and team results live in rules.
 export function createClassroomGame({scene,audio,onExit,round:providedRound=null,sessionFactory=createSessionUI}){
-  let round=providedRound||new ClassroomRound(),externalRound=providedRound,options={role:'student',map:'classroom'};
+  let round=providedRound||createSoloRound(),externalRound=providedRound,options={role:'student',map:'classroom'};
   const $=s=>document.querySelector(s),ui=$('#play-ui'),canvas=$('#classroom');
   const pauseDialog=$('#pause-dialog'),resultDialog=$('#result-dialog');
   const labels={snack:'零食',drink:'饮料',burger:'汉堡',note:'纸条',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡糖',banana:'香蕉',bananaPeel:'香蕉皮',garlic:'大蒜',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set();
@@ -38,6 +39,9 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     const retry=$('#retry-game');retry.textContent=round.network&&round.room.selfId!==round.room.hostId?'等待房主再开一局':'再来一局';retry.disabled=Boolean(round.network&&round.room.selfId!==round.room.hostId);if(!resultDialog.open)resultDialog.showModal();
   }
   function processEvents(){for(const e of round.drainEvents()){
+    if(e.type==='elevator-denied')feedback(e.message,'bad');
+    if(e.type==='elevator-start'){release();stopMovement();audio.click();}
+    if(e.type==='elevator-arrived'){options.map=e.map;audio.effect?.('bell',.35);}
     if(e.type==='school-bell')fx('bell');
     if(e.type==='flash-burst'||e.type==='ink-splash')audio.effect?.(e.type,.6);
     if(e.type==='complete'&&e.actor==='player'&&e.points>0&&!throwables.has(e.action)){fx('complete');feedback('+'+(e.points??''));}
@@ -63,9 +67,11 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     const p=s.player,teacher=s.role==='teacher',alive=s.teamSize-s.caughtCount;
     const beforeClass=s.stage&&s.stage!=='class',formatTime=n=>`${Math.floor(Math.ceil(n)/60).toString().padStart(2,'0')}:${(Math.ceil(n)%60).toString().padStart(2,'0')}`;
     ui.dataset.stage=s.stage||'class';
+    ui.dataset.elevatorPhase=s.elevator?.phase||'idle';ui.dataset.elevatorUsed=String(!!s.elevator?.used);ui.dataset.elevatorRemaining=String(s.elevator?.remaining||0);
     ui.dataset.status=s.status;ui.dataset.phase=s.teacher.phase;ui.dataset.holding=String(s.holding);ui.dataset.score=String(s.score);
     ui.dataset.seated=String(p.seated);ui.dataset.crawling=String(Boolean(p.crouched&&!p.seated));ui.dataset.caught=String(p.caught);ui.dataset.position=`${p.x.toFixed(2)},${p.z.toFixed(2)}`;
     $('#round-clock').textContent=beforeClass?(s.stage==='seating'?'入座 '+formatTime(s.stageTimeLeft):'课前集合'):(teacher?'已抓捕 '+s.caughtCount:alive)+' / '+s.teamSize;
+    if(s.elevator?.phase==='travel')$('#round-clock').textContent='电梯运行 · '+Math.ceil(s.elevator.remaining)+'秒';
     const lessonTime=$('#lesson-time');if(lessonTime){lessonTime.hidden=beforeClass;lessonTime.textContent='距离下课 '+formatTime(s.timeLeft||0);}
     const stamina=$('#teacher-stamina');if(stamina){stamina.hidden=!teacher||beforeClass;stamina.dataset.low=String(s.teacher.stamina<25);$('#stamina-number').textContent=Math.ceil(s.teacher.stamina??100)+'%';$('#stamina-fill').style.width=(s.teacher.stamina??100)+'%';stamina.dataset.writing=String(Boolean(s.teacher.writing));}
     ui.dataset.stamina=String(s.teacher.stamina??'');ui.dataset.writing=String(Boolean(s.teacher.writing));$('#round-score').textContent=Math.floor(s.score);$('#round-target').textContent='/ '+s.target;
@@ -77,7 +83,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     const needsSeat=carrying&&!p.seated&&!throwables.has(s.selected);
     let actionText='';
     if(target?.kind==='bell')actionText='E 开始上课';
-    else if(target?.kind==='lift')actionText=target.current?'当前楼层':`E 前往 ${target.floor||''} 层`;
+    else if(target?.kind==='lift')actionText=s.elevator?.used?'本局电梯已使用':target.current?'当前楼层':s.elevator&&s.elevator.inside<s.elevator.total?`等待同学 ${s.elevator.inside}/${s.elevator.total}`:round.network&&round.room.selfId!==round.room.hostId?'等待房主选楼层':`E 前往 ${target.floor||''} 层`;
     else if(target?.kind==='locker')actionText='E 更衣柜';
     else if(target?.kind==='rear-door')actionText='按住 E '+(s.rearDoorClosed?'开门':'关门');
     else if(target?.kind==='office-desk')actionText='E '+(carrying?'放回便当':drawer.open?'收起抽屉':'打开抽屉');
@@ -92,10 +98,10 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     else if(hover!==null)actionText=`E 拿取 ${labels[drawer.slots[hover]?.action]||''}`;
     else if(carrying&&target?.kind==='desk')actionText='E 放回物品';
     else if(p.burpReadyLeft>0)actionText='左键 打嗝 · '+Math.ceil(p.burpReadyLeft);
-    else if(carrying)actionText=throwables.has(s.selected)?'点击抛出 · 长按蓄力':s.selected==='gum'?'按住左键吹泡泡':'按住左键使用';
+    else if(carrying)actionText=s.selected==='pen'?(p.seated?'写字中 · E 放回':'E 放回笔'):throwables.has(s.selected)?'点击抛出 · 长按蓄力':s.selected==='gum'?'按住左键吹泡泡':'按住左键使用';
     else if(deskPrompt)actionText=deskPrompt;
     else if(p.seated)actionText='E 起身';
-    if(session.touch)actionText=actionText.replace(/按住 E/g,'按住互动').replace(/\bE /g,'互动 · ').replace(/左键/g,'使用').replace(/点击抛出/g,'轻点使用抛出');
+    if(session.touch)actionText=actionText.replace(/按住 E/g,'按住互动').replace(/\bE /g,'互动 · ').replace(/Q 放回/g,'互动放回').replace(/左键/g,'使用').replace(/点击抛出/g,'轻点使用抛出');
     $('#interaction-prompt').textContent=actionText;$('#interaction-prompt').hidden=!actionText;
     $('#drawer-hint').textContent='';
     renderUseProgress(s);
@@ -105,7 +111,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function renderUseProgress(s){
     const ring=$('#use-progress'),rescuing=s.rescue?.id!=null,bubble=s.player.bubble,blowing=Boolean(bubble?.blowing),door=s.interaction?.kind==='rear-door',cycles=Number(bubble?.cycles)||0;
     const progress=blowing?(cycles>=4?1:cycles-Math.floor(cycles)):door?s.interaction.progress:rescuing?s.rescue.progress:s.actionProgress;
-    const visible=!s.paused&&(blowing||door||rescuing||s.drawer.drawnSlot!==null&&!s.player.caught&&(s.holding||s.actionProgress>0));
+    const visible=!s.paused&&(blowing||door||rescuing||s.selected!=='pen'&&s.drawer.drawnSlot!==null&&!s.player.caught&&(s.holding||s.actionProgress>0));
     ring.hidden=!visible;ring.dataset.active=String(s.holding);ring.dataset.cycles=String(Math.floor(cycles));ring.setAttribute('aria-valuenow',String(Math.round(clamp(progress,0,1)*100)));
     ring.setAttribute('aria-label',blowing?'吹泡泡':door?'开关门':rescuing?'解救进度':throwables.has(s.selected)?'投掷蓄力':'物品使用进度');ring.dataset.charged=String(!blowing&&throwables.has(s.selected)&&s.actionProgress>=1);
     const size=blowing?54+Math.min(4,Math.floor(cycles))*13:54;ring.style.width=size+'px';ring.style.height=size+'px';$('#use-progress-fill').style.strokeDashoffset=String(100-clamp(progress,0,1)*100);
@@ -130,7 +136,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   }
   function start(nextOptions){
     if(nextOptions?.role)options={role:nextOptions.role==='teacher'?'teacher':'student',map:nextOptions.map||'classroom'};
-    if(!externalRound)round=options.role==='teacher'?new TeacherRound({map:options.map}):new ClassroomRound({map:options.map});
+    if(!externalRound)round=createSoloRound(options);
     cancelAnimationFrame(raf);if(pauseDialog.open)pauseDialog.close();if(resultDialog.open)resultDialog.close();release();keys.clear();round.reset(Date.now()>>>0);round.start({gathering:!externalRound||nextOptions?.gathering===true});yaw=round.player.yaw||0;pitch=round.player.pitch||0;round.setLook(yaw,pitch);
     active=true;finished=false;lastFriends='';lastTeacher=null;document.body.classList.add('playing');ui.hidden=false;$('#menu').inert=true;$('#menu').setAttribute('aria-hidden','true');
     $('#speech').hidden=true;$('#round-feedback').classList.remove('pop');
@@ -147,7 +153,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function take(){
     if(session.computer){round.stopComputer();return;}if(!canInput())return;lock();const s=round.snapshot(),target=scene.getInteraction?.();
     if(target?.kind==='bell'){round.startBell?.();return;}
-    if(target?.kind==='lift'){if(s.stage!=='gathering'||target.current)return;if(round.network){round.travelFloor(target.map);return;}start({role:s.role,map:target.map});return;}
+    if(target?.kind==='lift'){if(s.stage!=='gathering'||target.current)return;round.travelFloor?.(target.map);processEvents();render(round.snapshot());return;}
     if(target?.kind==='locker'){if(s.stage==='gathering')session.openLocker();return;}
     if(target?.kind==='rear-door'){round.setDoorUse?.(true);return;}
     if(target?.kind==='office-desk'){if(s.drawer.drawnSlot!==null)round.returnItem();else round.openOfficeDrawer?.();return;}
@@ -155,6 +161,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     if(target?.kind==='chair'){round.interact(target.id);return;}
     if(s.role==='teacher'&&s.stage==='class'){if(s.teacher.carriedId!==null){if(s.bindPost!==null)round.bindStudent();else round.dropStudent();}else if(target?.kind==='release')round.releaseBoundStudent();else if(target?.kind==='blackboard')round.setWriting(true);else round.grabStudent();processEvents();return;}
     if(target?.kind==='rescue'){round.setRescue(target.id);return;}
+    if(s.selected==='pen'&&s.drawer.drawnSlot!==null&&s.player.seated){round.returnItem();return;}
     if(target?.kind==='pen'){round.takePen?.();return;}
     if(target?.kind==='computer'){round.startComputer();return;}
     if(target?.kind==='book'){round.toggleBook();return;}
