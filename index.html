@@ -2,10 +2,11 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f1eedf"><meta name="description" content="下课别走：阳光教室里的校园捣蛋游戏。观察老师，和四位 AI 同学配合，偷偷完成课堂小动作。">
-  <title>下课别走 · 校园派对</title>
+  <meta name="theme-color" content="#f1eedf"><meta name="description" content="我带过最差的一届：阳光教室里的校园捣蛋游戏。扮演老师或学生，在课堂里观察、伪装与捣蛋。">
+  <title>我带过最差的一届</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232d786c'/%3E%3Cpath d='M16 18h32v25H16z' fill='%23fff6dd'/%3E%3Cpath d='M25 49h14M32 43v6M24 27h16M24 34h10' stroke='%232d786c' stroke-width='4'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=network-53">
+  <link rel="stylesheet" href="./style.css?v=campus-57">
+  <link rel="stylesheet" href="./reference-hud54.css?v=campus-57">
 
 </head>
 <body>
@@ -22,7 +23,6 @@
 <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
 <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
 <symbol id="i-item-snack" viewBox="0 0 48 48"><path d="M12 8h24l-3 8 3 24H12l3-24Z" fill="#e6ad45"/><path d="M14 17h20v17H14" fill="#df6350"/><path d="M19 22h10M19 28h6" stroke="#fff5dc"/></symbol>
-<symbol id="i-item-note" viewBox="0 0 48 48"><path d="m8 11 32 7-15 7-7 14-10-28Z" fill="#fff9e8"/><path d="m8 11 17 14 15-7M25 25l-7 14"/></symbol>
 <symbol id="i-item-phone" viewBox="0 0 48 48"><rect x="13" y="5" width="22" height="38" rx="4" fill="#3f505e"/><path d="M17 11h14v24H17Z" fill="#90c9ce"/><path d="M22 39h4" stroke="#fff"/></symbol>
 <symbol id="i-item-empty" viewBox="0 0 48 48"><path d="M11 15h26v22H11Z" opacity=".35"/><path d="M20 27h8" opacity=".5"/></symbol>
 </defs></svg>
@@ -37,9 +37,8 @@
       <div class="top-actions"><button class="icon-button" id="sound-toggle" aria-label="关闭声音" title="声音"><svg><use href="#i-audio"/></svg></button><button class="icon-button" id="fullscreen" aria-label="全屏" title="全屏"><svg><use href="#i-expand"/></svg></button></div>
     </header>
     <section class="menu-left" aria-label="主菜单">
-      <div class="brand"><h1 class="title-image"><img src="./assets/title-logo.png" alt="下课别走" width="1250" height="1250"></h1></div>
+      <div class="brand"><h1 class="title-image"><img src="./assets/title-logo54.png" alt="我带过最差的一届" width="1536" height="1024"></h1></div>
       <div class="menu-controls">
-        <button class="mode-summary" id="choose-mode" aria-haspopup="dialog"><span class="mode-book"><svg><use href="#i-book"/></svg></span><span><strong>课堂捣蛋</strong></span><span class="mode-switch"><svg><use href="#i-arrow"/></svg></span></button>
         <button class="primary-button" id="enter-solo" aria-haspopup="dialog"><span><strong>单人开始</strong></span><svg><use href="#i-arrow"/></svg></button>
         <button class="paper-button online-entry" id="enter-classroom" aria-haspopup="dialog"><svg><use href="#i-person"/></svg>多人联机</button>
         <div class="secondary-row"><button class="paper-button" id="choose-character" aria-haspopup="dialog"><svg><use href="#i-person"/></svg>我的同学</button><button class="paper-button" id="open-settings" aria-haspopup="dialog"><svg><use href="#i-settings"/></svg>设置</button></div>
@@ -57,25 +56,20 @@
     <footer class="play-bottom"><div id="interaction-prompt"></div></footer>
     <div id="drawer-hint"></div>
   </section>
-  <dialog id="pause-dialog" class="sheet round-sheet" aria-labelledby="pause-title"><h2 id="pause-title">暂停</h2><details class="controls-guide"><summary>操作</summary><p id="student-controls">中心瞄准 · E 开桌 / 拿取 / 竖放书本<br>E 放回 · 长按左键使用<br>投掷物：点击抛出 / 长按蓄力<br>E 起身 / 坐下 · WASD 移动<br>靠近被绑同学，按住 E 解救<br>按住 Shift 爬行 · ESC 暂停<br>机房：E 打开电脑 · WASD / 方向键控制贪吃蛇<br>M 麦克风</p><p id="teacher-controls" hidden>WASD 移动 · 鼠标转向<br>左键投粉笔 · 眩晕后靠近，E 抓住<br>带到木桩按 E 绑住 · E 放下<br>黑板前按住 E 写板书恢复体力<br>对准已绑同学按 E 释放<br>按住 Shift 爬行 · ESC 暂停</p></details><button class="primary-button" id="resume-game">继续上课</button><button class="paper-button" id="restart-game" hidden>重新开始</button><button class="paper-button" id="leave-game">返回主菜单</button></dialog>
+  <dialog id="pause-dialog" class="sheet round-sheet" aria-labelledby="pause-title"><h2 id="pause-title">暂停</h2><details class="controls-guide"><summary>操作</summary><p id="student-controls">中心瞄准 · E 开桌 / 拿取 / 竖放书本<br>Q 放回 / 关闭 · 长按左键使用<br>投掷物：点击抛出 / 长按蓄力<br>Q 起身 · E 坐下 · WASD 移动<br>靠近被绑同学，按住 E 解救<br>按住 Shift 爬行 · ESC 暂停<br>机房：E 打开电脑 · WASD / 方向键控制贪吃蛇<br>M 麦克风</p><p id="teacher-controls" hidden>WASD 移动 · 鼠标转向<br>左键投粉笔 · 眩晕后靠近，E 抓住<br>带到木桩按 E 绑住 · Q 放下<br>黑板前按住 E 写板书恢复体力<br>对准已绑同学按 E 释放<br>按住 Shift 爬行 · ESC 暂停</p></details><button class="primary-button" id="resume-game">继续上课</button><button class="paper-button" id="restart-game" hidden>重新开始</button><button class="paper-button" id="leave-game">返回主菜单</button></dialog>
   <dialog id="result-dialog" class="sheet round-sheet" aria-labelledby="result-title"><span class="result-bell"><svg><use href="#i-bell"/></svg></span><h2 id="result-title">下课啦！</h2><div class="result-number"><strong id="result-score">0</strong><span id="result-goal">捣乱值</span></div><p id="result-detail"></p><p id="result-actions"></p><button class="primary-button" id="retry-game">返回走廊</button><button class="paper-button" id="result-menu">返回主菜单</button></dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <dialog id="room-dialog" class="sheet room-sheet" aria-labelledby="room-title">
     <div class="sheet-top"><h2 id="room-title">多人教室</h2><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
-    <dl class="room-summary"><div><dt>地图</dt><dd id="room-map">白天教室</dd></div><div><dt>身份</dt><dd id="room-role">学生</dd></div><div><dt>同学</dt><dd id="room-character">男同学</dd></div></dl>
+    <dl class="room-summary"><div><dt>同学</dt><dd id="room-character">男同学</dd></div></dl>
     <div class="room-connect"><p id="room-server-note" hidden>本站尚未连接联机服务器，可以先玩单人。</p><label>昵称<input id="room-name" maxlength="16" value="同学" autocomplete="nickname"></label><label>房间号<input id="room-code" maxlength="6" placeholder="留空创建房间" autocapitalize="characters" autocomplete="off"></label><details id="room-server-options"><summary>服务器</summary><input id="room-server" type="url" aria-label="服务器地址" placeholder="https://服务器地址"></details><p id="room-error" role="alert" hidden></p></div><div id="room-load" class="room-load" data-state="loading"><span id="room-load-status" role="status" aria-live="polite">正在准备教室</span><div class="loading-track"><span id="room-load-fill"></span></div></div>
+    <fieldset id="room-settings" class="round-options round-values"><legend>房间设置</legend><label>时长 <input id="round-minutes" type="number" min="5" max="20" step="1" value="10"> 分钟</label><label>捣蛋目标 <input id="round-goal" type="number" min="30" max="120" step="1" value="120"></label></fieldset>
     <button class="primary-button compact" id="room-enter" disabled>准备中…</button>
     <button class="paper-button room-solo" id="room-solo" hidden>先玩单人</button>
   </dialog>
 
-  <dialog id="mode-dialog" class="sheet mode-sheet" aria-labelledby="mode-title"><div class="sheet-top"><div><h2 id="mode-title">选择玩法</h2></div><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
-    <fieldset class="round-options"><legend>你的身份</legend><div class="segmented" role="group" aria-label="身份"><button data-role="student" aria-pressed="true">学生</button><button data-role="teacher" aria-pressed="false">老师</button></div></fieldset>
-    <fieldset class="round-options"><legend>课堂</legend><div class="map-options" role="group" aria-label="课堂场景"><button data-map="classroom" aria-pressed="true"><span class="map-sketch day"></span><b>白天教室</b></button><button data-map="night" aria-pressed="false"><span class="map-sketch night"></span><b>晚自习</b></button><button data-map="tiered" aria-pressed="false"><span class="map-sketch day"></span><b>普通教室</b></button><button data-map="computer" aria-pressed="false"><span class="map-sketch computer"></span><b>机房</b></button></div></fieldset>
-    <p class="mode-copy"><span class="preview-label">单人可直接选择学生或老师</span></p>
-    <button class="primary-button compact" id="select-classroom"><span>确定</span><svg><use href="#i-check"/></svg></button>
-  </dialog>
 
   <dialog id="character-dialog" class="sheet character-sheet" aria-labelledby="character-title"><div class="sheet-top"><div><h2 id="character-title">选择同学</h2></div><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
     <div class="character-preview"><canvas id="character-preview" aria-label="所选同学模型预览"></canvas><p id="character-preview-status" role="status">正在加载同学…</p></div>
@@ -84,11 +78,12 @@
   </dialog>
 
   <dialog id="settings-dialog" class="sheet settings-sheet" aria-labelledby="settings-title"><div class="sheet-top"><div><h2 id="settings-title">设置</h2></div><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
-    <div class="settings-content"><label class="range-row" for="music-volume"><span>音乐<output id="music-output">25%</output></span><input type="range" id="music-volume" min="0" max="100" value="25"></label><label class="range-row" for="sfx-volume"><span>音效<output id="sfx-output">55%</output></span><input type="range" id="sfx-volume" min="0" max="100" value="55"></label>
+    <div class="settings-content"><label class="range-row" for="sfx-volume"><span>音效<output id="sfx-output">55%</output></span><input type="range" id="sfx-volume" min="0" max="100" value="55"></label>
     <div class="setting-row"><span>画面质量</span><div class="segmented" role="group" aria-label="画面质量"><button data-quality="high" aria-pressed="true">精致</button><button data-quality="low" aria-pressed="false">流畅</button></div></div>
     <label class="setting-row" for="motion-toggle"><span>场景动态</span><input id="motion-toggle" type="checkbox" class="switch" checked></label>
+    <label class="setting-row" for="sound-cues-toggle"><span>声纹提示</span><input id="sound-cues-toggle" type="checkbox" class="switch" checked></label>
     </div><button class="primary-button compact close" id="settings-done"><span>完成</span><svg><use href="#i-check"/></svg></button>
   </dialog>
 </main>
-<script type="module" src="./app.js?v=network-53"></script>
+<script type="module" src="./app.js?v=campus-57"></script>
 </body></html>

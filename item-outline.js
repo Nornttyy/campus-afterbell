@@ -1,5 +1,15 @@
 import * as T from './vendor/three.module.js';
 
+// A regular Mesh would outline a captured pupil's unposed bind geometry.
+// Share the real skeleton, without cloning or mutating the character's joints.
+export function createOutlineProxy(source,material){
+  const proxy=source.isSkinnedMesh?new T.SkinnedMesh(source.geometry,material):new T.Mesh(source.geometry,material);
+  if(source.isSkinnedMesh){proxy.bindMode=source.bindMode;proxy.bind(source.skeleton,source.bindMatrix);proxy.bindMatrixInverse.copy(source.bindMatrixInverse);}
+  if(source.morphTargetInfluences)proxy.morphTargetInfluences=source.morphTargetInfluences;
+  proxy.matrixAutoUpdate=false;proxy.frustumCulled=false;return proxy;
+}
+export function syncOutlineProxy(source,proxy){source.updateWorldMatrix(true,false);proxy.matrix.copy(source.matrixWorld);proxy.updateMatrixWorld(true);}
+
 // Render only the selected object's silhouette, then draw a constant-width edge.
 // The object geometry, materials and dimensions are never modified.
 export function createItemOutline(renderer){
@@ -11,12 +21,12 @@ export function createItemOutline(renderer){
   let selected=null,pairs=[];const size=new T.Vector2(),clearColor=new T.Color();
   function select(object){
     if(selected===object)return;selected=object;maskScene.clear();pairs=[];
-    if(object)object.traverse(o=>{let excluded=false;for(let p=o;p&&p!==object;p=p.parent)if(p.name==='player-drawer-items'||(!p.visible&&!p.userData.rigidInstanceSource))excluded=true;if(o.isMesh&&(o.visible||o.userData.rigidInstanceSource)&&!excluded){const proxy=new T.Mesh(o.geometry,white);proxy.matrixAutoUpdate=false;proxy.frustumCulled=false;maskScene.add(proxy);pairs.push([o,proxy]);}});
+    if(object)object.traverse(o=>{let excluded=false;for(let p=o;p&&p!==object;p=p.parent)if(p.name==='player-drawer-items'||(!p.visible&&!p.userData.rigidInstanceSource))excluded=true;if(o.isMesh&&(o.visible||o.userData.rigidInstanceSource)&&!excluded){const proxy=createOutlineProxy(o,white);maskScene.add(proxy);pairs.push([o,proxy]);}});
   }
   function render(camera){
     if(!selected||!pairs.length)return;
     renderer.getSize(size);if(mask.width!==size.x||mask.height!==size.y){mask.setSize(size.x,size.y);material.uniforms.pixel.value.set(1/size.x,1/size.y);}
-    for(const [source,proxy] of pairs){source.updateWorldMatrix(true,false);proxy.matrix.copy(source.matrixWorld);}
+    for(const [source,proxy] of pairs)syncOutlineProxy(source,proxy);
     const previous=renderer.getRenderTarget(),auto=renderer.autoClear,alpha=renderer.getClearAlpha();renderer.getClearColor(clearColor);
     renderer.setRenderTarget(mask);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(maskScene,camera);
     renderer.setRenderTarget(previous);renderer.setClearColor(clearColor,alpha);renderer.autoClear=false;renderer.render(screenScene,screenCamera);renderer.autoClear=auto;

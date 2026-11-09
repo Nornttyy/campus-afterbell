@@ -9,12 +9,14 @@ export function visionEffectState(snapshot){
   const p=snapshot?.player||{},flashDuration=positive(p.flashDuration,7),inkDuration=positive(p.inkDuration,7);
   const flashLeft=remaining(p.flashLeft,flashDuration),inkLeft=remaining(p.inkLeft,inkDuration);
   const strength=Number.isFinite(p.flashStrength)?clamp(p.flashStrength):1;
+  const bubbleLeft=Number.isFinite(p.bubbleLeft)?Math.max(0,p.bubbleLeft):0,bubbleSize=Number.isFinite(p.bubbleSize)?clamp(p.bubbleSize):0;
   return{
-    flashAlpha:flashLeft>0?strength*smooth(flashLeft/flashDuration/(2.5/7)):0,
+    flashAlpha:flashLeft>0&&strength>0?1:0,
     inkAlpha:inkLeft>0?smooth(inkLeft/Math.min(2,inkDuration)):0,
     inkAge:inkLeft>0?Math.max(0,inkDuration-inkLeft):0,
-    gumAlpha:Number.isFinite(p.bubbleLeft)&&p.bubbleLeft>0?smooth(p.bubbleLeft/Math.min(1.2,2+8*clamp(p.bubbleSize||0))):0,
-    gumSize:Number.isFinite(p.bubbleLeft)&&p.bubbleLeft>0?clamp(p.bubbleSize||0):0,
+    gumAlpha:bubbleLeft>0?smooth(bubbleLeft/1.2):0,
+    gumKind:p.bubbleKind==='orange'?'orange':'pink',
+    gumSize:bubbleLeft>0?bubbleSize:0,
   };
 }
 
@@ -68,15 +70,15 @@ function paintDrips(c,w,h,age){
   c.restore();
 }
 
-function paintGum(c,w,h,size,alpha){
+function paintGum(c,w,h,size,alpha,kind='pink'){
   c.save();c.globalAlpha=alpha;c.translate(w*.5,h*.48);
-  const radius=Math.min(w,h)*(.28+.35*size);c.scale(radius*1.18,radius);
+  const radius=Math.min(w,h)*.63;c.scale(radius*1.18,radius);
   const body=c.createRadialGradient(-.28,-.35,.06,0,0,1.12);
-  body.addColorStop(0,'rgba(255,213,156,.84)');body.addColorStop(.48,'rgba(248,159,85,.95)');body.addColorStop(.82,'rgba(246,136,65,.98)');body.addColorStop(1,'rgba(255,200,136,.78)');
+  const colours=kind==='orange'?['rgba(255,221,141,.88)','rgba(255,173,64,.96)','rgba(241,139,35,.99)','rgba(255,211,123,.84)']:['rgba(255,201,227,.88)','rgba(246,140,190,.96)','rgba(235,110,171,.99)','rgba(255,183,216,.84)'];[0,.48,.82,1].forEach((stop,i)=>body.addColorStop(stop,colours[i]));
   c.fillStyle=body;c.beginPath();c.ellipse(0,0,1,1,0,0,Math.PI*2);c.fill();
-  c.strokeStyle='rgba(255,230,187,.9)';c.lineWidth=.018;c.stroke();
-  c.fillStyle='rgba(255,249,223,.65)';c.beginPath();c.ellipse(-.36,-.48,.14,.26,-.6,0,Math.PI*2);c.fill();
-  c.fillStyle='rgba(255,246,223,.45)';c.beginPath();c.ellipse(-.55,-.12,.045,.08,-.2,0,Math.PI*2);c.fill();c.restore();
+  c.strokeStyle='rgba(255,218,238,.95)';c.lineWidth=.018;c.stroke();
+  c.fillStyle='rgba(255,244,251,.7)';c.beginPath();c.ellipse(-.36,-.48,.14,.26,-.6,0,Math.PI*2);c.fill();
+  c.fillStyle='rgba(255,238,248,.5)';c.beginPath();c.ellipse(-.55,-.12,.045,.08,-.2,0,Math.PI*2);c.fill();c.restore();
 }
 
 export function createVisionEffects(host){
@@ -96,12 +98,15 @@ export function createVisionEffects(host){
   }
   function draw(){
     if(!alive||!c||!inkContext)return;
-    const dripAge=Math.floor(state.inkAge*24)/24,key=[width,height,state.flashAlpha.toFixed(4),state.inkAlpha.toFixed(4),state.gumAlpha.toFixed(4),state.gumSize.toFixed(4),dripAge].join('|');
+    const dripAge=Math.floor(state.inkAge*24)/24,key=[width,height,state.flashAlpha.toFixed(4),state.inkAlpha.toFixed(4),state.gumAlpha.toFixed(4),state.gumSize.toFixed(4),state.gumKind,dripAge].join('|');
     if(key===lastKey)return;lastKey=key;c.clearRect(0,0,width,height);
     canvas.hidden=state.inkAlpha<=0&&state.flashAlpha<=0&&state.gumAlpha<=0;
+    // A confirmed flash is opaque and covers the game HUD as well as the world.
+    // Ink/gum retain their normal scene layer. Input and simulation keep running.
+    canvas.style.zIndex=state.flashAlpha>0?'2147483646':'7';
     if(canvas.hidden)return;
     if(state.inkAlpha>0){c.globalAlpha=state.inkAlpha;c.drawImage(ink,0,0,width,height);paintDrips(c,width,height,dripAge);}
-    if(state.gumAlpha>0){paintGum(c,width,height,state.gumSize,state.gumAlpha);}
+    if(state.gumAlpha>0){paintGum(c,width,height,state.gumSize,state.gumAlpha,state.gumKind);}
     if(state.flashAlpha>0){c.globalAlpha=state.flashAlpha;c.fillStyle='#ffffff';c.fillRect(0,0,width,height);}
     c.globalAlpha=1;
   }

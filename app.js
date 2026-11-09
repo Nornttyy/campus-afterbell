@@ -1,92 +1,51 @@
-import {playNovelEffect} from './sound-effects50.js';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=network-53';
+import {playCampusFoley} from './foley-audio54.js?v=campus-57';
+import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-57';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
 const characterNames={boy:'男同学',girl:'女同学',glasses:'眼镜同学',ponytail:'马尾同学'};
-const defaults = { music:25, sfx:55, muted:false, quality:'high', motion:!matchMedia('(prefers-reduced-motion: reduce)').matches, character:'boy' };
+const defaults = { sfx:55, muted:false, quality:'high', motion:!matchMedia('(prefers-reduced-motion: reduce)').matches, character:'boy',soundCues:true };
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch {}
 const volume = (value, fallback) => Number.isFinite(+value) ? Math.min(100,Math.max(0,+value)) : fallback;
-const settings = { ...defaults, music:volume(saved.music,25), sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:saved.quality==='low'?'low':'high', motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion, character:Object.hasOwn(characterNames,saved.character)?saved.character:'boy' };
+const settings = { ...defaults,soundCues:saved.soundCues!==false, sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:saved.quality==='low'?'low':'high', motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion, character:Object.hasOwn(characterNames,saved.character)?saved.character:'boy' };
 let scene, game, sceneReady=false, worldPromise=null, disposed=false, openingButton=null, draftCharacter=settings.character,entryMode='online',entryRequest=0;
-let roundOptions={role:saved.role==='teacher'?'teacher':'student',map:['classroom','night','tiered','computer'].includes(saved.map)?saved.map:'classroom'};
-const mapNames={classroom:'白天教室',night:'晚自习',tiered:'普通教室',computer:'机房'};
+let roundOptions={duration:Number.isInteger(saved.duration)&&saved.duration>=300&&saved.duration<=1200?saved.duration:600,target:Number.isInteger(saved.target)&&saved.target>=30&&saved.target<=120?saved.target:120,role:'student',map:'classroom'};
+Object.assign(settings,{duration:roundOptions.duration,target:roundOptions.target});
 function syncRoundOptions(){
-  $$('[data-role]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.role===roundOptions.role)));
-  $$('[data-map]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.map===roundOptions.map)));
-  $('#choose-mode strong').textContent=mapNames[roundOptions.map]+' · '+(roundOptions.role==='teacher'?'老师':'学生');
-  $('#room-map').textContent=mapNames[roundOptions.map];
-  $('#room-role').textContent=roundOptions.role==='teacher'?'老师':'学生';
+  $('#round-minutes').value=roundOptions.duration/60;$('#round-goal').value=roundOptions.target;
 }
 let toastTimer=0;
 function toast(message){ clearTimeout(toastTimer); $('#toast').textContent=message; $('#toast').classList.add('show'); toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2600); }
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(settings));}catch{toast('当前浏览器无法保存设置');}}
 
 class MenuAudio {
-  constructor(){this.context=null;this.timer=null;this.next=0;this.step=0;this.started=false;}
+  constructor(){this.context=null;this.started=false;}
   async start(){
     try{
-      if(!this.context){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;this.context=new AC();this.music=this.context.createGain();this.fx=this.context.createGain();this.music.connect(this.context.destination);this.fx.connect(this.context.destination);this.apply();}
+      if(!this.context){
+        const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+        this.context=new AC();this.fx=this.context.createGain();
+        this.cut=this.context.createBiquadFilter();this.cut.type='highpass';this.cut.frequency.value=34;
+        this.limiter=this.context.createDynamicsCompressor();this.limiter.threshold.value=-16;this.limiter.knee.value=12;this.limiter.ratio.value=4;this.limiter.attack.value=.004;this.limiter.release.value=.12;
+        this.fx.connect(this.cut);this.cut.connect(this.limiter);this.limiter.connect(this.context.destination);this.apply();
+      }
       if(this.context.state==='suspended')await this.context.resume();
-      this.started=true;if(!this.timer){this.next=this.context.currentTime+.15;this.timer=setInterval(()=>this.schedule(),180);}
+      this.started=true;
     }catch{}
   }
-  apply(){if(!this.context)return;const t=this.context.currentTime;this.music.gain.setTargetAtTime(settings.muted?0:settings.music/100*(this.gameplay?.045:.17),t,.12);this.fx.gain.setTargetAtTime(settings.muted?0:settings.sfx/100*.2,t,.03);}
-  tone(freq,t,duration,gain,bus,type='sine'){
-    if(!this.context)return;const osc=this.context.createOscillator(),env=this.context.createGain();osc.type=type;osc.frequency.value=freq;env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(gain,t+.008);env.gain.exponentialRampToValueAtTime(.0001,t+duration);osc.connect(env);env.connect(bus);osc.start(t);osc.stop(t+duration+.03);osc.onended=()=>{osc.disconnect();env.disconnect();};
-  }
-  schedule(){
-    if(!this.context||this.context.state!=='running'||document.hidden)return;
-    if(this.next<this.context.currentTime-.3)this.next=this.context.currentTime+.1;
-    const melody=[72,76,79,0,76,74,72,0,69,72,76,0,74,0,71,0,67,71,74,0,77,76,74,0,72,0,76,79,74,0,72,0];
-    while(this.next<this.context.currentTime+.4){const s=this.step%32,n=melody[s];if(n)this.tone(440*2**((n-69)/12),this.next,.85,.16,this.music);if(s%4===0){let bass=[48,45,43,48][Math.floor(s/8)];this.tone(440*2**((bass-69)/12),this.next,1.25,.2,this.music,'triangle');}this.next+=.32;this.step++;}
-  }
-  click(kind='tap'){if(!this.context||settings.muted)return;let t=this.context.currentTime;if(kind==='open'){this.tone(660,t,.11,.22,this.fx);this.tone(880,t+.055,.18,.13,this.fx);}else{this.tone(kind==='back'?330:570,t,.055,.18,this.fx,'triangle');}}
-  effect(kind,volume=1){
-    if(!this.context||settings.muted)return;if(playNovelEffect(this,kind,volume))return;const c=this.context,t=c.currentTime;
-    if(kind.startsWith('smoke-')){
-      const hiss=kind==='smoke-bloom',impact=kind==='smoke-impact',duration=hiss?1.65:impact?.15:.18;
-      const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate),data=buffer.getChannelData(0);
-      for(let i=0;i<data.length;i++){const x=i/data.length;data[i]=(Math.random()*2-1)*(hiss?Math.sin(Math.PI*x)**.7:Math.exp(-x*7));}
-      const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type=hiss?'lowpass':'bandpass';filter.frequency.setValueAtTime(hiss?2200:impact?750:1600,t);filter.frequency.exponentialRampToValueAtTime(hiss?600:impact?280:600,t+duration);filter.Q.value=.7;gain.gain.value=(hiss?.16:impact?.23:.11)*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
-      if(impact)this.tone(290,t,.085,.08*volume,this.fx,'triangle');return;
-    }
-    if(kind==='flash-burst'||kind==='ink-splash'){
-      const flash=kind==='flash-burst',duration=flash?.34:.26,buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate),data=buffer.getChannelData(0);
-      for(let i=0;i<data.length;i++){const x=i/data.length;data[i]=(Math.random()*2-1)*Math.exp(-x*(flash?10:5))*(flash?1:.5+.5*Math.sin(x*28)**2);}
-      const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type='lowpass';filter.frequency.setValueAtTime(flash?3200:1200,t);filter.frequency.exponentialRampToValueAtTime(flash?650:180,t+duration);gain.gain.value=(flash?.26:.20)*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
-      this.tone(flash?1450:640,t+.02,flash?.8:.08,flash?.045:.08,this.fx);return;
-    }
-    if(kind==='bell'){for(let i=0;i<3;i++)for(const f of [784,1046,1568])this.tone(f,t+i*.19,.6,.15,this.fx);return;}
-    if(kind==='complete'){this.tone(780,t,.14,.17,this.fx);this.tone(1050,t+.07,.22,.12,this.fx);return;}
-    if(kind==='step'){this.tone(96,t,.075,.16,this.fx,'triangle');return;}
-    if(kind==='warning'){this.tone(430,t,.12,.12,this.fx,'triangle');return;}
-    if(kind==='bubble'){this.tone(280,t,.09,.06*volume,this.fx);return;}
-    if(kind==='blow'){
-      const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*.52),c.sampleRate),data=buffer.getChannelData(0);
-      for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/data.length);
-      const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type='lowpass';filter.frequency.value=750;gain.gain.value=.055*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};return;
-    }
-    if(kind==='drink'){
-      const buffer=c.createBuffer(1,Math.ceil(c.sampleRate*.24),c.sampleRate),data=buffer.getChannelData(0);
-      for(let i=0;i<data.length;i++){const x=i/data.length;data[i]=(Math.random()*2-1)*Math.sin(Math.PI*x)*(.3+.7*Math.sin(x*22)**2);}
-      const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type='lowpass';filter.frequency.setValueAtTime(850,t);filter.frequency.exponentialRampToValueAtTime(300,t+.24);gain.gain.value=.13*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};return;
-    }
-    const duration=kind==='caught'?.25:kind==='note'?.21:.10,buffer=c.createBuffer(1,Math.ceil(c.sampleRate*duration),c.sampleRate),data=buffer.getChannelData(0);
-    for(let i=0;i<data.length;i++){const x=i/data.length;data[i]=(Math.random()*2-1)*Math.exp(-x*(kind==='caught'?7:4))*(['snack','burger'].includes(kind)?(.4+.6*Math.sin(x*37)**2):1);}
-    const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buffer;filter.type='bandpass';filter.frequency.value=kind==='caught'?130:kind==='phone'?820:kind==='note'?1900:kind==='burger'?1400:2600;filter.Q.value=.65;gain.gain.value=(kind==='caught'?.8:kind==='burger'?.18:.28)*volume;source.connect(filter);filter.connect(gain);gain.connect(this.fx);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
-    if(kind==='caught')this.tone(80,t,.18,.3,this.fx,'triangle');
-  }
+  apply(){if(!this.context)return;this.fx.gain.setTargetAtTime(settings.muted?0:settings.sfx/100*.55,this.context.currentTime,.025);}
+  click(kind='tap'){if(this.context&&!settings.muted)playCampusFoley(this,['open','back'].includes(kind)?kind:'tap');}
+  effect(kind,volume=1){if(this.context&&!settings.muted)playCampusFoley(this,kind,volume);}
   async pause(){if(this.context?.state==='running')try{await this.context.suspend();}catch{}}
-  dispose(){clearInterval(this.timer);this.context?.close();}
+  dispose(){this.context?.close();}
 }
 const audio = new MenuAudio();
 function syncSound(){const button=$('#sound-toggle');button.querySelector('use').setAttribute('href',settings.muted?'#i-muted':'#i-audio');button.setAttribute('aria-label',settings.muted?'开启声音':'关闭声音');button.setAttribute('aria-pressed',String(!settings.muted));audio.apply();}
 function applySettings(){
-  $('#music-volume').value=settings.music;$('#sfx-volume').value=settings.sfx;$('#music-output').textContent=settings.music+'%';$('#sfx-output').textContent=settings.sfx+'%';$('#motion-toggle').checked=settings.motion;
+  $('#sfx-volume').value=settings.sfx;$('#sfx-output').textContent=settings.sfx+'%';$('#motion-toggle').checked=settings.motion;
   $$('[data-quality]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.quality===settings.quality)));
-  document.body.classList.toggle('reduce-motion',!settings.motion);scene?.setQuality(settings.quality);scene?.setMotion(settings.motion);syncSound();
+  document.body.classList.toggle('reduce-motion',!settings.motion);scene?.setQuality(settings.quality);scene?.setMotion(settings.motion);scene?.setSoundCues?.(settings.soundCues);$('#sound-cues-toggle').checked=settings.soundCues;syncSound();
 }
 let characterPreview=null,characterPreviewPromise=null;
 function renderCharacter(){
@@ -101,7 +60,7 @@ function ensureCharacterPreview(){
   characterPreviewPromise=(async()=>{
     let renderer=null,observer=null;
     try{
-      const [T,{loadStudentAssets}]=await Promise.all([import('./vendor/three.module.js'),import('./student-assets.js?v=campus-52')]);
+      const [T,{loadStudentAssets}]=await Promise.all([import('./vendor/three.module.js'),import('./student-assets.js?v=campus-57')]);
       const assets=await loadStudentAssets();if(disposed)return null;
       renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
       renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.08;
@@ -136,20 +95,24 @@ function openSheet(id,button){
   if(id==='#character-dialog'){draftCharacter=settings.character;renderCharacter();}
   dialog.showModal();if(id==='#character-dialog')ensureCharacterPreview();audio.click('open');
 }
-for(const [button,id] of [['#choose-mode','#mode-dialog'],['#choose-character','#character-dialog'],['#open-settings','#settings-dialog']])$(button).addEventListener('click',()=>openSheet(id,$(button)));
-for(const dialog of $$('#mode-dialog, #character-dialog, #settings-dialog, #room-dialog')){
+for(const [button,id] of [['#choose-character','#character-dialog'],['#open-settings','#settings-dialog']])$(button).addEventListener('click',()=>openSheet(id,$(button)));
+for(const dialog of $$('#character-dialog, #settings-dialog, #room-dialog')){
   dialog.querySelectorAll('.close').forEach(button=>button.addEventListener('click',()=>{audio.click('back');dialog.close();}));
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
   dialog.addEventListener('close',()=>{if(dialog.id==='character-dialog')characterPreview?.stop();if(!game?.active)openingButton?.focus({preventScroll:true});});
 }
-$('#select-classroom').addEventListener('click',()=>{$('#mode-dialog').close();Object.assign(settings,roundOptions);persist();syncRoundOptions();});
-$$('[data-role]').forEach(b=>b.addEventListener('click',()=>{roundOptions.role=b.dataset.role;syncRoundOptions();}));
-$$('[data-map]').forEach(b=>b.addEventListener('click',()=>{roundOptions.map=b.dataset.map;syncRoundOptions();}));
 syncRoundOptions();
 $$('[data-character]').forEach(button=>button.addEventListener('click',()=>{draftCharacter=button.dataset.character;renderCharacter();}));
 $('#confirm-character').addEventListener('click',()=>{settings.character=draftCharacter;persist();$('#character-dialog').close();});
 $$('[data-quality]').forEach(button=>button.addEventListener('click',()=>{settings.quality=button.dataset.quality;applySettings();persist();}));
-for(const type of ['music','sfx'])$('#'+type+'-volume').addEventListener('input',e=>{settings[type]=Number(e.target.value);$('#'+type+'-output').textContent=settings[type]+'%';audio.apply();persist();});
+for(const type of ['sfx'])$('#'+type+'-volume').addEventListener('input',e=>{settings[type]=Number(e.target.value);$('#'+type+'-output').textContent=settings[type]+'%';audio.apply();persist();});
+$('#sound-cues-toggle').addEventListener('change',e=>{settings.soundCues=e.target.checked;applySettings();persist();});
+function commitRoomSettings(){
+  roundOptions.duration=Math.round(Math.max(5,Math.min(20,Number($('#round-minutes').value)||10)))*60;
+  roundOptions.target=Math.round(Math.max(30,Math.min(120,Number($('#round-goal').value)||120)));
+  settings.duration=roundOptions.duration;settings.target=roundOptions.target;syncRoundOptions();persist();
+}
+for(const id of ['#round-minutes','#round-goal'])$(id).addEventListener('change',commitRoomSettings);
 $('#motion-toggle').addEventListener('change',e=>{settings.motion=e.target.checked;applySettings();persist();});
 $('#sound-toggle').addEventListener('click',()=>{settings.muted=!settings.muted;syncSound();persist();});
 $('#fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('当前浏览器暂不支持全屏');}catch{toast('当前窗口无法全屏，请在浏览器中打开');}});
@@ -157,7 +120,7 @@ document.addEventListener('fullscreenchange',()=>{$('#fullscreen').setAttribute(
 function prepareEntry(mode,button){
   if(disposed||game?.active)return;
   entryMode=mode;entryRequest++;
-  syncRoundOptions();$('#room-character').textContent=characterNames[settings.character];
+  syncRoundOptions();syncRoomCreation();$('#room-character').textContent=characterNames[settings.character];
   $('.room-connect').hidden=mode==='solo';$('#room-title').textContent=mode==='solo'?'单人游戏':'多人教室';
   $('#room-error').hidden=true;$('#room-solo').hidden=mode==='solo';syncServerNotice();
   $('#room-enter').textContent=sceneReady?(mode==='solo'?'进入教室':'创建 / 加入房间'):'准备中…';
@@ -178,6 +141,12 @@ async function startSolo(){
 }
 $('#enter-classroom').addEventListener('click',startGame);
 $('#enter-solo').addEventListener('click',startSolo);
+function syncRoomCreation(){
+  const joining=entryMode==='online'&&!!$('#room-code').value.trim();
+  $('#room-settings').hidden=entryMode!=='online'||joining;
+  for(const id of ['#round-minutes','#round-goal'])$(id).disabled=joining;
+}
+$('#room-code').addEventListener('input',syncRoomCreation);
 $('#room-server').value=defaultCampusEndpoint();
 function syncServerNotice(){
   const missing=!$('#room-server').value.trim()&&!defaultCampusEndpoint();
@@ -191,9 +160,12 @@ $('#room-enter').addEventListener('click',async()=>{
   const endpoint=$('#room-server').value.trim()||defaultCampusEndpoint();
   if(!endpoint){syncServerNotice();$('#room-server-options').open=true;$('#room-server').focus();return;}
   if(!sceneReady||!game){ensureWorld();return;}
+  // Read the final visible values at submission, including an input that has
+  // not blurred yet. Joining an existing room never changes its host settings.
+  if(!$('#room-code').value.trim())commitRoomSettings();
   const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;button.disabled=true;button.textContent='连接中…';error.hidden=true;
   try{
-    const online=await connectCampusRoom({endpoint,code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:settings.character,rolePreference:roundOptions.role,map:roundOptions.map,onError:e=>toast(typeof e==='string'?e:e.message)});
+    const online=await connectCampusRoom({endpoint,code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:settings.character,rolePreference:roundOptions.role,map:roundOptions.map,settings:{duration:roundOptions.duration,target:roundOptions.target},onError:e=>toast(typeof e==='string'?e:e.message)});
     if(disposed||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
     scene.setMap(online.snapshot().map);scene.setCharacter(settings.character);scene.setActive(true);game.start({...roundOptions});
   }catch(e){if(request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接不到服务器，请确认服务器已启动。':e.message;}}
@@ -219,7 +191,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-52'),import('./classroom-game.js?v=campus-52')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-57'),import('./classroom-game.js?v=campus-57')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}

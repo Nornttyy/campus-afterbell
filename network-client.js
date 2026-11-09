@@ -2,6 +2,7 @@
 // positions, inventory, another player's identity or the room's teacher.
 const NO_ROOM_SERVICE='这个地址没有多人房间服务，请先玩单人模式，或填写已部署的联机服务器地址。';
 const INVALID_RESPONSE='联机服务器返回了无效数据，请检查服务器地址或稍后重试。';
+const STREAM_TIMEOUT=10000;
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const finite=value=>typeof value==='number'&&Number.isFinite(value);
 const text=value=>typeof value==='string'&&value.length>0&&value.length<=160&&!/[<>\u0000-\u001f]/.test(value);
@@ -47,17 +48,17 @@ export function defaultCampusEndpoint(){
  if(location.hostname==='github.io'||location.hostname.endsWith('.github.io'))return '';
  return ['localhost','127.0.0.1'].includes(location.hostname)&&location.port!=='8931'?`${location.protocol}//${location.hostname}:8931`:location.origin;
 }
-export async function connectCampusRoom({endpoint=defaultCampusEndpoint(),code='',name='同学',character='boy',rolePreference='student',map='classroom',floor=1,onRoom=()=>{},onError=()=>{},onVoice=()=>{}}={}){
+export async function connectCampusRoom({endpoint=defaultCampusEndpoint(),code='',name='同学',character='boy',rolePreference='student',map='classroom',floor=1,settings,onRoom=()=>{},onError=()=>{},onVoice=()=>{}}={}){
  endpoint=String(endpoint??'').trim().replace(/\/+$/,'');if(!endpoint)throw new RoomConnectionError('该网站尚未连接联机服务器，请先玩单人模式，或填写联机服务器地址。');
  let parsed;try{parsed=new URL(endpoint);}catch{throw new RoomConnectionError('请输入完整的 HTTP 或 HTTPS 联机服务器地址。');}if(!['http:','https:'].includes(parsed.protocol))throw new RoomConnectionError('房间地址必须是 HTTP 或 HTTPS');
  code=String(code).trim();if(code&&!/^\d{6}$/.test(code))throw new Error('请输入六位房间号');
  await requestJSON(`${endpoint}/api/health`,{}, {health:true,validate:value=>object(value)&&value.ok===true&&value.protocol===1&&Number.isInteger(value.rooms)&&value.rooms>=0});
- const result=await requestJSON(`${endpoint}/api/rooms${code?`/${code}/join`:''}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,character,rolePreference,map,floor})},{validate:validSession});
+ const result=await requestJSON(`${endpoint}/api/rooms${code?`/${code}/join`:''}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,character,rolePreference,map,floor,settings})},{validate:validSession});
  return new NetworkRound({endpoint,result,onRoom,onError,onVoice});
 }
 export class NetworkRound{
  constructor({endpoint,result,onRoom=()=>{},onError=()=>{},onVoice=()=>{}}){
-  this.network=true;this.endpoint=endpoint;this.token=result.token;this.room=result.room;this._state=result.state;this._events=[];this._queued=[];this._last={};this._localPaused=false;this._closed=false;this._connected=false;this._onRoom=onRoom;this._onError=onError;this._controller=null;this._retry=null;this._busy=false;this._look=null;this._lookSeq=0;this._frames=[];
+  this.network=true;this.endpoint=endpoint;this.token=result.token;this.room=result.room;this._state=result.state;this._events=[...result.state.events];this._sequence=result.state.sequence;this._queued=[];this._last={};this._localPaused=false;this._closed=false;this._connected=false;this._onRoom=onRoom;this._onError=onError;this._controller=null;this._retry=null;this._busy=false;this._look=null;this._lookSeq=0;this._frames=[];
   this.voice=new RoomVoice(this,onVoice);this._timer=setInterval(()=>this._flush(),40);this._listen();this._onRoom(this.room,this._state);
  }
  get player(){return this._look?{...this._state.player,yaw:this._look.yaw,pitch:this._look.pitch}:this._state.player;}get teacher(){return this._state.teacher;}get status(){return this._state.status;}get paused(){return this._localPaused;}get elapsed(){return this._state.elapsed;}get map(){return this._state.map;}
@@ -65,12 +66,14 @@ export class NetworkRound{
  step(){return this.snapshot();}reset(){return this.snapshot();}start(){return this.snapshot();}
  drainEvents(){const e=this._events;this._events=[];return e;}
  async _post(path,data){try{return await requestJSON(`${this.endpoint}${path}?room=${encodeURIComponent(this.room.code)}`,{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${this.token}`},body:JSON.stringify(data)},{validate:out=>object(out)&&out.ok===true&&(path!=='/api/command'||Array.isArray(out.results)&&out.results.every(value=>typeof value==='boolean'))});}catch(error){if(error.terminal&&!this._closed)this._terminate(error);throw error;}}
- _terminate(error){if(this._terminalError||this._closed)return;this._terminalError=error;this._connected=false;this._queued=[];this._last={};clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this._controller?.abort();this.voice.close();this._onError(error.message);}
+ _disconnected(){this._connected=false;this._queued=[];this._last={};this._look=null;this._frames=[];}
+ _terminate(error){if(this._terminalError||this._closed)return;this._terminalError=error;this._disconnected();clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this._controller?.abort();this.voice.close();this._onError(error.message);}
  command(name,...args){
-  if(this._closed||this._terminalError)return false;
+  if(this._closed||this._terminalError||!this._connected)return false;
+  if(name==='setComputerPlayback'&&this._state.role!=='student')return false;
   if(name==='setWriting'&&args[0]===false&&this._state.role!=='teacher')return false;
   if(name==='setRescue'&&args[0]===null&&this._state.role==='teacher')return false;
-  if(['setMovement','setLook','setCrouch'].includes(name)){
+  if(['setMovement','setLook','setCrouch','setComputerPlayback'].includes(name)){
    const key=JSON.stringify(args),now=performance.now();if(this._last[name]?.key===key&&now-this._last[name].at<180)return true;this._last[name]={key,at:now};
    const old=this._queued.findIndex(c=>c.name===name);if(old>=0)this._queued.splice(old,1);
   }
@@ -78,78 +81,100 @@ export class NetworkRound{
   if(name==='stopComputer'&&!this._state.player.computerActive)return false;
   this._queued.push({name,args,inputSeq});if(this._queued.length>24)this._queued.splice(0,this._queued.length-24);return true;
  }
- async _flush(){if(this._closed||this._terminalError||this._busy||!this._queued.length)return;this._busy=true;const commands=this._queued.splice(0,12);try{await this._post('/api/command',{commands});}catch(error){if(error!==this._terminalError&&!this._closed)this._onError(error.message);}finally{this._busy=false;}}
+ async _flush(){if(this._closed||this._terminalError||!this._connected||this._busy||!this._queued.length)return;this._busy=true;const commands=this._queued.splice(0,12);try{await this._post('/api/command',{commands});}catch(error){if(this._look&&commands.some(c=>c.name==='setLook'&&c.inputSeq===this._look.sequence))this._look=null;if(error!==this._terminalError&&!this._closed){if(!error.status||error.status===408||error.status>=500){this._disconnected();this._controller?.abort();}this._onError(error.message);}}finally{this._busy=false;}}
  async _listen(){
-  if(this._closed||this._terminalError)return;this._controller=new AbortController();let reader;
+  if(this._closed||this._terminalError)return;this._retry=null;const controller=this._controller=new AbortController();let reader,watchdog,timedOut=false;
+  const heartbeat=()=>{clearTimeout(watchdog);watchdog=setTimeout(()=>{timedOut=true;this._disconnected();controller.abort();},STREAM_TIMEOUT);};heartbeat();
   try{
-   const res=await fetch(`${this.endpoint}/api/events?room=${this.room.code}`,{headers:{authorization:`Bearer ${this.token}`,accept:'text/event-stream'},signal:this._controller.signal,cache:'no-store'});
+   const res=await fetch(`${this.endpoint}/api/events?room=${this.room.code}&since=${this._sequence}`,{headers:{authorization:`Bearer ${this.token}`,accept:'text/event-stream'},signal:controller.signal,cache:'no-store'});
    if(!res.ok){try{await readJSON(res);}catch(error){if(res.status>=400&&res.status<500&&![408,429].includes(res.status))error.terminal=true;throw error;}}
    if(mime(res)!=='text/event-stream'||!res.body){await res.body?.cancel().catch(()=>{});throw protocolError();}
    reader=res.body.getReader();const decoder=new TextDecoder();let buffer='';
-   while(!this._closed&&!this._terminalError){const {value,done}=await reader.read();if(done)break;buffer=(buffer+decoder.decode(value,{stream:true})).replace(/\r\n/g,'\n');if(buffer.length>524288)throw protocolError();let index;
-    while((index=buffer.indexOf('\n\n'))>=0){const packet=buffer.slice(0,index);buffer=buffer.slice(index+2);let type='message',data='';for(const line of packet.split('\n')){if(line.startsWith('event:'))type=line.slice(6).trim();if(line.startsWith('data:'))data+=(data?'\n':'')+line.slice(5).trimStart();}if(!data||!['state','voice','error'].includes(type))continue;const message=readEvent(data,type,this.room);if(type==='state')this._connected=true;
-     if(type==='state'){const before=this.room,previous=this._state;this._state=message;const actorChanged=previous.player.id!==message.player.id||previous.player.seated!==message.player.seated||previous.map!==message.map;if(actorChanged)this._look=null;else if(this._look&&(message.inputAck?.look||0)>=this._look.sequence)this._look=null;if(previous.map!==message.map||previous.stage!==message.stage)this._frames=[];this._frames.push({time:performance.now(),state:message});if(this._frames.length>5)this._frames.shift();this.room=message.room;this._events.push(...(message.events||[]));this.voice.sync(this.room);if(JSON.stringify(before)!==JSON.stringify(this.room))this._onRoom(this.room,this._state);}
+   while(!this._closed&&!this._terminalError){const {value,done}=await reader.read();if(done)break;buffer=(buffer+decoder.decode(value,{stream:true})).replace(/\r\n/g,'\n');let index;
+    // Browser scene compilation can delay reads and coalesce many valid SSE
+    // events into one large chunk. Limit each event, not the transport batch.
+    while((index=buffer.indexOf('\n\n'))>=0){if(index>524288)throw protocolError();const packet=buffer.slice(0,index);buffer=buffer.slice(index+2);let type='message',data='';for(const line of packet.split('\n')){if(line.startsWith('event:'))type=line.slice(6).trim();if(line.startsWith('data:'))data+=(data?'\n':'')+line.slice(5).trimStart();}if(!data||!['state','voice','error'].includes(type))continue;const message=readEvent(data,type,this.room);
+     if(type==='state'){heartbeat();if(message.sequence<this._sequence)continue;this._connected=true;const before=this.room,previous=this._state;this._state=message;const actorChanged=previous.player.id!==message.player.id||previous.player.seated!==message.player.seated||previous.map!==message.map;if(actorChanged)this._look=null;else if(this._look&&(message.inputAck?.look||0)>=this._look.sequence)this._look=null;if(previous.map!==message.map||previous.stage!==message.stage)this._frames=[];this._frames.push({time:performance.now(),state:message});if(this._frames.length>5)this._frames.shift();this.room=message.room;this._events.push(...message.events.filter(event=>!Number.isSafeInteger(event.networkSequence)||event.networkSequence>this._sequence));this._sequence=message.sequence;this.voice.sync(this.room);if(JSON.stringify(before)!==JSON.stringify(this.room))this._onRoom(this.room,this._state);}
      if(type==='voice')this.voice.receive(message).catch(error=>this._onError('语音连接失败：'+error.message));
-     if(type==='error')this._onError(message.message);
+     if(type==='error'){if(message.terminal===true)throw new RoomConnectionError(message.message);this._onError(message.message);}
     }
+    if(buffer.length>524288)throw protocolError();
    }
-  }catch(error){if(!this._closed&&error.name!=='AbortError'){if(error.terminal)this._terminate(error);else if(!this._terminalError)this._onError(error instanceof RoomConnectionError?error.message:'联机连接中断，正在尝试重新连接。');}}
-  finally{try{await reader?.cancel();}catch{}reader?.releaseLock();}
-  this._connected=false;if(!this._closed&&!this._terminalError){this._queued=[];this._last={};this._retry=setTimeout(()=>this._listen(),1500);}
+  }catch(error){if(!this._closed&&(error.name!=='AbortError'||timedOut)){if(error.terminal)this._terminate(error);else if(!this._terminalError)this._onError(timedOut?'联机状态更新超时，正在尝试重新连接。':error instanceof RoomConnectionError?error.message:'联机连接中断，正在尝试重新连接。');}}
+  finally{clearTimeout(watchdog);this._disconnected();try{await reader?.cancel();}catch{}reader?.releaseLock();}
+  if(!this._closed&&!this._terminalError)this._retry=setTimeout(()=>this._listen(),1500);
  }
  _interpolatedActors(){
   const frames=this._frames;if(frames.length<2)return{};const target=performance.now()-70;let a=frames[0],b=frames[frames.length-1];for(let i=1;i<frames.length;i++)if(frames[i].time>=target){a=frames[i-1];b=frames[i];break;}
   const t=Math.max(0,Math.min(1,(target-a.time)/Math.max(1,b.time-a.time))),blend=(x,y)=>{if(!x||!y||x.captivity!==y.captivity||x.seated!==y.seated||x.visible!==y.visible||Math.hypot(x.x-y.x,x.z-y.z)>2)return y;const turn=Math.atan2(Math.sin(y.yaw-x.yaw),Math.cos(y.yaw-x.yaw));return{...y,x:x.x+(y.x-x.x)*t,z:x.z+(y.z-x.z)*t,yaw:x.yaw+turn*t};};
   return{students:this._state.students.map(p=>p.isPlayer?p:blend(a.state.students.find(s=>s.id===p.id),b.state.students.find(s=>s.id===p.id))||p),teacher:this._state.role==='teacher'?this._state.teacher:blend(a.state.teacher,b.state.teacher)};
  }
- pause(value=true){this._localPaused=Boolean(value);if(value){this.command('setMovement',0,0);this.command('hold',false);this.command('setCrouch',false);this.command('setRescue',null);}return this.snapshot();}
+ pause(value=true){this._localPaused=Boolean(value);if(value){this.command('setComputerPlayback',{playing:false,visible:false,mediaTime:0});this.command('setMovement',0,0);this.command('hold',false);this.command('setCrouch',false);this.command('setRescue',null);}return this.snapshot();}
  setPreference(rolePreference,character){return this.command('setPreference',{rolePreference,character});}
  travelFloor(map){return this.command('travelFloor',map);}
  async rematch(){const before=this._state.sequence;await this._post('/api/command',{name:'rematch',args:[]});for(let i=0;i<100;i++){if(this._state.stage==='gathering'&&this._state.sequence>before)return this.snapshot();await new Promise(r=>setTimeout(r,50));}throw new Error('房间已重置，正在重新连接');}
  toggleMicrophone(){return this.voice.toggle();}
- async leave(){if(this._closed)return;this._closed=true;clearInterval(this._timer);clearTimeout(this._retry);this.voice.close();try{await this._post('/api/leave',{});}catch{}this._controller?.abort();}
+ async leave(){if(this._closed)return;this._closed=true;this._disconnected();clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this.voice.close();this._controller?.abort();try{await this._post('/api/leave',{});}catch{}}
  dispose(){return this.leave();}
 }
-for(const method of ['setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','snakeDirection','takePen','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
+for(const method of ['setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
  NetworkRound.prototype[method]=function(...args){return this.command(method,...args);};
 }
 
 class RoomVoice{
- constructor(round,onChange){this.round=round;this.onChange=onChange;this.peers=new Map();this.stream=null;this.enabled=false;this.closed=false;this.pending=false;}
+ constructor(round,onChange){this.round=round;this.onChange=onChange;this.peers=new Map();this.stream=null;this.enabled=false;this.closed=false;this.pending=false;this._activation=0;this._trackEnds=[];}
+ _current(peer){return!this.closed&&this.peers.get(peer.id)===peer;}
+ _dropPeer(peer){if(this.peers.get(peer.id)!==peer)return;this.peers.delete(peer.id);peer.pc.onicecandidate=null;peer.pc.ontrack=null;peer.pc.onconnectionstatechange=null;peer.pc.close();if(peer.audio){peer.audio.pause();peer.audio.srcObject=null;peer.audio.remove();peer.audio=null;}}
+ _clearStream(){const stream=this.stream;this.stream=null;this.enabled=false;this._activation++;for(const[track,ended]of this._trackEnds)track.removeEventListener('ended',ended);this._trackEnds=[];for(const track of stream?.getTracks()||[])if(track.readyState!=='ended')track.stop();}
+ _inputEnded(stream){
+  // Detached/queued events from an old capture must not turn off a new one.
+  if(this.closed||this.stream!==stream)return;this._clearStream();
+  for(const peer of [...this.peers.values()]){this.signal(peer.id,'mute',{muted:true});this._dropPeer(peer);}this.onChange({enabled:false});
+ }
  async toggle(){
   if(this.closed||this.pending)return this.enabled;
-  if(this.enabled){this.enabled=false;for(const track of this.stream?.getAudioTracks()||[])track.enabled=false;for(const id of this.peers.keys())this.signal(id,'mute',{muted:true});this.onChange({enabled:false});return false;}
+  if(this.enabled){this._activation++;this.enabled=false;for(const track of this.stream?.getAudioTracks()||[])track.enabled=false;for(const id of this.peers.keys())this.signal(id,'mute',{muted:true});this.onChange({enabled:false});return false;}
+  if(this.stream&&!this.stream.getAudioTracks().some(track=>track.readyState==='live'))this._inputEnded(this.stream);
   if(!globalThis.isSecureContext||!navigator.mediaDevices?.getUserMedia)throw new Error('麦克风需要 HTTPS 或本机 localhost 地址');
   if(!globalThis.RTCPeerConnection)throw new Error('当前浏览器不支持语音');
-  if(!this.stream){this.pending=true;try{this.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});}finally{this.pending=false;}if(this.closed){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;return false;}}
-  for(const track of this.stream.getAudioTracks())track.enabled=true;this.enabled=true;
-  for(const member of this.round.room.members){if(member.id===this.round.room.selfId||!member.connected)continue;const peer=this.peer(member.id);await this.attach(peer);await this.offer(peer);this.signal(member.id,'mute',{muted:false});}
-  for(const peer of this.peers.values())peer.audio?.play().catch(()=>{});this.onChange({enabled:true});return true;
+  const activation=++this._activation;
+  if(!this.stream){let capture;this.pending=true;try{capture=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});}finally{this.pending=false;}
+   if(this.closed||activation!==this._activation){for(const track of capture.getTracks())if(track.readyState!=='ended')track.stop();return false;}
+   this.stream=capture;for(const track of capture.getAudioTracks()){const ended=()=>this._inputEnded(capture);this._trackEnds.push([track,ended]);track.addEventListener('ended',ended);}
+  }
+  const stream=this.stream,current=()=>!this.closed&&this.enabled&&this.stream===stream&&this._activation===activation;
+  if(!stream.getAudioTracks().some(track=>track.readyState==='live')){this._inputEnded(stream);throw new Error('麦克风已断开，请重新连接后再试。');}
+  for(const track of stream.getAudioTracks())track.enabled=true;this.enabled=true;
+  try{for(const member of this.round.room.members){if(member.id===this.round.room.selfId||!member.connected)continue;const peer=this.peer(member.id);await this.attach(peer);if(!current())return false;await this.offer(peer);if(!current())return false;this.signal(member.id,'mute',{muted:false});}}
+  catch(error){if(!current())return false;this._inputEnded(stream);throw error;}
+  if(!current())return false;for(const peer of this.peers.values())peer.audio?.play().catch(()=>{});this.onChange({enabled:true});return true;
  }
  signal(to,kind,payload){return this.round._post('/api/voice',{to,kind,payload}).catch(error=>{if(!this.closed&&error!==this.round._terminalError)this.round._onError(error.message);});}
  peer(id){
   if(this.peers.has(id))return this.peers.get(id);
   const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]}),peer={id,pc,makingOffer:false,ignoreOffer:false,polite:this.round.room.selfId.localeCompare(id)>0,pendingIce:[],audio:null};this.peers.set(id,peer);
-  pc.onicecandidate=e=>{if(e.candidate)this.signal(id,'ice',e.candidate.toJSON());};
-  pc.ontrack=e=>{if(!peer.audio){peer.audio=document.createElement('audio');peer.audio.autoplay=true;peer.audio.setAttribute('playsinline','');peer.audio.hidden=true;document.body.append(peer.audio);}peer.audio.srcObject=e.streams[0]||new MediaStream([e.track]);peer.audio.play().catch(()=>{});};
-  pc.onconnectionstatechange=()=>this.onChange({enabled:this.enabled,peer:id,state:pc.connectionState});
+  pc.onicecandidate=e=>{if(this._current(peer)&&e.candidate)this.signal(id,'ice',e.candidate.toJSON());};
+  pc.ontrack=e=>{if(!this._current(peer))return;if(!peer.audio){peer.audio=document.createElement('audio');peer.audio.autoplay=true;peer.audio.setAttribute('playsinline','');peer.audio.hidden=true;document.body.append(peer.audio);}peer.audio.srcObject=e.streams[0]||new MediaStream([e.track]);peer.audio.play().catch(()=>{});};
+  pc.onconnectionstatechange=()=>{if(this._current(peer))this.onChange({enabled:this.enabled,peer:id,state:pc.connectionState});};
   return peer;
  }
- async attach(peer){if(!this.stream)return;for(const track of this.stream.getAudioTracks()){const sender=peer.pc.getSenders().find(s=>s.track?.kind==='audio');if(sender)await sender.replaceTrack(track);else peer.pc.addTrack(track,this.stream);}}
- async offer(peer){try{peer.makingOffer=true;await peer.pc.setLocalDescription(await peer.pc.createOffer());await this.signal(peer.id,'offer',peer.pc.localDescription);}finally{peer.makingOffer=false;}}
+ async attach(peer){const stream=this.stream;if(!stream||!this._current(peer))return;for(const track of stream.getAudioTracks()){if(!this._current(peer)||this.stream!==stream)return;if(track.readyState!=='live')continue;const sender=peer.pc.getSenders().find(s=>s.track?.kind==='audio');if(sender)await sender.replaceTrack(track);else peer.pc.addTrack(track,stream);}}
+ async offer(peer){if(!this._current(peer))return;try{peer.makingOffer=true;const description=await peer.pc.createOffer();if(!this._current(peer))return;await peer.pc.setLocalDescription(description);if(this._current(peer))await this.signal(peer.id,'offer',peer.pc.localDescription);}catch(error){if(this._current(peer))throw error;}finally{peer.makingOffer=false;}}
  async receive({from,kind,payload}){
   if(this.closed||!this.round.room.members.some(m=>m.id===from))return;
   if(kind==='mute'){this.onChange({enabled:this.enabled,peer:from,muted:payload?.muted});return;}
   if(!globalThis.RTCPeerConnection)return;
   const peer=this.peer(from),pc=peer.pc;
-  if(kind==='ice'){if(!pc.remoteDescription){peer.pendingIce.push(payload);return;}try{await pc.addIceCandidate(payload);}catch(error){if(!peer.ignoreOffer)throw error;}return;}
+  if(kind==='ice'){if(!pc.remoteDescription){peer.pendingIce.push(payload);return;}try{await pc.addIceCandidate(payload);}catch(error){if(this._current(peer)&&!peer.ignoreOffer)throw error;}return;}
   if(kind==='offer'||kind==='answer'){
+   try{
    const collision=kind==='offer'&&(peer.makingOffer||pc.signalingState!=='stable');peer.ignoreOffer=!peer.polite&&collision;if(peer.ignoreOffer)return;
    if(collision&&peer.polite)await pc.setLocalDescription({type:'rollback'});
-   await pc.setRemoteDescription(payload);for(const ice of peer.pendingIce.splice(0))await pc.addIceCandidate(ice);
-   if(kind==='offer'){await this.attach(peer);await pc.setLocalDescription(await pc.createAnswer());await this.signal(from,'answer',pc.localDescription);}
+   if(!this._current(peer))return;await pc.setRemoteDescription(payload);if(!this._current(peer))return;for(const ice of peer.pendingIce.splice(0)){await pc.addIceCandidate(ice);if(!this._current(peer))return;}
+   if(kind==='offer'){await this.attach(peer);if(!this._current(peer))return;const answer=await pc.createAnswer();if(!this._current(peer))return;await pc.setLocalDescription(answer);if(this._current(peer))await this.signal(from,'answer',pc.localDescription);}
+   }catch(error){if(this._current(peer))throw error;}
   }
  }
- sync(room){for(const[id,peer]of this.peers)if(!room.members.some(m=>m.id===id&&m.connected)){peer.pc.close();peer.audio?.remove();this.peers.delete(id);}if(this.enabled)for(const m of room.members)if(m.id!==room.selfId&&m.connected&&!this.peers.has(m.id)){const peer=this.peer(m.id);this.attach(peer).then(()=>this.offer(peer)).catch(error=>this.round._onError(error.message));}}
- close(){this.closed=true;for(const track of this.stream?.getTracks()||[])track.stop();for(const p of this.peers.values()){p.pc.close();p.audio?.remove();}this.peers.clear();this.stream=null;this.enabled=false;}
+ sync(room){if(this.closed)return;for(const[id,peer]of this.peers)if(!room.members.some(m=>m.id===id&&m.connected))this._dropPeer(peer);if(this.enabled)for(const m of room.members)if(m.id!==room.selfId&&m.connected&&!this.peers.has(m.id)){const peer=this.peer(m.id);this.attach(peer).then(()=>this.offer(peer)).catch(error=>{if(this._current(peer))this.round._onError(error.message);});}}
+ close(){if(this.closed)return;this.closed=true;this._clearStream();for(const peer of [...this.peers.values()])this._dropPeer(peer);}
 }

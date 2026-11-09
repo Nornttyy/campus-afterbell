@@ -1,12 +1,14 @@
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-52';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-52';
-import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-52';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-57';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-57';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-57';
+import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-57';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-52';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-57';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
+    this.surveillance=createSurveillance();
     super.reset(seed);
     const pool=this.students.slice();
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(this._random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
@@ -24,25 +26,30 @@ export class TeacherRound extends ClassroomRound{
     return this.snapshot();
   }
   snapshot(){
-    const s=super.snapshot();
+    const s=super.snapshot();s.surveillance=surveillanceSnapshot(this);
     if(this.player.id!==-1)return s; // Base reset calls snapshot before teacher initialization.
     s.role='teacher';const aim=this.aimedStudent();s.teacherAim=aim?{id:aim.id,grabReady:Math.hypot(aim.x-this.player.x,aim.z-this.player.z)<1.55&&aim.captivity==='stunned'}:null;s.bindPost=this.bindTarget()?.id??null;s.chalks=this.chalks.map(c=>({...c}));s.throwAge=this.elapsed-this._lastThrow;
     s.wrongGrabs=this.wrongGrabs;s.writeBoardAvailable=this.canWriteBoard();s.releaseStudent=this.releaseTarget()?.id??null;
     s.students=s.students.map(p=>({...p,chalked:this.elapsed<(this.students[p.id]._chalkUntil||0)}));
     return s;
   }
+  deploySurveillance(id){return deploySurveillance(this,id);}
+  viewSurveillance(id){return viewSurveillance(this,id);}
+  closeSurveillance(){return closeSurveillance(this);}
   hold(value){if(!value){this.holding=false;return false;}return this.throwChalk();}
   releaseUse(){this.holding=false;return false;}
+  setDrawerOpen(){return false;} setBookRaised(){return false;}
   toggleDrawer(){return false;} toggleBook(){return false;} takeSlot(){return false;}
-  returnItem(){return false;} interact(seatId=null){if(this.player.seated)return super.interact();return seatId==='office-chair'?this.sitOfficeChair():false;} startComputer(){return false;}
+  returnItem(){return false;} interact(seatId=null){if(this.player.seated)return super.interact();return typeof seatId==='string'&&seatId.endsWith('chair')?this.sitOfficeChair(seatId):false;} startComputer(){return false;}
   _perceive(){} // The human observes. No evidence meter, memory-based aim or auto-capture.
   _hear(){} // Sound cues stay spatial; they must not reveal hidden identity to the UI.
   throwChalk(){
     if(!this._classInputAllowed()||this._writing||this.elapsed<this._nextThrow||this.teacher.carriedId!==null)return false;
-    if(this.teacher.stamina<10||this._restrained(this.player)){this._events.push({type:'stamina-low'});return false;}
+    if(this._restrained(this.player))return false;
+    if(this.teacher.stamina<=0){this._events.push({type:'stamina-low'});return false;}
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
     this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?CRAWL_TUNING.eyeHeight:TEACHER_EYE_HEIGHT),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
-    this.teacher.stamina=Math.max(0,this.teacher.stamina-10);this._lastThrow=this.elapsed;this._nextThrow=this.elapsed+.72;this._events.push({type:'chalk-throw'});return true;
+    this._lastThrow=this.elapsed;this._nextThrow=this.elapsed+.72;this._events.push({type:'chalk-throw'});return true;
   }
   aimedStudent(range=9){
     if(this.stage!=='class')return null;
@@ -67,18 +74,7 @@ export class TeacherRound extends ClassroomRound{
   }
   bindStudent(){const post=this.bindTarget();if(!this._classInputAllowed()||!post)return false;return this._bind(post.id);}
   dropStudent(){if(!this._classInputAllowed())return false;const s=this.students[this.teacher.carriedId];if(!s)return false;this._release(s);return true;}
-  // Video 25:02 and 26:10 show a wrong pupil still bound before the -40 penalty.
-  _bind(postId){
-    const id=this.teacher.carriedId;if(!super._bind(postId))return false;
-    if(this._team.has(id)){
-      this.teacher.stamina=Math.min(100,this.teacher.stamina+20);
-      this._events.push({type:'correct-capture',studentId:id,recovery:20});
-    }else{
-      this.teacher.stamina=Math.max(0,this.teacher.stamina-40);this.wrongGrabs++;
-      this._events.push({type:'wrong-grab',studentId:id,penalty:40});
-    }
-    return true;
-  }
+  // Binding feedback and stamina use the shared AI/human implementation.
   releaseTarget(){
     if(this.teacher.carriedId!==null)return null;
     const p=this.player;
@@ -97,10 +93,11 @@ export class TeacherRound extends ClassroomRound{
   pause(value=true){if(value)this.setWriting(false);return super.pause(value);}
   _advanceTeacher(dt){
     const p=this.player,t=this.teacher;
-    if((t._chalkUntil||0)>this.elapsed+1e-9){t.phase='stunned';t.writing=false;this._writing=false;p.captivity='stunned';return;}if(p.captivity==='stunned'){p.captivity='free';t.captivity='free';}
+    if((t._chalkUntil||0)>this.elapsed+1e-9){this.closeSurveillance();t.phase='stunned';t.writing=false;this._writing=false;p.captivity='stunned';return;}if(p.captivity==='stunned'){p.captivity='free';t.captivity='free';}
     if(this._writing&&(!this.canWriteBoard()||Math.hypot(this._movement.x,this._movement.z)>.01))this.setWriting(false);
-    // +10/sec is visible in 09:14-09:18; passive fatigue remains local tuning.
-    t.stamina=Math.max(0,Math.min(100,t.stamina+dt*(this._writing?10:-1)));
+    // Resting is free. Walking fatigue is charged from actual displacement
+    // once in the shared step, including network-controlled teachers.
+    if(this._writing)t.stamina=Math.min(100,t.stamina+dt*10);
     if(this._writing)this._writeTime+=dt;
     Object.assign(t,{x:p.x,z:p.z,yaw:p.yaw,phase:this._writing?'board':'watching',intent:this._writing?'write':'player',warning:false,looking:!this._writing,castProgress:0,writing:this._writing,writeProgress:this._writing?this._writeTime%1:0});
   }

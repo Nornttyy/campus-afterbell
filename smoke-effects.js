@@ -2,11 +2,11 @@ import * as T from './vendor/three.module.js';
 
 // Half-resolution volume integration, clipped by the real classroom depth.
 // Each cloud is a 3D density field: no billboard circles or screen-wide fog wash.
-export function createSmokeEffects(renderer){
+export function createSmokeEffects(renderer,{width=0,height=0,samples=4}={}){
   const size=new T.Vector2(),volumeScene=new T.Scene(),screenScene=new T.Scene();
   const screenCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
   const opaque=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,depthBuffer:true});
-  opaque.samples=4;
+  opaque.samples=samples;
   opaque.depthTexture=new T.DepthTexture(1,1,T.UnsignedIntType);
   const mist=new T.WebGLRenderTarget(1,1,{depthBuffer:false,minFilter:T.LinearFilter,magFilter:T.LinearFilter});
   const data=new Uint8Array(32**3);let seed=17831;
@@ -107,7 +107,9 @@ export function createSmokeEffects(renderer){
   }
   function render(scene,camera,quality='high'){
     if(!active&&quality==='low'){renderer.render(scene,camera);return;}
-    renderer.getDrawingBufferSize(size);
+    // Monitor feeds have physical render-target dimensions, independent of
+    // the main canvas pixel ratio. Keep their buffers small and persistent.
+    if(width>0&&height>0)size.set(width,height);else renderer.getDrawingBufferSize(size);
     if(opaque.width!==size.x||opaque.height!==size.y)opaque.setSize(size.x,size.y);
     const ratio=quality==='low'?.35:.5,w=Math.max(1,Math.floor(size.x*ratio)),h=Math.max(1,Math.floor(size.y*ratio));
     if(mist.width!==w||mist.height!==h)mist.setSize(w,h);
@@ -115,10 +117,12 @@ export function createSmokeEffects(renderer){
     inverse.multiplyMatrices(camera.matrixWorld,camera.projectionMatrixInverse);
     composite.uniforms.projectionInverse.value.copy(camera.projectionMatrixInverse);composite.uniforms.projection.value.copy(camera.projectionMatrix);composite.uniforms.screenSize.value.copy(size);composite.uniforms.smokeActive.value=active?1:0;composite.uniforms.contactStrength.value=quality==='low'?0:.52;
     for(const mesh of pool)if(mesh.visible)mesh.material.uniforms.resolution.value.set(w,h);
-    const target=renderer.getRenderTarget(),auto=renderer.autoClear,alpha=renderer.getClearAlpha();renderer.getClearColor(clearColor);
-    renderer.setRenderTarget(opaque);renderer.render(scene,camera);
-    if(active){renderer.setRenderTarget(mist);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(volumeScene,camera);}
-    renderer.setClearColor(clearColor,alpha);renderer.setRenderTarget(target);renderer.render(screenScene,screenCamera);renderer.autoClear=auto;
+    const target=renderer.getRenderTarget(),face=renderer.getActiveCubeFace?.()||0,mip=renderer.getActiveMipmapLevel?.()||0,auto=renderer.autoClear,alpha=renderer.getClearAlpha();renderer.getClearColor(clearColor);
+    try{
+      renderer.autoClear=true;renderer.setRenderTarget(opaque);renderer.render(scene,camera);
+      if(active){renderer.setRenderTarget(mist);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(volumeScene,camera);}
+      renderer.setClearColor(clearColor,alpha);renderer.setRenderTarget(target,face,mip);renderer.render(screenScene,screenCamera);
+    }finally{renderer.setClearColor(clearColor,alpha);renderer.setRenderTarget(target,face,mip);renderer.autoClear=auto;}
   }
   return{update,render,dispose(){opaque.dispose();opaque.depthTexture.dispose();mist.dispose();noise.dispose();bounds.dispose();for(const m of pool)m.material.dispose();quad.geometry.dispose();composite.dispose();}};
 }

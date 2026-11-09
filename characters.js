@@ -520,7 +520,7 @@ export function createStudent(options={}) {
     const sleeve=clothLimb(arm,.075,.033,{yoke:true,rows:24,radial:20});
     const hand=new THREE.Group();hand.name=`${side<0?'left':'right'}-student-hand`;arm.add(hand);
     hand.userData.grip=[0,.056,.026];hand.userData.pinch=[-side*.020,.063,.027];
-    hand.userData.attachments={phone:{position:[0,.075,.029],rotation:[0,Math.PI,0]},note:{position:[side*.052,.061,.030],rotation:[0,Math.PI,0]}};
+    hand.userData.attachments={phone:{position:[0,.075,.029],rotation:[0,Math.PI,0]}};
     const fingers=articulatedHand(side);hand.add(fingers.group);
     arms.push({side,sleeve,hand,fingers,curl:0,writing:0,pointing:0,gripWeight:0,elbow:point(0,0,0),wrist:point(0,0,0),quaternion:new THREE.Quaternion()});
 
@@ -588,8 +588,6 @@ export function createStudent(options={}) {
       }else if(mood==='phone'){
         const tap=Math.max(0,Math.sin(time*3.2))*.004;
         wrists[0].set(-.075,1.02,.31);wrists[1].set(.0272,1.0818+tap*.28,.2705-tap*.96);head.rotation.x=.13;
-      }else if(mood==='note'){
-        wrists[0].set(-.022,1.034,.337);wrists[1].set(.080,1.035,.34);head.rotation.x=.10;
       }else if(mood==='snack'){
         wrists[1].set(.10,1.07+.034*Math.sin(time*Math.PI*2/1.05),.30);
       }else if(mood==='resting')wrists[1].set(.17,.894+Math.sin(time*.7)*.002,.33);
@@ -616,11 +614,10 @@ export function createStudent(options={}) {
       else if(mood==='phone'){
         if(i===0){forward=[0,.96,.28];palm=[0,.28,-.96];curl=.55;}
         else{forward=[-.9,.05,.42];pointing=1;curl=0;}
-      }else if(mood==='note'){forward=[0,.92,.39];palm=[0,.39,-.92];writing=.8;curl=.15;}
-      else if(mood==='snack'&&i===1){forward=[0,.92,.38];palm=[0,.38,-.92];curl=.85;}
+      }else if(mood==='snack'&&i===1){forward=[0,.92,.38];palm=[0,.38,-.92];curl=.85;}
       handOrientation(forward,palm,targetHandQuaternion);a.quaternion.slerp(targetHandQuaternion,alpha);a.hand.quaternion.copy(a.quaternion);
       a.curl=THREE.MathUtils.lerp(a.curl,curl,alpha);a.writing=THREE.MathUtils.lerp(a.writing,writing,alpha);a.pointing=THREE.MathUtils.lerp(a.pointing,pointing,alpha);a.fingers.set(a.curl,a.writing,a.pointing);
-      a.gripWeight=THREE.MathUtils.lerp(a.gripWeight,(mood==='phone'&&i===0)||(mood==='note'&&i===1)?1:0,alpha);a.hand.userData.gripWeight=a.gripWeight;a.hand.userData.elbow=a.elbow.toArray();
+      a.gripWeight=THREE.MathUtils.lerp(a.gripWeight,(mood==='phone'&&i===0)?1:0,alpha);a.hand.userData.gripWeight=a.gripWeight;a.hand.userData.elbow=a.elbow.toArray();
       const wristDirection=axisY.clone().applyQuaternion(a.hand.quaternion);
       // Raising an arm opens the axilla. Keep the proximal cloth root inside
       // the chest instead of pivoting the visible shoulder cap away from it.
