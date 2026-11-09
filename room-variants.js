@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.js';
-import {buildLaptop55} from './computer-hardware55.js?v=campus-57';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-57';
+import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-58';
+import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-58';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,screenContent=null,officeScreens=new Map()}){
- const group=new T.Group(),screens=new Map(),stations=new Map();group.name='computer-lab-workstations';scene.add(group);group.visible=false;
+ const group=new T.Group(),screens=new Map(),stations=new Map(),drawers=new Map();group.name='computer-lab-workstations';scene.add(group);group.visible=false;
  const shell=mat('#424b59',{roughness:.48}),keys=mat('#d5d9df',{roughness:.72}),base=mat('#909ba9',{metalness:.35,roughness:.48}),top=mat('#d1d5cb',{roughness:.68}),trim=mat('#607d7b',{roughness:.62}),shadow=mat('#27353d',{roughness:.85});
  const desktopMat=mat('#a2bec7',{emissive:'#85a0a7',emissiveIntensity:.25}),screenGeo=new T.PlaneGeometry(.586,.326);
  for(const s of SEATS){
@@ -17,6 +17,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,scr
   rounded(shell,[-.08,.88,-.19],[.58,.028,.16],.008,null,hardware);for(let r=0;r<3;r++)for(let k=0;k<11;k++)box(keys,[-.32+k*.046,.897,-.245+r*.045],[.035,.008,.029],null,hardware);rounded(shell,[.39,.886,-.18],[.08,.035,.12],.016,null,hardware);
   // The screen sits in front of the bezel; it remains individually raycastable.
   const screen=new T.Mesh(screenGeo,desktopMat);screen.position.set(0,1.22,.122);screen.rotation.y=Math.PI;screen.userData.seatId=s.id;screen.userData.animated=true;station.add(screen);screens.set(s.id,screen);
+  drawers.set(s.id,buildComputerDrawer55({parent:station,box,rounded,mat,id:`computer-drawer-${s.id}`,bakeStatic}));
   bakeStatic(hardware);
  }
  const laptop=buildLaptop55({parent:group,box,rounded,mat,x:(LECTERN.minX+LECTERN.maxX)/2,y:1.1475,z:(LECTERN.minZ+LECTERN.maxZ)/2,bakeStatic});laptop.root.rotation.y=Math.PI;const teacherScreen=laptop.screen;
@@ -24,7 +25,17 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,scr
  function setSeats(next){if(!Array.isArray(next)||!next.length||next.length>SEATS.length)return;seats=next;const active=new Set(next.map(s=>s.id));for(const[id,station]of stations)station.visible=active.has(id);for(const s of seats){const station=stations.get(s.id);if(!station)continue;station.position.set(s.deskX,floorHeight(s.deskX,s.deskZ,currentMap),s.deskZ);station.rotation.y=s.yaw||0;}}
  setSeats(seats);
  const light=new T.SpotLight('#fff4d5',75,17,.43,.65,1.4);light.castShadow=true;light.shadow.mapSize.set(512,512);light.shadow.bias=-.001;scene.add(light,light.target);light.visible=false;
- return{group,screens,stations,teacherScreen,light,setSeats,
+ function updateDrawers(state,dt=0){
+  const player=state?.player,localSeat=player?.seated&&!player.caught&&!player.officeChair?player.seatId:null;
+  const openSeats=new Set((state?.students||[]).filter(s=>s.id!==player?.id&&s.seated&&!s.caught&&!s.officeChair&&(s.drawerOpen??s.drawer?.open)).map(s=>s.seatId));
+  if(localSeat!=null&&state?.drawer?.open)openSeats.add(localSeat);
+  for(const[id,drawer]of drawers){
+   const target=group.visible&&stations.get(id)?.visible&&openSeats.has(id)?1:0;
+   drawer.open=T.MathUtils.damp(drawer.open,target,target>drawer.open?12:18,Math.max(0,dt));
+   drawer.group.position.z=-drawer.travel*drawer.open;
+  }
+ }
+ return{group,screens,stations,drawers,teacherScreen,light,setSeats,updateDrawers,
   setMap(map){currentMap=map;group.visible=mapKind(map)==='computer';light.visible=mapKind(map)==='night';setSeats(seats);},
   update(state){
    screenContent?.update(state,group.visible?new Map([...screens].filter(([id])=>stations.get(id)?.visible)):new Map(),group.visible?teacherScreen:null,officeScreens);

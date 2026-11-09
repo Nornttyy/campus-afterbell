@@ -1,6 +1,6 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-57';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-57';
-import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,floorHeight,TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-57';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-58';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-58';
+import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,floorHeight,TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-58';
 
 // Local reconstruction parameters, not measured single-projectile durations.
 export const PROJECTILE_EFFECT_TUNING=Object.freeze({flashFuse:1.2,flashRange:8,flashWhite:4.5,flashFade:2.5,inkRange:2.2,inkDuration:7});

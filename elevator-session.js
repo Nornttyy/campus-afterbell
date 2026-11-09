@@ -1,4 +1,4 @@
-import {LIFT,CAMPUS_MAPS} from './classroom-layout.js?v=campus-57';
+import {LIFT,CAMPUS_MAPS} from './classroom-layout.js?v=campus-58';
 
 export const ELEVATOR_SECONDS=3;
 export const createElevator=()=>({phase:'idle',used:false,remaining:0,targetMap:null});

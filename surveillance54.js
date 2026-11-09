@@ -1,4 +1,5 @@
-import {clearWallSegment,floorHeight,TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-57';
+import {teacherViewHeight} from './camera-height58.js?v=campus-58';
+import {clearWallSegment,floorHeight,TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-58';
 
 export const SURVEILLANCE_RULES=Object.freeze({unlockElapsed:120,cooldown:115,limit:2});
 export const SURVEILLANCE_MOUNTS=Object.freeze([
@@ -15,7 +16,7 @@ export function surveillanceSnapshot(round,teacher=round.player?.id===-1){
 export function reachesSurveillance(round,id){
  const mount=SURVEILLANCE_MOUNTS.find(m=>m.id===id),p=round.player;
  if(!mount||p?.id!==-1||p.seated||round._restrained(p)||!round._classInputAllowed()||round.teacher.carriedId!=null)return false;
- const delta={x:mount.x-p.x,y:1.65+floorHeight(mount.x,mount.z,round.map)-(floorHeight(p.x,p.z,round.map)+TEACHER_EYE_HEIGHT),z:mount.z-p.z};
+ const delta={x:mount.x-p.x,y:1.65+floorHeight(mount.x,mount.z,round.map)-(floorHeight(p.x,p.z,round.map)+teacherViewHeight(p)),z:mount.z-p.z};
  const distance=Math.hypot(delta.x,delta.y,delta.z),cp=Math.cos(p.pitch||0),dot=distance?(delta.x*Math.sin(p.yaw)*cp-delta.y*Math.sin(p.pitch||0)+delta.z*Math.cos(p.yaw)*cp)/distance:1;
  return distance<=2.5&&dot>.90&&clearWallSegment(p,mount,round.layout);
 }

@@ -1,10 +1,10 @@
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-57';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-57';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-57';
-import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-57';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-58';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-58';
+import {teacherViewHeight} from './camera-height58.js?v=campus-58';
+import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-58';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-57';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-58';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
@@ -28,7 +28,7 @@ export class TeacherRound extends ClassroomRound{
   snapshot(){
     const s=super.snapshot();s.surveillance=surveillanceSnapshot(this);
     if(this.player.id!==-1)return s; // Base reset calls snapshot before teacher initialization.
-    s.role='teacher';const aim=this.aimedStudent();s.teacherAim=aim?{id:aim.id,grabReady:Math.hypot(aim.x-this.player.x,aim.z-this.player.z)<1.55&&aim.captivity==='stunned'}:null;s.bindPost=this.bindTarget()?.id??null;s.chalks=this.chalks.map(c=>({...c}));s.throwAge=this.elapsed-this._lastThrow;
+    s.role='teacher';const aim=this.aimedStudent();s.teacherAim=aim?{id:aim.id,grabReady:Math.hypot(aim.x-this.player.x,aim.z-this.player.z)<1.55&&aim.captivity==='stunned'}:null;s.bindPost=this.bindTarget()?.id??null;s.chalks=this.chalks.map(c=>({...c}));s.throwAge=this._sessionElapsed-this._lastThrow;
     s.wrongGrabs=this.wrongGrabs;s.writeBoardAvailable=this.canWriteBoard();s.releaseStudent=this.releaseTarget()?.id??null;
     s.students=s.students.map(p=>({...p,chalked:this.elapsed<(this.students[p.id]._chalkUntil||0)}));
     return s;
@@ -44,19 +44,20 @@ export class TeacherRound extends ClassroomRound{
   _perceive(){} // The human observes. No evidence meter, memory-based aim or auto-capture.
   _hear(){} // Sound cues stay spatial; they must not reveal hidden identity to the UI.
   throwChalk(){
-    if(!this._classInputAllowed()||this._writing||this.elapsed<this._nextThrow||this.teacher.carriedId!==null)return false;
+    if(!this._inputAllowed()||!['gathering','seating','class'].includes(this.stage)||this._writing||this._sessionElapsed<this._nextThrow||this.teacher.carriedId!==null)return false;
     if(this._restrained(this.player))return false;
     if(this.teacher.stamina<=0){this._events.push({type:'stamina-low'});return false;}
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
-    this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?CRAWL_TUNING.eyeHeight:TEACHER_EYE_HEIGHT),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
-    this._lastThrow=this.elapsed;this._nextThrow=this.elapsed+.72;this._events.push({type:'chalk-throw'});return true;
+    this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map)+teacherViewHeight(p),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
+    this._lastThrow=this._sessionElapsed;this._nextThrow=this._sessionElapsed+.72;this._events.push({type:'chalk-throw'});return true;
   }
   aimedStudent(range=9){
     if(this.stage!=='class')return null;
-    const p=this.player,a={x:p.x,y:floorHeight(p.x,p.z,this.map)+(p.crouched?CRAWL_TUNING.eyeHeight:TEACHER_EYE_HEIGHT),z:p.z},cp=Math.cos(p.pitch);
-    const b={x:a.x+Math.sin(p.yaw)*cp*range,y:a.y-Math.sin(p.pitch)*range,z:a.z+Math.cos(p.yaw)*cp*range};
+    const p=this.player,a={x:p.x,y:floorHeight(p.x,p.z,this.map)+teacherViewHeight(p),z:p.z},cp=Math.cos(p.pitch);
+    const rayRange=Math.hypot(range,teacherViewHeight(p));
+    const b={x:a.x+Math.sin(p.yaw)*cp*rayRange,y:a.y-Math.sin(p.pitch)*rayRange,z:a.z+Math.cos(p.yaw)*cp*rayRange};
     const hit=chalkHit(a,b,this.students,this.books,this.map,this.layout);
-    if(hit?.kind!=='student')return null;
+    if(hit?.kind!=='student'||Math.hypot(this.students[hit.id].x-p.x,this.students[hit.id].z-p.z)>range+.24)return null;
     if(!clearWallSegment(a,this.students[hit.id],this.layout))return null;
     // Opaque smoke masks the intervening part of the ray, not the whole room.
     const end={x:a.x+(b.x-a.x)*hit.t,y:a.y+(b.y-a.y)*hit.t,z:a.z+(b.z-a.z)*hit.t};

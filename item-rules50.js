@@ -1,6 +1,8 @@
 // Deterministic minigame state. The authoritative simulation advances the
 // snake; a client can request a direction but cannot submit earned points.
-export const ITEM50_TUNING=Object.freeze({gumSeconds:6,gumCycleSeconds:1.5,gumPoints:[1,2,3,0],peelStun:4,peelLifetime:45,burpWindow:5,burpSpeed:3,burpLifetime:2.5,burpStun:2.5,computerRefill:5});
+export const ITEM50_TUNING=Object.freeze({gumSeconds:6,gumCycleSeconds:1.5,gumPoints:[1,2,3,0],peelStun:4,peelLifetime:45,burpWindow:5,burpSpeed:3,burpLifetime:2.5,burpStun:2.5,computerRefill:3});
+// Lab storage has one food compartment; lunch remains office stock.
+export const COMPUTER_DRAWER_FOODS=Object.freeze(['snack','drink','burger','banana','garlic']);
 const vectors={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 export function createSnake(seed=1){return {width:16,height:12,body:[{x:5,y:6},{x:4,y:6},{x:3,y:6}],direction:'right',pending:'right',food:{x:9,y:6},score:0,alive:true,tick:0,seed:seed>>>0};}
 export function turnSnake(snake,direction){if(!snake?.alive||!vectors[direction])return false;const a=vectors[snake.direction],b=vectors[direction];if(a[0]+b[0]===0&&a[1]+b[1]===0)return false;snake.pending=direction;return true;}
