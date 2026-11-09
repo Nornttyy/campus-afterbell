@@ -101,7 +101,7 @@ function ensureCharacterPreview(){
   characterPreviewPromise=(async()=>{
     let renderer=null,observer=null;
     try{
-      const [T,{loadStudentAssets}]=await Promise.all([import('./vendor/three.module.js'),import('./student-assets.js?v=solo-51')]);
+      const [T,{loadStudentAssets}]=await Promise.all([import('./vendor/three.module.js'),import('./student-assets.js?v=campus-52')]);
       const assets=await loadStudentAssets();if(disposed)return null;
       renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
       renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.08;
@@ -208,7 +208,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=solo-51'),import('./classroom-game.js?v=solo-51')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-52'),import('./classroom-game.js?v=campus-52')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}

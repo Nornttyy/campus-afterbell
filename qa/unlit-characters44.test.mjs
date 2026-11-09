@@ -5,7 +5,7 @@ import * as T from '../dist/vendor/three.module.js';
 import {GLTFLoader} from '../dist/vendor/addons/loaders/GLTFLoader.js';
 import {createRiggedStudent,createRiggedPalm,STUDENT_ASSETS} from '../dist/student-assets.js';
 import {createRiggedTeacher} from '../dist/imported-actors.js';
-import {createDeskHands} from '../dist/game-actors.js';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-52';
 import {useCharacterBaseColor} from '../dist/character-materials.js';
 
 // Parse the real skin, material factors, attributes and embedded image bytes.

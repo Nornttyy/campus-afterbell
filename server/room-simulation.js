@@ -2,6 +2,7 @@ import {randomUUID,randomBytes} from 'node:crypto';
 import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
 import * as Layout from '../dist/classroom-layout.js';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator} from '../dist/elevator-session.js';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
@@ -63,6 +64,7 @@ class SharedRound extends TeacherRound{
 export class CampusRoom{
  constructor({code,seed=Date.now()>>>0,map='classroom',floor=1,maxPlayers=16}={}){
   this.code=code;this.seed=seed;this.map=Layout.CAMPUS_MAPS.includes(map)?map:'classroom';this.floor=Math.max(1,Math.min(8,Number(floor)||1));this.maxPlayers=maxPlayers;this.members=new Map();this.hostId=null;this.sequence=0;this.events=[];this.createdAt=Date.now();this.updatedAt=this.createdAt;
+  this.elevator=createElevator();
   this.sim=new SharedRound({seed,map:this.map});this.sim.room=this;this.teacherActor=this.sim.player;this.teacherContext=context(this.teacherActor);this.sim.start({gathering:true});
   // Only connected humans are the hidden mischievous students. Remaining
   // classmates are visible decoys, not falsely advertised network players.
@@ -74,6 +76,7 @@ export class CampusRoom{
   try{return fn(sim);}finally{for(const key of CONTEXT)ctx[key]=sim[key];for(const key of CONTEXT)sim[key]=prior[key];}
  }
  join({name,character='boy',rolePreference='student'}={}){
+  if(this.elevator.phase==='travel')throw new RoomError(409,'电梯正在运行，请稍后加入');
   if(this.sim.stage!=='gathering'||this.sim.status!=='playing')throw new RoomError(409,'本局已开始，请等下一局');
   if(this.members.size>=this.maxPlayers)throw new RoomError(409,'房间已满');
   const used=new Set([...this.members.values()].map(m=>m.studentId)),actor=this.sim.students.find(s=>!used.has(s.id));
@@ -87,6 +90,7 @@ export class CampusRoom{
  findToken(token){return [...this.members.values()].find(m=>m.token===token)||null;}
  preference(member,{rolePreference,character}={}){if(this.sim.stage!=='gathering')throw new RoomError(409,'开始后不能换身份');if(rolePreference!==undefined)member.rolePreference=rolePreference==='teacher'?'teacher':'student';if(variants.has(character)){member.character=character;member.context.player.character=character;member.context.player.variant=character;}this.sequence++;}
  begin(member){
+  if(this.elevator.phase==='travel')throw new RoomError(409,'请等电梯到达');
   if(member.id!==this.hostId)throw new RoomError(403,'只有房主可以开始');
   if(this.sim.stage!=='gathering')return false;
   const people=[...this.members.values()].filter(m=>m.connected);if(people.length<2)throw new RoomError(409,'至少需要两位玩家');
@@ -112,14 +116,16 @@ export class CampusRoom{
   this.sequence++;return true;
  }
  travelFloor(member,map){
-  if(member.id!==this.hostId)throw new RoomError(403,'只有房主可以选楼层');
-  if(this.sim.stage!=='gathering')throw new RoomError(409,'本局开始后不能换楼层');
-  if(!Layout.CAMPUS_MAPS.includes(map))throw new RoomError(400,'楼层不存在');
-  return this._rebuild(map);
+  const people=[...this.members.values()].map(m=>({player:m.context.player,connected:m.connected}));
+  const error=departureError(this.elevator,people,{map,currentMap:this.map,stage:this.sim.stage,status:this.sim.status,host:member.id===this.hostId});
+  if(error)throw new RoomError(member.id!==this.hostId?403:Layout.CAMPUS_MAPS.includes(map)?409:400,error);
+  for(const m of this.members.values()){m.context._movement={x:0,z:0};m.context.holding=false;m.context.player.holding=false;m.context.player.crouched=false;m.context._rescueId=null;m.context._rescueProgress=0;m.doorUse=false;m.doorProgress=0;}
+  departElevator(this.elevator,map);Layout.updateLayoutDoors(this.sim.layout,{elevatorClosed:true});this.events.push({type:'elevator-start',map,networkSequence:++this.sequence});return true;
  }
  rematch(member){
   if(member.id!==this.hostId)throw new RoomError(403,'等待房主开始下一局');
   if(this.sim.status==='playing')throw new RoomError(409,'本局尚未结束');
+  this.elevator=createElevator();
   return this._rebuild(this.map,(this.seed+1)>>>0);
  }
  command(member,command,args=[],inputSeq=0){
@@ -127,6 +133,9 @@ export class CampusRoom{
   // Focus/pause cleanup is intentionally role-agnostic in the controller.
   if(command==='setWriting'&&args[0]===false&&member.role!=='teacher')return false;
   if(command==='setRescue'&&args[0]===null&&member.role==='teacher')return false;
+  // All transports, seating and interactions remain frozen while the cabin
+  // travels. Look is harmless; a repeated old floor command is still checked.
+  if(this.elevator.phase==='travel'&&!['setLook','travelFloor'].includes(command))return false;
   if(command==='startBell')return this.begin(member);
   if(command==='rematch')return this.rematch(member);
   if(command==='setDoorUse'){if(typeof args[0]!=='boolean')throw new RoomError(400,'无效交互');member.doorUse=args[0];if(!member.doorUse)member.doorProgress=0;return true;}
@@ -148,6 +157,16 @@ export class CampusRoom{
   });
  }
  tick(dt){
+  if(this.elevator.phase==='travel'){
+   const map=advanceElevator(this.elevator,dt);
+   if(map){
+    const trip=this.elevator,poses=new Map([...this.members.values()].map(m=>{const p=m.context.player;return[m.id,{x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch}];}));
+    this._rebuild(map);this.elevator=trip;
+    for(const m of this.members.values())Object.assign(m.context.player,poses.get(m.id));
+    Layout.updateLayoutDoors(this.sim.layout,{elevatorClosed:false});this.events.push({type:'elevator-arrived',map,networkSequence:++this.sequence});
+   }
+   this.sequence++;return;
+  }
   // The teacher is always the main simulation context. Student controls and
   // shared item progression are advanced alongside it, exactly once per tick.
   const ctx=this.teacherMember?.context||this.teacherContext;for(const key of CONTEXT)this.sim[key]=ctx[key];
@@ -166,13 +185,14 @@ export class CampusRoom{
   const state=this.withMember(member,sim=>TeacherRound.prototype.snapshot.call(sim));
   state.doorUse={holding:Boolean(member.doorUse),progress:member.doorProgress||0};state.interaction={kind:member.doorUse?'rear-door':null,progress:member.doorProgress||0};
   state.teamSize=Math.max(1,this.sim._team.size);state.network=true;state.floor=this.floor;state.layoutSeed=this.seed;state.room=this.publicRoom(member);
+  state.elevator=elevatorSnapshot(this.elevator,[...this.members.values()].map(m=>({player:m.context.player,connected:m.connected})),{stage:state.stage,status:state.status,host:member.id===this.hostId});
   state.inputAck={look:member.lookSequence||0};state.player.name=member.name;state.player.character=member.character;
   const selfId=member.role==='teacher'?-1:member.studentId;
   state.students=state.students.map(p=>{const actor=this.sim.students[p.id],carrying=actor._drawnSlot!=null&&!this.sim._restrained(actor),heldAction=carrying?actor._slots[actor._drawnSlot]?.action||actor.action:null;return{...p,carrying,heldAction,drawerOpen:Boolean(actor._drawerOpen&&!actor._usingOfficeStock),penTaken:Boolean(actor._penTaken),isPlayer:p.id===selfId,isTeammate:this.sim._team.has(p.id)&&p.id!==selfId,networkHuman:[...this.members.values()].some(m=>m.role!=='teacher'&&m.studentId===p.id),character:actor.character||actor.variant};});
   state.teacher.networkHuman=Boolean(this.teacherMember);state.teacher.name=this.teacherMember?.name||'老师';
   state.teacher.seated=Boolean(this.teacherActor.seated);state.teacher.officeChair=Boolean(this.teacherActor._officeChair);
   state.officeDeskOpen=state.officeDeskOpen||Boolean(this.teacherActor._usingOfficeStock&&this.teacherActor._drawerOpen);
-  state.startBellAvailable=member.id===this.hostId&&state.stage==='gathering'&&this.members.size>=2;
+  state.startBellAvailable=this.elevator.phase!=='travel'&&member.id===this.hostId&&state.stage==='gathering'&&this.members.size>=2;
   // Do not leak hidden mischievous identities, private drawers or AI evidence
   // to the teacher. Visible props/behaviour remain available for observation.
   for(const p of state.students)if(p.id!==selfId){delete p.drawer;if(!p.carrying&&!p.holding){p.action=null;p.progress=0;}}

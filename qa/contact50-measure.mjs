@@ -4,7 +4,7 @@ import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {STUDENT_ASSETS,createRiggedStudent} from '../dist/student-assets.js';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js';
-import {createDeskItem} from '../dist/game-actors.js';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-52';
 
 const V=(...a)=>new T.Vector3(...a);
 await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry(new URL(url).pathname.split('/').pop())}});

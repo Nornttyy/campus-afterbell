@@ -5,8 +5,9 @@ import {STUDENT_ASSETS,createRiggedStudent} from '../dist/student-assets.js';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js';
 import {surfaceDistance,fingertip} from './prop-contact-helpers.mjs';
 await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry(new URL(url).pathname.split('/').pop())}});
-const names={banana:'curved-banana',bananaPeel:'banana-peel',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox',pen:'red-school-pen'};
-for(const[variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: new food and pen touch the imported fingers and disappear under restraint`,async()=>{
+// The pen now uses the right-hand Write contact, covered by seated-hand-clearance.test.mjs.
+const names={banana:'curved-banana',bananaPeel:'banana-peel',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox'};
+for(const[variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: new food touches the imported fingers and disappears under restraint`,async()=>{
  for(const[kind,name]of Object.entries(names)){
   const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:true});actor.setMood(kind);actor.setMotion({carrying:true});for(let i=0;i<180;i++)actor.update(i/60);actor.group.updateMatrixWorld(true);actor.group.traverse(o=>{if(o.isSkinnedMesh)o.skeleton.update();});const prop=actor.group.getObjectByName(name);assert.ok(prop?.visible,kind+' must be held');assert.equal(prop.parent,actor.getHand('left'));
   for(const finger of ['Index','Thumb'])assert.ok(surfaceDistance(prop,fingertip(actor,finger))<.012,`${variant}/${kind}/${finger} visible grip gap`);

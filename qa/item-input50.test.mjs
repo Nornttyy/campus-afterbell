@@ -44,6 +44,9 @@ test('production food input converts banana to a throwable peel and garlic to a 
   f.take('garlic');f.mouse(true);f.advance(3);assert.equal(f.rendered.player.burpReadyLeft,5);assert.equal(f.round.burps.length,0);f.mouse(false);f.mouse(true);assert.equal(f.rendered.burps.length,1);assert.equal(f.rendered.player.burpReadyLeft,0);f.mouse(false);
  }finally{f.close();}
 });
+test('E takes the pen for automatic writing, no use ring or points; E returns it',()=>{
+ const f=fixture();try{f.target({kind:'pen'});f.key('KeyE');f.target(null);f.advance(4);assert.equal(f.rendered.player.penWriting,true);assert.equal(f.round.score,0);assert.equal(f.element('#use-progress').hidden,true);assert.match(f.element('#interaction-prompt').textContent,/写字中/);f.mouse(true);f.advance(3);f.mouse(false);assert.equal(f.round.score,0);assert.equal(f.rendered.player.penWriting,true);f.target({kind:'book'});f.key('KeyE');f.advance(.1);assert.equal(f.rendered.player.penTaken,false);assert.equal(f.rendered.player.penWriting,false);assert.equal(f.rendered.drawer.drawnSlot,null);}finally{f.close();}
+});
 test('computer E entry, app command and arrow keys score real snake food and preserve one five-second slot',()=>{
  const f=fixture({map:'computer7'});try{f.target({kind:'computer'});f.key('KeyE');f.advance(.1);assert.equal(f.rendered.player.computerActive,true);assert.equal(f.rendered.player.computer.app,'desktop');f.commands.app('snake');f.advance(.65);assert.equal(f.round.score,1);assert.equal(f.rendered.player.computer.snake.score,1);f.key('ArrowUp');f.advance(.16);assert.equal(f.rendered.player.computer.snake.direction,'up');f.key('KeyE');f.advance(.1);assert.equal(f.rendered.player.computerActive,false);
   f.take('burger');f.mouse(true);f.advance(3);f.mouse(false);assert.equal(f.rendered.drawer.slots.length,1);assert.equal(f.rendered.drawer.slots[0].readyIn,5);f.advance(5);assert.ok(f.rendered.drawer.slots[0].action);

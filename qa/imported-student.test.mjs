@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createRiggedPalm,createRiggedStudent} from '../dist/student-assets.js';
-import {createDeskHands} from '../dist/game-actors.js';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-52';
 import {createFirstPersonView,sampleFirstPersonMotion} from '../dist/first-person-view.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 const [student,left,right]=await Promise.all(['student-boy-v3.glb','hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));

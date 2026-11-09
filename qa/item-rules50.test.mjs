@@ -42,8 +42,14 @@ test('computer room has a desktop and snake scores only real food, with one five
 test('snake rejects reverse turns, stops on collisions and never spawns food inside its body',()=>{
  const s=createSnake(4);assert.equal(turnSnake(s,'left'),false);assert.equal(stepSnake(s,.64),1);assert.equal(s.score,1);assert.ok(!s.body.some(p=>p.x===s.food.x&&p.y===s.food.y));stepSnake(s,5);assert.equal(s.alive,false);const score=s.score;stepSnake(s,5);assert.equal(s.score,score);
 });
-test('pen is taken from desktop, held without taking a drawer slot, and returned intact',()=>{
- const r=quiet();const before=r.snapshot().drawer.slots;assert.equal(r.takePen(),true);assert.equal(r.player.action,'pen');assert.equal(r.takePen(),false);r.hold(true);r.step(3);assert.equal(r.score,1);assert.equal(r.player._drawnSlot,3);assert.equal(r.returnItem(),true);assert.deepEqual(r.snapshot().drawer.slots,before);assert.equal(r.snapshot().player.penTaken,false);
+test('taking the desktop pen loops harmless writing without holding the mouse or scoring',()=>{
+ const r=quiet();const before=r.snapshot().drawer.slots;assert.equal(r.takePen(),true);assert.equal(r.player.action,'pen');assert.equal(r.takePen(),false);assert.equal(r.snapshot().player.penWriting,true);assert.equal(r.books[r.player.seatId].raised,false);
+ for(let i=0;i<5;i++){r.hold(i%2===0);r.step(3);assert.equal(r.score,0);assert.equal(r.snapshot().player.penWriting,true);assert.equal(r.snapshot().actionProgress,0);assert.equal(r.player.mood,'writing');assert.equal(r.holding,false);}
+ assert.equal(r.player._drawnSlot,3);assert.equal(r.completed.pen,0);assert.equal(r.drainEvents().some(e=>e.type==='complete'&&e.action==='pen'),false);assert.equal(r.returnItem(),true);assert.deepEqual(r.snapshot().drawer.slots,before);assert.equal(r.snapshot().player.penTaken,false);assert.equal(r.snapshot().player.penWriting,false);
+});
+test('ordinary writing decays suspicion, pauses safely, and returns the pen before leaving its desk',()=>{
+ const r=quiet();r.takePen();const p=r.player;r._canSee=()=>true;r._propVisibility=()=>1;const memory=r._remember(p);memory.evidence=10;
+ r._perceive(1);assert.ok(memory.evidence<10);assert.equal(memory.noise,0);r.pause(true);assert.equal(r.snapshot().player.penWriting,false);r.pause(false);assert.equal(r.snapshot().player.penWriting,true);assert.equal(r.interact(),'stood');assert.equal(r.snapshot().player.penWriting,false);assert.equal(r.snapshot().player.penTaken,false);assert.equal(p._slots.length,3);
 });
 test('stunning a pupil returns the temporary pen to its desk without changing drawer stock',()=>{
  const r=quiet(),seatId=r.player.seatId,before=r.snapshot().drawer.slots;assert.equal(r.takePen(),true);r.hold(true);r.step(.7);assert.equal(r._stun(r.player),true);assert.equal(r.snapshot().player.penTaken,false);assert.equal(r.player._drawnSlot,null);assert.equal(r.player._slots.some(s=>s.temporary),false);assert.deepEqual(r.snapshot().drawer.slots,before);r.step(5);assert.equal(r.interact(seatId),'seated');assert.equal(r.takePen(),true,'the desk pen must be usable again after recovering');

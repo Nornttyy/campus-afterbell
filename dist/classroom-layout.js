@@ -76,21 +76,35 @@ export function walkableFootprint(x,z,r=.18){return (x>=CLASSROOM.minX+r&&x<=COR
 export function clearWallSegment(a,b,context=null){
  for(const w of context?.walls||WALLS){let lo=0,hi=1;for(const axis of ['X','Z']){const k=axis.toLowerCase(),d=b[k]-a[k];if(Math.abs(d)<1e-8){if(a[k]<w['min'+axis]||a[k]>w['max'+axis]){lo=2;break;}}else{let u=(w['min'+axis]-a[k])/d,v=(w['max'+axis]-a[k])/d;if(u>v)[u,v]=[v,u];lo=Math.max(lo,u);hi=Math.min(hi,v);}}if(lo<=hi&&hi>=0&&lo<=1)return false;}return true;
 }
-export function deskSolids(seats=SEATS){return seats.map(s=>V(s.deskX-.61,s.deskX+.61,s.deskZ-.40,s.deskZ+.40,0,.85));}
+// The shipped Tripo top is 1.200 × .849m, with its top at .875m.
+export function deskSolids(seats=SEATS){return seats.map(s=>V(s.deskX-.60,s.deskX+.60,s.deskZ-.425,s.deskZ+.425,0,.875));}
+export function chairBackSolids(seats=SEATS){return [...seats.map(s=>{const z=s.z-Math.cos(s.yaw||0)*.325;return V(s.x-.281,s.x+.281,z-.057,z+.057,.42,.99);}),V(OFFICE_CHAIR.x-.35,OFFICE_CHAIR.x+.35,OFFICE_CHAIR.z-.36,OFFICE_CHAIR.z-.24,.45,1.13)];}
 export const DESKS=Object.freeze(deskSolids());
 export function createLayoutContext(seats=SEATS,doorState={}){
- const context={seats,desks:deskSolids(seats),routeGrids:new Map(),officeLocked:undefined,rearDoorClosed:undefined};return updateLayoutDoors(context,doorState);
+ const context={seats,desks:deskSolids(seats),chairBacks:chairBackSolids(seats),routeGrids:new Map(),officeLocked:undefined,rearDoorClosed:undefined,elevatorClosed:undefined};return updateLayoutDoors(context,doorState);
 }
-export function updateLayoutDoors(context,{officeLocked=context.officeLocked??false,rearDoorClosed=context.rearDoorClosed??false}={}){
- if(context.officeLocked===!!officeLocked&&context.rearDoorClosed===!!rearDoorClosed)return context;
- context.officeLocked=!!officeLocked;context.rearDoorClosed=!!rearDoorClosed;
+export function updateLayoutDoors(context,{officeLocked=context.officeLocked??false,rearDoorClosed=context.rearDoorClosed??false,elevatorClosed=context.elevatorClosed??false}={}){
+ if(context.officeLocked===!!officeLocked&&context.rearDoorClosed===!!rearDoorClosed&&context.elevatorClosed===!!elevatorClosed)return context;
+ context.officeLocked=!!officeLocked;context.rearDoorClosed=!!rearDoorClosed;context.elevatorClosed=!!elevatorClosed;
  const rear=DOORS[0],leaves=[rearDoorClosed?V(7.23,7.37,rear.minZ,rear.maxZ,.04,3.02):DOOR_LEAVES[0],DOOR_LEAVES[1]];
  if(officeLocked)leaves.push(V(OFFICE.doorMinX,OFFICE.doorMaxX,8.85,8.97,.02,3.02));
+ else for(const x of [OFFICE.doorMinX,OFFICE.doorMaxX])leaves.push(V(x-.092,x+.092,8.91,9.81,0,3.02));
+ if(elevatorClosed)leaves.push(V(LIFT.minX,LIFT.maxX,-10.22,-9.98,.02,3.12));
  context.walls=[...baseWalls,...leaves];context.wallVolumes=[...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...leaves,...headers];
- context.walkSolids=[...context.desks,...context.walls,LECTERN,...OFFICE_SOLIDS];context.routeGrids.clear();context.projectileColliderCache?.clear();return context;
+ context.walkSolids=[...context.desks,...context.chairBacks,...context.walls,LECTERN,...OFFICE_SOLIDS];context.routeGrids.clear();context.projectileColliderCache?.clear();return context;
 }
 const defaultLayout=createLayoutContext();
 export function blocked(x,z,radius=.18,context=defaultLayout){return !walkableFootprint(x,z,radius)||(context?.walkSolids||defaultLayout.walkSolids).some(d=>x>d.minX-radius&&x<d.maxX+radius&&z>d.minZ-radius&&z<d.maxZ+radius);}
+export function chairExit(seat,radius=.18,context=defaultLayout){
+  // Stand beside the chair, not inside the seat/backrest. Facing islands use
+  // their own chair axes; never move a player across a wall to find a free spot.
+  const yaw=seat.yaw||0,c=Math.cos(yaw),s=Math.sin(yaw);
+  for(const [side,forward] of [[.57,0],[-.57,0],[.78,-.12],[-.78,-.12]]){
+    const p={x:seat.x+c*side+s*forward,z:seat.z-s*side+c*forward};
+    if(!blocked(p.x,p.z,radius,context)&&clearWallSegment(seat,p,context))return p;
+  }
+  return null;
+}
 export function moveInRoom(pos,dx,dz,radius=.18,context=defaultLayout){
   // Swept substeps prevent crossing a thin desk when a frame arrives late.
   const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.08));
@@ -100,6 +114,16 @@ export function moveInRoom(pos,dx,dz,radius=.18,context=defaultLayout){
 }
 
 function walkSegmentClear(a,b,radius,context){
+  // Exact swept point against expanded solids. Sampling alone missed short
+  // diagonal corner crossings between an actor and its nearest grid cell.
+  for(const d of context.walkSolids){
+    let enter=0,leave=1;
+    for(const axis of ['X','Z']){const key=axis.toLowerCase(),delta=b[key]-a[key],min=d['min'+axis]-radius+1e-9,max=d['max'+axis]+radius-1e-9;
+      if(Math.abs(delta)<1e-12){if(a[key]<=min||a[key]>=max){enter=2;break;}}
+      else{const u=(min-a[key])/delta,v=(max-a[key])/delta;enter=Math.max(enter,Math.min(u,v));leave=Math.min(leave,Math.max(u,v));}
+    }
+    if(enter<=leave&&leave>=0&&enter<=1)return false;
+  }
   const steps=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.06));
   for(let i=0;i<=steps;i++)if(blocked(a.x+(b.x-a.x)*i/steps,a.z+(b.z-a.z)*i/steps,radius,context))return false;
   return true;

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCampusServer} from '../server/server.js';
 import {CampusRoom} from '../server/room-simulation.js';
-import {TEACHER_SPAWN,SEATS,DOORS} from '../dist/classroom-layout.js';
+import {TEACHER_SPAWN,SEATS,DOORS,LIFT} from '../dist/classroom-layout.js';
 
 async function api(base,path,data,token,extra={}){const res=await fetch(base+path,{method:data?'POST':'GET',headers:{...(data?{'content-type':'application/json'}:{}),...(token?{authorization:`Bearer ${token}`} :{}),...extra},body:data?JSON.stringify(data):undefined});return{status:res.status,data:await res.json()};}
 async function stream(base,person){const controller=new AbortController(),messages=[],response=await fetch(`${base}/api/events?room=${person.room.code}`,{headers:{authorization:`Bearer ${person.token}`},signal:controller.signal});assert.equal(response.status,200);const reader=response.body.getReader(),decoder=new TextDecoder();let pending='';const task=(async()=>{try{for(;;){const {value,done}=await reader.read();if(done)return;pending+=decoder.decode(value,{stream:true});let i;while((i=pending.indexOf('\n\n'))>=0){const block=pending.slice(0,i);pending=pending.slice(i+2);const row=block.split('\n').find(l=>l.startsWith('data: '));if(row)messages.push({type:block.match(/event: (\w+)/)?.[1],data:JSON.parse(row.slice(6))});}}}catch(e){if(e.name!=='AbortError')throw e;}})();return{messages,async wait(check,timeout=2500){const start=Date.now();while(Date.now()-start<timeout){const hit=messages.find(check);if(hit)return hit;await new Promise(r=>setTimeout(r,15));}throw new Error('Timed out waiting for room packet');},async close(){controller.abort();await task;}};}
@@ -20,7 +20,9 @@ test('two independent HTTP peers share authoritative room, roles, movement, reco
   assert.equal((await command(b,'startBell')).status,403);
   assert.equal((await command(b,'_finish',['won'])).status,400);
   assert.equal((await command(b,'setMovement',[999,0])).status,400);
-  assert.equal((await command(a,'travelFloor',['computer7'])).data.ok,true);
+  assert.equal((await command(a,'travelFloor',['computer7'])).status,409);
+  const live=runtime.rooms.get(a.room.code);let passenger=0;for(const m of live.members.values())Object.assign(m.context.player,{x:LIFT.x+(passenger++?-.4:.4),z:LIFT.z,seated:false});
+  assert.equal((await command(a,'travelFloor',['computer7'])).data.ok,true);assert.equal(live.map,'classroom');live.tick(3);
   await second.wait(m=>m.type==='state'&&m.data.map==='computer7');
   assert.equal((await command(a,'startBell')).data.results[0],true);
   const teacher=(await first.wait(m=>m.type==='state'&&m.data.role==='teacher')).data;

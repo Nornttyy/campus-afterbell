@@ -1,9 +1,9 @@
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=solo-51';
-import {CRAWL_TUNING} from './crawl-profile.js?v=solo-51';
-import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=solo-51';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-52';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-52';
+import {DETENTION,TEACHER_EYE_HEIGHT,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-52';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=solo-51';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-52';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){

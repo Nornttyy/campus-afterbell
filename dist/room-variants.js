@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,mapKind,floorHeight} from './classroom-layout.js?v=solo-51';
+import {SEATS,TEACHER_EYE_HEIGHT,BOARD,mapKind,floorHeight} from './classroom-layout.js?v=campus-52';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic}){
  const group=new T.Group(),screens=new Map(),stations=new Map();group.name='computer-lab-workstations';scene.add(group);group.visible=false;

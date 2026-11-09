@@ -1,20 +1,21 @@
-import {CRAWL_TUNING} from './crawl-profile.js?v=solo-51';
-import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=solo-51';
-import {instanceRigidProps} from './rigid-instances.js?v=solo-51';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-52';
+import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-52';
+import {instanceRigidProps} from './rigid-instances.js?v=campus-52';
 import {createItemEffects50} from './item-effects50.js';
-import {createBubbleEffects} from './bubble-effects.js?v=solo-51';
-import {buildReferenceCampus} from './reference-campus.js?v=solo-51';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=solo-51';
-import {createRoomVariants} from './room-variants.js?v=solo-51';
+import {createBubbleEffects} from './bubble-effects.js?v=campus-52';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-52';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-52';
+import {createRoomVariants} from './room-variants.js?v=campus-52';
 import * as THREE from './vendor/three.module.js';
-import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=solo-51';
-import {createSmokeEffects} from './smoke-effects.js?v=solo-51';
-import {createItemOutline} from './item-outline.js?v=solo-51';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js';
-import {loadStudentAssets} from './student-assets.js?v=solo-51';
+import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-52';
+import {createSmokeEffects} from './smoke-effects.js?v=campus-52';
+import {createItemOutline} from './item-outline.js?v=campus-52';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-52';
+import {loadStudentAssets} from './student-assets.js?v=campus-52';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=solo-51';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=solo-51';
+import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-52';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-52';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
 
@@ -336,7 +337,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       const prop=createDeskItem(action);prop.rotation.set(action==='burger'?0:-Math.PI/2,0,(index===1?.04:index===0?-.07:.08)+(prop.userData.propAsset&&action!=='burger'?Math.PI:0));restDeskItem(prop,(importedDesk?.drawerFloor??.65)-slot.position.y);prop.visible=false;slot.add(prop);
       prop.traverse(o=>{if(o.geometry)assets.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m));});
       return[action,prop];
-    }));return{group:slot,props};
+    }));return{group:slot,props,pickTargets:[...props.values()].map(prop=>createDrawerPickTarget(prop,index))};
   });
   drawerRecords.get(PLAYER_SEAT).group.add(drawerItems);
   let drawerItemSignature='',raisedSlot=null,drawerFocus=0;
@@ -505,7 +506,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       teachingEnd.visible=true;teacher.group.visible=true;hands.group.visible=true;canvas.style.cursor='';canvas.dataset.gameplay='true';
       for(const record of pupilRecords){record.lastUpdate=-Infinity;record.worldMotion=null;record.worldHeading=null;}clearTeacherFeedback(state);
     }
-    setSeats(state.seats||currentSeats);if(state.map!==mapVariant)setMap(state.map);updateLayoutDoors(renderLayout,{officeLocked:state.officeLocked,rearDoorClosed:state.rearDoorClosed});campus.setDoors(state);
+    setSeats(state.seats||currentSeats);if(state.map!==mapVariant)setMap(state.map);updateLayoutDoors(renderLayout,{officeLocked:state.officeLocked,rearDoorClosed:state.rearDoorClosed,elevatorClosed:state.elevator?.doorClosed});campus.setDoors(state);
     teacher.group.visible=state.stage!=='gathering'&&state.role!=='teacher'&&state.teacher?.visible!==false;
     gameplay=state;
   }
@@ -546,7 +547,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       const id=record.seat.id,student=snapshots.get(id),standing=record.caught||student?.seated===false,near=record.group.visible&&(detailed.has(id)||importedStudents),prop=friendProps.get(id);
       for(const actor of record.actors.values())actor.group.visible=false;
       if(near){
-        const actor=actorFor(record,standing);record.actor=actor;actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||(standing?'resting':'writing'));actor.setMotion?.({crawling:Boolean(student?.crouched&&standing),seated:!standing,speed:record.worldMotion.speed,carrying:student?.carrying??(student?.drawer?.drawnSlot!=null),heldAction:student?.heldAction,using:Boolean(student?.holding),restraint:record.motionKind,restraintStartedAt:record.motionAt,throwProgress:student?.progress||0,throwAge:student?.itemThrowAge??Infinity});
+        const actor=actorFor(record,standing);record.actor=actor;actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||(standing?'resting':'writing'));actor.setMotion?.({crawling:Boolean(student?.crouched&&standing),seated:!standing,speed:record.worldMotion.speed,carrying:student?.carrying??(student?.drawer?.drawnSlot!=null),heldAction:student?.heldAction,using:Boolean(student?.holding),penWriting:Boolean(student?.penWriting),restraint:record.motionKind,restraintStartedAt:record.motionAt,throwProgress:student?.progress||0,throwAge:student?.itemThrowAge??Infinity});
         const articulating=['carried','bound','stunned','rescuing'].includes(student?.captivity)||student?.mood==='rescuing';
         // Every visible pupil animates continuously; off-camera actors are culled above.
         const interval=quality==='low'&&!articulating&&record.distance>7?1/30:0;
@@ -600,24 +601,21 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     if(!gameplay||gameplay.paused||gameplay.status!=='playing'||!gameplay.player.seated||gameplay.player.caught||!gameplay.drawer?.open||gameplay.drawer.drawnSlot!==null||drawerFocus<.9)return null;
 
     scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);
-    const isVisible=o=>{for(let p=o;p;p=p.parent)if(!p.visible&&!p.userData.rigidInstanceSource)return false;return true;};
-    const candidates=[];drawerSlotProps.forEach((slot,index)=>{for(const prop of slot.props.values())if(prop.visible){prop.traverse(o=>{if(o.isMesh){o.userData.drawerSlot=index;candidates.push(o);}});}});
-    const hit=itemRay.intersectObjects(candidates,false)[0];if(!hit)return null;
-    // Reject hits hidden by the tabletop or the drawer's front.
-    const blockers=[room,...furnitureRows.values(),drawerItems.parent].filter(Boolean),blocking=itemRay.intersectObjects(blockers,true).find(h=>h.object.userData.drawerSlot===undefined&&isVisible(h.object));
-    return blocking&&blocking.distance<hit.distance-.008?null:hit.object.userData.drawerSlot;
+    // Exact mesh hits first; a small local bounds margin makes a garlic clove
+    // usable without enlarging the model or allowing a pick through furniture.
+    return pickDrawerItem(itemRay,drawerSlotProps.flatMap(slot=>slot.pickTargets),[room,...furnitureRows.values(),drawerItems.parent]);
   }
   const campusTargets=campus.getTargets();
   const isObjectVisible=object=>{for(let n=object;n;n=n.parent)if(!n.visible&&!n.userData.rigidInstanceSource)return false;return true;};
   const campusTargetObject=(kind,id)=>kind==='rear-door'?campusTargets.doors.find(d=>d.id==='rear')?.object:kind==='office-desk'?campusTargets.officeDesks[0]?.object:kind==='office-chair'?campusTargets.officeChairs[0]?.object:kind==='locker'?campusTargets.lockers[0]?.object:kind==='chair'?chairTargets.get(id):kind==='pen'?deskPens.get(id):null;
   function getInteraction(){
-    if(!gameplay||gameplay.paused||gameplay.status!=='playing'||gameplay.player.caught)return null;
+    if(!gameplay||gameplay.paused||gameplay.status!=='playing'||gameplay.player.caught||gameplay.elevator?.phase==='travel')return null;
     const player=gameplay.player,preClass=gameplay.stage&&gameplay.stage!=='class';
     camera.updateMatrixWorld(true);scene.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);
     const candidates=[];
     const add=(object,result,max=2.2)=>{if(!object||!isObjectVisible(object))return;object.updateWorldMatrix(true,true);const hit=itemRay.intersectObject(object,true).find(h=>h.distance<max);if(hit)candidates.push({object,result,hit});};
     if(gameplay.stage==='gathering'&&gameplay.startBellAvailable)add(startBellModel,{kind:'bell'});
-    if(gameplay.stage==='gathering'&&!player.seated&&player.x>LIFT.minX&&player.x<LIFT.maxX&&player.z<LIFT.maxZ){campus.liftPanel.updateWorldMatrix(true,true);const hit=itemRay.intersectObject(campus.liftPanel,true).find(h=>h.object.userData.floorMap&&h.distance<2.5);if(hit)candidates.push({object:campus.liftPanel,hit,result:{kind:'lift',map:hit.object.userData.floorMap,current:hit.object.userData.floorMap===mapVariant}});}
+    if(gameplay.stage==='gathering'&&!player.seated&&player.x>LIFT.minX&&player.x<LIFT.maxX&&player.z>LIFT.minZ&&player.z<LIFT.maxZ){campus.liftPanel.updateWorldMatrix(true,true);const hit=itemRay.intersectObject(campus.liftPanel,true).find(h=>h.object.userData.floorMap&&h.distance<2.5);if(hit)candidates.push({object:campus.liftPanel,hit,result:{kind:'lift',map:hit.object.userData.floorMap,floor:hit.object.userData.floor,current:hit.object.userData.floorMap===mapVariant}});}
     if(preClass&&!player.seated)for(const target of campusTargets.lockers)add(target.object,{kind:'locker'});
     if(!player.seated&&gameplay.role!=='teacher'){
       const occupied=new Set((gameplay.students||[]).filter(p=>p.seated&&!p.caught).map(p=>p.seatId));

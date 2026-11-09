@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>电梯实际场景检查</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;font:14px system-ui;color:#223b3e;background:#edf3f1}body{display:flex;flex-direction:column}fieldset{display:flex;flex-wrap:wrap;gap:7px;align-items:center;border:0;border-bottom:1px solid #acbdb9;margin:0;padding:9px 12px}button,select{padding:8px 12px;font:inherit;border:1px solid #9bafaa;border-radius:4px;background:white;color:inherit;cursor:pointer}button:disabled{opacity:.45}button[aria-pressed=true]{background:#b9dfd5}main{position:relative;flex:1;min-height:100px}canvas{display:block;width:100%;height:100%;outline:0}output{position:absolute;top:10px;left:10px;background:#f5faf2ee;padding:10px 14px;border:1px solid #97b2a7;white-space:pre;font:13px/1.55 ui-monospace,monospace;pointer-events:none}#aim{position:absolute;left:50%;top:50%;width:6px;height:6px;border:1px solid white;border-radius:50%;transform:translate(-50%,-50%);background:#284a5266;pointer-events:none}#message{padding:8px 12px;min-height:36px;border-top:1px solid #bac9c2}#loading{position:absolute;inset:0;display:grid;place-items:center;background:#eef3ee}#loading[hidden]{display:none}.floor{min-width:40px}label{white-space:nowrap}
+</style>
+<fieldset id="controls" disabled>
+ <select id="role" aria-label="身份"><option value="student">学生</option><option value="teacher">老师</option></select>
+ <button id="walk">走到电梯</button><button id="panel">看按钮</button><button id="door">看门</button>
+ <button id="pause">暂停</button><button id="step">推进 0.1 秒</button><button id="reset">重开</button>
+ <label><input id="freeze" type="checkbox" checked>关门后暂停</label>
+ <span id="floors"></span>
+</fieldset>
+<main><canvas id="canvas" tabindex="0" aria-label="正式电梯模型与单人规则"></canvas><div id="aim"></div><output id="state">加载中</output><div id="loading">正在加载正式场景…</div></main>
+<div id="message" role="status">点击“走到电梯”使用真实移动与碰撞；看按钮后也可按 E 选择准星指向的楼层。</div>
+<script type="module">
+import {createClassroom} from '../dist/classroom.js?v=campus-52';
+import {createSoloRound} from '../dist/solo-round.js?v=campus-52';
+import {CAMPUS_MAPS} from '../dist/classroom-layout.js?v=campus-52';
+const $=id=>document.getElementById(id),canvas=$('canvas');
+let scene,round,last=0,raf=0,route=[],view='walk',freezeAt=null,disposed=false,history=[];
+const say=text=>$('message').textContent=text;
+function snapshot(){return round.snapshot();}
+function render(){
+ const s=snapshot(),e=s.elevator,p=s.player;
+ // Only yaw/pitch of the rendering copy change for QA view buttons. Position,
+ // collision, passenger checks, clock and cabin doors remain authoritative.
+ const target=view==='panel'?{x:8.13,z:-10.85,pitch:.13}:view==='door'?{x:9.35,z:-9.5,pitch:0}:null;
+ const shown=target?{...s,player:{...p,yaw:Math.atan2(target.x-p.x,target.z-p.z),pitch:target.pitch}}:s;
+ scene.setGameplay(shown);const hit=scene.getInteraction?.();
+ $('state').textContent=`map: ${s.map}  / ${s.floor}F\nused: ${e.used}  phase: ${e.phase}\ninside: ${e.inside}/${e.total}  canTravel: ${e.canTravel}\nremaining: ${e.remaining.toFixed(3)}  target: ${e.targetMap||'—'}\ndoorClosed: ${e.doorClosed}  paused: ${s.paused}\nposition: ${p.x.toFixed(3)}, ${p.z.toFixed(3)}\naim: ${hit?.kind||'—'} ${hit?.floor||''}\nroute: ${route.length?'walking':'stopped'}`;
+ $('pause').textContent=s.paused?'继续':'暂停';$('pause').setAttribute('aria-pressed',String(s.paused));
+ canvas.dataset.qaState=JSON.stringify({map:s.map,position:{x:p.x,z:p.z},...e,paused:s.paused,aim:hit});
+ return s;
+}
+function collect(){for(const e of round.drainEvents()){history.push(e);if(e.type==='elevator-denied')say(e.message);if(e.type==='elevator-arrived')say(`已到第 ${CAMPUS_MAPS.indexOf(e.map)+1} 层；本局不能再次使用，重开可复位。`);}if(history.length>80)history.splice(0,history.length-80);}
+function reset(){route=[];freezeAt=null;history=[];view='walk';round=createSoloRound({role:$('role').value,map:'classroom',seed:400});round.start({gathering:true});round.setLook(Math.PI,0);scene.setGameplay(null);last=performance.now();collect();render();say('已重开第 1 层集合；电梯次数恢复。');}
+function walk(){if(round.elevator.phase==='travel')return;route=[{x:9.7,z:3.5},{x:9.7,z:-11.7},{x:9.35,z:-11.7}];view='walk';round.pause(false);say('沿走廊外侧绕过后门，使用实际 setMovement 走进轿厢；约 10 秒。');}
+function travel(map){route=[];round.setMovement(0,0);const paused=round.paused;round.pause(false);const ok=round.travelFloor(map);if(!ok)round.pause(paused);else{freezeAt=$('freeze').checked?.65:null;say('门正在关闭；3 秒由真实单人规则计时。');}collect();render();return ok;}
+function pause(){route=[];round.setMovement(0,0);freezeAt=null;round.pause(!round.paused);last=performance.now();render();}
+function step(){route=[];round.setMovement(0,0);freezeAt=null;round.pause(false);round.step(.1);round.pause(true);collect();render();}
+function chooseView(value){view=value;render();}
+for(const [i,map]of CAMPUS_MAPS.entries()){const b=document.createElement('button');b.className='floor';b.textContent=String(i+1);b.title=`前往第 ${i+1} 层`;b.onclick=()=>travel(map);$('floors').append(b);}
+$('walk').onclick=walk;$('panel').onclick=()=>chooseView('panel');$('door').onclick=()=>chooseView('door');$('pause').onclick=pause;$('step').onclick=step;$('reset').onclick=reset;$('role').onchange=reset;
+function key(e){if(e.code==='KeyE'&&!e.repeat){e.preventDefault();const hit=scene?.getInteraction?.();if(hit?.kind==='lift')travel(hit.map);}}
+window.addEventListener('keydown',key);
+function frame(now){
+ if(disposed)return;let dt=Math.min(.1,Math.max(0,(now-last)/1000));last=now;
+ if(!round.paused){
+  if(route.length){const p=round.player,t=route[0],dx=t.x-p.x,dz=t.z-p.z,d=Math.hypot(dx,dz);if(d<.055){route.shift();round.setMovement(0,0);if(!route.length){view='panel';say('已通过真实移动进入电梯。选择非第 1 层；勾选时关门 0.65 秒后自动暂停。');}}else{round.setLook(Math.atan2(dx,dz),0);round.setMovement(dx/d,dz/d);dt=Math.min(dt,d/1.8);}}
+  if(freezeAt!==null&&round.elevator.phase==='travel'){dt=Math.min(dt,Math.max(0,freezeAt));freezeAt-=dt;}
+  round.step(dt);
+  if(freezeAt!==null&&freezeAt<=1e-8){round.pause(true);freezeAt=null;say('已暂停在关门阶段。点“继续”完成剩余行程，或逐步推进。');}
+  collect();
+ }
+ render();raf=requestAnimationFrame(frame);
+}
+function dispose(){disposed=true;cancelAnimationFrame(raf);scene?.dispose();window.removeEventListener('keydown',key);}
+window.addEventListener('pagehide',dispose,{once:true});
+try{scene=await createClassroom(canvas,{active:true,snapEntry:true});$('controls').disabled=false;$('loading').hidden=true;reset();window.elevatorQA={snapshot,walk,travel,pause,step,reset,view:chooseView,get history(){return history.slice();}};window.qaReady=true;last=performance.now();raf=requestAnimationFrame(frame);}catch(error){$('loading').textContent='加载失败：'+error.message;console.error(error);}
+</script></html>
