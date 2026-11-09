@@ -26,9 +26,9 @@ async function productionGraph(){
 test('production menu and classroom share one URL per physical module',async()=>{
   const graph=await productionGraph(),duplicates=[...graph].filter(([,urls])=>urls.size>1);
   assert.equal(duplicates.length,0,duplicates.map(([file,urls])=>`${file}: ${[...urls].join(', ')}`).join('\n'));
-  for(const file of ['app.js','classroom.js','student-assets.js','imported-actors.js','hand-motion.js']){
+  for(const file of ['app.js','network-client.js','classroom.js','student-assets.js','imported-actors.js','hand-motion.js']){
     const match=[...graph].find(([path])=>path.endsWith('/dist/'+file));assert.ok(match,`${file} is not reachable from the production menu`);
-    assert.equal(new URL([...match[1]][0]).searchParams.get('v'),'campus-52',`${file} still points at a stale module revision`);
+    assert.equal(new URL([...match[1]][0]).searchParams.get('v'),['app.js','network-client.js'].includes(file)?'network-53':'campus-52',`${file} still points at a stale module revision`);
   }
   for(const file of ['prop-assets.js','game-actors.js','classroom-layout.js','vendor/three.module.js'])assert.ok([...graph].some(([path])=>path.endsWith('/dist/'+file)),`shared dependency ${file} was not inspected`);
 });

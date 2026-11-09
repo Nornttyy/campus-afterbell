@@ -1,5 +1,5 @@
 import {playNovelEffect} from './sound-effects50.js';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js';
+import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=network-53';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -159,7 +159,9 @@ function prepareEntry(mode,button){
   entryMode=mode;entryRequest++;
   syncRoundOptions();$('#room-character').textContent=characterNames[settings.character];
   $('.room-connect').hidden=mode==='solo';$('#room-title').textContent=mode==='solo'?'单人游戏':'多人教室';
+  $('#room-error').hidden=true;$('#room-solo').hidden=mode==='solo';syncServerNotice();
   $('#room-enter').textContent=sceneReady?(mode==='solo'?'进入教室':'创建 / 加入房间'):'准备中…';
+  $('#room-enter').disabled=!sceneReady;
   openSheet('#room-dialog',button);
 }
 function startGame(){
@@ -177,16 +179,25 @@ async function startSolo(){
 $('#enter-classroom').addEventListener('click',startGame);
 $('#enter-solo').addEventListener('click',startSolo);
 $('#room-server').value=defaultCampusEndpoint();
+function syncServerNotice(){
+  const missing=!$('#room-server').value.trim()&&!defaultCampusEndpoint();
+  $('#room-server-note').hidden=entryMode==='solo'||!missing;
+  if(missing)$('#room-server-options').open=true;
+}
+$('#room-server').addEventListener('input',syncServerNotice);
+$('#room-solo').addEventListener('click',startSolo);
 $('#room-enter').addEventListener('click',async()=>{
   if(entryMode==='solo'){startSolo();return;}
+  const endpoint=$('#room-server').value.trim()||defaultCampusEndpoint();
+  if(!endpoint){syncServerNotice();$('#room-server-options').open=true;$('#room-server').focus();return;}
   if(!sceneReady||!game){ensureWorld();return;}
-  const button=$('#room-enter'),error=$('#room-error');button.disabled=true;button.textContent='连接中…';error.hidden=true;
+  const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;button.disabled=true;button.textContent='连接中…';error.hidden=true;
   try{
-    const online=await connectCampusRoom({endpoint:$('#room-server').value||defaultCampusEndpoint(),code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:settings.character,rolePreference:roundOptions.role,map:roundOptions.map,onError:e=>toast(typeof e==='string'?e:e.message)});
-    if(disposed){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
+    const online=await connectCampusRoom({endpoint,code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:settings.character,rolePreference:roundOptions.role,map:roundOptions.map,onError:e=>toast(typeof e==='string'?e:e.message)});
+    if(disposed||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
     scene.setMap(online.snapshot().map);scene.setCharacter(settings.character);scene.setActive(true);game.start({...roundOptions});
-  }catch(e){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接不到服务器，请确认服务器已启动。':e.message;}
-  finally{button.disabled=false;button.textContent='创建 / 加入房间';}
+  }catch(e){if(request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接不到服务器，请确认服务器已启动。':e.message;}}
+  finally{if(request===entryRequest&&entryMode==='online'){button.disabled=false;button.textContent='创建 / 加入房间';}}
 });
 document.addEventListener('keydown',e=>{if(e.repeat)return;if(e.key==='Enter'&&!$('dialog[open]')&&!game?.active&&!["BUTTON","INPUT","SELECT"].includes(document.activeElement?.tagName)){e.preventDefault();startSolo();}});
 document.addEventListener('pointerdown',()=>audio.start(),{passive:true});

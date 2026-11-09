@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const source=await readFile(new URL('../dist/app.js',import.meta.url),'utf8');
 const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');
 const flush=async()=>{for(let i=0;i<4;i++)await new Promise(resolve=>setImmediate(resolve));};
-function fixture(saved={}){
+function fixture(saved={},options={}){
   class Element extends EventTarget{
     constructor(id='',dataset={}){super();this.id=id;this.dataset=dataset;this.style={};this.open=false;this.hidden=false;this.disabled=false;this.attrs={};this.nodes=new Map();this.tagName='BUTTON';this.value='';const values=new Set();this.classList={add:(...v)=>v.forEach(n=>values.add(n)),remove:(...v)=>v.forEach(n=>values.delete(n)),toggle:(n,v)=>v?values.add(n):values.delete(n),contains:n=>values.has(n)};}
     querySelector(s){if(!this.nodes.has(s))this.nodes.set(s,new Element());return this.nodes.get(s);}
@@ -20,9 +20,9 @@ function fixture(saved={}){
   const data={role:['student','teacher'],map:['classroom','night','tiered','computer'],character:[...html.matchAll(/data-character="([^"]+)"/g)].map(match=>match[1]),quality:['high','low']};
   const dataNodes=Object.fromEntries(Object.entries(data).map(([k,values])=>[k,values.map(v=>new Element('',{[k]:v}))]));
   const doc=new EventTarget(),win=new EventTarget();doc.body=new Element();doc.documentElement=new Element();
-  doc.querySelector=s=>{if(s==='dialog[open]')return[...nodes.values()].find(n=>n.open)||null;if(!nodes.has(s))nodes.set(s,new Element(s));return nodes.get(s);};
-  doc.querySelectorAll=s=>{if(s==='dialog[open]')return[...nodes.values()].filter(n=>n.open);const data=s.match(/^\[data-(\w+)\]$/);if(data)return dataNodes[data[1]];return s.split(',').map(v=>doc.querySelector(v.trim()));};
-  const calls={imports:[],creates:[],controllers:0,starts:[],active:[],characters:[],saved:[],disposed:0,errors:[],connections:0},pending=[];
+  doc.querySelector=s=>{if(s==='dialog[open]')return[...nodes.values()].find(n=>n.open&&n.id.endsWith('-dialog'))||null;if(!nodes.has(s))nodes.set(s,new Element(s));return nodes.get(s);};
+  doc.querySelectorAll=s=>{if(s==='dialog[open]')return[...nodes.values()].filter(n=>n.open&&n.id.endsWith('-dialog'));const data=s.match(/^\[data-(\w+)\]$/);if(data)return dataNodes[data[1]];return s.split(',').map(v=>doc.querySelector(v.trim()));};
+  const calls={imports:[],creates:[],controllers:0,starts:[],active:[],characters:[],saved:[],disposed:0,errors:[],connections:0,leaves:0},pending=[];
   const scene={setMap:v=>calls.map=v,setCharacter:v=>calls.characters.push(v),setQuality(){},setMotion(){},setActive:v=>calls.active.push(v),dispose:()=>calls.disposed++};
   let game;
   const loadModule=async spec=>{
@@ -30,7 +30,7 @@ function fixture(saved={}){
     if(spec.includes('classroom-game'))return{createClassroomGame:({onExit})=>{calls.controllers++;game={active:false,setRound(r){this.round=r;},start(options){calls.starts.push(options);this.active=true;doc.body.classList.add('playing');},exit(){this.active=false;doc.body.classList.remove('playing');onExit();},dispose(){this.exit();}};return game;}};
     return{createClassroom:(canvas,options)=>{calls.creates.push(options);return new Promise((resolve,reject)=>pending.push({resolve:()=>resolve(scene),reject}));}};
   };
-  const context={connectCampusRoom:async()=>{calls.connections++;return{snapshot:()=>({map:'classroom'}),leave(){}};},defaultCampusEndpoint:()=> 'http://localhost:8931',playNovelEffect:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
+  const context={connectCampusRoom:async()=>{calls.connections++;await options.connection;return{snapshot:()=>({map:'classroom'}),leave(){calls.leaves++;}};},defaultCampusEndpoint:()=>options.endpoint??'http://localhost:8931',playNovelEffect:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
   // Substitute only dynamic imports, leaving the production lifecycle and DOM
   // event handlers intact. This is an event-only test, not a browser renderer.
   vm.runInNewContext(source.replace(/^import .*;\n/gm,'').replace(/\bimport\(/g,'loadModule('),context,{filename:'app.js'});
@@ -98,4 +98,27 @@ test('a saved ponytail skin survives reload, while unconfirmed choices do not re
   f.click('#enter-classroom');await flush();
   assert.equal(f.el('#room-character').textContent,'马尾同学');
   f.pending[0].resolve();await flush();f.click('#room-enter');await flush();assert.equal(f.calls.characters.at(-1),'ponytail');
+});
+
+test('static hosting explains missing room service and offers working solo without any request',async()=>{
+  const f=fixture({}, {endpoint:''});f.click('#enter-classroom');await flush();
+  assert.equal(f.el('#room-server').value,'');assert.equal(f.el('#room-server-note').hidden,false);
+  assert.equal(f.el('#room-server-options').open,true);assert.equal(f.el('#room-solo').hidden,false);
+  f.pending[0].resolve();await flush();f.click('#room-enter');await flush();
+  assert.equal(f.calls.connections,0);assert.equal(f.el('#room-dialog').open,true);
+  f.click('#room-solo');await flush();assert.equal(f.calls.starts.length,1);assert.equal(f.calls.starts[0].solo,true);
+  assert.equal(f.calls.connections,0);assert.equal(f.el('#room-dialog').open,false);
+});
+test('an explicit room server still works on static hosting',async()=>{
+  const f=fixture({}, {endpoint:''});f.click('#enter-classroom');await flush();f.pending[0].resolve();await flush();
+  f.el('#room-server').value='https://rooms.example.test';f.el('#room-server').dispatchEvent(new Event('input'));
+  assert.equal(f.el('#room-server-note').hidden,true);f.click('#room-enter');await flush();
+  assert.equal(f.calls.connections,1);assert.equal(f.calls.starts.length,1);assert.notEqual(f.calls.starts[0].solo,true);
+});
+test('switching to solo while a room request is pending cannot reopen or replace the solo game',async()=>{
+  let resolve;const connection=new Promise(r=>resolve=r),f=fixture({}, {connection});
+  f.click('#enter-classroom');await flush();f.pending[0].resolve();await flush();f.click('#room-enter');await flush();
+  assert.equal(f.calls.connections,1);f.click('#room-solo');await flush();assert.equal(f.calls.starts.length,1);assert.equal(f.game.round,null);
+  resolve();await flush();assert.equal(f.calls.leaves,1);assert.equal(f.calls.starts.length,1);assert.equal(f.game.round,null);
+  f.game.exit();f.click('#enter-classroom');await flush();assert.equal(f.el('#room-enter').disabled,false);
 });
