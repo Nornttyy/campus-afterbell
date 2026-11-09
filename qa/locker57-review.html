@@ -1,0 +1,37 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../dist/"><title>更衣柜正式模型检查</title><link rel="stylesheet" href="./style.css?v=campus-57"><link rel="stylesheet" href="./reference-hud54.css?v=campus-57"><style>
+#locker-qa{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);z-index:100;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:94vw;width:max-content;padding:8px;background:#fff9e9e8;border:1px solid #716452;border-radius:5px;font:13px system-ui}#locker-qa button{padding:7px 11px;white-space:nowrap;background:#fffcf1;border:1px solid #807b6f;border-radius:3px;color:#273335;font:inherit;cursor:pointer}#locker-qa output{flex-basis:100%;text-align:center;white-space:nowrap}#locker-loading{position:fixed;inset:0;display:grid;place-items:center;background:#fff9e9;z-index:999}#locker-loading[hidden]{display:none}#locker-qa[hidden]{display:none}
+</style></head><body><div id="locker-loading">加载正式场景和角色…</div><nav id="locker-qa"><button id="qa-walk">走到更衣柜</button><button id="qa-locker">看更衣柜</button><button id="qa-open">打开更衣柜</button><button id="qa-interact">实际 E 互动</button><button id="qa-pause">暂停 / 房间设置</button><button id="qa-hide">隐藏工具</button><output id="locker-state">加载中</output></nav><script type="module">
+const base=document.baseURI,markup=await fetch(new URL('./index.html',base)).then(r=>r.text()),parsed=new DOMParser().parseFromString(markup,'text/html');
+document.body.prepend(document.importNode(parsed.querySelector('#game'),true));document.body.prepend(document.importNode(parsed.querySelector('.icon-defs'),true));
+const [{createClassroom},{createClassroomGame},{createSoloRound},{createSessionUI}]=await Promise.all(['./classroom.js?v=campus-57','./classroom-game.js?v=campus-57','./solo-round.js?v=campus-57','./session-ui.js?v=campus-57'].map(p=>import(new URL(p,base))));
+const $=id=>document.getElementById(id),canvas=$('classroom');canvas.hidden=false;
+// QA leaves the pointer unlocked so the visible buttons can be clicked.
+canvas.requestPointerLock=()=>Promise.resolve();
+let state=null,session=null,commands=null,route=[],lookTarget='locker',disposed=false;
+const scene=await createClassroom(canvas,{active:true,snapEntry:true}),setGameplay=scene.setGameplay.bind(scene);
+scene.setGameplay=s=>{if(s)state=s;setGameplay(s);};
+function angle(n){return Math.atan2(Math.sin(n),Math.cos(n));}
+function lookAt(role){
+ if(!state||session.modal||state.paused)return;
+ const p=state.player,target={x:10.26,z:6.65},yaw=Math.atan2(target.x-p.x,target.z-p.z),pitch=.06;
+ commands.look(-angle(yaw-p.yaw)/.0024,(pitch-p.pitch)/.0021);lookTarget=role;
+}
+function autoAxes(original){
+ const manual=original();if(!route.length||!state||session.modal||state.paused)return manual;
+ const p=state.player,t=route[0],dx=t.x-p.x,dz=t.z-p.z,d=Math.hypot(dx,dz);
+ if(d<.065){route.shift();if(!route.length)lookAt(lookTarget);return{side:0,forward:0,crawl:false};}
+ const targetYaw=Math.atan2(dx,dz);commands.look(-angle(targetYaw-p.yaw)/.0024,-p.pitch/.0021);
+ // Controller converts local axes using this same view heading. No teleport,
+ // artificial speed, scripted character mesh or replacement collision is used.
+ return{side:-Math.cos(p.yaw)*dx/d+Math.sin(p.yaw)*dz/d,forward:Math.sin(p.yaw)*dx/d+Math.cos(p.yaw)*dz/d,crawl:false};
+}
+const round=createSoloRound({role:'student',map:'classroom',seed:73}),game=createClassroomGame({scene,round,audio:{apply(){},start(){},effect(){},click(){}},onExit:()=>location.reload(),sessionFactory:options=>{commands=options.commands;session=createSessionUI(options);const original=session.axes.bind(session);session.axes=()=>autoAxes(original);return session;}});
+game.start({gathering:true});document.body.classList.add('scene-ready');$('locker-loading').hidden=true;
+function walk(){if(session.modal)return;route=[{x:8.85,z:3.5},{x:8.85,z:6.65}];if(state.paused)$('resume-game').click();}
+$('qa-walk').onclick=walk;$('qa-locker').onclick=()=>lookAt('locker');$('qa-open').onclick=()=>{route=[];session.openLocker();};$('qa-interact').onclick=()=>commands.interact();$('qa-pause').onclick=()=>{route=[];$('pause-game').click();};$('qa-hide').onclick=()=>$('locker-qa').hidden=true;
+for(const b of document.querySelectorAll('#settings-dialog .close'))b.onclick=()=>$('settings-dialog').close();
+const interval=setInterval(()=>{if(!state||disposed)return;const p=state.player,target=scene.getInteraction?.();$('locker-state').textContent=`${state.role==='teacher'?'老师':'学生'} · ${state.stage} · ${p.x.toFixed(2)}, ${p.z.toFixed(2)} · ${state.settings.duration/60}分 / ${state.target} · 电梯已用${state.elevator.used} · ${route.length?'步行中':target?.kind||'未选中'}`;canvas.dataset.lockerState=JSON.stringify({role:state.role,map:state.map,position:{x:p.x,z:p.z},paused:state.paused,settings:state.settings,elevator:state.elevator,target});},100);
+window.addEventListener('keydown',e=>{if(e.code==='Backquote')$('locker-qa').hidden=!$('locker-qa').hidden;});
+window.addEventListener('pagehide',()=>{disposed=true;clearInterval(interval);game.dispose();scene.dispose();},{once:true});
+window.locker57QA={game,scene,walk,lookAt,get session(){return session;},get snapshot(){return state;}};window.qaReady=true;
+</script></body></html>

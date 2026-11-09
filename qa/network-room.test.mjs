@@ -44,14 +44,14 @@ test('seat ownership, item completion and door duration are authoritative for se
  const r=new CampusRoom({code:'654321',seed:73}),host=r.join({rolePreference:'teacher'}),a=r.join({name:'甲'}),b=r.join({name:'乙'});r.begin(host);
  for(let i=0;i<299;i++)r.tick(.1);assert.equal(r.sim.stage,'seating');assert.equal(r.sim.layout.officeLocked,true);r.tick(.1);assert.equal(r.sim.stage,'class');assert.equal(r.sim.layout.officeLocked,false);
  for(const actor of r.sim.students)if(!actor.networkHuman){actor.seated=false;actor.seatId=null;actor.visible=false;}
- r.sim._seatingRoutes.clear();const seat=r.sim.seats[0];Object.assign(a.context.player,{x:seat.x,z:seat.z,yaw:seat.yaw,seated:false});Object.assign(b.context.player,{x:seat.x+.1,z:seat.z,yaw:seat.yaw,seated:false});
+ r.sim._seatingRoutes.clear();const seat=r.sim.seats[0];Object.assign(a.context.player,{x:seat.x,z:seat.z,yaw:seat.yaw,pitch:.55,seated:false});Object.assign(b.context.player,{x:seat.x+.1,z:seat.z,yaw:seat.yaw,seated:false});
  assert.equal(r.command(a,'interact',[seat.id]),'seated');assert.equal(r.command(b,'interact',[seat.id]),false);
  a.context.player._slots=[{id:0,action:'snack',readyAt:0,progress:0}];a.context.player._selectedSlot=0;a.context.selected='snack';
  assert.equal(r.command(a,'toggleDrawer'),true);assert.equal(r.command(a,'takeSlot',[0]),true);assert.equal(r.command(a,'hold',[true]),true);
  for(let i=0;i<30;i++)r.tick(.1);assert.equal(a.context.player._slots[0].action,null);assert.ok(r.snapshot(a).score>0);assert.equal(r.snapshot(b).score,r.snapshot(a).score);
- r.command(a,'interact');const door=DOORS.find(d=>d.id==='rear');Object.assign(a.context.player,{x:8.00,z:-7.45,yaw:0,seated:false});r.command(a,'setDoorUse',[true]);for(let i=0;i<29;i++)r.tick(.1);assert.equal(r.sim.layout.rearDoorClosed,false);r.tick(.11);assert.equal(r.sim.layout.rearDoorClosed,true);
- Object.assign(a.context.player,{x:8.1,z:door.center,yaw:Math.PI/2});r.command(a,'setDoorUse',[true]);r.tick(.1);assert.equal(r.snapshot(a).doorUse.holding,false,'looking away must cancel the interaction');
- Object.assign(a.context.player,{x:8.1,z:door.center,yaw:-Math.PI/2});r.command(a,'setDoorUse',[true]);for(let i=0;i<31;i++)r.tick(.1);assert.equal(r.sim.layout.rearDoorClosed,false,'closed leaf can be reopened from corridor');
+ r.command(a,'interact');const door=DOORS.find(d=>d.id==='rear');Object.assign(a.context.player,{x:8.00,z:-6.7,yaw:Math.PI,seated:false});r.command(a,'setDoorUse',[true]);for(let i=0;i<29;i++)r.tick(.1);assert.equal(r.sim.layout.rearDoorClosed,false);r.tick(.11);assert.equal(r.sim.layout.rearDoorClosed,true);
+ Object.assign(a.context.player,{x:6.7,z:door.center,yaw:-Math.PI/2});r.command(a,'setDoorUse',[true]);r.tick(.1);assert.equal(r.snapshot(a).doorUse.holding,false,'looking away must cancel the interaction');
+ Object.assign(a.context.player,{x:6.7,z:door.center,yaw:Math.PI/2});r.command(a,'setDoorUse',[true]);for(let i=0;i<31;i++)r.tick(.1);assert.equal(r.sim.layout.rearDoorClosed,false,'closed leaf can be reopened from corridor');
  a.context.player._slots=[{id:0,action:'banana',readyAt:0,progress:0}];a.context.player._selectedSlot=0;a.context.player._drawnSlot=0;a.context.player.seated=true;a.context.player.action='banana';a.context.selected='banana';r.command(a,'hold',[true]);for(let i=0;i<31;i++)r.tick(.1);assert.equal(r.snapshot(a).selected,'bananaPeel');assert.equal(a.context.player._slots[0].action,'bananaPeel');
  const other=new CampusRoom({code:'111111',seed:74});assert.notDeepEqual(r.sim.seats,other.sim.seats);assert.equal(other.sim.layout.rearDoorClosed,false);assert.equal(SEATS[0].pattern,'pairs');
 });

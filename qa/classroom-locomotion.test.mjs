@@ -37,11 +37,9 @@ test('spawn, pause, seating, captivity, teleport and time reset do not produce w
 test('real classroom arrivals yield physical walk speed and zero speed after sitting',()=>{
   const round=new ClassroomRound({seed:73});round.start({gathering:true});round.startBell();
   const samples=new Map();let moving=0,stopped=0,seated=0,peak=0;
-  // The first pupil now leaves the lift with twenty preparation seconds left.
-  // Preserve their ordinary walking pace over the larger school: late arrivals
-  // continue walking after the bell instead of snapping into distant seats.
+  // Preparation uses the same fixed normal pace as all student AI movement.
   let allSeated=false;
-  for(let frame=0;frame<90/DT;frame++){
+  for(let frame=0;frame<30/DT;frame++){
     const state=round.step(DT);
     for(const student of state.students){
       const previous=samples.get(student.id),next=sampleActorMotion(previous,student,state.sceneElapsed,state.status==='playing'&&!state.paused);
@@ -50,13 +48,12 @@ test('real classroom arrivals yield physical walk speed and zero speed after sit
       if(student.seated){seated++;assert.equal(next.speed,0);}
       if(previous&&previous.x===student.x&&previous.z===student.z){stopped++;assert.equal(next.speed,0);}
     }
-    if(frame===30/DT-2)assert.ok(state.students.some(s=>!s.isPlayer&&!s.seated),'far pupils teleported into their seats to meet the bell');
     if(state.students.filter(s=>!s.isPlayer).every(s=>s.seated)){allSeated=true;break;}
   }
   assert.equal(allSeated,true,'a pupil never reached an available chair along the real route');
   assert.ok(moving>60,'actual arrivals never reach walking speed');
   assert.ok(stopped>60&&seated>60,'arrival test did not cover waiting and sitting');
-  assert.ok(Math.abs(peak-AI_WALK_SPEEDS.student)<.001,`unexpected arrival speed ${peak}`);
+  assert.ok(Math.abs(peak-AI_WALK_SPEEDS.student)<.001,`arrival changed normal student speed: ${peak}`);
 });
 
 test('returning students and teacher entry follow their distinct ordinary movement speeds',()=>{
@@ -86,32 +83,39 @@ test('teacher patrol and escort walk at their own physical speed with matching r
       round._setPlan('investigate',null,{x:corridorX,z:3},20);round._turnLeft=0;
       assert.ok(Math.abs(round._plan.until-round.elapsed-Math.min(18,round._plan.routeLength/AI_WALK_SPEEDS.teacherPatrol+1.7))<1e-9,'route budget would expire at the old patrol pace');
     }else round._escortRoute=walkRoute(round.teacher,{x:corridorX,z:3},.2,round.layout);
-    let distance=0;
+    const remaining=()=>round._escortRoute?.reduce((total,p,i)=>total+Math.hypot(p.x-(i?round._escortRoute[i-1].x:round.teacher.x),p.z-(i?round._escortRoute[i-1].z:round.teacher.z)),0)||0;
+    const beforePath=remaining();let distance=0;
     for(let frame=0;frame<30;frame++){
       const old={x:round.teacher.x,z:round.teacher.z};
       if(intent==='patrol')round._advanceTeacher(DT);else round._advanceEscort(DT);
       distance+=Math.hypot(round.teacher.x-old.x,round.teacher.z-old.z);
     }
     const speed=intent==='patrol'?AI_WALK_SPEEDS.teacherPatrol:AI_WALK_SPEEDS.teacherEscort;
-    assert.ok(Math.abs(distance-speed*.5)<1e-7,`${intent} did not move half a second at ${speed} m/s`);
+    if(intent==='escort'){
+      // A frame crossing a path corner has a shorter endpoint chord than the
+      // distance travelled along both segments. Validate the actual route
+      // budget, while still forbidding any displacement over normal speed.
+      assert.ok(distance<=speed*.5+1e-7);
+      assert.ok(Math.abs(beforePath-remaining()-speed*.5)<1e-7,`escort consumed the wrong path-distance budget`);
+    }else assert.ok(Math.abs(distance-speed*.5)<1e-7,`${intent} did not move half a second at ${speed} m/s`);
   }
 });
 
-test('urgent chase, teammate rescue and human movement retain their original speeds',()=>{
+test('chase, teammate rescue and humans use their role normal speeds; carrying remains slower',()=>{
   const chase=new ClassroomRound();chase.start();Object.assign(chase.teacher,{x:corridorX,z:0,yaw:0});
   const target=chase.students.find(s=>!s.isPlayer);Object.assign(target,{x:corridorX,z:4,seated:false,captivity:'stunned'});chase._memory.set(target.id,{confirmed:true});
-  assert.equal(chase._advanceStunChase(DT),true);assert.ok(Math.abs(Math.hypot(chase.teacher.x-corridorX,chase.teacher.z)-1.6*DT)<1e-9,'teacher urgent chase was slowed');
+  assert.equal(chase._advanceStunChase(DT),true);assert.ok(Math.abs(Math.hypot(chase.teacher.x-corridorX,chase.teacher.z)-AI_WALK_SPEEDS.teacherPursuit*DT)<1e-9,'teacher chase uses a different role speed');
 
   const rescue=new ClassroomRound();rescue.start();const helper=rescue.students.find(s=>s.isTeammate),bound=rescue.students.find(s=>s.isTeammate&&s!==helper);
   Object.assign(helper,{x:corridorX,z:0,seated:false,_rescueTarget:bound.id});Object.assign(bound,{x:corridorX,z:4,seated:false,captivity:'bound'});
   helper._rescueRoute=walkRoute(helper,{x:corridorX,z:3.3},.2,rescue.layout);assert.equal(rescue._advanceRescuer(helper,DT),true);
-  assert.ok(Math.abs(Math.hypot(helper.x-corridorX,helper.z)-1.45*DT)<1e-9,'urgent rescue was slowed with ordinary walking');
+  assert.ok(Math.abs(Math.hypot(helper.x-corridorX,helper.z)-AI_WALK_SPEEDS.student*DT)<1e-9,'rescue applies a temporary student speed override');
 
   for(const Round of [ClassroomRound,TeacherRound]){
-    const round=new Round();round.start();Object.assign(round.player,{x:corridorX,z:0,seated:false});round.setMovement(0,1);round.step(.5);
-    assert.ok(Math.abs(round.player.z-.9)<1e-8,'ordinary AI walk changed human movement');
+    const round=new Round();round.start();Object.assign(round.player,{x:corridorX,z:0,seated:false,yaw:0});round.setMovement(0,1);round.step(.5);
+    assert.ok(Math.abs(round.player.z-(Round===TeacherRound?AI_WALK_SPEEDS.teacherPatrol:AI_WALK_SPEEDS.student)*.5)<1e-8,'human normal speed differs from AI role speed');
   }
-  const carrying=new TeacherRound();carrying.start();Object.assign(carrying.player,{x:corridorX,z:0,seated:false});
+  const carrying=new TeacherRound();carrying.start();Object.assign(carrying.player,{x:corridorX,z:0,seated:false,yaw:0});
   carrying.teacher.carriedId=0;Object.assign(carrying.students[0],{captivity:'carried',_grabAt:0,_grabStart:{x:corridorX,z:0}});
   carrying.setMovement(0,1);carrying.step(.5);assert.ok(Math.abs(carrying.player.z-1.15*.5)<1e-8,'AI escort tuning changed human carrying movement');
 });

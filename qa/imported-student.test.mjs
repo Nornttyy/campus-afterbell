@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createRiggedPalm,createRiggedStudent} from '../dist/student-assets.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-52';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-57';
 import {createFirstPersonView,sampleFirstPersonMotion} from '../dist/first-person-view.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 const [student,left,right]=await Promise.all(['student-boy-v3.glb','hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
@@ -52,7 +52,7 @@ test('first person uses source skinned palms and short capped forearms without g
 });
 test('palms remain finite and continuous through all three actions and interruptions',()=>{
  const h=createDeskHands({createHand:factory});let time=0;
- for(const action of ['snack','phone','note','smoke']){
+ for(const action of ['snack','phone','smoke']){
   let previous=null,maxStep=0;
   for(let i=0;i<180;i++){
    h.update(time+=1/60,{action,holding:i<135,seated:i<150,viewPitch:Math.sin(time)*.3});h.group.updateMatrixWorld(true);
@@ -66,7 +66,7 @@ test('ten student clips deform the imported skin within the classroom bounds',()
  const a=createRiggedStudent({scene:student.scene,animations:student.animations},{seated:true});
  assert.equal(a.diagnostics().clips.length,10);
  let t=0;
- for(const mood of ['writing','snack','phone','note','thinking','resting']){
+ for(const mood of ['writing','snack','phone','thinking','resting']){
   a.setMood(mood);for(let i=0;i<60;i++)a.update(t+=1/60);
   const bounds=new T.Box3().setFromObject(a.group,true);assert.ok(bounds.max.y<2&&bounds.min.y>-.08);assert.ok(bounds.getSize(new T.Vector3()).x<1.4);
  }
@@ -109,8 +109,8 @@ test('seated and restrained source fingertips stay body anchored when the camera
 });
 
 test('standing held objects follow horizontal turns but stay in the same world pose through camera pitch',()=>{
- for(const action of ['snack','phone','note','smoke']){
-  const rig=viewRig(false),names={snack:'snack-packet',phone:'handheld-phone',note:'folded-note',smoke:'smoke-canister'};
+ for(const action of ['snack','phone','smoke']){
+  const rig=viewRig(false),names={snack:'snack-packet',phone:'handheld-phone',smoke:'smoke-canister'};
   for(let i=0;i<240;i++)rig.tick({action,pitch:0,carrying:true});
   const prop=rig.h.group.getObjectByName(names[action]);assert.ok(prop,`${action}: held prop missing`);
   const position=prop.getWorldPosition(new T.Vector3()),rotation=prop.getWorldQuaternion(new T.Quaternion()),screen=position.clone().project(rig.camera);

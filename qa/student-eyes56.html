@@ -1,0 +1,17 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>学生原模型眼动检查</title>
+<style>body{margin:0;background:#bfcad0;font:14px system-ui}canvas{display:block;width:100vw;height:100vh}nav{position:fixed;top:10px;left:10px;background:#fffe;padding:10px;border-radius:8px;display:flex;gap:8px;align-items:center}button,select{font:inherit;padding:7px}output{position:fixed;bottom:10px;left:10px;padding:10px;background:#fffe;white-space:pre}</style>
+<nav><select id="variant"><option value="boy">男同学</option><option value="girl">女同学</option><option value="ponytail">长发女同学</option><option value="glasses">眼镜同学（原镜片不透明）</option></select><button id="toggle">暂停</button><button id="night">白天 / 停电</button><input id="time" type="range" min="0" max="20" value="0" step=".02"><span id="clock">0.00s</span></nav><output id="details">加载真实 GLB…</output>
+<script type="module">
+import * as T from '../dist/vendor/three.module.js';
+import {loadStudentAssets} from '../dist/student-assets.js?v=campus-57';
+import {setCharacterNight} from '../dist/character-materials.js?v=campus-57';
+const renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=T.SRGBColorSpace;document.body.append(renderer.domElement);
+const scene=new T.Scene();scene.background=new T.Color('#c8d2d5');const camera=new T.PerspectiveCamera(35,innerWidth/innerHeight,.01,20);camera.position.set(0,1.47,1.04);camera.lookAt(0,1.43,0);
+scene.add(new T.AmbientLight(0xffffff,.20));const key=new T.DirectionalLight(0xcbd8fa,.7);key.position.set(-1,2,3);scene.add(key);
+const factory=await loadStudentAssets();const actors=Object.fromEntries(['boy','girl','ponytail','glasses'].map(variant=>{const actor=factory.createStudent({variant,seated:false,seed:4});actor.setMood('resting');actor.setMotion({seated:false,speed:0});actor.group.visible=variant==='boy';scene.add(actor.group);return[variant,actor];}));
+let running=true,time=0,last=performance.now(),isNight=false;const select=document.querySelector('#variant'),slider=document.querySelector('#time'),clock=document.querySelector('#clock'),details=document.querySelector('#details');
+select.onchange=()=>{for(const [name,actor]of Object.entries(actors))actor.group.visible=name===select.value;};document.querySelector('#toggle').onclick=e=>{running=!running;e.target.textContent=running?'暂停':'继续';};document.querySelector('#night').onclick=()=>{isNight=!isNight;for(const a of Object.values(actors))setCharacterNight(a.group,isNight);scene.background.set(isNight?'#10151b':'#c8d2d5');};slider.oninput=()=>{running=false;document.querySelector('#toggle').textContent='继续';time=+slider.value;};
+window.eyeReview={actors,renderer,scene,camera,setTime(t){running=false;time=t;},setVariant(v){select.value=v;select.onchange();},setNight(n){if(isNight!==n)document.querySelector('#night').click();},diagnostics(){return actors[select.value].diagnostics().eyes;}};
+function frame(now){requestAnimationFrame(frame);if(running)time+=(now-last)/1000;last=now;for(const actor of Object.values(actors))actor.update(time);slider.value=time%20;clock.textContent=time.toFixed(2)+'s';details.textContent=JSON.stringify(actors[select.value].diagnostics().eyes,null,2);renderer.render(scene,camera);}requestAnimationFrame(frame);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script></html>

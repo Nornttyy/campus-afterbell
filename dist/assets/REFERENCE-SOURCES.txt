@@ -14,3 +14,15 @@ materials/paint-plaster-34.png
 materials/chalkboard-34.png
 Created with the built-in image_gen tool for this project, not extracted from the reference game.
 Actual output: 1254 x 1254 PNG each. Generation prompts: docs/material-prompts-34.json in source repository.
+
+Computer screen references (2026-11-09, revision 56):
+computer/photoshop.svg: official Adobe product icon.
+https://main--cc--adobecom.aem.live/cc-shared/assets/img/product-icons/svg/photoshop-40.svg
+computer/unity.svg: official Unity site icon. https://unity.com/icon.svg
+computer/valorant.png: official Riot VALORANT site icon.
+https://cmsassets.rgpub.io/sanity/images/dsfx7636/news/cbf4460132cdfeb2a97fad5f9dd25ba0bc058f76-128x128.png?accountingTag=VAL
+computer/valorant-zmjjkk-2024.mp4: forty-second silent excerpt of the EDG ZmjjKK FMVP finals highlight compilation, including original broadcast observer cuts.
+https://www.huya.com/video/play/1009030064.html
+computer/photoshop-workspace.jpg and computer/unity-workspace.png: actual vendor-documentation screenshots. Full source URLs, dimensions, excerpt timing and checksums are recorded in computer/sources56.json.
+These are identified third-party brand/reference assets, not CC0 or project-created artwork.
+Photoshop and Unity screens display the sourced screenshots as static images; they do not embed or run those applications.

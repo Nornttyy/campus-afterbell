@@ -11,3 +11,8 @@ art-source/rejected/
 
 # Local research evidence; link to official sources in public documentation.
 docs/reference-media/
+
+# Source exports and local review recordings are not deployable assets.
+art-source/
+qa/recordings/
+scripts/models/__pycache__/

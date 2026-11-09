@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {STUDENT_ASSETS,createRiggedStudent} from '../dist/student-assets.js';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-52';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-57';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-57';
+import {fingerPadSurfaceDistance} from './prop-contact-helpers.mjs';
 
 const V=(...a)=>new T.Vector3(...a);
 await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry(new URL(url).pathname.split('/').pop())}});
@@ -45,16 +46,16 @@ function surfaceDistance(prop,worldPoint){
 }
 
 for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: new user model actually touches every held prop without resizing it`,async()=>{
- for(const kind of ['snack','drink','burger','ink','smoke','flash','phone','note']){
+ for(const kind of ['snack','drink','burger','ink','smoke','flash','phone']){
   const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:true});actor.setMood(kind);actor.setMotion({carrying:true});
   for(let i=0;i<180;i++)actor.update(i/60);
   actor.group.updateMatrixWorld(true);actor.group.traverse(o=>{if(o.isSkinnedMesh)o.skeleton.update();});
-  const side=kind==='note'?'right':'left',anchor=actor.getHand(side);
+  const side='left',anchor=actor.getHand(side);
   let prop=anchor.children.find(o=>o.visible&&(o.userData.propAsset||['smoke-canister','flash-perforated-canister'].includes(o.name)));
-  if(['phone','note'].includes(kind)){prop=createDeskItem(kind);const attachment=anchor.userData.attachments[kind];prop.position.fromArray(attachment.position);prop.rotation.fromArray(attachment.rotation);anchor.add(prop);actor.group.updateMatrixWorld(true);}
+  if(['phone'].includes(kind)){prop=createDeskItem(kind);const attachment=anchor.userData.attachments[kind];prop.position.fromArray(attachment.position);prop.rotation.fromArray(attachment.rotation);anchor.add(prop);actor.group.updateMatrixWorld(true);}
   assert.ok(prop,`${kind} never appears`);
   const position=prop.position.clone(),rotation=prop.quaternion.clone();
-  for(const finger of ['Index','Thumb'])assert.ok(surfaceDistance(prop,fingertip(actor,finger,side==='left'?'Left':'Right'))<.012,`${variant} ${kind} ${finger}: visible gap exceeds 12 mm`);
+  for(const finger of ['Index','Thumb'])assert.ok(fingerPadSurfaceDistance(prop,actor,finger,side==='left'?'Left':'Right')<.012,`${variant} ${kind} ${finger}: distal-skin contact gap exceeds 12 mm`);
   assert.deepEqual(prop.scale.toArray(),[1,1,1],'Fit must not resize the imported item');
   for(let i=180;i<210;i++){actor.update(i/60);assert.ok(prop.position.distanceTo(position)<1e-8);assert.ok(prop.quaternion.angleTo(rotation)<1e-7);}
   actor.dispose();

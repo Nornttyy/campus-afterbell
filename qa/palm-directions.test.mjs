@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-52';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-57';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 
@@ -20,15 +20,14 @@ function assertRigid(a,b,label){
   assert.ok(as.distanceTo(bs)<.00001,`${label}: object changed size`);
 }
 
-test('standing keeps separate snack, phone, note and smoke wrist orientations',()=>{
+test('standing keeps separate snack, phone and smoke wrist orientations',()=>{
   const orientations={};
-  for(const action of ['snack','phone','note','smoke']){
+  for(const action of ['snack','phone','smoke']){
     const actor=makeHands();tick(actor,0,150,{action,carrying:true,holding:false,seated:false});
-    orientations[action]=actor.getHand(action==='note'?'right':'left').group.quaternion.clone();
+    orientations[action]=actor.getHand('left').group.quaternion.clone();
   }
   assert.ok(orientations.snack.angleTo(orientations.phone)>.15,'Standing erased the phone grip');
   assert.ok(orientations.snack.angleTo(orientations.smoke)>.10,'Standing erased the smoke grip');
-  assert.ok(orientations.phone.angleTo(orientations.note)>.4,'Standing erased the two-hand note grip');
 });
 
 test('taking and returning an object turn the palm and flex real finger joints; idle hands settle',()=>{
@@ -72,7 +71,7 @@ for(const seated of [true,false])test(`phone presses use real index flexion and 
 });
 
 test('imported palms keep rigid object contact while taking, standing and looking around',()=>{
-  for(const [action,name,side]of [['snack','snack-packet','left'],['drink','red-drink-can','left'],['burger','layered-burger','left'],['phone','handheld-phone','left'],['note','folded-note','right'],['smoke','smoke-canister','left']]){
+  for(const [action,name,side]of [['snack','snack-packet','left'],['drink','red-drink-can','left'],['burger','layered-burger','left'],['phone','handheld-phone','left'],['smoke','smoke-canister','left']]){
     const actor=makeHands(),hand=actor.getHand(side),prop=actor.group.getObjectByName(name);
     assert.ok(prop,`Missing ${name}`);let baseline=null;
     for(let frame=1;frame<230;frame++){
@@ -103,15 +102,16 @@ test('smoke charge turns the wrist back, release swings it forward and opens the
   assert.ok(maxStep<.10,`Throw jumps palm ${maxStep} m in one frame`);
 });
 
-for(const seated of [true,false])test(`food use stays a small vertical bob with rigid contact (${seated?'seated':'standing'})`,()=>{
+for(const seated of [true,false])test(`food use turns inward, reaches centre, bobs and returns while the other hand rests (${seated?'seated':'standing'})`,()=>{
   const actor=makeHands(),food=actor.group.getObjectByName('snack-packet'),other=actor.getHand('right');
-  let time=tick(actor,0,120,{action:'snack',carrying:true,holding:true,seated});
+  let time=tick(actor,0,120,{action:'snack',carrying:true,holding:false,seated});
   const positions=[],empty=pose(other);
-  for(let i=0;i<140;i++){
-    actor.update(time+=dt,{action:'snack',carrying:true,holding:true,seated});actor.group.updateMatrixWorld(true);positions.push(food.position.clone());
+  for(let i=0;i<=180;i++){
+    actor.update(time+=dt,{action:'snack',carrying:true,holding:true,progress:i/180,seated});actor.group.updateMatrixWorld(true);positions.push(food.getWorldPosition(new T.Vector3()));
     const current=pose(other);assert.ok(current.position.distanceTo(empty.position)<.00001);assert.ok(current.quaternion.angleTo(empty.quaternion)<.00001);
   }
   const range=axis=>Math.max(...positions.map(p=>p[axis]))-Math.min(...positions.map(p=>p[axis]));
-  assert.ok(range('x')<.00001&&range('z')<.00001,'Food use adds sideways movement or a mouth reach');
-  assert.ok(range('y')>.05&&range('y')<.075,'Food bob is missing or too large');
+  assert.ok(Math.abs(positions[90].x)<.025,'Food did not reach screen centre');
+  assert.ok(range('y')>.075,'Food has no visible eating strokes');
+  assert.ok(positions.at(-1).distanceTo(positions[0])<.002,'The complete gesture did not return to carry');
 });

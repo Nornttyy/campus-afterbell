@@ -59,9 +59,9 @@ test('blackboard writing restores stamina, and releasing, moving or pausing stop
  const r=setup();r.teacher.stamina=20;assert.equal(r.setWriting(true),false);
  Object.assign(r.player,{x:BOARD.x,z:BOARD.z-.35,yaw:0,pitch:0});assert.equal(r.canWriteBoard(),true);assert.ok(r.setWriting(true));r.step(2);
  assert.ok(Math.abs(r.teacher.stamina-40)<.001);assert.equal(r.snapshot().teacher.phase,'board');assert.equal(r.snapshot().teacher.writing,true);
- assert.equal(r.throwChalk(),false);r.setWriting(false);r.step(1);assert.ok(Math.abs(r.teacher.stamina-39)<.001);
+ assert.equal(r.throwChalk(),false);r.setWriting(false);r.step(1);assert.ok(Math.abs(r.teacher.stamina-40)<.001);
  r.setWriting(true);r.setMovement(1,0);r.step(.1);assert.equal(r.teacher.writing,false);r.setMovement(0,0);
- r.setWriting(true);r.pause();const saved=r.teacher.stamina;r.step(5);assert.equal(r.teacher.stamina,saved);assert.equal(r.teacher.writing,false);r.pause(false);r.step(.1);assert.ok(r.teacher.stamina<saved);
+ r.setWriting(true);r.pause();const saved=r.teacher.stamina;r.step(5);assert.equal(r.teacher.stamina,saved);assert.equal(r.teacher.writing,false);r.pause(false);r.step(.1);assert.equal(r.teacher.stamina,saved);
  r.teacher.stamina=0;assert.equal(r.throwChalk(),false);assert.ok(r.drainEvents().some(e=>e.type==='stamina-low'));
  r.reset();assert.equal(r.teacher.stamina,100);assert.equal(r.teacher.writing,false);
 });

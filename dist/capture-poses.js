@@ -65,8 +65,8 @@ function limb(group,a,b,c,target,pole,weight){
   aimBone(a,b,elbow,weight);aimBone(b,c,origin.clone().addScaledVector(direction,d),weight);
 }
 // The wrists sit on the sides of the post, rather than disappearing into the
-// spine. classroom-rules places the post 0.30 m behind the bound student.
-export const POST_GRIP={left:[.25,.95,-.32],right:[-.25,.925,-.32]};
+// spine. The bound body is 0.39 m in front of the post; fingers reach its sides.
+export const POST_GRIP={left:[.29,.98,-.32],right:[-.29,.975,-.32]};
 export function createCapturePose(group,bones){
   let weight=0,lastKind='free',inputKind='free',enteredAt=0,age=0;
   const saved=new Map(),outputs=new Map(),savedPositions=new Map(),positionOutputs=new Map(),lastWrists={},entryWrists={};
@@ -120,8 +120,11 @@ export function createCapturePose(group,bones){
         rotateInCharacterSpace(group,bones.Neck,struggle.pitch*.35,0,-struggle.roll*.18,weight);
       }
       if(bound){
-        rotateInCharacterSpace(group,bones.Spine1,-.035,0,.012*Math.sin(age*2.3),weight);
-        rotateInCharacterSpace(group,bones.Spine2,-.025,0,-.008*Math.sin(age*2.3),weight);
+        // The bob hair reaches lower than the other original meshes. A small
+        // forward shoulder bend clears the wood without cutting hair or stretching bones.
+        const bob=group.userData.character==='girl';
+        rotateInCharacterSpace(group,bones.Spine1,bob?.07:.03,0,.012*Math.sin(age*2.3),weight);
+        rotateInCharacterSpace(group,bones.Spine2,bob?.09:.03,0,-.008*Math.sin(age*2.3),weight);
       }
       if(recover){
         const settle=1-T.MathUtils.smoothstep(age,.05,.60);
@@ -163,7 +166,7 @@ export function createCapturePose(group,bones){
       }
       if(bones.Head){
         if(carried)rotateInCharacterSpace(group,bones.Head,struggle.pitch*.65,0,-struggle.roll*.12,weight);
-        else if(bound){rotateInCharacterSpace(group,bones.Head,.02,wave*.035,Math.sin(age*2.3)*.018,weight);}
+        else if(bound){rotateInCharacterSpace(group,bones.Head,.30,wave*.035,Math.sin(age*2.3)*.018,weight);}
         else if(help){rotateInCharacterSpace(group,bones.Head,.12,wave*.035,0,weight);}}
       // Blend the solved local joints across pose changes, including carried → bound.
       // The mixer remains the untouched base; previous IK never feeds back into it.

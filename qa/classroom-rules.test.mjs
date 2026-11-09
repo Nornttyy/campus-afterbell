@@ -7,7 +7,7 @@ function advanceUntil(round,condition,seconds=120,control=()=>{}){
   for(let i=0;i<seconds*60;i++){const s=round.snapshot();if(condition(s))return s;control(s,round);round.step(DT);}
   assert.fail('Expected simulation condition was not reached.');
 }
-function takeAndUse(round){const s=round.snapshot();if(s.drawer.drawnSlot===null)round.takeSlot(s.drawer.selectedSlot);return round.hold(true);}
+function takeAndUse(round){round.setLook(round.player.yaw,.55);const s=round.snapshot();if(s.drawer.drawnSlot===null)round.takeSlot(s.drawer.selectedSlot);return round.hold(true);}
 function choose(round,index){if(round.snapshot().drawer.drawnSlot!==null)round.returnItem();return round.selectSlot(index);}
 function useAvailable(round,state=round.snapshot()){
   if(state.player.caught)return;
@@ -16,7 +16,7 @@ function useAvailable(round,state=round.snapshot()){
   if(state.holding&&CLASSROOM_ACTIONS[state.selected]?.releaseToUse&&state.actionProgress>=.5)round.releaseUse();else takeAndUse(round);
 }
 function quietFixture(seed=73){
-  const round=new ClassroomRound({seed,target:100000});round.start();
+  const round=new ClassroomRound({seed,target:100000});round.start();round.player.pitch=.55;
   round.teacher.x=30;round.teacher.z=30;round._thinkAt=Infinity;round._plan.route=[];round._plan.until=Infinity;
   for(const actor of round.students)if(actor.isTeammate){actor._decisionAt=Infinity;actor.holding=false;}
   return round;
@@ -35,12 +35,12 @@ function focusSeat(round,id){
   if(actor.isPlayer){if(!round.snapshot().drawer.open)round.toggleDrawer();round.selectAction('phone');takeAndUse(round);}
 }
 
-test('30 shared seats, five team members, no default countdown and no ambient points',()=>{
+test('30 shared seats, five team members, a ten-minute clock and no ambient points',()=>{
   const r=new ClassroomRound();const s=r.snapshot();
   assert.equal(s.students.length,30);assert.equal(s.player.id,PLAYER_SEAT);
   assert.deepEqual(s.students.filter(s=>s.isTeammate).map(s=>s.id),[...FRIEND_SEATS]);
   assert.equal(s.students.filter(s=>!s.isPlayer&&!s.isTeammate).length,25);
-  assert.equal(s.timed,false);assert.equal(s.timeLeft,0);assert.equal(s.target,120);
+  assert.equal(s.timed,true);assert.equal(s.timeLeft,600);assert.equal(s.target,120);
   r.step(100);assert.equal(r.snapshot().elapsed,0);assert.equal(r.snapshot().score,0);
   assert.deepEqual(s.teacher.observedIds,[]);
   s.students[0].x=999;s.teacher.memory.push({id:999});assert.notEqual(r.snapshot().students[0].x,999);assert.deepEqual(r.snapshot().teacher.memory,[]);
@@ -142,10 +142,10 @@ test('confirmed identification survives hiding, stuns, physically escorts and bi
   r.hold(false);const before=r.snapshot().elapsed;
   advanceUntil(r,s=>s.teacher.castProgress>0,10);
   const windup=r.snapshot().elapsed;r.step(.3);assert.equal(r.snapshot().player.caught,false);
-  const carried=advanceUntil(r,s=>s.player.captivity==='carried',10);assert.equal(carried.caughtCount,0);assert.notEqual(carried.player.z,DETENTION[0].z-.30);
+  const carried=advanceUntil(r,s=>s.player.captivity==='carried',10);assert.equal(carried.caughtCount,0);assert.notEqual(carried.player.z,DETENTION[0].z-.39);
   const s=advanceUntil(r,s=>s.player.caught,35);
   assert.ok(s.elapsed-windup>=.7-DT-1e-6);assert.ok(s.elapsed>before);
-  assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.ok(Math.abs(s.player.z-(DETENTION[0].z-.30))<1e-9);
+  assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.ok(Math.abs(s.player.z-(DETENTION[0].z-.39))<1e-9);
   assert.equal(r.takeSlot(0),false);assert.equal(r.hold(true),true);assert.equal(r.snapshot().player.bubble.blowing,true);r.hold(false);assert.equal(r.interact(),false);assert.equal(r.setMovement(1,0),false);assert.equal(r.setLook(1,0),true);
   const events=r.drainEvents();assert.equal(events.filter(e=>e.type==='bound'&&e.studentId===PLAYER_SEAT).length,1);assert.equal(events.filter(e=>e.type==='chalk'&&e.studentId===PLAYER_SEAT).length,1);
   assert.equal(events.some(e=>e.type==='finish'),false);
@@ -154,7 +154,8 @@ test('confirmed identification survives hiding, stuns, physically escorts and bi
 test('teacher victory requires all five team members, with one terminal event',()=>{
   const r=new ClassroomRound({target:100000});r.start();
   for(const [index,id] of [PLAYER_SEAT,...FRIEND_SEATS].entries()){
-    focusSeat(r,id);advanceUntil(r,s=>s.students[id].caught,45);
+    // Isolate terminal capture accounting; recovery travel is verified in view-movement55.
+    r.teacher.stamina=100;r.teacher._recoveringStamina=false;focusSeat(r,id);advanceUntil(r,s=>s.students[id].caught,60);
     if(index===4&&r.status==='playing')r.step(DT);
     assert.equal(r.snapshot().status,index===4?'lost':'playing');
   }
@@ -211,42 +212,42 @@ test('drawers start with three independent seeded draws, permit repeats, and can
 
 test('a stocked item must be taken from an open drawer, then may be held while closed or standing',()=>{
   const r=quietFixture();
-  r.player._slots.forEach((slot,index)=>slot.action=['note','snack','snack'][index]);
+  r.player._slots.forEach((slot,index)=>slot.action=['drink','snack','snack'][index]);
   assert.equal(takeAndUse(r),false);assert.equal(r.selectSlot(1),true);assert.equal(r.snapshot().drawer.open,false);assert.equal(takeAndUse(r),false);
   assert.equal(r.toggleDrawer(),true);assert.equal(takeAndUse(r),true);assert.equal(r.snapshot().drawer.drawnSlot,1);
   assert.equal(r.toggleDrawer(),true);r.step(1);assert.equal(r.snapshot().holding,true);assert.equal(r.snapshot().actionProgress,.333333);
   r.hold(false);assert.equal(takeAndUse(r),true); // A concealed, already taken item remains available.
   const stock=r.snapshot().drawer.slots;r.interact();r.step(1);
   assert.equal(r.snapshot().drawer.open,false);assert.equal(r.toggleDrawer(),false);assert.equal(r.selectSlot(2),false);
-  assert.equal(r.snapshot().actionProgress,.333333);assert.deepEqual(r.snapshot().drawer.slots,stock);assert.equal(r.snapshot().score,0);
+  assert.equal(r.snapshot().actionProgress,0);assert.deepEqual(r.snapshot().drawer.slots,stock);assert.equal(r.snapshot().score,0);
   r.interact();assert.equal(r.selectSlot(2),false);assert.equal(r.returnItem(),true);r.toggleDrawer();assert.equal(r.selectSlot(2),true);assert.equal(r.snapshot().drawer.drawnSlot,null);assert.equal(takeAndUse(r),false);
   assert.equal(r.selectAction('phone'),false);assert.equal(r.selectAction('snack'),true);assert.equal(r.snapshot().drawer.selectedSlot,2);
   const before=r.snapshot();for(const index of [-1,3,.5,'1',null,NaN])assert.equal(r.selectSlot(index),false);assert.deepEqual(r.snapshot(),before);
 });
 
 test('duplicate objects keep independent progress and only the completed slot is consumed',()=>{
-  const r=quietFixture(1);r.player._slots.forEach(s=>s.action='note');r.toggleDrawer();takeAndUse(r);r.step(2);
+  const r=quietFixture(1);r.player._slots.forEach(s=>s.action='drink');r.toggleDrawer();takeAndUse(r);r.step(2);
   assert.equal(r.snapshot().actionProgress,.666667);
   choose(r,1);assert.equal(r.snapshot().actionProgress,0);assert.equal(r.snapshot().holding,false);
   takeAndUse(r);r.step(1);assert.equal(r.snapshot().actionProgress,.333333);
-  choose(r,0);assert.equal(r.snapshot().actionProgress,.666667);takeAndUse(r);r.step(1);
-  const s=r.snapshot();assert.equal(s.completed.note,1);assert.equal(s.score,CLASSROOM_ACTIONS.note.points);assert.equal(s.holding,false);assert.equal(s.drawer.drawnSlot,null);
+  choose(r,0);assert.equal(r.snapshot().actionProgress,0);takeAndUse(r);r.step(3);
+  const s=r.snapshot();assert.equal(s.completed.drink,1);assert.equal(s.score,CLASSROOM_ACTIONS.drink.points);assert.equal(s.holding,false);assert.equal(s.drawer.drawnSlot,null);
   assert.deepEqual(s.drawer.slots[0],{id:0,action:null,readyIn:DEVELOPMENT_TUNING.drawerRefill});
-  assert.equal(s.drawer.slots[1].action,'note');assert.equal(s.drawer.slots[2].action,'note');
-  assert.equal(r.selectSlot(0),false);assert.equal(r.selectAction('note'),true);assert.equal(r.snapshot().drawer.selectedSlot,1);assert.equal(r.snapshot().actionProgress,.333333);
+  assert.equal(s.drawer.slots[1].action,'drink');assert.equal(s.drawer.slots[2].action,'drink');
+  assert.equal(r.selectSlot(0),false);assert.equal(r.selectAction('drink'),true);assert.equal(r.snapshot().drawer.selectedSlot,1);assert.equal(r.snapshot().actionProgress,0);
 });
 
 test('consumed slots refill independently after three active seconds, with no automatic scoring',()=>{
   const r=quietFixture();r.player._slots.forEach(s=>s.action='snack');r.toggleDrawer();
-  r.takeSlot(2);r.hold(true);r.step(1.5);r.returnItem();r.takeSlot(0);r.hold(true);r.step(3);
+  r.takeSlot(2);r.hold(true);r.step(1.5);r.returnItem();assert.equal(r.player._slots[2].progress,0);r.takeSlot(0);r.hold(true);r.step(3);
   assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.hold(true),false);
-  r.takeSlot(2);r.hold(true);r.step(1.5);let s=r.snapshot();
-  assert.equal(s.drawer.slots[0].readyIn,1.5);assert.equal(s.drawer.slots[2].readyIn,3);assert.equal(s.score,4);
+  r.takeSlot(2);r.hold(true);r.step(3);let s=r.snapshot();
+  assert.equal(s.drawer.slots[0].readyIn,0);assert.equal(s.drawer.slots[2].readyIn,3);assert.equal(s.score,2);
   r.pause();const paused=r.snapshot();r.step(20);r.toggleDrawer();r.takeSlot(1);assert.deepEqual(r.snapshot(),paused);r.pause(false);
-  r.step(1.5-DT);assert.equal(r.snapshot().drawer.slots[0].action,null);r.step(DT);s=r.snapshot();
+  assert.ok(r.snapshot().drawer.slots[0].action);r.step(1.5);s=r.snapshot();
   assert.ok(Object.hasOwn(CLASSROOM_ACTIONS,s.drawer.slots[0].action));assert.equal(s.drawer.slots[0].readyIn,0);assert.equal(s.drawer.slots[2].readyIn,1.5);
-  r.step(1.5);s=r.snapshot();assert.ok(s.drawer.slots[2].action);assert.equal(s.holding,false);assert.equal(s.score,4);
-  r.step(10);assert.equal(r.snapshot().score,4);assert.equal(r.snapshot().actionProgress,0);
+  r.step(1.5);s=r.snapshot();assert.ok(s.drawer.slots[2].action);assert.equal(s.holding,false);assert.equal(s.score,2);
+  r.step(10);assert.equal(r.snapshot().score,2);assert.equal(r.snapshot().actionProgress,0);
 });
 
 test('AI completions consume their own stocked slots and empty AI drawers wait for refills',()=>{
@@ -293,11 +294,11 @@ test('E takes without using, left release retains the item, Q returns without du
 
 // Measure the public interaction clock, including an interrupted hold.
 test('ordinary drawer actions complete at exactly three active held seconds',()=>{
- for(const action of ['snack','phone','note','drink','burger']){
+ for(const action of ['snack','phone','drink','burger']){
   const r=quietFixture();Object.assign(r.player._slots[0],{action,progress:0,readyAt:0});r.toggleDrawer();r.takeSlot(0);
   assert.equal(CLASSROOM_ACTIONS[action].duration,3);r.step(5);assert.equal(r.snapshot().actionProgress,0);
   r.hold(true);r.step(1);r.hold(false);r.step(2);assert.equal(r.snapshot().completed[action],0);
-  r.hold(true);r.step(2-DT);assert.equal(r.snapshot().completed[action],0);assert.ok(r.snapshot().actionProgress<1);
+  r.hold(true);r.step((action==='phone'?2:3)-DT);assert.equal(r.snapshot().completed[action],0);assert.ok(r.snapshot().actionProgress<1);
   r.step(DT);assert.equal(r.snapshot().completed[action],1);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.snapshot().drawer.drawnSlot,null);assert.equal(r.snapshot().score,CLASSROOM_ACTIONS[action].points);
  }
 });
@@ -308,7 +309,7 @@ test('classmates use drinks and burgers through the same stock, scoring and refi
   for(const slot of actor._slots)Object.assign(slot,{action:kind,readyAt:0,progress:0});
   const done=advanceUntil(r,s=>s.students[actor.id].completed[kind]===1,10);
   const event=r.drainEvents().find(e=>e.type==='complete'&&e.studentId===actor.id);
-  assert.equal(event.action,kind);assert.equal(event.actor,'ai');assert.equal(event.points,3);assert.equal(done.score,3);
+  assert.equal(event.action,kind);assert.equal(event.actor,'ai');assert.equal(event.points,1);assert.equal(done.score,1);
   assert.deepEqual(done.students[actor.id].drawer.slots[event.slotId],{id:event.slotId,action:null,readyIn:3});
   assert.equal(done.completed[kind],0,'AI statistics must not count as player completions');
   assert.ok(Object.values(done.students[actor.id].completed).every(Number.isFinite));

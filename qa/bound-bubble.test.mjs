@@ -16,34 +16,30 @@ test('a bound pupil can blow while movement, ordinary items and self-rescue rema
  const r=quiet();bind(r,r.player);const stock=r.snapshot().drawer.slots,position={x:r.player.x,z:r.player.z};
  assert.equal(r.snapshot().player.bubble.available,true);assert.equal(r.hold(true),true);
  assert.equal(r.setMovement(1,0),false);assert.equal(r.toggleDrawer(),false);assert.equal(r.takeSlot(0),false);assert.equal(r.interact(),false);assert.equal(r.setRescue(r.player.id),false);
- r.step(3);const s=r.snapshot();assert.equal(s.player.bubble.blowing,true);assert.equal(s.player.bubble.progress,.75);assert.equal(s.score,0,'unverified bubble scoring stays disabled');
+ r.step(3);const s=r.snapshot();assert.equal(s.player.bubble.blowing,true);assert.equal(s.player.bubble.progress,.5);assert.equal(s.score,0,'unverified bubble scoring stays disabled');
  assert.deepEqual(s.drawer.slots,stock);assert.deepEqual({x:s.player.x,z:s.player.z},position);assert.equal(s.bubbles.length,0);
  assert.ok(Object.values(s.completed).every(n=>n===0));
 });
 
-test('release creates one partial bubble with its source and starts the ten-second cooldown',()=>{
+test('release without mouth contact launches an orange bubble and starts the ten-second cooldown',()=>{
  const r=quiet();bind(r,r.player);r.hold(true);r.step(2.5);assert.equal(r.releaseUse(),true);
- const s=r.snapshot(),bubble=s.bubbles[0];assert.equal(s.bubbles.length,1);assert.equal(bubble.studentId,r.player.id);assert.equal(bubble.charge,.625);assert.equal(bubble.age,0);
- for(const key of ['x','y','z','yaw'])assert.ok(Number.isFinite(bubble[key]));
- assert.equal(s.player.bubble.cooldown,10);assert.equal(s.player.bubble.progress,0);assert.equal(s.player.bubble.blowing,false);assert.equal(s.player.bubble.available,false);
- assert.equal(r.releaseUse(),false);assert.equal(r.hold(true),false);assert.equal(r.drainEvents().filter(e=>e.type==='bubble-release').length,1);
- r.step(1);const moved=r.snapshot().bubbles[0];assert.ok(moved.age>.99);assert.ok(Math.hypot(moved.x-bubble.x,moved.z-bubble.z)>.5);assert.equal(moved.y,bubble.y);
- r.step(9-DT);assert.equal(r.snapshot().player.bubble.available,false);assert.equal(r.snapshot().bubbles.length,0);
- r.step(DT);assert.equal(r.snapshot().player.bubble.cooldown,0);assert.equal(r.hold(true),true);
+ const s=r.snapshot();assert.equal(s.bubbles.length,1);assert.equal(s.bubbles[0].kind,'orange');assert.equal(s.player.bubble.cooldown,10);assert.equal(s.player.bubble.progress,0);assert.equal(s.player.bubble.blowing,false);assert.equal(s.player.bubble.available,false);
+ assert.equal(r.releaseUse(),false);assert.equal(r.hold(true),false);const released=r.drainEvents().filter(e=>e.type==='bubble-release');assert.equal(released.length,1);assert.ok(Math.abs(released[0].charge-2.5/6)<1e-9);assert.equal(released[0].attached,false);
+ r.step(10-DT);assert.equal(r.snapshot().player.bubble.available,false);assert.equal(r.snapshot().bubbles.length,0);r.step(DT);assert.equal(r.snapshot().player.bubble.cooldown,0);assert.equal(r.hold(true),true);
 });
 
 test('full inflation stays inflated until release, never consumes stock and never pops automatically',()=>{
  const r=quiet();bind(r,r.player);const stock=r.snapshot().drawer.slots;r.hold(true);r.step(BUBBLE_TUNING.duration-DT);
  assert.equal(r.snapshot().bubbles.length,0);assert.ok(r.snapshot().player.bubble.progress<1);
  r.step(DT);let s=r.snapshot();assert.equal(s.bubbles.length,0);assert.equal(s.player.bubble.progress,1);assert.equal(s.player.bubble.cooldown,0);assert.equal(s.holding,true);
- r.step(2);assert.equal(r.snapshot().bubbles.length,0);assert.equal(r.releaseUse(),true);assert.equal(r.snapshot().bubbles[0].charge,1);assert.equal(r.releaseUse(),false);
+ r.step(2);assert.equal(r.snapshot().bubbles.length,0);assert.equal(r.releaseUse(),true);assert.equal(r.snapshot().bubbles.length,1);assert.equal(r.snapshot().bubbles[0].kind,'orange');assert.equal(r.releaseUse(),false);
  r.step(20);s=r.snapshot();assert.equal(s.bubbles.length,0);assert.equal(s.score,0);assert.deepEqual(s.drawer.slots,stock);
  assert.equal(r.drainEvents().filter(e=>e.type==='bubble-release').length,1);
 });
 
 test('pause freezes inflation and cooling; rescue and finish cancel without releasing a bubble',()=>{
  const r=quiet();bind(r,r.player);r.hold(true);r.step(2);r.pause();const paused=r.snapshot();r.step(8);assert.deepEqual(r.snapshot(),paused);assert.equal(r.hold(true),false);
- r.pause(false);r.step(1);assert.equal(r.snapshot().player.bubble.progress,.5);assert.equal(r.snapshot().player.bubble.blowing,false);r.hold(true);r.step(1);assert.equal(r.snapshot().player.bubble.progress,.75);
+ r.pause(false);r.step(1);assert.equal(r.snapshot().player.bubble.progress,.333333);assert.equal(r.snapshot().player.bubble.blowing,false);r.hold(true);r.step(1);assert.equal(r.snapshot().player.bubble.progress,.5);
  r._release(r.player);assert.equal(r.snapshot().player.bubble.available,false);assert.equal(r.snapshot().player.bubble.progress,0);assert.equal(r.snapshot().holding,false);assert.equal(r.snapshot().bubbles.length,0);
  bind(r,r.player);r.hold(true);r.step(1);r.releaseUse();r.pause();const cooldown=r.snapshot().player.bubble.cooldown;r.step(9);assert.equal(r.snapshot().player.bubble.cooldown,cooldown);r.pause(false);r.step(10);r.hold(true);r.step(1);
  r._finish('won','mischief');assert.equal(r.snapshot().player.bubble.blowing,false);assert.equal(r.snapshot().player.bubble.progress,0);const finished=r.snapshot();r.step(10);assert.deepEqual(r.snapshot(),finished);

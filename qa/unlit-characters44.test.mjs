@@ -5,8 +5,8 @@ import * as T from '../dist/vendor/three.module.js';
 import {GLTFLoader} from '../dist/vendor/addons/loaders/GLTFLoader.js';
 import {createRiggedStudent,createRiggedPalm,STUDENT_ASSETS} from '../dist/student-assets.js';
 import {createRiggedTeacher} from '../dist/imported-actors.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-52';
-import {useCharacterBaseColor} from '../dist/character-materials.js';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-57';
+import {useCharacterBaseColor,setCharacterNight} from '../dist/character-materials.js';
 
 // Parse the real skin, material factors, attributes and embedded image bytes.
 // Node has no browser image decoder: only image decoding is substituted; the
@@ -27,16 +27,25 @@ async function loadCharacter(file){
 }
 const list=material=>Array.isArray(material)?material:[material];
 function originals(root){
- const byGeometry=new Map();root.traverse(mesh=>{if(!mesh.isMesh)return;
+ const byGeometry=new Map();byGeometry.sourceMeshes=new Map();root.traverse(mesh=>{if(!mesh.isMesh)return;
+  byGeometry.sourceMeshes.set(mesh,mesh.geometry);
   byGeometry.set(mesh.geometry,list(mesh.material).map(material=>({material,map:material.map,alphaMap:material.alphaMap,color:material.color.clone(),vertexColors:material.vertexColors,side:material.side,opacity:material.opacity,transparent:material.transparent,alphaTest:material.alphaTest,alphaHash:material.alphaHash,depthWrite:material.depthWrite,depthTest:material.depthTest})));
  });return byGeometry;
 }
 function verifySurfaces(root,before){
  let surfaces=0,textured=0,caps=0;
- root.traverse(mesh=>{if(!mesh.isMesh||!before.has(mesh.geometry))return;
+ root.traverse(mesh=>{if(!mesh.isMesh)return;
+  // Eye animation adds a shader weight attribute on a geometry clone. The
+  // actual source mesh, all GLB attributes and its material must still match.
+  const sourceGeometry=before.has(mesh.geometry)?mesh.geometry:before.sourceMeshes.get(mesh);
+  if(!sourceGeometry)return;
+  if(sourceGeometry!==mesh.geometry){
+   assert.deepEqual(mesh.geometry.index?.array,sourceGeometry.index?.array,'source triangles changed');
+   for(const [name,attribute]of Object.entries(sourceGeometry.attributes))assert.deepEqual(mesh.geometry.attributes[name]?.array,attribute.array,`source ${name} attribute changed`);
+  }
   surfaces++;assert.equal(mesh.receiveShadow,false,`${mesh.name}: still receives scene shadows`);
   assert.equal(mesh.userData.characterSurface,true,`${mesh.name}: classroom shadow override cannot identify this surface`);
-  const mats=list(mesh.material),saved=before.get(mesh.geometry);assert.equal(mats.length,saved.length);
+  const mats=list(mesh.material),saved=before.get(sourceGeometry);assert.equal(mats.length,saved.length);
   for(let i=0;i<mats.length;i++){
    const material=mats[i],source=saved[i];
    assert.equal(material.isMeshBasicMaterial,true,`${material.name}: character is still lit`);
@@ -101,4 +110,14 @@ test('unlit conversion preserves non-default transparency and shared material id
  for(const key of ['transparent','opacity','alphaTest','alphaHash','vertexColors','side','depthWrite'])assert.equal(a.material[key],source[key]);
  assert.equal(a.castShadow,true,'unlit colour should not remove the character ground shadow');assert.equal(source.isMeshStandardMaterial,true);
  const material=a.material;useCharacterBaseColor(root);assert.equal(a.material,material,'second conversion allocates another material');
+});
+
+test('power-cut lighting switches every real character and viewmodel surface to diffuse light, then restores original daytime colours',async()=>{
+ for(const file of ['student-boy-v4.glb','student-girl-v4.glb','student-glasses-v2.glb','student-ponytail-v1.glb','teacher-v2.glb','hand-left-v3.glb','teacher-hand-left-v1.glb']){
+  const {scene}=await loadCharacter(file.replace(/\.glb$/,''));useCharacterBaseColor(scene);const originals=new Map();scene.traverse(o=>{if(o.isMesh)originals.set(o,o.material);});
+  const prop=new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial({color:'red'}));scene.add(prop);const propMaterial=prop.material;
+  setCharacterNight(scene,true);for(const [mesh,day]of originals){assert.equal(mesh.material.isMeshLambertMaterial,true);assert.equal(mesh.material.map,day.map);assert.equal(mesh.material.emissive.getHex(),0);assert.equal(mesh.material.toneMapped,true);assert.equal(mesh.receiveShadow,true);}
+  const first=[...originals][0][0].material;setCharacterNight(scene,true);assert.equal([...originals][0][0].material,first);assert.equal(prop.material,propMaterial);
+  setCharacterNight(scene,false);for(const [mesh,day]of originals){assert.equal(mesh.material,day);assert.equal(mesh.receiveShadow,false);}
+ }
 });

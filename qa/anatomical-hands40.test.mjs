@@ -37,9 +37,28 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: id
   const bends={Left:[],Right:[]},wrists={Left:[],Right:[]},clavicles={Left:[],Right:[]};
   for(let frame=0;frame<90;frame++){
    advance(1/60,speed);
-   // Walking arms now open laterally: their palms tilt with the forearms,
-   // while still facing inward, never forward. Idle keeps its upright palm.
-   for(const hand of actor.diagnostics().hands){const outward=hand.dorsal[0]*(hand.side==='Left'?1:-1);assert.ok(outward>(speed?.86:.97)&&Math.abs(hand.dorsal[2])<.10,`${variant} ${hand.side}: actual long-finger palm plane points forward/outward ${hand.dorsal}`);assert.ok(hand.along[1]<-.45,`${variant} ${hand.side}: relaxed fingers no longer point down`);}
+   // These diagnostics are already in the character's body frame. A wider
+   // forward/back swing naturally pitches the wrist; demanding a near-zero
+   // forward component would pin the hand upright instead of following it.
+   // The dorsal plane must remain predominantly lateral (inside a 45-degree
+   // cone about the body's outward side), so the palm still faces inward.
+   // Relaxed fingers stay in the lower hemisphere, never pointing upward.
+   for(const hand of actor.diagnostics().hands){
+    const [x,y,z]=hand.dorsal,outward=x*(hand.side==='Left'?1:-1);
+    if(speed){
+     assert.ok(outward>Math.hypot(y,z),`${variant} ${hand.side}: palm no longer faces predominantly inward ${hand.dorsal}`);
+     assert.ok(hand.along[1]<0,`${variant} ${hand.side}: swinging fingers point into the upper hemisphere`);
+     const wrist=actor.bones[hand.side+'Hand'],wristRotation=wrist.getWorldQuaternion(new T.Quaternion()),bodyInverse=actor.group.getWorldQuaternion(new T.Quaternion()).invert();
+     for(const digit of ['Index','Middle','Pinky']){
+      const points=samples[hand.side][digit];assert.ok(points?.length>=3,`${variant} ${hand.side} ${digit}: no actual fingertip skin`);
+      const tip=surfaceCenter(points,wrist).applyQuaternion(wristRotation).applyQuaternion(bodyInverse);
+      assert.ok(tip.y<0,`${variant} ${hand.side} ${digit}: visible finger end is above the wrist`);
+     }
+    }else{
+     assert.ok(outward>.97&&Math.abs(z)<.10,`${variant} ${hand.side}: idle palm is not inward ${hand.dorsal}`);
+     assert.ok(hand.along[1]<-.45,`${variant} ${hand.side}: idle fingers no longer point down`);
+    }
+   }
    for(const side of hands){const p=['Arm','ForeArm','Hand'].map(part=>actor.bones[side+part].getWorldPosition(V()));bends[side].push(p[0].clone().sub(p[1]).angleTo(p[2].clone().sub(p[1])));wrists[side].push(p[2].clone().sub(p[1]).angleTo(handFrame(actor.bones,side).along));clavicles[side].push(actor.bones[side+'Shoulder'].quaternion.clone().normalize());}
   }
   for(const side of hands){
@@ -49,7 +68,7 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: id
  }
  // Ordinary items have one carrying hand. The unused hand must stay relaxed,
  // rather than forcing both palms into the old symmetrical tray-holding pose.
- for(const [mood,gripping] of [['phone','Left'],['note','Right']]){
+ for(const [mood,gripping] of [['phone','Left']]){
   actor.setMood(mood);actor.setMotion({seated:false,carrying:true,speed:0});for(let i=0;i<120;i++)actor.update(time+=1/60);skinUpdate(actor.group);
   for(const side of hands){
    assert.ok(Object.keys(samples[side]).length>=3,`${variant} ${side}: insufficient actually weighted digit chains`);

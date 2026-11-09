@@ -22,15 +22,15 @@ function fixture(saved={},options={}){
   const doc=new EventTarget(),win=new EventTarget();doc.body=new Element();doc.documentElement=new Element();
   doc.querySelector=s=>{if(s==='dialog[open]')return[...nodes.values()].find(n=>n.open&&n.id.endsWith('-dialog'))||null;if(!nodes.has(s))nodes.set(s,new Element(s));return nodes.get(s);};
   doc.querySelectorAll=s=>{if(s==='dialog[open]')return[...nodes.values()].filter(n=>n.open&&n.id.endsWith('-dialog'));const data=s.match(/^\[data-(\w+)\]$/);if(data)return dataNodes[data[1]];return s.split(',').map(v=>doc.querySelector(v.trim()));};
-  const calls={imports:[],creates:[],controllers:0,starts:[],active:[],characters:[],saved:[],disposed:0,errors:[],connections:0,leaves:0},pending=[];
-  const scene={setMap:v=>calls.map=v,setCharacter:v=>calls.characters.push(v),setQuality(){},setMotion(){},setActive:v=>calls.active.push(v),dispose:()=>calls.disposed++};
+  const calls={imports:[],creates:[],controllers:0,starts:[],active:[],characters:[],soundCues:[],saved:[],disposed:0,errors:[],connections:0,leaves:0},pending=[];
+  const scene={setMap:v=>calls.map=v,setCharacter:v=>calls.characters.push(v),setQuality(){},setMotion(){},setSoundCues:v=>calls.soundCues.push(v),setActive:v=>calls.active.push(v),dispose:()=>calls.disposed++};
   let game;
   const loadModule=async spec=>{
     calls.imports.push(spec);
     if(spec.includes('classroom-game'))return{createClassroomGame:({onExit})=>{calls.controllers++;game={active:false,setRound(r){this.round=r;},start(options){calls.starts.push(options);this.active=true;doc.body.classList.add('playing');},exit(){this.active=false;doc.body.classList.remove('playing');onExit();},dispose(){this.exit();}};return game;}};
     return{createClassroom:(canvas,options)=>{calls.creates.push(options);return new Promise((resolve,reject)=>pending.push({resolve:()=>resolve(scene),reject}));}};
   };
-  const context={connectCampusRoom:async()=>{calls.connections++;await options.connection;return{snapshot:()=>({map:'classroom'}),leave(){calls.leaves++;}};},defaultCampusEndpoint:()=>options.endpoint??'http://localhost:8931',playNovelEffect:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
+  const context={connectCampusRoom:async args=>{calls.connectionOptions=args;calls.connections++;await options.connection;return{snapshot:()=>({map:'classroom'}),leave(){calls.leaves++;}};},defaultCampusEndpoint:()=>options.endpoint??'http://localhost:8931',playCampusFoley:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
   // Substitute only dynamic imports, leaving the production lifecycle and DOM
   // event handlers intact. This is an event-only test, not a browser renderer.
   vm.runInNewContext(source.replace(/^import .*;\n/gm,'').replace(/\bimport\(/g,'loadModule('),context,{filename:'app.js'});
@@ -43,11 +43,24 @@ test('opening the illustrated menu performs no 3D imports or classroom construct
   assert.match(html,/class="menu-illustration"[\s\S]*assets\/menu-reference-33\.jpg/);
 });
 
+test('sound cue preference survives reload and reaches the scene loaded afterwards',async()=>{
+  const f=fixture({soundCues:false});assert.equal(f.el('#sound-cues-toggle').checked,false);
+  const toggle=f.el('#sound-cues-toggle');
+  toggle.checked=true;toggle.dispatchEvent(new Event('change'));assert.equal(f.calls.saved.at(-1).soundCues,true);
+  toggle.checked=false;toggle.dispatchEvent(new Event('change'));assert.equal(f.calls.saved.at(-1).soundCues,false);
+  const reloaded=fixture(f.calls.saved.at(-1));assert.equal(reloaded.el('#sound-cues-toggle').checked,false);
+  reloaded.click('#enter-solo');await flush();reloaded.pending[0].resolve();await flush();
+  assert.equal(reloaded.calls.soundCues.at(-1),false);
+  const live=reloaded.el('#sound-cues-toggle');live.checked=true;live.dispatchEvent(new Event('change'));
+  assert.equal(reloaded.calls.soundCues.at(-1),true);assert.equal(reloaded.calls.saved.at(-1).soundCues,true);
+  reloaded.game.exit();
+});
+
 test('single-player entry loads once and starts without connecting to any room server',async()=>{
   const f=fixture({role:'teacher',character:'girl'});f.click('#enter-solo');await flush();
   assert.equal(f.el('#room-dialog').open,true);assert.equal(f.el('.room-connect').hidden,true);
   f.pending[0].resolve();await flush();assert.equal(f.calls.connections,0);assert.equal(f.calls.starts.length,1);
-  assert.equal(f.calls.starts[0].solo,true);assert.equal(f.calls.starts[0].role,'teacher');assert.equal(f.calls.characters.at(-1),'girl');
+  assert.equal(f.calls.starts[0].solo,true);assert.equal(f.calls.starts[0].role,'student');assert.equal(f.calls.starts[0].map,'classroom');assert.equal(f.calls.characters.at(-1),'girl');
   assert.equal(f.el('#room-dialog').open,false);assert.equal(f.el('#classroom').hidden,false);assert.equal(f.game.round,null);
   f.game.exit();f.click('#enter-classroom');f.click('#room-enter');await flush();assert.equal(f.calls.connections,1);
   f.game.exit();f.click('#enter-solo');await flush();assert.equal(f.calls.connections,1);assert.equal(f.game.round,null);assert.equal(f.calls.creates.length,1);
@@ -121,4 +134,32 @@ test('switching to solo while a room request is pending cannot reopen or replace
   assert.equal(f.calls.connections,1);f.click('#room-solo');await flush();assert.equal(f.calls.starts.length,1);assert.equal(f.game.round,null);
   resolve();await flush();assert.equal(f.calls.leaves,1);assert.equal(f.calls.starts.length,1);assert.equal(f.game.round,null);
   f.game.exit();f.click('#enter-classroom');await flush();assert.equal(f.el('#room-enter').disabled,false);
+});
+
+
+test('room creation owns duration and target, while joining cannot configure another room',async()=>{
+  assert.doesNotMatch(html,/id="choose-mode"|id="mode-dialog"|data-map=/);
+  assert.match(html,/<dialog id="room-dialog"[\s\S]*id="room-settings"[\s\S]*id="round-minutes"[\s\S]*id="round-goal"/);
+  const f=fixture({role:'teacher',map:'night',duration:900,target:80});
+  f.click('#enter-classroom');await flush();
+  assert.equal(f.el('#room-settings').hidden,false);
+  assert.equal(Number(f.el('#round-minutes').value),15);assert.equal(Number(f.el('#round-goal').value),80);
+  // Submit directly while the final field is still focused (no change/blur).
+  f.el('#round-minutes').value='20';f.el('#round-goal').value='45';
+  f.pending[0].resolve();await flush();f.click('#room-enter');await flush();
+  assert.equal(f.calls.connectionOptions.settings.duration,1200);assert.equal(f.calls.connectionOptions.settings.target,45);
+  assert.equal(f.calls.connectionOptions.rolePreference,'student');assert.equal(f.calls.connectionOptions.map,'classroom');
+  f.game.exit();f.click('#enter-classroom');
+  f.el('#room-code').value='ABC123';f.el('#room-code').dispatchEvent(new Event('input'));
+  assert.equal(f.el('#room-settings').hidden,true);assert.equal(f.el('#round-minutes').disabled,true);
+  f.el('#room-code').value='';f.el('#room-code').dispatchEvent(new Event('input'));
+  assert.equal(f.el('#room-settings').hidden,false);assert.equal(f.el('#round-goal').disabled,false);
+});
+
+
+test('changing audio after reloading retains the saved room duration and target',()=>{
+ const f=fixture({duration:900,target:80});f.click('#sound-toggle');
+ assert.equal(f.calls.saved.at(-1).duration,900);assert.equal(f.calls.saved.at(-1).target,80);
+ const reloaded=fixture(f.calls.saved.at(-1));
+ assert.equal(Number(reloaded.el('#round-minutes').value),15);assert.equal(Number(reloaded.el('#round-goal').value),80);
 });

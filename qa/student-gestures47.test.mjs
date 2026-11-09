@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-52';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-57';
 import {loadGeometry} from './gltf-geometry.mjs';
 const V=(...v)=>new T.Vector3(...v),DT=1/60;
 function tick(actor,t,seconds=2){for(let i=0;i<seconds/DT;i++)actor.update(t+=DT);actor.group.updateMatrixWorld(true);return t;}
@@ -30,9 +30,9 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS)){
  test(`${variant}: handheld gestures bend elbows instead of folding wrists and preserve rig lengths`,async()=>{
   const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant});
   const lengths=new Map(Object.entries(actor.bones).filter(([name])=>/^(Left|Right)(Arm|ForeArm|Hand)/.test(name)).map(([,b])=>[b,b.position.clone()]));let time=0;
-  for(const [mood,seated]of [['snack',true],['drink',true],['burger',true],['note',true],['phone',true],['phone',false],['note',false]]){
+  for(const [mood,seated]of [['snack',true],['drink',true],['burger',true],['phone',true],['phone',false]]){
    actor.setMood(mood);actor.setMotion({seated,carrying:!seated});time=tick(actor,time);
-   const side=mood==='note'?'Right':'Left';
+   const side='Left';
    for(let i=0;i<120;i++){actor.update(time+=DT);actor.group.updateMatrixWorld(true);assert.ok(wristBend(actor,side)<55,`${mood} ${side} folds at the wrist`);if(mood==='phone'&&seated)assert.ok(wristBend(actor,'Right')<60,'phone tapping folds the right wrist');}
    if(!seated&&mood==='phone')assert.ok(actor.bones.RightHand.getWorldPosition(V()).y<actor.bones.LeftHand.getWorldPosition(V()).y-.2,'empty hand remains raised beside the item');
    for(const [bone,p]of lengths)assert.ok(bone.position.distanceTo(p)<.00002,`${bone.name} length changed`);
@@ -44,11 +44,7 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS)){
   for(let i=0;i<180;i++){actor.update(time+=DT);actor.group.updateMatrixWorld(true);const tip=V(...actor.diagnostics().gestures.indexTip).applyMatrix4(phoneMatrix(actor).invert());assert.ok(Math.abs(tip.x)<.04&&Math.abs(tip.y)<.07,'finger misses screen rectangle');z.push(tip.z);rotations.push(actor.bones.RightHandIndex2.quaternion.clone());}
   assert.ok(Math.min(...z)>.013&&Math.min(...z)<.019,`finger does not contact screen: ${Math.min(...z)}`);assert.ok(Math.max(...z)-Math.min(...z)>.010,'finger never lifts');assert.ok(Math.max(...rotations.map(q=>q.angleTo(rotations[0])))>.035,'real finger joint never flexes');actor.dispose();
  });
- test(`${variant}: paper passing moves its held hand while the other hand supports on the desk`,async()=>{
-  const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant});actor.setMood('note');let time=tick(actor,0),z=[];const left=actor.bones.LeftHand.getWorldPosition(V());
-  for(let i=0;i<180;i++){actor.update(time+=DT);actor.group.updateMatrixWorld(true);z.push(actor.bones.RightHand.getWorldPosition(V()).z);assert.ok(actor.bones.LeftHand.getWorldPosition(V()).distanceTo(left)<.0001,'supporting hand drifts');}
-  assert.ok(Math.max(...z)-Math.min(...z)>.02,'note remains completely static');actor.dispose();
- });
+
 }
 
 for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: interrupting phone use and returning to writing does not snap or leave a stale grip`,async()=>{

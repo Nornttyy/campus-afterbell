@@ -1,14 +1,17 @@
 import * as T from './vendor/three.module.js';
-import {surfaceHeight,drawBoardSurface,setWallSurfaceUV} from './surface-materials.js?v=campus-52';
-import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-52';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-57';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-57';
+import {surfaceHeight,drawBoardSurface,setWallSurfaceUV} from './surface-materials.js?v=campus-57';
+import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-57';
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
-export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces=null}){
+export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces=null,artwork={},bakeStatic=()=>{}}){
  const enclosure=new T.Group();enclosure.name='classroom-cutaway-walls';scene.add(enclosure);
  const plaster=surfaces?.wall||texture(512,512,(c,w,h)=>{c.fillStyle='#e9e7dc';c.fillRect(0,0,w,h);let seed=71;for(let i=0;i<9000;i++){seed=(seed*16807)%2147483647;const x=seed%w;seed=(seed*16807)%2147483647;const y=seed%h;c.fillStyle=i%3?'rgba(119,119,100,.025)':'rgba(255,255,245,.13)';c.fillRect(x,y,1+i%2,1);}});
- const blue=mat('#46746e',{metalness:.24,roughness:.38}),edge=mat('#a7bbc0',{metalness:.3,roughness:.43}),cream=mat(surfaces?'#ffffff':'#f3f1e9',{map:plaster,bumpMap:surfaces?surfaceHeight(plaster,assets):null,bumpScale:.0014,roughness:.9}),glass=mat('#a9d9ea',{transparent:true,opacity:.065,depthWrite:false,roughness:.10});
- const frostedGlass=mat('#b8e4f3',{transparent:true,opacity:.34,depthWrite:false,roughness:.94,metalness:0}),upperGlass=mat('#c1d8d8',{transparent:true,opacity:.20,depthWrite:false,roughness:.38});
- const frameGroove=mat('#294d4b',{metalness:.12,roughness:.49}),frameLip=mat('#71928a',{metalness:.31,roughness:.32}),windowCloth=mat('#3f706d',{side:T.DoubleSide,roughness:.95});
- const seal=mat('#455c5a',{roughness:.8}),recess=mat('#879b95',{roughness:.82}),doorPaint=mat('#d8e1d9',{roughness:.62}),skirting=mat('#547b70',{roughness:.72});
+ const blue=mat('#91b0b8',{metalness:.12,roughness:.48}),edge=mat('#bdcdd0',{metalness:.18,roughness:.49}),cream=mat(surfaces?'#f6e8cd':'#f6eddb',{map:plaster,bumpMap:surfaces?surfaceHeight(plaster,assets):null,bumpScale:.0014,roughness:.9}),glass=mat('#a9d9ea',{transparent:true,opacity:.065,depthWrite:false,roughness:.10});
+ const frostedGlass=mat('#a4d9eb',{transparent:true,opacity:.68,depthWrite:false,roughness:.94,metalness:0}),upperGlass=mat('#b2dce6',{transparent:true,opacity:.58,depthWrite:false,roughness:.38});
+ const frameGroove=mat('#4b6971',{metalness:.10,roughness:.55}),frameLip=mat('#a6bfc4',{metalness:.18,roughness:.43}),windowCloth=mat('#3f706d',{side:T.DoubleSide,roughness:.95});
+ const seal=mat('#455c5a',{roughness:.8}),recess=mat('#879b95',{roughness:.82}),doorPaint=mat('#c6d3d1',{roughness:.62}),skirting=mat('#547b70',{roughness:.72});
+ const wallGreen=mat('#8aa993',{roughness:.88});
  const ceilingMaterial=new T.MeshStandardMaterial({color:'#deded5',roughness:.93});materials.add(ceilingMaterial);
  const curtains=[],sky=new T.MeshBasicMaterial({color:'#c9e8f5'});materials.add(sky);
  const facades=[new T.Group(),new T.Group()];facades[0].name='high-classroom-windows';facades[1].name='tiered-low-classroom-windows';scene.add(...facades);facades[1].visible=false;
@@ -56,16 +59,18 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  function buildWindow(side,z,width,parent,top=3.83){
   const x=side===-1?-7.30:side===1?7.30:CORRIDOR.maxX+.10;
   const bottom=1.10,height=top-bottom,mid=(bottom+top)/2,inward=side===-1?1:-1,transom=top-.50;
-  B(cream,[x,.54,z],[.16,1.08,width],parent);B(cream,[x,(top+CEILING_HEIGHT)/2,z],[.16,CEILING_HEIGHT-top,width],parent);
+  B(wallGreen,[x,.54,z],[.16,1.08,width],parent);B(cream,[x,(top+CEILING_HEIGHT)/2,z],[.16,CEILING_HEIGHT-top,width],parent);
   for(const zz of [z-width/2,z,z+width/2])profile(x,mid,zz,height+.08,true,inward,parent);
   for(const y of [bottom,transom,top])profile(x,y,z,width+.11,false,inward,parent);
   // Two independently recessed lower sashes and two upper lights. Offset the
   // sliding tracks in depth so their overlap and seals are readable obliquely.
   for(const [bay,zz]of [z-width*.25,z+width*.25].entries())for(const [low,high,isTop]of [[bottom+.085,transom-.080,false],[transom+.085,top-.080,true]]){
    const paneWidth=width*.5-.16,paneHeight=high-low,cy=(low+high)/2,px=x+inward*(bay===0?.030:.004);
-   for(const edgeZ of [zz-paneWidth/2,zz+paneWidth/2]){B(blue,[px,cy,edgeZ],[.052,paneHeight+.043,.043],parent);B(frameLip,[px+inward*.030,cy,edgeZ-.013],[.007,paneHeight,.007],parent);}
-   for(const y of [low,high])B(blue,[px,y,zz],[.052,.043,paneWidth+.043],parent);
-   const pane=B(side===1?(isTop?upperGlass:frostedGlass):glass,[px-inward*.010,cy,zz],[.012,paneHeight-.045,paneWidth-.045],parent);pane.castShadow=false;
+   // The old 43mm sash rails stopped 20mm short of the structural mullions.
+   // Join the physical profiles; do not conceal the opening with extra glass.
+   for(const edgeZ of [zz-paneWidth/2,zz+paneWidth/2]){B(blue,[px,cy,edgeZ],[.052,paneHeight+.10,.10],parent);B(frameLip,[px+inward*.030,cy,edgeZ-.037],[.007,paneHeight,.007],parent);}
+   for(const y of [low,high])B(blue,[px,y,zz],[.052,.10,paneWidth+.10],parent);
+   const pane=B(side===1?(isTop?upperGlass:frostedGlass):glass,[px-inward*.010,cy,zz],[.012,paneHeight-.096,paneWidth-.096],parent);pane.castShadow=false;pane.name=side===1?'pale-blue-interior-pane':'clear-exterior-pane';
    if(!isTop){rounded(frameGroove,[px+inward*.052,cy-.07,zz+(bay===0?1:-1)*(paneWidth/2-.07)],[.030,.13,.022],.005,null,parent);for(const track of [-.025,.025])B(frameGroove,[x+inward*(.035+track),bottom+.034,zz],[.008,.008,paneWidth],parent);}
   }
   B(blue,[x+inward*.090,bottom-.070,z],[.30,.060,width+.16],parent);B(frameLip,[x+inward*.218,bottom-.055,z],[.035,.020,width+.16],parent);B(frameGroove,[x+inward*.095,bottom-.105,z],[.27,.012,width+.10],parent);
@@ -112,7 +117,10 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  const doors=new Map(),targets={doors:[],officeDesks:[],officeChairs:[],lockers:[]};
  for(const d of DOORS){
   for(const z of [d.minZ,d.maxZ])B(blue,[7.30,1.54,z],[.24,3.08,.055],enclosure);
-  B(blue,[7.30,3.06,d.center],[.24,.055,1.65],enclosure);B(frostedGlass,[7.30,3.65,d.center],[.03,1.10,1.55],enclosure);B(cream,[7.30,4.37,d.center],[.20,.28,1.60],enclosure);
+  B(blue,[7.30,3.08,d.center],[.24,.09,1.65],enclosure);
+  for(const z of[d.minZ+.025,d.maxZ-.025])B(blue,[7.30,3.655,z],[.16,1.15,.06],enclosure);
+  B(blue,[7.30,4.205,d.center],[.16,.07,1.65],enclosure);
+  B(frostedGlass,[7.30,3.645,d.center],[.03,1.09,1.52],enclosure);B(cream,[7.30,4.37,d.center],[.20,.28,1.60],enclosure);
   const leaf=new T.Group();leaf.name=`classroom-${d.id}-door`;leaf.position.set(7.30,0,d.maxZ);leaf.rotation.y=-Math.PI/2;
   const panel=new T.Group();panel.rotation.y=Math.PI;leaf.add(panel);doorLeaf(panel,1.60,3.02);enclosure.add(leaf);markDynamic(leaf);
   leaf.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'door',id:d.id};});
@@ -122,46 +130,82 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  // End walls, blackboards, teaching platform, wall trim and ceiling form a
  // continuous shell at exactly the same boundaries as walking/throw collisions.
  B(cream,[0,wallY,-10.10],[14.40,wallHeight,.20]);B(cream,[.55,wallY,8.91],[15.50,wallHeight,.22],enclosure);
+ B(wallGreen,[0,.57,-9.983],[14.38,1.14,.025]);B(edge,[0,1.145,-9.966],[14.38,.025,.030]);B(wallGreen,[.50,.57,8.785],[15.40,1.14,.025],enclosure);B(edge,[.50,1.145,8.768],[15.40,.025,.030],enclosure);
  strip(0,-9.98,14.40,.04,room,true,ceilingRig);strip(0,8.78,14.40,.04,enclosure,true,ceilingRig);
  const lesson=texture(1400,680,(c,w,h)=>{drawBoardSurface(c,w,h,surfaces?.board);c.fillStyle='#e4ead8';c.font='42px "Kaiti SC",serif';c.fillText('数学',75,80);c.font='italic 62px Georgia';c.fillText('y = ax² + bx + c',85,230);c.fillText('a² + b² = c²',85,372);c.font='38px serif';c.fillText('练习 3    P.48',85,550);c.strokeStyle='#e4ead8';c.lineWidth=5;c.beginPath();c.moveTo(900,480);c.lineTo(1220,480);c.lineTo(1220,180);c.closePath();c.stroke();});
  B(edge,[0,2.65,8.76],[7.50,2.55,.11],enclosure);B(mat('#fff',{map:lesson,roughness:.92}),[0,2.65,8.69],[7.36,2.40,.025],enclosure);B(edge,[0,1.34,8.61],[7.55,.05,.20],enclosure);
  const poster=texture(1024,512,(c,w,h)=>{drawBoardSurface(c,w,h,surfaces?.board);c.fillStyle='#eee6ba';c.textAlign='center';c.font='bold 66px "Kaiti SC",serif';c.fillText('迎接新世纪',w/2,105);c.strokeStyle='#c9d4b8';c.lineWidth=3;for(const x of [45,355,665]){c.strokeRect(x,160,280,300);c.font='30px "Kaiti SC",serif';c.fillText(['团结友爱','认真学习','文明班级'][(x-45)/310],x+140,220);for(let j=0;j<7;j++){c.fillStyle='#b5c7b3';c.fillRect(x+25,255+j*22,230-j%3*32,3);}}});
  B(edge,[0,2.5,-9.98],[5.5,2.4,.09]);B(mat('#fff',{map:poster,roughness:.94}),[0,2.5,-9.92],[5.38,2.28,.016]);
- const schedule=texture(640,640,(c,w,h)=>{c.fillStyle='#eee9d3';c.fillRect(0,0,w,h);c.fillStyle='#475d59';c.textAlign='center';c.font='bold 42px serif';c.fillText('课程表',w/2,66);c.strokeStyle='#9aa59a';c.lineWidth=2;for(let j=0;j<10;j++){c.beginPath();c.moveTo(20,100+j*52);c.lineTo(620,100+j*52);c.stroke();}for(let j=0;j<6;j++){c.beginPath();c.moveTo(20+j*120,100);c.lineTo(20+j*120,568);c.stroke();}c.font='20px serif';for(let j=0;j<8;j++)for(let k=0;k<5;k++)c.fillText(['语文','数学','英语','体育','自习'][(j+k*2)%5],80+k*120,138+j*52);});
- B(blue,[-5.15,2.45,-9.97],[2.1,2.1,.08]);B(mat('#fff',{map:schedule,roughness:.9}),[-5.15,2.45,-9.91],[1.96,1.96,.014]);
+ const noticeBoard=texture(960,640,(c,w,h)=>{
+  c.fillStyle='#62a58b';c.fillRect(0,0,w,h);
+  for(const [x,y,ww,hh,color] of [[38,35,240,180,'#e7b29d'],[312,38,214,149,'#f0d797'],[583,55,208,255,'#ecead6'],[80,253,190,151,'#f1e7bc'],[308,235,234,220,'#dbe5cf'],[585,362,175,230,'#dde5d5'],[784,343,134,230,'#d2e1d7'],[88,448,210,142,'#c5dcdd'],[326,484,210,108,'#e8dcbb']]){
+   c.fillStyle=color;c.fillRect(x,y,ww,hh);c.fillStyle='#798d7d';c.fillRect(x+14,y+16,ww-28,5);for(let k=0;k<Math.floor((hh-45)/18);k++)c.fillRect(x+15,y+41+k*18,ww-30-k%3*17,2);c.fillStyle='#e7e3cf';c.beginPath();c.arc(x+ww/2,y+8,4,0,Math.PI*2);c.fill();
+  }
+ });
+ B(blue,[-4.75,2.52,-9.97],[3.3,2.28,.08]);B(mat('#fff',{map:noticeBoard,roughness:.9}),[-4.75,2.52,-9.91],[3.18,2.16,.014]);
+ const framedArt=(name,image,w,h,p,yaw=0,parent=room)=>{
+  const group=new T.Group();group.name=name;group.position.set(...p);group.rotation.y=yaw;parent.add(group);
+  B(blue,[0,0,0],[w+.07,h+.07,.035],group);
+  B(M.white,[0,0,.019],[w,h,.002],group);
+  const face=new T.PlaneGeometry(w,h);assets.add(face);const material=mat('#ffffff',{map:image,transparent:true,depthWrite:false,roughness:.85});
+  mesh(face,material,[0,0,.022],[1,1,1],null,group);return group;
+ };
+ if(artwork.classroomNotice){
+  framedArt('classroom-pillar-notice',artwork.classroomNotice,.64,.80,[7.185,2.40,3.15],-Math.PI/2,enclosure);
+ }
+ const award=texture(768,512,(c,w,h)=>{
+  c.fillStyle='#ead4a1';c.fillRect(0,0,w,h);c.strokeStyle='#bd473b';c.lineWidth=16;c.strokeRect(14,14,w-28,h-28);c.lineWidth=3;c.strokeRect(37,37,w-74,h-74);c.fillStyle='#b43f33';c.textAlign='center';c.font='bold 90px "Kaiti SC",serif';c.fillText('奖 状',w/2,147);c.fillStyle='#66513c';c.font='41px "Kaiti SC",serif';c.fillText('文明班级',w/2,268);c.font='27px "Kaiti SC",serif';c.fillText('团结 · 友爱 · 进步',w/2,345);c.strokeStyle='#b43f33';c.lineWidth=4;c.beginPath();c.arc(621,415,45,0,Math.PI*2);c.stroke();c.font='20px sans-serif';c.fillText('学校',621,422);
+ });
+ for(let row=0;row<3;row++)for(let col=0;col<3;col++)framedArt('classroom-red-award',award,.89,.593,[3.65+col*.94,3.20-row*.63,-9.94]);
+ createCampusWallProps({parent:enclosure,mat,box,rounded,mesh,assets});
+ const doodle=texture(512,256,(c,w,h)=>{
+  c.clearRect(0,0,w,h);c.strokeStyle='rgba(92,104,94,.62)';c.lineWidth=3;c.lineCap='round';c.beginPath();c.ellipse(105,142,45,35,-.14,0,Math.PI*2);c.moveTo(65,120);c.lineTo(64,78);c.lineTo(92,108);c.moveTo(118,110);c.lineTo(145,77);c.lineTo(147,132);c.moveTo(88,145);c.lineTo(91,146);c.moveTo(118,142);c.lineTo(121,143);c.moveTo(101,157);c.lineTo(110,163);c.lineTo(117,156);c.stroke();c.font='28px "Kaiti SC",serif';c.fillStyle='rgba(94,104,94,.55)';c.save();c.translate(198,114);c.rotate(-.08);c.fillText('下课去操场',0,0);c.restore();
+ });
+ const doodleGeo=new T.PlaneGeometry(.9,.45);assets.add(doodleGeo);const doodleMat=mat('#fff',{map:doodle,transparent:true,depthWrite:false,roughness:1});mesh(doodleGeo,doodleMat,[-7.185,1.47,4.8],[1,1,1],[0,Math.PI/2,0],room);mesh(doodleGeo,doodleMat,[10.986,1.72,-8.20],[1,1,1],[0,-Math.PI/2,0],enclosure);
  const woodGrain=texture(1024,256,(c,w,h)=>{c.fillStyle='#e1cfac';c.fillRect(0,0,w,h);for(let i=0;i<150;i++){const y=i*59%h;c.strokeStyle=i%3?'rgba(80,40,18,.07)':'rgba(255,249,220,.18)';c.lineWidth=.5+i%3*.3;c.beginPath();for(let x=0;x<=w;x+=16){const yy=y+Math.sin(x*.009+i*.5)*(1+i%6)+Math.sin(x*.022+i)*1.5;x?c.lineTo(x,yy):c.moveTo(x,yy);}c.stroke();}});
  woodGrain.wrapS=woodGrain.wrapT=T.RepeatWrapping;
  const officePlanks=texture(1024,1024,(c,w,h)=>{c.fillStyle='#c1a47c';c.fillRect(0,0,w,h);for(let row=0;row<8;row++){const y=row*128;c.fillStyle=['#c8ac84','#cbb18b','#bfa27c','#d0b58f'][row%4];c.fillRect(0,y,w,127);for(let line=0;line<27;line++){c.strokeStyle=line%3?'rgba(83,53,24,.045)':'rgba(255,240,198,.12)';c.lineWidth=1;c.beginPath();for(let x=0;x<=w;x+=16){const yy=y+3+line*4.55+Math.sin(x*.013+line+row)*1.4;x?c.lineTo(x,yy):c.moveTo(x,yy);}c.stroke();}c.fillStyle='rgba(65,48,28,.25)';c.fillRect(0,y,w,1.2);for(let cut=0;cut<2;cut++){const x=(row%2?256:0)+cut*512;c.fillRect(x,y,1.4,128);}}});officePlanks.wrapS=officePlanks.wrapT=T.RepeatWrapping;
  const officeWood=mat('#a56847',{map:woodGrain,roughness:.62}),darkWood=mat('#73503b',{map:woodGrain,roughness:.72}),cabinetPaint=mat('#b6cbc4',{roughness:.58}),cabinetBack=mat('#687b75',{roughness:.82}),boards=mat('#d5a66a',{map:woodGrain,roughness:.66}),officeFloor=mat('#ffffff',{map:officePlanks,roughness:.75});
  B(boards,[0,.08,7.65],[6.30,.16,2.30],enclosure);
  const lx=(LECTERN.minX+LECTERN.maxX)/2,lz=(LECTERN.minZ+LECTERN.maxZ)/2;rounded(M.wood,[lx,1.11,lz],[1.35,.075,.82],.022,null,enclosure);rounded(cream,[lx,.65,lz+.07],[1.22,.87,.60],.016,null,enclosure);B(edge,[lx,.23,lz+.05],[1.24,.055,.63],enclosure);
- // Corridor: bright exterior windows in the main section, a recessed darker
- // storage end outside the rear door, and no props narrowing either doorway.
+ // Only the section beside the lift is glazed. The remaining wall is solid,
+ // as in the supplied walkthrough; its physical outer boundary never opens.
  const corridorWallX=CORRIDOR.maxX+.10;
- for(const [z,length]of [[-8.82,2.76],[7.0875,3.865]])B(cream,[corridorWallX,wallY,z],[.20,wallHeight,length],enclosure);
- for(let i=0;i<4;i++){const z=-5.86+i*3.18;window(2,z,2.95,enclosure);B(cream,[corridorWallX,wallY,z-1.59],[.20,wallHeight,.23],enclosure);}B(cream,[corridorWallX,wallY,5.27],[.20,wallHeight,.23],enclosure);
+ for(const [lo,hi]of [[-10.20,-7.45],[-4.27,9.02]]){
+  const length=hi-lo,z=(lo+hi)/2;
+  B(cream,[corridorWallX,wallY,z],[.20,wallHeight,length],enclosure).name='corridor-solid-outer-wall';
+  B(wallGreen,[10.986,.57,z],[.025,1.14,length],enclosure);
+  B(edge,[10.968,1.145,z],[.030,.025,length],enclosure);
+ }
+ window(2,-5.86,2.95,enclosure);
+ for(const z of[-7.3925,-4.3275])B(cream,[corridorWallX,wallY,z],[.20,wallHeight,.115],enclosure);
  strip(CORRIDOR.maxX-.025,-.60,.05,18.80,enclosure);
  B(cream,[(10.10+11.20)/2,wallY,8.91],[1.10,wallHeight,.22],enclosure);
  B(cream,[(7.40+8.10)/2,wallY,-10.10],[.70,wallHeight,.20],enclosure);B(cream,[(10.60+11.20)/2,wallY,-10.10],[.60,wallHeight,.20],enclosure);
- const notice=texture(768,384,(c,w,h)=>{c.fillStyle='#e9e6d4';c.fillRect(0,0,w,h);c.fillStyle='#476e68';c.fillRect(0,0,w,65);c.fillStyle='#f2f0dc';c.font='bold 36px sans-serif';c.textAlign='center';c.fillText('校园公告',w/2,46);for(let n=0;n<4;n++){c.fillStyle=['#e6c884','#d3decc','#dfb4a4','#c3d8dc'][n];c.fillRect(20+n*187,90,167,260);c.fillStyle='#60766e';for(let j=0;j<11;j++)c.fillRect(34+n*187,118+j*18,130-j%3*12,3);}});
- B(edge,[10.985,2.2,1.1],[.05,1.50,3.05],enclosure);B(mat('#fff',{map:notice}),[10.95,2.2,1.1],[.016,1.40,2.95],enclosure);
+ if(artwork.studentTutorial){
+  const tutorial=new T.Group();tutorial.name='corridor-student-tutorial';tutorial.position.set(10.996,2.05,.90);tutorial.rotation.y=-Math.PI/2;enclosure.add(tutorial);
+  const geo=new T.PlaneGeometry(3.0,1.5);assets.add(geo);
+  mesh(geo,mat('#ffffff',{map:artwork.studentTutorial,transparent:true,depthWrite:false,roughness:.96}),[0,0,0],[1,1,1],null,tutorial);
+ }
  const clutter=new T.Group();clutter.name='rear-door-dark-storage';clutter.position.set(10.63,0,-9.32);enclosure.add(clutter);
  const cardboard=mat('#947f5c',{roughness:.98});for(const [x,y,z,w,h,d]of [[0,.35,0,.64,.70,.64],[-.03,.95,.05,.58,.50,.58],[.03,1.36,.08,.50,.32,.50]]){B(cardboard,[x,y,z],[w,h,d],clutter);B(darkWood,[x,y+h/2+.003,z],[w,.006,.04],clutter);}
  for(let i=0;i<3;i++){cylinder(boards,[-.21+i*.13,1.01,-.26],[.017,1.95,.017],[0,0,-.05+i*.045],clutter);B(cabinetBack,[-.21+i*.13,.12,-.26],[.13,.15,.08],clutter);}
  // Office shares the north wall with the classroom and can actually be entered.
  const office=new T.Group();office.name='walkable-teacher-office';enclosure.add(office);
  floor(OFFICE.minX,OFFICE.maxX,OFFICE.minZ-.22,OFFICE.maxZ,officeFloor,office);
- B(cream,[1.90,wallY,12.4],[.20,wallHeight,7.20],office);B(cream,[11.10,wallY,12.4],[.20,wallHeight,7.20],office);
- B(cream,[6.5,.58,15.90],[9,1.16,.20],office);B(cream,[6.5,4.10,15.90],[9,.82,.20],office);for(const x of [2.2,10.8])B(cream,[x,2.44,15.90],[.40,2.56,.20],office);
- for(const y of [1.18,3.69])B(blue,[6.5,y,15.79],[8.38,.055,.12],office);for(let i=0;i<7;i++)B(blue,[2.32+i*1.39,2.44,15.79],[.05,2.55,.12],office);B(glass,[6.5,2.44,15.80],[8.26,2.50,.016],office);B(edge,[6.5,1.14,15.65],[8.50,.06,.30],office);
+ const officeWidth=OFFICE.maxX-OFFICE.minX,officeMidX=(OFFICE.minX+OFFICE.maxX)/2,officeStart=CLASSROOM.maxZ,officeEnd=OFFICE.maxZ+.20,officeDepth=officeEnd-officeStart,officeMidZ=(officeStart+officeEnd)/2;
+ for(const x of[OFFICE.minX-.10,OFFICE.maxX+.10])B(cream,[x,wallY,officeMidZ],[.20,wallHeight,officeDepth],office);
+ const officeBack=OFFICE.maxZ+.10;
+ B(cream,[officeMidX,.58,officeBack],[officeWidth,1.16,.20],office);B(cream,[officeMidX,4.10,officeBack],[officeWidth,.82,.20],office);for(const x of[OFFICE.minX+.20,OFFICE.maxX-.20])B(cream,[x,2.44,officeBack],[.40,2.56,.20],office);
+ for(const y of[1.18,3.69])B(blue,[officeMidX,y,OFFICE.maxZ-.01],[officeWidth-.62,.07,.12],office);for(let i=0;i<=8;i++)B(blue,[OFFICE.minX+.32+i*(officeWidth-.64)/8,2.44,OFFICE.maxZ-.01],[.06,2.55,.12],office);B(glass,[officeMidX,2.44,OFFICE.maxZ],[officeWidth-.74,2.50,.016],office);B(edge,[officeMidX,1.14,OFFICE.maxZ-.15],[officeWidth-.50,.06,.30],office);
  for(const x of [OFFICE.doorMinX,OFFICE.doorMaxX])B(blue,[x,1.54,8.91],[.06,3.08,.25],office);B(blue,[OFFICE.doorX,3.07,8.91],[1.86,.06,.25],office);B(cream,[OFFICE.doorX,3.82,8.91],[1.80,1.38,.22],office);
  const officeDoors=[];for(const [i,x]of [OFFICE.doorMinX,OFFICE.doorMaxX].entries()){
   const hinge=new T.Group();hinge.name='office-countdown-door';hinge.position.set(x,0,8.91);const panel=new T.Group();panel.rotation.y=i===0?Math.PI/2:-Math.PI/2;hinge.add(panel);doorLeaf(panel,.90,3.02);office.add(hinge);markDynamic(hinge);officeDoors.push(hinge);
  }
  const books=['#8d4940','#37596b','#d6b158','#53795d','#d1cfb5','#75627e'].map(c=>mat(c,{roughness:.83}));
- for(const z of [11.32,13.72]){
-  B(darkWood,[2.08,1.4,z],[.06,2.78,2.32],office);for(const zz of [z-1.13,z+1.13])B(officeWood,[2.35,1.4,zz],[.60,2.78,.06],office);
-  for(let r=0;r<6;r++){const y=.08+r*.53;B(officeWood,[2.35,y,z],[.60,.045,2.32],office);if(r===5)continue;for(let n=0;n<19;n++){const h=.30+(n*7+r)%5*.025,zz=z-1.03+n*.114;B(books[(n+r)%6],[2.43,y+h/2+.025,zz],[.30,h,.075],office);B(M.paper,[2.586,y+h*.70,zz],[.009,.014,.054],office);}}
+ for(const z of [11.32,13.85,16.38,18.91]){
+  B(darkWood,[OFFICE.minX+.08,1.4,z],[.06,2.78,2.32],office);for(const zz of [z-1.13,z+1.13])B(officeWood,[OFFICE.minX+.35,1.4,zz],[.60,2.78,.06],office);
+  for(let r=0;r<6;r++){const y=.08+r*.53;B(officeWood,[OFFICE.minX+.35,y,z],[.60,.045,2.32],office);if(r===5)continue;for(let n=0;n<19;n++){const h=.30+(n*7+r)%5*.025,zz=z-1.03+n*.114;B(books[(n+r)%6],[OFFICE.minX+.43,y+h/2+.025,zz],[.30,h,.075],office);B(M.paper,[OFFICE.minX+.586,y+h*.70,zz],[.009,.014,.054],office);}}
  }
  B(cabinetPaint,[10.68,.53,13],[.60,.99,3.80],office);B(officeWood,[10.65,1.045,13],[.66,.04,3.85],office);
  for(const z of [11.55,12.5,13.45,14.4]){B(cabinetBack,[10.37,.53,z],[.018,.89,.89],office);B(cabinetPaint,[10.35,.53,z],[.025,.84,.84],office);rounded(edge,[10.325,.59,z+.29],[.024,.10,.025],.006,null,office);}
@@ -173,15 +217,25 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  B(darkWood,[0,-.12,0],[1.44,.04,.76],officeDrawer);for(const x of [-.72,.72])B(officeWood,[x,.01,0],[.035,.25,.76],officeDrawer);B(officeWood,[0,.01,.37],[1.45,.25,.035],officeDrawer);rounded(officeWood,[0,.01,-.39],[1.52,.28,.055],.006,null,officeDrawer);rounded(edge,[0,.04,-.43],[.24,.025,.035],.006,null,officeDrawer);
  markDynamic(desk);desk.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'officeDesk',id:OFFICE_DESK.id};});
  targets.officeDesks.push({id:OFFICE_DESK.id,object:desk,drawer:officeDrawer,itemParent:officeDrawer,point:new T.Vector3(OFFICE_DESK.x,.98,OFFICE_DESK.z-.45)});
- const mobileBoard=new T.Group();mobileBoard.name='office-mobile-board';mobileBoard.position.set(8,0,15.35);office.add(mobileBoard);B(edge,[0,1.69,0],[1.90,1.08,.06],mobileBoard);B(M.white,[0,1.69,-.038],[1.81,1,.016],mobileBoard);for(const x of[-.85,.85]){B(edge,[x,1.14,0],[.04,2.20,.04],mobileBoard);rounded(edge,[x,.10,0],[.06,.045,.70],.008,null,mobileBoard);for(const z of[-.28,.28])cylinder(seal,[x,.045,z],[.045,.027,.045],[0,0,Math.PI/2],mobileBoard);}B(edge,[0,1.13,-.10],[1.80,.025,.16],mobileBoard);
+ const officeDrawers=new Map([[OFFICE_DESK.id,officeDrawer]]);
+ const mobileBoard=new T.Group();mobileBoard.name='office-mobile-board';mobileBoard.position.set(OFFICE_BOARD.x,0,OFFICE_BOARD.z);office.add(mobileBoard);B(edge,[0,1.78,0],[2.70,1.40,.06],mobileBoard);B(M.white,[0,1.78,-.038],[2.61,1.31,.016],mobileBoard);if(artwork.teacherTutorial){const tutorialGeo=new T.PlaneGeometry(2.54,1.27);assets.add(tutorialGeo);const tutorial=mesh(tutorialGeo,mat('#fff',{map:artwork.teacherTutorial,transparent:true,depthWrite:false,roughness:.82}),[0,1.78,-.050],[1,1,1],[0,Math.PI,0],mobileBoard);tutorial.name='teacher-tutorial-whiteboard';}for(const x of[-1.20,1.20]){B(edge,[x,1.14,0],[.04,2.20,.04],mobileBoard);rounded(edge,[x,.10,0],[.06,.045,.70],.008,null,mobileBoard);for(const z of[-.28,.28])cylinder(seal,[x,.045,z],[.045,.027,.045],[0,0,Math.PI/2],mobileBoard);}B(edge,[0,1.06,-.10],[2.60,.025,.16],mobileBoard);
  // Keep one exercise book and a single pen on the office desk, just as the
  // classroom surface does. The lunch is created by the item system inside.
  rounded(M.paper,[.55,1.005,.08],[.37,.035,.29],.005,[0,.12,0],desk);cylinder(blue,[.22,1.004,-.06],[.006,.18,.006],[0,0,Math.PI/2],desk);
+ const officeScreens=new Map();
+ for(const d of OFFICE_DESKS){
+  let table=desk;
+  if(d!==OFFICE_DESK){table=new T.Group();table.name=d.id;table.position.set(d.x,0,d.z);office.add(table);rounded(officeWood,[0,.94,0],[2.20,.09,1.02],.018,null,table);for(const x of[-.89,.89]){B(darkWood,[x,.46,.06],[.30,.86,.87],table);B(seal,[x,.04,.06],[.29,.08,.84],table);}B(darkWood,[0,.58,.44],[1.55,.60,.04],table);rounded(M.paper,[.55,1.005,.08],[.37,.035,.29],.005,[0,.12,0],table);cylinder(blue,[.22,1.004,-.06],[.006,.18,.006],[0,0,Math.PI/2],table);
+   const drawer=officeDrawer.clone(true);drawer.name=d.id+'-drawer';table.add(drawer);officeDrawers.set(d.id,drawer);markDynamic(table);table.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'officeDesk',id:d.id};});targets.officeDesks.push({id:d.id,object:table,drawer,itemParent:drawer,point:new T.Vector3(d.x,.98,d.z-.45)});
+  }
+  const computer=buildDesktop55({parent:table,box,rounded,mat,x:-.42,y:.985,z:0,id:d.id+'-computer',bakeStatic});assets.add(computer.screen.geometry);materials.add(computer.screen.material);officeScreens.set(d.id,computer.screen);
+ }
  function tube(points,radius,material,parent){const g=new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p)),false,'centripetal'),points.length*5,radius,8,false);assets.add(g);return mesh(g,material,[0,0,0],[1,1,1],null,parent);}
- const chair=new T.Group();chair.name='office-sittable-chair';chair.position.set(OFFICE_CHAIR.x,0,OFFICE_CHAIR.z);office.add(chair);const upholstery=mat('#363e3e',{roughness:.87}),chairMetal=mat('#8d9898',{metalness:.65,roughness:.34});
+ const upholstery=mat('#363e3e',{roughness:.87}),chairMetal=mat('#8d9898',{metalness:.65,roughness:.34});
+ for(const c of OFFICE_CHAIRS){const chair=new T.Group();chair.name=c===OFFICE_CHAIR?'office-sittable-chair':c.id;chair.position.set(c.x,0,c.z);office.add(chair);
  rounded(upholstery,[0,.485,0],[.70,.075,.55],.025,null,chair);rounded(upholstery,[0,.89,-.29],[.65,.45,.08],.022,[-.08,0,0],chair);
  for(const x of [-.29,.29]){tube([[x,.04,.34],[x,.04,-.30],[x,.10,-.34],[x,.48,-.28],[x,1.08,-.32]],.018,chairMetal,chair);tube([[x,.46,-.25],[x,.46,.24],[x,.39,.27],[x,.04,.34]],.018,chairMetal,chair);for(const z of [-.30,.34])rounded(seal,[x,.02,z],[.065,.04,.066],.010,null,chair);}
- markDynamic(chair);chair.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'officeChair',id:OFFICE_CHAIR.id};});targets.officeChairs.push({id:OFFICE_CHAIR.id,object:chair,point:new T.Vector3(OFFICE_CHAIR.x,.6,OFFICE_CHAIR.z)});
+ markDynamic(chair);chair.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'officeChair',id:c.id};});targets.officeChairs.push({id:c.id,object:chair,point:new T.Vector3(c.x,.6,c.z)});}
  // Physical pre-match changing lockers; each door is an independent target.
  const locker=new T.Group();locker.name='role-changing-locker';locker.position.set(ROLE_LOCKER.x,0,ROLE_LOCKER.z);enclosure.add(locker);
  for(const [i,z]of [-.43,.43].entries()){
@@ -190,6 +244,9 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   rounded(edge,[-.389,1.02,z+.27],[.032,.16,.03],.007,null,locker);const sign=texture(128,128,(c,w,h)=>{c.fillStyle='#e8eee2';c.fillRect(0,0,w,h);c.fillStyle='#3b625f';c.textAlign='center';c.font='bold 45px sans-serif';c.fillText(i===0?'老师':'学生',64,80);});
   B(mat('#fff',{map:sign}),[-.38,1.55,z],[.012,.21,.27],locker);
  }
+ // The two doors need their real central stile; a gap through the cabinet
+ // made a perfectly centred interaction ray miss both doors.
+ const lockerStile=rounded(cabinetPaint,[-.355,1.13,0],[.055,2.26,.05],.006,null,locker);lockerStile.name='locker-central-stile';
  markDynamic(locker);locker.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'locker',id:'role'};});targets.lockers.push({id:'role',object:locker,point:new T.Vector3(10.2,1.2,ROLE_LOCKER.z)});
  // Lift cabin has eight distinct floor buttons. The server chooses the floor;
  // changing floors never randomly changes the building's room arrangement.
@@ -209,12 +266,12 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  for(const x of [-7.30,7.30])upperColumn(x,-.60,.20,19.22);for(const z of [-10.10,8.91])upperColumn(0,z,14.60,.20);
  // The three slabs meet at shared boundaries. The former office slab began
  // at 8.80 while both school slabs ended at 9.01, causing coplanar flicker.
- B(ceilingMaterial,[0,4.59,-.59],[14.80,.16,19.22],ceilingRig).name='campus-ceiling-classroom';B(ceilingMaterial,[9.3,4.59,-.59],[3.8,.16,19.22],enclosure).name='campus-ceiling-corridor';B(ceilingMaterial,[6.5,4.59,12.51],[9.4,.16,6.98],office).name='campus-ceiling-office';
+ B(ceilingMaterial,[0,4.59,-.59],[14.80,.16,19.22],ceilingRig).name='campus-ceiling-classroom';B(ceilingMaterial,[9.3,4.59,-.59],[3.8,.16,19.22],enclosure).name='campus-ceiling-corridor';B(ceilingMaterial,[officeMidX,4.59,(9.02+officeEnd)/2],[officeWidth+.4,.16,officeEnd-9.02],office).name='campus-ceiling-office';
  const lamp=mat('#f3f1db',{emissive:'#fff6d6',emissiveIntensity:.48,roughness:.3}),ceilingJoint=mat('#b4beb5',{roughness:.9});
  function grid(x0,x1,z0,z1,parent){for(let x=x0+.6;x<x1;x+=.6)B(ceilingJoint,[x,4.504,(z0+z1)/2],[.009,.012,z1-z0],parent).castShadow=false;for(let z=z0+1.2;z<z1;z+=1.2)B(ceilingJoint,[(x0+x1)/2,4.503,z],[x1-x0,.012,.009],parent).castShadow=false;}
  function fluorescent(x,z,parent){for(const xx of [x-.45,x+.45])B(edge,[xx,4.35,z],[.012,.30,.012],parent);rounded(edge,[x,4.19,z],[1.36,.055,.27],.008,null,parent);B(seal,[x,4.158,z],[1.22,.012,.20],parent);for(const zz of [z-.065,z+.065])cylinder(lamp,[x,4.142,zz],[.018,1.17,.018],[0,0,Math.PI/2],parent);}
- grid(-7.2,7.2,-10,8.8,ceilingRig);for(const x of [-4.1,0,4.1])for(const z of [-7,-1.2,4.6])fluorescent(x,z,ceilingRig);grid(7.4,11,-10,8.8,enclosure);for(const z of [-7,-2,3,7])fluorescent(9.2,z,enclosure);grid(2,11,9.02,15.8,office);for(const z of [10.6,14])fluorescent(6.7,z,office);
- const officeLight=new T.PointLight('#fff5dc',4.2,12,1.6);officeLight.position.set(6.7,3.7,12.4);office.add(officeLight);
+ grid(-7.2,7.2,-10,8.8,ceilingRig);for(const x of [-4.1,0,4.1])for(const z of [-7,-1.2,4.6])fluorescent(x,z,ceilingRig);grid(7.4,11,-10,8.8,enclosure);for(const z of [-7,-2,3,7])fluorescent(9.2,z,enclosure);grid(OFFICE.minX,OFFICE.maxX,OFFICE.minZ,OFFICE.maxZ,office);for(const x of[2.1,7.5])for(const z of[11.2,15,18.8])fluorescent(x,z,office);
+ const officeLight=new T.PointLight('#fff5dc',6.5,17,1.6);officeLight.position.set(officeMidX,3.7,15);office.add(officeLight);
  // Keep the courtyard visible through genuinely transparent exterior panes.
  const yard=mat('#bebcad',{roughness:.93}),grass=mat('#96a47d',{roughness:.97}),curb=mat('#b7c0b0',{roughness:.88});B(yard,[1.25,-.21,6],[58,.20,58]);
  for(const x of [-10.4,14.1]){B(grass,[x,-.15,1],[3.6,.12,34]);for(const xx of [x-1.82,x+1.82])B(curb,[xx,-.085,1],[.08,.13,34]);}
@@ -270,7 +327,10 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   g.setAttribute('color',new T.Float32BufferAttribute(colors,3));g.computeVertexNormals();assets.add(g);return g;
  }
  const crowns=[canopy(.4),canopy(2.3),canopy(4.8)];
- const trees=[[-10.7,-8.5,3.00],[-11.0,-1.6,3.40],[-10.2,5.5,2.92],[14.0,-6.1,3.28],[14.5,.3,2.93],[13.9,6.6,3.37],[-1.5,17.8,3.10],[7.0,18.9,3.50]];
+ // The office now occupies the old rear garden. Keep the complete crowns
+ // beyond its rear wall, rather than only relocating their trunk origins.
+ const rearTreeZ=OFFICE.maxZ+3.2;
+ const trees=[[-10.7,-8.5,3.00],[-11.0,-1.6,3.40],[-10.2,5.5,2.92],[14.0,-6.1,3.28],[14.5,.3,2.93],[13.9,6.6,3.37],[-1.5,rearTreeZ,3.10],[7.0,rearTreeZ,3.50]];
  for(const [n,[x,z,top]]of trees.entries()){
   const tree=new T.Group();tree.name='courtyard-branched-tree';tree.position.set(x,0,z);tree.rotation.y=n*.61;room.add(tree);
   cylinder(branchMat,[0,top*.40-.055,0],[.080,top*.80+.11,.11],null,tree);
@@ -282,17 +342,17 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   }
  }
 
- let officeLocked=false,rearDoorClosed=false,drawerOpen=false,drawerAmount=0,liftAmount=1,liftTarget=1;
+ let officeLocked=false,rearDoorClosed=false,drawerOpen=false,liftAmount=1,liftTarget=1;const drawerAmounts=new Map();
  const placeLiftDoors=()=>liftDoors.forEach((g,i)=>{g.position.x=9.35+(i===0?-1:1)*(.625+liftAmount*1.25);g.userData.openAmount=liftAmount;});placeLiftDoors();
  const setDoors=state=>{officeLocked=!!state?.officeLocked;rearDoorClosed=!!state?.rearDoorClosed;liftTarget=state?.elevator?.doorClosed?0:1;doors.get('rear').rotation.y=rearDoorClosed?0:-Math.PI/2;officeDoors.forEach((g,i)=>g.rotation.y=officeLocked?0:(i===0?-Math.PI/2:Math.PI/2));};
  setDoors({officeLocked:false,rearDoorClosed:false});
  enclosure.visible=false;
- return{enclosure,ceilingMaterial,ceilingRig,upperWalls,curtains,tiered,liftPanel,liftDoors,facades,doors,officeDoors,officeDrawer,
+ return{enclosure,ceilingMaterial,ceilingRig,upperWalls,curtains,tiered,liftPanel,liftDoors,facades,doors,officeDoors,officeDrawer,officeDrawers,officeScreens,
   attachUpperArchitecture(){enclosure.add(ceilingRig,upperWalls);},
   getTargets(){return targets;},setDoors,
   setOfficeDrawer(open){drawerOpen=!!open;},
   setMap(map){const raised=mapKind(map)==='tiered';tiered.visible=raised;facades[0].visible=!raised;facades[1].visible=raised;ceilingRig.position.y=raised?TIERED_CEILING_HEIGHT-CEILING_HEIGHT:0;upperWalls.visible=raised;},
-  update(state,dt=1/60){setDoors(state);const step=Math.max(0,Math.min(.1,dt));liftAmount+=Math.sign(liftTarget-liftAmount)*Math.min(Math.abs(liftTarget-liftAmount),step*2.5);placeLiftDoors();drawerOpen=!!(state?.officeDeskOpen??state?.office?.open??drawerOpen);drawerAmount+=((drawerOpen?1:0)-drawerAmount)*(1-Math.exp(-step*14));officeDrawer.position.z=-.08-drawerAmount*.52;},
-  setNight(night){sky.color.set(night?'#0d172e':'#c9e8f5');officeLight.intensity=night?.12:4.2;lamp.emissiveIntensity=night?.01:.48;}
+  update(state,dt=1/60){setDoors(state);const step=Math.max(0,Math.min(.1,dt));liftAmount+=Math.sign(liftTarget-liftAmount)*Math.min(Math.abs(liftTarget-liftAmount),step*2.5);placeLiftDoors();drawerOpen=!!(state?.officeDeskOpen??state?.office?.open??drawerOpen);const openById=new Map((state?.officeDrawers||[]).map(d=>[d.id,d.open]));for(const[id,drawer]of officeDrawers){const open=openById.has(id)?openById.get(id):id===OFFICE_DESK.id?drawerOpen:false,old=drawerAmounts.get(id)||0,amount=old+((open?1:0)-old)*(1-Math.exp(-step*14));drawerAmounts.set(id,amount);drawer.position.z=-.08-amount*.52;}},
+  setNight(night){sky.color.set(night?'#0d172e':'#c9e8f5');officeLight.intensity=night?.12:6.5;lamp.emissiveIntensity=night?.01:.48;}
  };
 }

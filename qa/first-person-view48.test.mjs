@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from '../dist/first-person-view.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-52';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-57';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 
@@ -44,7 +44,7 @@ test('actual short forearms sway alternately at walking speed while the held pho
   if(previous)for(let k=0;k<16;k++)assert.ok(Math.abs(previous.elements[k]-relative.elements[k])<1e-6,'phone slips out of hand during sway');
   previous=relative;
  }
- assert.ok(maxZ-minZ>.01&&maxZ-minZ<.04);assert.equal(hands.getDebug().palmsOnly,false);
+ assert.ok(maxZ-minZ>.045&&maxZ-minZ<.065);assert.equal(hands.getDebug().palmsOnly,false);
 });
 
 
@@ -61,9 +61,9 @@ test('empty walking hands travel forwards/backwards, rise/fall and rotate contin
  const h=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});
  let t=0;for(let i=0;i<120;i++)h.update(t+=1/60,{seated:false});
  const points=[],rotations=[];let last=null,maxJump=0;
- for(let i=0;i<=120;i++){h.update(t+=1/60,{seated:false,movement:1,walkPhase:i/120*Math.PI*2});const a=h.getHand('left').group;points.push(a.position.clone());rotations.push(a.quaternion.clone());if(last)maxJump=Math.max(maxJump,last.angleTo(a.quaternion));last=a.quaternion.clone();}
+ for(let i=0;i<=120;i++){h.update(t+=1/60,{seated:false,movement:1,walkPhase:i/120*Math.PI*2});const a=h.getHand('left').group.getObjectByName('mixamorigLeftHand'),p=a.getWorldPosition(new T.Vector3()),q=a.getWorldQuaternion(new T.Quaternion());points.push(p);rotations.push(q);if(last)maxJump=Math.max(maxJump,last.angleTo(q));last=q;}
  const range=axis=>Math.max(...points.map(p=>p[axis]))-Math.min(...points.map(p=>p[axis]));
- assert.ok(range('z')>.13&&range('y')>.05);
+ assert.ok(range('z')>.25&&range('y')>.11);
  assert.ok(Math.max(...rotations.map(q=>q.angleTo(rotations[0])))>.35);
  assert.ok(maxJump<.04,'wrist flips discontinuously');
 });

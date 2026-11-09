@@ -11,7 +11,7 @@ function activeRoom(){
  for(const m of [a,b])Object.assign(m.context.player,{x:8.8,z:m===a?0:5,seated:false,seatId:null,yaw:0});
  return{room,teacher,a,b};
 }
-function equip(room,member,action){const p=member.context.player;p._slots=[{id:0,action,readyAt:0,progress:0}];p._selectedSlot=0;p._drawnSlot=0;p._drawerOpen=true;p.action=member.context.selected=action;}
+function equip(room,member,action){const p=member.context.player;p._slots=[{id:0,action,readyAt:0,progress:0}];p._selectedSlot=0;p._drawnSlot=0;p._drawerOpen=true;p.action=member.context.selected=action;p.pitch=.55;}
 function advance(room,seconds){for(let i=0;i<Math.ceil(seconds*30);i++)room.tick(1/30);}
 
 test('public carrying and use poses synchronize without exposing private drawer or another player score feedback',()=>{
@@ -29,7 +29,7 @@ test('office chair is exclusive across roles and opening its drawer is visible t
  assert.equal(room.command(teacher,'interact',['office-chair']),'seated');assert.equal(room.command(teacher,'openOfficeDrawer'),true);
  assert.equal(room.snapshot(b).officeDeskOpen,true);assert.equal(room.snapshot(b).teacher.officeChair,true);assert.equal(room.command(a,'interact',['office-chair']),false);
  assert.equal(room.command(teacher,'interact'),'stood');assert.equal(room.command(a,'interact',['office-chair']),'seated');assert.equal(room.command(a,'openOfficeDrawer'),true);assert.equal(room.command(a,'takeSlot',[0]),true);assert.equal(room.snapshot(a).selected,'lunch');assert.equal(room.snapshot(b).students.find(s=>s.id===a.studentId).heldAction,'lunch');
- room.command(a,'hold',[true]);advance(room,3.1);assert.ok(room.snapshot(a).score>0);assert.equal(room.snapshot(b).officeDeskOpen,true);
+ room.command(a,'setLook',[0,.55]);room.command(a,'hold',[true]);advance(room,3.1);assert.ok(room.snapshot(a).score>0);assert.equal(room.snapshot(b).officeDeskOpen,true);
 });
 
 test('banana peel flight, landing and peer stun synchronize with consistent public events',()=>{
@@ -41,7 +41,7 @@ test('banana peel flight, landing and peer stun synchronize with consistent publ
 
 test('garlic burp and bubble attachment reach other humans; flash and ink reach teacher own view',()=>{
  const {room,teacher,a,b}=activeRoom();a.context.player._burpUntil=room.sim.elapsed+5;Object.assign(b.context.player,{x:8.8,z:1.6});assert.equal(room.command(a,'burp'),true);room.tick(.02);assert.equal(room.snapshot(b).burps.length,1);advance(room,.6);assert.equal(room.snapshot(b).player.captivity,'stunned');assert.equal(room.snapshot(a).events.some(e=>e.type==='burp'),true);
- advance(room,5);Object.assign(a.context.player,{x:8.8,z:0,yaw:0,seated:true});Object.assign(b.context.player,{x:8.8,z:1.5,seated:false,captivity:'free',_chalkUntil:0});equip(room,a,'gum');room.command(a,'hold',[true]);advance(room,2);const growing=room.snapshot(b).students.find(s=>s.id===a.studentId);assert.ok(growing.bubble.cycles>1.8);room.command(a,'releaseUse');advance(room,1.4);
+ advance(room,5);Object.assign(a.context.player,{x:8.8,z:0,yaw:0,seated:true});Object.assign(b.context.player,{x:8.8,z:3,seated:false,captivity:'free',_chalkUntil:0});equip(room,a,'gum');room.command(a,'hold',[true]);advance(room,3);const growing=room.snapshot(b).students.find(s=>s.id===a.studentId);assert.ok(growing.bubble.cycles>1.8);Object.assign(b.context.player,{x:8.8,z:.8});advance(room,.05);
  const attached=room.snapshot(b);assert.ok(attached.player.bubbleLeft>0);assert.ok(attached.bubbles.some(p=>p.attachedId===b.studentId));assert.ok(room.snapshot(a).events.some(e=>e.type==='bubble-attached'&&e.targetId===b.studentId));
  const t=room.sim.teacher;room.sim._applyProjectileEffect({id:999,ownerId:a.studentId},{kind:'ink',x:t.x,y:1.6,z:t.z,hitActorId:-1});room.tick(.01);assert.ok(room.snapshot(teacher).player.inkLeft>0);assert.ok(room.snapshot(a).teacher.inkLeft>0);
  room.sim._applyProjectileEffect({id:1000,ownerId:a.studentId},{kind:'flash',...effectEye(t,room.map)});room.tick(.01);assert.ok(room.snapshot(teacher).player.flashLeft>0);assert.ok(room.snapshot(a).teacher.flashLeft>0);

@@ -11,7 +11,7 @@ const base=process.env.CAMPUS_MODEL_DIR
   : new URL('../dist/',import.meta.url);
 const T=await import(new URL('vendor/three.module.js',base));
 const {createStudent}=await import(new URL('characters.js',base));
-const {createDeskHands,createTeacher}=await import(new URL('game-actors.js?v=campus-52',base));
+const {createDeskHands,createTeacher}=await import(new URL('game-actors.js?v=campus-57',base));
 const DT=1/60;
 
 function studentHands(actor){
@@ -116,7 +116,7 @@ test('student gesture smoothing follows elapsed time even when scene updates are
 });
 
 test('held objects stay in their palm grip while wrists, view pitch and body pose move',()=>{
-  const configs=[['snack','snack-packet',0],['drink','red-drink-can',0],['burger','layered-burger',0],['phone','handheld-phone',0],['note','folded-note',1]];
+  const configs=[['snack','snack-packet',0],['drink','red-drink-can',0],['burger','layered-burger',0],['phone','handheld-phone',0],];
   for(const [action,name,index]of configs){
     const actor=createDeskHands(),hand=deskHands(actor)[index],prop=actor.group.getObjectByName(name);
     assert.ok(prop,`Missing ${name}.`);let baseline=null,samples=0;
@@ -153,7 +153,7 @@ test('both palm lofts close their longitudinal seam after asymmetric thumb-base 
 
 test('changing a held item retracts the old item before the new one appears',()=>{
   const actor=createDeskHands(),hands=deskHands(actor);
-  const props=['snack-packet','handheld-phone','folded-note'].map(n=>actor.group.getObjectByName(n));
+  const props=['snack-packet','handheld-phone'].map(n=>actor.group.getObjectByName(n));
   let time=0;
   for(let i=0;i<80;i++)actor.update(time+=DT,{holding:true,action:'snack'});
   actor.group.updateMatrixWorld(true);let previous=hands.map(worldPose),sawEmpty=false,sawPhone=false;
@@ -169,18 +169,19 @@ test('changing a held item retracts the old item before the new one appears',()=
   assert.ok(sawPhone,'Requested phone never became available after retraction.');
 });
 
-test('eating bobs one held food vertically without a separate bite or mouth reach',()=>{
+test('eating brings the held food to the centre, bobs it, then returns without scaling or a detached bite',()=>{
   const actor=createDeskHands(),hands=deskHands(actor),food=actor.group.getObjectByName('snack-packet');
   assert.equal(actor.group.getObjectByName('single-crisp'),undefined);
-  let time=0;for(let i=0;i<120;i++)actor.update(time+=DT,{holding:true,action:'snack'});
+  let time=0;for(let i=0;i<120;i++)actor.update(time+=DT,{carrying:true,action:'snack',freeLook:true});
   const positions=[],resting=[],scales=[];
-  for(let i=0;i<150;i++){
-    actor.update(time+=DT,{holding:true,action:'snack'});
-    assert.ok(food.visible);positions.push(food.position.clone());resting.push(hands[1].position.clone());scales.push(food.scale.clone());
+  for(let i=0;i<=180;i++){
+    actor.update(time+=DT,{holding:true,carrying:true,progress:i/180,action:'snack',freeLook:true});actor.group.updateMatrixWorld(true);
+    assert.ok(food.visible);positions.push(food.getWorldPosition(new T.Vector3()));resting.push(hands[1].position.clone());scales.push(food.scale.clone());
   }
   const range=axis=>Math.max(...positions.map(p=>p[axis]))-Math.min(...positions.map(p=>p[axis]));
-  assert.ok(range('y')>.05&&range('y')<.09,'Food must visibly move up and down without reaching the face.');
-  assert.ok(range('x')<.001&&range('z')<.001,'Food moved sideways or towards the mouth.');
+  assert.ok(range('y')>.075,'Food must visibly move up and down.');
+  assert.ok(Math.abs(positions[90].x)<.025&&Math.abs(positions[90].x)<Math.abs(positions[0].x),'Food did not move to the screen centre.');
+  assert.ok(positions.at(-1).distanceTo(positions[0])<.002,'The complete three-second motion did not return to its carry pose.');
   assert.ok(resting.every(p=>p.distanceTo(resting[0])<.001),'The empty hand should rest, not mime carrying a bite.');
   assert.ok(scales.every(s=>s.distanceTo(new T.Vector3(1,1,1))<1e-9),'Eating must not scale the held food.');
 });

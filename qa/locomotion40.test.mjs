@@ -4,7 +4,7 @@ import * as T from '../dist/vendor/three.module.js';
 import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 
-for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: planted feet remain on the floor as the actor actually moves`,async()=>{
+for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: planted feet remain on the floor as the actor actually moves`,async t=>{
  const source=await loadGeometry(file+'.glb'),meta=source.parser.json.asset.extras.characters40;
  const speed=meta.nominalWalkSpeed,duration=meta.walkCycleDuration||source.animations.find(c=>c.name==='Walk').duration;
  assert.ok(speed>0&&duration>0,'Walk must declare its authored distance/time contract');
@@ -32,6 +32,7 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: pl
   assert.ok(slip.length>list.length*.25,`${side}: no sustained support phase`);
   slip.sort((a,b)=>a-b);
   assert.ok(slip[Math.floor(slip.length*.75)]<.12,`${side}: support foot slides ${slip[Math.floor(slip.length*.75)].toFixed(3)} m/s`);
+  t.diagnostic(`${variant} ${side}: support-foot slip P75 ${slip[Math.floor(slip.length*.75)].toFixed(4)} m/s at source pace ${speed.toFixed(4)} m/s`);
  }
  actor.dispose();
 });

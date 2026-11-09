@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {sampleComputerPlayback} from '../dist/computer-playback56.js?v=campus-57';
+import {createComputerScreenContent} from '../dist/computer-screen55.js?v=campus-57';
+const live=()=>({currentTime:0,duration:40,readyState:4,paused:false,ended:false,error:null,seeking:false,loop:true});
+function advancing(){const video=live();let sample=sampleComputerPlayback(null,video,0,true);video.currentTime=.25;sample=sampleComputerPlayback(sample,video,250,true);assert.equal(sample.playing,true);return{video,sample};}
+test('only real advancing media earns a playing state, with a bounded stall timeout',()=>{const v=live();let s=sampleComputerPlayback(null,v,0,true);assert.equal(s.playing,false);s=sampleComputerPlayback(s,v,250,true);assert.equal(s.playing,false);v.currentTime=.25;s=sampleComputerPlayback(s,v,500,true);assert.equal(s.playing,true);s=sampleComputerPlayback(s,v,1001,true);assert.equal(s.playing,false);});
+for(const [name,patch,visible]of [['buffering',{readyState:2},true],['paused',{paused:true},true],['ended',{ended:true},true],['error',{error:{}},true],['seeking',{seeking:true},true],['hidden',{},false]])test(`${name} immediately stops confirmed playback`,()=>{const{video,sample}=advancing();Object.assign(video,patch);video.currentTime=.5;assert.equal(sampleComputerPlayback(sample,video,500,visible).playing,false);});
+test('a natural loop preserves playback but an arbitrary seek does not create watched time',()=>{const v=live();v.currentTime=39.8;let s=sampleComputerPlayback(null,v,0,true);v.currentTime=.05;s=sampleComputerPlayback(s,v,250,true);assert.equal(s.playing,true);v.currentTime=20;s=sampleComputerPlayback(s,v,500,true);assert.equal(s.playing,false);});
+test('the actual editor renderer fits source screenshots without drawing a pretend software UI',()=>{
+ const original={document:globalThis.document,Image:globalThis.Image},draws=[],video={...live(),paused:true,play(){this.paused=false;return Promise.resolve();},pause(){this.paused=true;},removeAttribute(){},load(){},addEventListener(){},removeEventListener(){}};
+ globalThis.document={visibilityState:'visible',addEventListener(){},removeEventListener(){},createElement(kind){
+  if(kind==='video')return video;
+  return{width:0,height:0,getContext(){return{fillRect(){},drawImage(...args){draws.push(args);},fillText(){throw Error('invented editor text');}};}};
+ }};
+ globalThis.Image=class{set src(value){this.source=value;[this.naturalWidth,this.naturalHeight]=value.includes('unity-workspace')?[1225,556]:[1189,768];this.onload?.();}};
+ try{const content=createComputerScreenContent();for(const app of ['photoshop','unity']){content.materialFor(0,{app,active:true});const [image,x,y,w,h]=draws.at(-1);assert.ok(image.source.includes(app+'-workspace'));assert.ok(Math.abs(w/h-image.naturalWidth/image.naturalHeight)<1e-10);assert.ok(x>=0&&y>=0&&x+w<=768.00001&&y+h<=432.00001);}assert.equal(video.muted,true);assert.equal(video.loop,true);assert.ok(video.src.endsWith('valorant-zmjjkk-2024.mp4'));const player={id:0,seatId:0,seated:true,computer:{active:true,app:'valorant'}},state={status:'playing',paused:false,player,students:[player]},screens=new Map([[0,{}]]);content.update(state,screens);video.currentTime+=.05;content.update(state,screens);assert.equal(content.getPlayback().playing,true);video.readyState=2;assert.equal(content.getPlayback().playing,false);video.readyState=4;document.visibilityState='hidden';assert.equal(content.getPlayback().visible,false);assert.equal(content.getPlayback().playing,false);content.dispose();}
+ finally{globalThis.document=original.document;globalThis.Image=original.Image;}
+});
+test('the packaged highlight is an MP4 and carries its concrete source provenance',async()=>{const manifest=JSON.parse(await readFile(new URL('../dist/assets/computer/sources56.json',import.meta.url))),clip=await readFile(new URL('../dist/assets/computer/valorant-zmjjkk-2024.mp4',import.meta.url));assert.equal(clip.toString('ascii',4,8),'ftyp');assert.ok(clip.byteLength>100000);assert.equal(manifest.video.player,'EDG ZmjjKK');assert.deepEqual(manifest.video.sourceRangeSeconds,[27,67]);assert.equal(manifest.video.audioTracks,0);assert.equal(manifest.video.width/manifest.video.height,16/9);});

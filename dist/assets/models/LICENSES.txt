@@ -74,3 +74,9 @@ banana-v1.glb: https://studio.tripo3d.ai/3d-model/生成一个香蕉-c5dffdd0-9a
 garlic-v1.glb: https://studio.tripo3d.ai/3d-model/一个风格化的大蒜瓣-是蒜瓣-不是一整个大蒜-02d07cfd-5947-4faa-98fc-381e9c129a37 (creator shionmoe97).
 User explicitly requested these models. Exported using the connected Tripo account. Source files retained in art-source/tripo-props-20261108. Availability to export is not a license review; confirm applicable Tripo/creator commercial terms before publishing commercially.
 Game versions preserve source appearance with reduced geometry and baked source textures; 6000 and3500 triangles respectively. No original game's assets are claimed.
+
+Teacher first-person hands (2026-11-09, revision 55):
+teacher-hand-left-v1.glb, teacher-hand-right-v1.glb.
+Derived from the user's 2026-11-08 rigged teacher export, not student hands.
+Original embedded UV textures and finger skin weights retained. Cropped forearms have capped wrists.
+Source: art-source/tripo-exports-20261108/老师.glb. Preparation: scripts/models/prepare_teacher_hands55.py.

@@ -15,10 +15,12 @@ test('free pupil turns take the shortest arc and preserve exact action alignment
  actor.yaw=-1;
  for(let frame=2;frame<=90;frame++)sample=sampleActorHeading(sample,actor,frame*DT);
  assert.ok(Math.abs(angle(sample.yaw-actor.yaw))<.00001,'turn never converges after stopping');
- for(const state of [{seated:true},{captivity:'carried'},{captivity:'bound'},{mood:'rescuing'},{itemThrowAge:.1},{holding:true,action:'smoke'}]){
+ for(const state of [{mood:'rescuing'},{itemThrowAge:.1},{holding:true,action:'smoke'}]){
   const aligned={yaw:1,seated:false,captivity:'free',mood:'walking',itemThrowAge:999,...state};
   assert.equal(sampleActorHeading(sample,aligned,2).yaw,1,'interaction/capture was offset from its authoritative pose');
  }
+ for(const state of [{captivity:'carried'},{captivity:'bound'},{captivity:'stunned'}]){const entered=sampleActorHeading(sample,{...actor,...state,yaw:1},2);assert.equal(entered.yaw,1,'capture entry must leave the old walking/seat orientation');assert.equal(sampleActorHeading(entered,{...actor,...state,yaw:2},2+DT).yaw,1,'later head look must not rotate a restrained body');}
+ assert.equal(sampleActorHeading(sample,{...actor,seated:true,seatYaw:Math.PI,yaw:1},2).yaw,Math.PI,'seated body left its actual seat orientation');
  assert.equal(sampleActorHeading(sample,{...actor,yaw:2},0).yaw,2,'new scene retains old facing');
 });
 

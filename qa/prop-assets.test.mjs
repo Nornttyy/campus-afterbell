@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
-import {CLASSROOM_PROP_SOURCES,loadPropAssets,clonePropAsset,propContact,restDeskItem} from '../dist/prop-assets.js';
-import {createDeskItem,createDeskHands,DESK_ITEM_KINDS} from '../dist/game-actors.js?v=campus-52';
+import {CLASSROOM_PROP_SOURCES,loadPropAssets,clonePropAsset,propContact,restDeskItem} from '../dist/prop-assets.js?v=campus-57';
+import {createDeskItem,createDeskHands,DESK_ITEM_KINDS} from '../dist/game-actors.js?v=campus-57';
 import {createRiggedPalm} from '../dist/student-assets.js';
 
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
@@ -65,7 +65,7 @@ test('source prop proportions survive contact fitting and animated palm attachme
  const h=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});let time=0;
  for(const kind of Object.keys(propFiles)){
   const prop=h.group.getObjectsByProperty('type','Group').find(o=>o.userData.propAsset?.includes('/'+propFiles[kind]));assert.ok(prop,kind+' missing in held view');
-  const saved=localSnapshots(prop),hand=h.getHand('left').group;let relative=null;
+  const saved=localSnapshots(prop),hand=h.getHand('left').group.getObjectByName('mixamorigLeftHand');let relative=null;
   for(let i=0;i<140;i++){
    h.update(time+=1/60,{action:kind,carrying:true,holding:i>60,progress:(i%90)/90,viewPitch:Math.sin(time)*.65});h.group.updateMatrixWorld(true);
    assert.ok(prop.matrixWorld.elements.every(Number.isFinite));assert.deepEqual(prop.scale.toArray(),[1,1,1]);

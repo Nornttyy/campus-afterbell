@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-52';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-57';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {CampusRoom} from '../server/room-simulation.js';
@@ -10,7 +10,7 @@ test('first person pen continuously writes on the page without a mouse hold or c
  const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
  const h=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)}),pen=h.group.getObjectByName('red-school-pen'),tips=[];
  for(let i=0;i<300;i++){
-  h.update(i/60,{action:'pen',carrying:true,holding:false,seated:true,freeLook:true,viewPitch:Math.sin(i/60)});h.group.updateMatrixWorld(true);
+  h.update(i/60,{action:'pen',carrying:true,holding:false,penWriting:true,seated:true,freeLook:true,viewPitch:Math.sin(i/60)});h.group.updateMatrixWorld(true);
   if(i<120)continue;assert.equal(pen.visible,true);assert.deepEqual(pen.scale.toArray(),[1,1,1]);
   const tip=pen.localToWorld(new T.Vector3(0,-.0875,0));tips.push(tip);
   assert.ok(Math.abs(tip.y-(.88+Math.abs(tip.x)*Math.tan(.14)+.005-1.43))<1e-5,'pen tip left the sloping paper surface');
@@ -26,6 +26,8 @@ test('multiplayer peers see writing and cannot farm score with the desktop pen',
  room.sim._seatingRoutes.clear();for(const s of room.sim.students)if(!s.networkHuman){s._decisionAt=Infinity;s._restUntil=Infinity;s.holding=false;}
  const actor=student.context.player;Object.assign(actor,{seated:true,seatId:2,seatYaw:0});
  assert.equal(room.command(student,'takePen'),true);const score=room.sim.score;
+ assert.equal(room.snapshot(student).player.penTwirling,true);assert.equal(room.snapshot(student).player.penWriting,false);
+ assert.equal(room.command(student,'togglePenMode'),true);
  for(let i=0;i<150;i++){if(i%30===0)room.command(student,'hold',[true]);room.tick(.1);}
  const own=room.snapshot(student),peer=room.snapshot(teacher).students.find(s=>s.id===actor.id);
  assert.equal(room.sim.score,score);assert.equal(own.player.penWriting,true);assert.equal(peer.penWriting,true);assert.equal(peer.mood,'writing');assert.equal(peer.holding,false);assert.equal(own.actionProgress,0);assert.equal(own.completed.pen,0);

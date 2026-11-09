@@ -60,13 +60,13 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS)){
    last=wrists;
    if(frame%4===0){const {gap,count}=skinGaps(actor,samples);for(const side of ['Left','Right']){assert.ok(count[side]>50,`${side}: missing visible arm/palm samples`);assert.ok(gap[side]>0,`${side}: walking skin overlaps trunk silhouette (gap ${gap[side]} m)`);}}
   }
-  for(const side of ['Left','Right'])assert.ok(range[side][1]-range[side][0]>.10,`${side}: clearing torso froze the forward/back arm swing`);
+  for(const side of ['Left','Right'])assert.ok(range[side][1]-range[side][0]>.35,`${side}: walking wrist has too little forward/back travel`);
   for(const [bone,before]of original){assert.ok(bone.position.distanceTo(before.position)<.00002,`${bone.name}: correction stretched a bone`);assert.ok(bone.scale.distanceTo(before.scale)<.00002,`${bone.name}: correction scaled a body part`);}
   actor.dispose();
  });
- test(`${variant}: the free hand also clears the trunk while walking with a phone or note`,async()=>{
+ test(`${variant}: the free hand also clears the trunk while walking with a phone`,async()=>{
   const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:false});const samples=skinSamples(actor);let time=0;
-  for(const [mood,freeSide]of [['phone','Right'],['note','Left']]){
+  for(const [mood,freeSide]of [['phone','Right']]){
    actor.setMood(mood);actor.setMotion({seated:false,speed:.70,carrying:true});time=tick(actor,time);
    for(let frame=0;frame<120;frame++){
     actor.update(time+=DT);if(frame%6)continue;

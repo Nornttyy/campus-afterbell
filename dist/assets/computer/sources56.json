@@ -1,0 +1,41 @@
+{
+  "retrievedAt": "2026-11-09",
+  "photoshop": {
+    "file": "photoshop-workspace.jpg",
+    "sourcePage": "https://helpx.adobe.com/photoshop/desktop/get-started/learn-the-basics/workspace-overview.html",
+    "sourceImage": "https://helpx-prod.scene7.com/is/image/HelpxProd/-Photoshop-workspace-with-a-document-open--highlig?$pjpeg$&jpegSize=200&wid=1189",
+    "width": 1189,
+    "height": 768,
+    "description": "Original Adobe Photoshop desktop screenshot from Adobe Help. The native window-arrangement popup is part of the source image. No generated or repainted editor UI.",
+    "sha256": "dd49bd9a09c6050a65451b3ea7ad8bb886d0b2963e6d0c14b0cf64474838b9bf"
+  },
+  "unity": {
+    "file": "unity-workspace.png",
+    "sourcePage": "https://docs.unity3d.com/6000.1/Documentation/Manual/Toolbar.html",
+    "sourceImage": "https://docs.unity3d.com/6000.1/Documentation/uploads/Main/ToolbarCallout.png",
+    "width": 1225,
+    "height": 556,
+    "description": "Original Unity 6 Preview Editor screenshot from Unity Manual; its original toolbar outline is retained. No generated or repainted editor UI.",
+    "sha256": "5b73ac712c2febc02465d3662d0845c1bf889d9d58ed0fce2eb246f9e5732467"
+  },
+  "video": {
+    "file": "valorant-zmjjkk-2024.mp4",
+    "sourcePage": "https://www.huya.com/video/play/1009030064.html",
+    "sourcePublisher": "虎牙无畏契约赛事",
+    "sourceTitle": "决斗之魂 超星闪耀！EDG ZmjjKK FMVP高光回顾",
+    "player": "EDG ZmjjKK",
+    "event": "VALORANT Champions Seoul 2024 Grand Final, EDward Gaming vs Team Heretics",
+    "sourceDurationSeconds": 149.782,
+    "sourceRangeSeconds": [
+      27,
+      67
+    ],
+    "durationSeconds": 40,
+    "width": 1920,
+    "height": 1080,
+    "audioTracks": 0,
+    "processing": "Native AVFoundation passthrough trim of the original H.264 frames, 27–67 seconds, without re-encoding; original 1920x1080 framing and broadcast overlays retained; all audio omitted. A ZmjjKK highlight compilation with broadcast observer cuts to other players, not 40 continuous seconds of his POV. Final duration 40.0 seconds, zero audio tracks and a decoded frame were verified.",
+    "sha256": "b101e8578a6d8304d65800c3dbed636185fcd7de6e2d32ea95c0e0f1ba2064c4"
+  },
+  "rights": "Third-party application UI and tournament footage; attribution does not imply these assets are public domain or produced by this project."
+}

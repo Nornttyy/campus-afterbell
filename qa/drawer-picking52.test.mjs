@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
-import {CLASSROOM_PROP_SOURCES,loadPropAssets,restDeskItem} from '../dist/prop-assets.js';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-52';
+import {CLASSROOM_PROP_SOURCES,loadPropAssets,restDeskItem} from '../dist/prop-assets.js?v=campus-57';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-57';
 import {createDrawerPickTarget,pickDrawerItem} from '../dist/drawer-picking.js';
 import {ClassroomRound} from '../dist/classroom-rules.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
@@ -50,7 +50,7 @@ test('direct visible surfaces win over nearby bounds and blocked surfaces cannot
  const wall=new T.Mesh(new T.BoxGeometry(.4,.4,.03),new T.MeshBasicMaterial());wall.position.copy(f.origin).addScaledVector(f.ray.ray.direction,.45);wall.lookAt(f.origin);wall.updateMatrixWorld(true);assert.equal(pickDrawerItem(f.ray,f.targets,[f.body,f.host,wall]),null);
 });
 test('real geometry selection drives take/use/return and garlic five-second burp',()=>{
- const f=fixture(),r=new ClassroomRound({target:1000});r.start();r.teacher.x=r.teacher.z=40;r._thinkAt=r._plan.until=Infinity;for(const s of r.students)s._decisionAt=Infinity;
+ const f=fixture(),r=new ClassroomRound({target:1000});r.start();r.player.pitch=.55;r.teacher.x=r.teacher.z=40;r._thinkAt=r._plan.until=Infinity;for(const s of r.students)s._decisionAt=Infinity;
  r.player._slots=Array.from({length:3},(_,id)=>({id,action:'garlic',progress:0,readyAt:0}));r.player._drawnSlot=null;r.player._drawerOpen=true;
  assert.equal(r.takeSlot(f.castAt(1,V(.04,0,0))),true);assert.equal(r.snapshot().drawer.drawnSlot,1);assert.equal(r.returnItem(),true);assert.equal(r.takeSlot(f.castAt(0)),true);r.hold(true);r.step(3);assert.equal(r.snapshot().player.burpReadyLeft,5);assert.equal(r.snapshot().completed.garlic,1);
 });

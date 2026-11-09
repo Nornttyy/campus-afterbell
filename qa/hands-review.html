@@ -2,21 +2,21 @@
 <html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>手部动作检视</title>
 <style>body{margin:0;background:#dde6e7;font:14px system-ui;color:#213b43}canvas{display:block;width:100vw;height:100vh}nav{position:fixed;top:12px;left:12px;right:12px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;background:#fffffff0;padding:10px;border:1px solid #c4d0d1;border-radius:6px;z-index:2}button,select{font:inherit;padding:8px 12px;border:1px solid #9eafb2;background:white;border-radius:4px;color:inherit}button[aria-pressed=true]{background:#276a83;color:white}button:disabled,select:disabled{opacity:.5}output{min-width:15em;font-variant-numeric:tabular-nums}label{display:flex;gap:5px;align-items:center;font-size:12px}#pitch{width:90px}progress{width:90px}footer{position:fixed;bottom:10px;left:12px;right:12px;font-size:12px;line-height:1.5;background:#ffffffe8;padding:8px;border-radius:5px}#error{color:#ab3434}</style>
 <canvas aria-label="实际 hand-v3 模型"></canvas><nav>
-<select id="item" aria-label="检视物品"><option value="snack">零食</option><option value="drink">饮料</option><option value="burger">汉堡</option><option value="phone">手机</option><option value="note">纸条</option><option value="smoke">烟雾弹</option><option value="flash">闪光弹</option><option value="ink">墨水瓶</option></select>
+<select id="item" aria-label="检视物品"><option value="snack">零食</option><option value="drink">饮料</option><option value="burger">汉堡</option><option value="phone">手机</option><option value="smoke">烟雾弹</option><option value="flash">闪光弹</option><option value="ink">墨水瓶</option></select>
 <button id="hold" aria-pressed="false">拿起</button><button id="use" aria-pressed="false">使用</button><button id="throw">松手投掷</button><label id="progress-label">进度 <progress id="progress" max="1" value="0"></progress></label>
 <button id="pause" aria-pressed="false">暂停</button><button id="step">前进一帧</button><button id="stand">站立</button><button id="walk" aria-pressed="false">行走</button><button id="crawl" aria-pressed="false">爬行</button><label>俯仰 <input id="pitch" type="range" min="-1.3" max="1.3" step=".01" value=".08"></label><label>转头 <input id="yaw" type="range" min="-1.5" max="1.5" step=".01" value="0"></label><button id="reset-view">默认视角</button><button id="record">录制3秒</button><output id="state">加载 hand-v3…</output>
 </nav><footer>行走在走廊安全路径往返；坐下返回课桌。转头可检查坐姿双手是否保持在桌前。使用正式移动采样和独立手部渲染。<span id="error" role="alert"></span></footer>
 <section id="recording-preview" hidden style="position:fixed;right:12px;bottom:65px;width:360px;max-width:80vw;background:white;padding:10px;z-index:3"><button id="close-recording">关闭回放</button><video id="recorded-video" controls playsinline loop style="display:block;width:100%"></video><a id="download-recording">下载视频</a></section>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=arms-49b';
-import {loadDeskModel} from '../dist/imported-actors.js?v=arms-49b';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js';
-import {createDeskHands,THROWABLE_ITEM_KINDS} from '../dist/game-actors.js?v=arms-49b';
-import {ClassroomRound,CLASSROOM_ACTIONS} from '../dist/classroom-rules.js?v=arms-49b';
-import {createFirstPersonView,sampleFirstPersonMotion} from '../dist/first-person-view.js?v=arms-49b';
-import {CRAWL_TUNING} from '../dist/crawl-profile.js?v=arms-49b';
-import {SEATS,PLAYER_SEAT} from '../dist/classroom-layout.js?v=mouth-36';
+import {loadStudentAssets} from '../dist/student-assets.js?v=campus-57';
+import {loadDeskModel} from '../dist/imported-actors.js?v=campus-57';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-57';
+import {createDeskHands,THROWABLE_ITEM_KINDS} from '../dist/game-actors.js?v=campus-57';
+import {ClassroomRound,CLASSROOM_ACTIONS} from '../dist/classroom-rules.js?v=campus-57';
+import {createFirstPersonView,sampleFirstPersonMotion} from '../dist/first-person-view.js?v=campus-57';
+import {CRAWL_TUNING} from '../dist/crawl-profile.js?v=campus-57';
+import {SEATS,PLAYER_SEAT} from '../dist/classroom-layout.js?v=campus-57';
 const ui=Object.fromEntries(['item','hold','use','throw','progress','progress-label','pause','step','stand','walk','crawl','pitch','yaw','reset-view','record','recording-preview','recorded-video','download-recording','close-recording','state','error'].map(id=>[id,document.getElementById(id)]));
 const canvas=document.querySelector('canvas'),renderer=new T.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;

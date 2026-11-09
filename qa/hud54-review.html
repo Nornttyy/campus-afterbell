@@ -1,0 +1,43 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../dist/"><title>课堂 HUD 54 实景检查</title><link rel="stylesheet" href="./style.css?v=campus-57"><link rel="stylesheet" href="./reference-hud54.css?v=campus-57"><style>#qa54{position:fixed;z-index:100;left:50%;bottom:8px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;width:max-content;max-width:90vw;gap:5px;padding:6px;background:#ffffedc9;font:12px system-ui;border-radius:5px}#qa54 button{font:inherit;padding:5px 9px;border:1px solid #89967e;background:#fffbed;cursor:pointer}#qa54 button{white-space:nowrap}#monitor-status{flex-basis:100%;text-align:center;white-space:nowrap}#qa54[hidden]{display:none}#qa-load{position:fixed;inset:0;display:grid;place-items:center;background:#fffbe9;z-index:999}#qa-load[hidden]{display:none}</style></head><body><div id="qa-load">加载正式场景…</div><nav id="qa54"><button data-action="student">学生</button><button data-action="teacher">老师</button><button data-action="pen">拿笔</button><button data-action="points">实际加分</button><button data-action="pause">暂停</button><button data-action="win">学生胜利</button><button data-action="lose">老师胜利</button><button data-action="flash">闪光</button><button data-action="gum">附着泡泡</button><button data-action="hide">隐藏工具</button></nav><script type="module">
+const base=document.baseURI;
+const markup=await fetch(new URL('./index.html',base)).then(r=>r.text()),parsed=new DOMParser().parseFromString(markup,'text/html');
+document.body.prepend(document.importNode(parsed.querySelector('#game'),true));document.body.prepend(document.importNode(parsed.querySelector('.icon-defs'),true));
+const [{createClassroom},{createClassroomGame},{createSoloRound}]=await Promise.all(['./classroom.js?v=campus-57','./classroom-game.js?v=campus-57','./solo-round.js'].map(p=>import(new URL(p,base))));
+const role=new URL(location.href).searchParams.get('role')==='teacher'?'teacher':'student',round=createSoloRound({role,target:100,seed:73});
+const canvas=document.querySelector('#classroom');canvas.hidden=false;canvas.requestPointerLock=()=>Promise.resolve();
+const scene=await createClassroom(canvas,{active:true,snapEntry:true});
+const game=createClassroomGame({scene,round,audio:{apply(){},start(){},effect(){},click(){}},onExit:()=>location.reload()});game.start();round.reset(73);round.start();
+round._advanceTeacher=()=>{};for(const s of round.students)s._decisionAt=Infinity;
+if(role==='teacher'){Object.assign(round.player,{x:6.1,z:4.8,yaw:-2,pitch:.03});round.teacher.stamina=72;}
+else round.setLook(.12,.28);
+document.body.classList.add('scene-ready');document.querySelector('#qa-load').hidden=true;
+function points(){const actor=round.students.find(s=>round._team.has(s.id)&&!s.caught);round._completeAction(actor,{id:0,action:'burger',progress:1,readyAt:0});}
+if(role==='teacher'){
+ for(const [label,action]of [['看前监控','monitor-front'],['看后监控','monitor-back'],['119秒','time119'],['120秒','time120'],['235秒','time235'],['体力 100','stamina100'],['体力 14','stamina14'],['体力 7','stamina7'],['体力 0','stamina0'],['公开偷吃声','food-sound'],['监控烟雾','monitor-smoke'],['抓对提示','notice-correct'],['抓错提示','notice-wrong'],['恢复提示','notice-low'],['额外消息静默','notice-extra']]){const b=document.createElement('button');b.textContent=label;b.dataset.action=action;document.querySelector('#qa54').append(b);}
+ const status=document.createElement('output');status.id='monitor-status';document.querySelector('#qa54').append(status);
+ setInterval(()=>{const s=round.snapshot().surveillance;status.textContent=`${round.elapsed.toFixed(1)}s · 可用${s.remaining} · 等待${Math.ceil(s.unlockIn||s.cooldown)}s · ${s.viewing||'未查看'} · E安装/查看，Q关闭`;},200);
+}
+for(const button of document.querySelectorAll('#qa54 button'))button.onclick=()=>{
+ const action=button.dataset.action;if(action==='student'||action==='teacher'){location.href=new URL('../qa/hud54-review.html?role='+action,base);return;}
+ if(action==='monitor-front')Object.assign(round.player,{x:-6.85,z:7.38,yaw:0,pitch:Math.atan2(.3,1.2),seated:false});
+ if(action==='monitor-back')Object.assign(round.player,{x:6.85,z:-8.58,yaw:Math.PI,pitch:Math.atan2(.3,1.2),seated:false});
+ if(action?.startsWith('time'))round.elapsed=Number(action.slice(4));
+ if(action?.startsWith('stamina'))round.teacher.stamina=Number(action.slice(7));
+ if(action==='food-sound')scene.playWorldEffect({type:'food-complete',x:round.player.x+2,z:round.player.z-2,y:1.4});
+ if(action==='notice-correct')round._events.push({type:'correct-capture'});
+ if(action==='notice-wrong')round._events.push({type:'wrong-grab'});
+ if(action==='notice-low')round._events.push({type:'stamina-low'});
+ if(action==='notice-extra')round._events.push({type:'observation',public:true,text:'额外说明不应显示'},{type:'elevator-denied',message:'额外状态不应显示'});
+ if(action==='monitor-smoke')round.smokes.push({id:77,x:0,y:0,z:0,age:1.4,remaining:20,radius:2.2,density:1});
+ if(action==='pen')round.takePen();if(action==='points')points();if(action==='pause')document.querySelector('#pause-game').click();
+ if(action==='win'){while(round.status==='playing'&&round.score<round.target)points();}
+ if(action==='lose')round._finish('lost','timeout');
+ if(action==='flash'){const target=role==='teacher'?round.teacher:round.player;target._flashUntil=round.elapsed+4;target._flashDuration=4;target._flashStrength=.4;}
+ if(action==='gum'){const target=role==='teacher'?round.teacher:round.player;target._bubbleUntil=round.elapsed+8;target._bubbleSize=.3;}
+ if(action==='hide')document.querySelector('#qa54').hidden=true;
+};
+for(const b of document.querySelectorAll('#settings-dialog .close'))b.onclick=()=>document.querySelector('#settings-dialog').close();
+window.addEventListener('keydown',e=>{if(e.code==='Backquote')document.querySelector('#qa54').hidden=!document.querySelector('#qa54').hidden;});
+document.addEventListener('keydown',e=>{canvas.dataset.qaInput=JSON.stringify({key:e.key,code:e.code,target:scene.getInteraction?.(),stage:round.stage,paused:round.paused,role:round.snapshot().role,id:round.player.id});});
+window.hud54QA={round,scene,game,points};window.qaReady=true;
+</script></body></html>

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-52';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-57';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {createRiggedTeacher} from '../dist/imported-actors.js';
 import {loadGeometry} from './gltf-geometry.mjs';
@@ -10,28 +10,6 @@ const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
 const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
 const makeHands=()=>createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});
 function updateSkin(group){group.updateMatrixWorld(true);group.traverse(o=>{if(o.isSkinnedMesh)o.skeleton.update();});}
-
-for(const seated of [true,false])test(`paper completion withdraws continuously and does not restore consumed paper (${seated?'seated':'standing'})`,()=>{
- const actor=makeHands(),hand=actor.getHand('right').group,note=actor.group.getObjectByName('folded-note');let time=0;
- for(let i=0;i<240;i++)actor.update(time+=1/60,{action:'note',carrying:true,holding:true,progress:Math.min(.99,i/240),seated,freeLook:true});
- updateSkin(actor.group);let previous=hand.getWorldPosition(V()),maxStep=0;assert.equal(note.visible,true);
- // ClassroomRound clears progress and drawnSlot in the same completion tick.
- for(let i=0;i<55;i++){
-  actor.update(time+=1/60,{action:'note',carrying:false,holding:false,progress:0,seated,freeLook:true});updateSkin(actor.group);
-  const point=hand.getWorldPosition(V());maxStep=Math.max(maxStep,point.distanceTo(previous));previous=point;
-  assert.equal(note.visible,false,'consumed paper reappeared during withdrawal');
- }
- assert.ok(maxStep<.075,`paper completion jumped the wrist ${maxStep} m`);
- for(let i=0;i<90;i++)actor.update(time+=1/60,{action:'note',carrying:true,holding:false,progress:0,seated,freeLook:true});
- assert.equal(note.visible,true,'the completion flag leaked into the next paper');
-});
-
-test('returning unfinished paper still shows it during the hand withdrawal',()=>{
- const actor=makeHands(),note=actor.group.getObjectByName('folded-note');let time=0;
- for(let i=0;i<120;i++)actor.update(time+=1/60,{action:'note',carrying:true,holding:true,progress:.8,freeLook:true});
- actor.update(time+=1/60,{action:'note',carrying:false,holding:false,progress:.8,freeLook:true});
- assert.equal(note.visible,true,'putting back an unfinished item was mistaken for consumption');
-});
 
 for(const side of [-1,1])test(`${side<0?'left':'right'} v3 palm flexes both distal thumb joints and the actual weighted skin`,()=>{
  const hand=createRiggedPalm(side<0?left:right,side),prefix=side<0?'Left':'Right',bones={};

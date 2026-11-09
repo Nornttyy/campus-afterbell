@@ -1,6 +1,7 @@
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-52';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-52';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-57';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-57';
 import * as T from './vendor/three.module.js';
+import {setCharacterNight} from './character-materials.js?v=campus-57';
 // Hands follow horizontal body turns, never camera pitch. Seated/restrained
 // hands keep their body heading while the player looks around.
 export function sampleFirstPersonMotion(previous,player,time){
@@ -26,10 +27,15 @@ export function firstPersonEyeHeight(player,role='student'){
 }
 export function createFirstPersonView(renderer,camera,groups){
  const scene=new T.Scene(),anchor=new T.Group();scene.add(anchor);for(const group of groups){anchor.add(group);group.userData.viewCamera=camera;}
- scene.add(new T.HemisphereLight('#edf5ff','#dce3e3',2.5));
+ const ambient=new T.HemisphereLight('#edf5ff','#dce3e3',2.5);scene.add(ambient);
  const light=new T.DirectionalLight('#fff8ed',4);light.position.set(-10,6,6);scene.add(light);
  const fill=new T.DirectionalLight('#e5eef4',.85);fill.position.set(5,4,6);scene.add(fill);
  return{scene,anchor,
+  setNight(night){
+   ambient.intensity=night?.30:2.5;ambient.color.set(night?'#7890c5':'#edf5ff');ambient.groundColor.set(night?'#9ca5b5':'#dce3e3');
+   light.intensity=night?.035:4;light.color.set(night?'#7084ac':'#fff8ed');fill.intensity=night?.055:.85;
+   for(const group of groups)setCharacterNight(group,night);
+  },
   align(player,motion,position){
    anchor.position.copy(position);
    // Head pitch changes how the hands are seen, not where the arms point.

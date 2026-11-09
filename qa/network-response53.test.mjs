@@ -89,3 +89,26 @@ test('valid CRLF event stream updates the room and authoritative state only afte
  try{await wait(()=>round.snapshot().connection==='connected');const next={...f.result.state,score:19,sequence:f.result.state.sequence+1};f.streams[0].enqueue(new TextEncoder().encode('event:state\r\ndata:'+JSON.stringify(next)+'\r\n\r\n'));await wait(()=>round.snapshot().score===19);assert.deepEqual(f.errors,[]);assert.equal(round.room.code,'535353');}
  finally{await round.leave();}
 });
+
+test('coalesced valid SSE events over 512KB remain connected after a delayed browser read',async t=>{
+ let controller,finalSequence;const f=mockServer(t,{events:result=>{
+  const packet=index=>'event: state\r\ndata: '+JSON.stringify({...result.state,score:index,sequence:result.state.sequence+index})+'\r\n\r\n';
+  const events=[];let size=0;for(let i=1;size<700000;i++){const next=packet(i);assert.ok(next.length<524288);events.push(next);size+=next.length;finalSequence=result.state.sequence+i;}
+  const body=new ReadableStream({start(out){controller=out;out.enqueue(new TextEncoder().encode(events.join('')));}});
+  return new Response(body,{headers:{'content-type':'text/event-stream'}});
+ }}),round=await f.connect();
+ try{await wait(()=>round.snapshot().sequence===finalSequence);assert.equal(round.snapshot().connection,'connected');assert.deepEqual(f.errors,[]);assert.equal(round._retry,null);assert.equal(f.calls.filter(path=>path==='/api/events').length,1);}
+ finally{controller.close();await round.leave();}
+});
+
+for(const ended of[true,false])test(`oversized ${ended?'complete':'unfinished'} SSE event still terminates without retry`,async t=>{
+ const f=mockServer(t,{events:result=>new Response('event: state\ndata: '+JSON.stringify({...result.state,padding:'x'.repeat(524288)})+(ended?'\n\n':''),{headers:{'content-type':'text/event-stream'}})}),round=await f.connect();
+ try{await wait(()=>round.snapshot().connection==='failed');assert.equal(f.errors.length,1);assert.equal(round._retry,null);assert.equal(round._terminalError.terminal,true);}
+ finally{await round.leave();}
+});
+
+test('a malformed event inside a valid coalesced batch is still rejected',async t=>{
+ const f=mockServer(t,{events:result=>new Response('event: state\ndata: '+JSON.stringify(result.state)+'\n\nevent: state\ndata: '+JSON.stringify({...result.state,player:{...result.state.player,x:null}})+'\n\n',{headers:{'content-type':'text/event-stream'}})}),round=await f.connect();
+ try{await wait(()=>round.snapshot().connection==='failed');assert.equal(f.errors.length,1);assert.equal(round._retry,null);}
+ finally{await round.leave();}
+});

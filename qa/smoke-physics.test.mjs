@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSmokeProjectile,stepSmokeProjectile,smokeEnvelope} from '../dist/smoke-physics.js';
-import {ROOM,DESKS,AISLES,CEILING_HEIGHT,CAMPUS_MAPS} from '../dist/classroom-layout.js';
+import {ROOM,DESKS,AISLES,CEILING_HEIGHT,CAMPUS_MAPS,ceilingVolumes} from '../dist/classroom-layout.js';
 
 const actor={id:9,x:AISLES[1],z:-4,yaw:0,pitch:0,seated:false};
 const advance=(p,seconds)=>{let collisions=[];for(let i=0;i<seconds*120;i++)collisions.push(...stepSmokeProjectile(p,1/120));return collisions;};
@@ -42,8 +42,8 @@ test('canisters bounce off floor, walls, ceiling and thin desk tops without tunn
   const d=DESKS[0],desk=createSmokeProjectile(actor,4);Object.assign(desk,{x:(d.minX+d.maxX)/2,z:(d.minZ+d.maxZ)/2,y:1.2,vx:0,vy:-20,vz:0});
   advance(desk,.04);assert.ok(desk.bounces>0);assert.ok(desk.y>=.97);assert.ok(desk.vy>0);
 });
-test('throws on all eight floors collide with the fixed classroom, corridor and office ceilings',()=>{
- for(const map of CAMPUS_MAPS)for(const [x,z]of[[0,0],[9.2,0],[6.5,12]]){const p=createSmokeProjectile(actor,2,1,map);Object.assign(p,{x,z,y:CEILING_HEIGHT-.18,vx:0,vy:10,vz:0});advance(p,.05);assert.ok(p.bounces>0);assert.ok(p.vy<0);assert.ok(p.y<=CEILING_HEIGHT-.075);}
+test('throws on all eight floors collide with the actual classroom, corridor and office ceilings',()=>{
+ for(const map of CAMPUS_MAPS)for(const [x,z]of[[0,0],[9.2,0],[6.5,12]]){const height=ceilingVolumes(map).find(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ).minY,p=createSmokeProjectile(actor,2,1,map);Object.assign(p,{x,z,y:height-.18,vx:0,vy:10,vz:0});advance(p,.05);assert.ok(p.bounces>0);assert.ok(p.vy<0);assert.ok(p.y<=height-.075);}
 });
 test('settled canisters stay at rest instead of jittering or sinking into a surface',()=>{
   const p=createSmokeProjectile(actor,1);advance(p,4);assert.equal(p.settled,true);const {x,y,z,spinX,spinZ}=p;

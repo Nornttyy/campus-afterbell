@@ -1,13 +1,18 @@
-import {createCapturePose} from './capture-poses.js?v=campus-52';
+import {createCapturePose} from './capture-poses.js?v=campus-57';
 import * as THREE from './vendor/three.module.js';
+import {normalWalkCycleRate} from './movement55.js?v=campus-57';
+import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-57';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-52';
-import {useCharacterBaseColor} from './character-materials.js';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-52';
+import {createCrawlPose} from './crawl-pose.js?v=campus-57';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-57';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-57';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-57';
 
 export async function loadTeacherModel(){
   const url=new URL('./assets/models/teacher-v2.glb?v=arms-49b',import.meta.url);
-  return createRiggedTeacher(await new GLTFLoader().loadAsync(url.href));
+  const source=await new GLTFLoader().loadAsync(url.href);
+  const create=()=>createRiggedTeacher({...source,scene:cloneSkin(source.scene)});
+  const actor=create();actor.createClone=create;return actor;
 }
 
 export async function loadDeskModel(){
@@ -18,6 +23,16 @@ export async function loadDeskModel(){
   if(!body||!drawer||!chair)throw new Error('Furniture must have separate body, drawer and chair');
   const shared=new Map();
   body.traverse(o=>{if(o.isMesh)for(const m of [o.material].flat())if(m.name==='TripoFurnitureOriginalPBR')shared.set(m.name,m);});
+  // Correct the source laminate's brown albedo to honey-yellow under the
+  // classroom light. Preserve its grain, normal/roughness maps and grey metal.
+  for(const material of shared.values()){
+    material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+      float laminate = smoothstep(1.20,1.65,diffuseColor.r/max(diffuseColor.g,0.001))
+                     * (1.0-smoothstep(0.55,0.85,diffuseColor.b/max(diffuseColor.g,0.001)));
+      diffuseColor.rgb = mix(diffuseColor.rgb,min(diffuseColor.rgb*vec3(1.55,1.85,1.35),vec3(0.94)),laminate);
+    `);};
+    material.customProgramCacheKey=()=> 'school-laminate-55';
+  }
   const replaced=new Set();
   chair.traverse(o=>{if(!o.isMesh)return;const map=m=>{const same=shared.get(m.name);if(same&&same!==m){replaced.add(m);return same;}return m;};o.material=Array.isArray(o.material)?o.material.map(map):map(o.material);});
   const discardedMaps=new Set();for(const m of replaced){for(const value of Object.values(m))if(value?.isTexture)discardedMaps.add(value);m.dispose();}for(const map of discardedMaps)map.dispose();
@@ -46,9 +61,10 @@ export function createRiggedTeacher(gltf){
   const position=new THREE.Vector3(),rotation=new THREE.Quaternion(),inverse=new THREE.Quaternion();
   const lookRotation=new THREE.Quaternion();
   const nominalWalkSpeed=Number(gltf.parser?.json?.asset?.extras?.characters40?.nominalWalkSpeed)||1.35;
-  let lastTime=null,gesture={card:false,cast:0},lookValue=0,neckContact=null,walkRate=1,lastDt=0,neckRequestedAt=-Infinity,seatWeight=0,seatHipSaved=null;
+  let lastTime=null,gesture={card:false,cast:0},lookValue=0,lookPitchValue=0,neckContact=null,walkRate=1,lastDt=0,neckRequestedAt=-Infinity,seatWeight=0,seatHipSaved=null;
   const crawlPose=createCrawlPose(group,bones),capturePose=createCapturePose(group,bones),handMotion=createStudentHandMotion(group,bones,{authoredNeutral:metric}),gripRig=createFingerRig(group,bones,'Right'),poseSaved=new Map();
   const neckPose=new Map(),groundPose=new Map();
+  const walkingArms=metric?createWalkingArmPose(group,bones):null;
   function saveBone(bone){if(!poseSaved.has(bone))poseSaved.set(bone,bone.quaternion.clone());}
   function aimBone(bone,child,target,save=saveBone){
     group.updateMatrixWorld(true);const from=child.getWorldPosition(new THREE.Vector3()).sub(bone.getWorldPosition(new THREE.Vector3())).normalize(),to=target.clone().sub(bone.getWorldPosition(new THREE.Vector3())).normalize();
@@ -133,7 +149,7 @@ export function createRiggedTeacher(gltf){
     }
     group.updateMatrixWorld(true);
   }
-  function update(time,{walking=0,speed=null,look=0,phase='board',crawling=false,seated=false}={}){
+  function update(time,{walking=0,speed=null,look=0,lookYaw=null,lookPitch=0,phase='board',crawling=false,seated=false}={}){
     const reset=lastTime===null||time<lastTime;
     // Match the game's 250 ms foreground bound; dropping time here alone
     // makes the teacher move farther than its feet animate on slow frames.
@@ -151,19 +167,22 @@ export function createRiggedTeacher(gltf){
       action.setEffectiveWeight(weights[name]);
       if(reset)action.time=0;
     }
-    const requestedRate=Number.isFinite(speed)?THREE.MathUtils.clamp(Math.max(0,speed)/nominalWalkSpeed,.1,3.8):.55+moving*.45;
+    const requestedRate=Number.isFinite(speed)?metric?normalWalkCycleRate('teacher',speed,nominalWalkSpeed):THREE.MathUtils.clamp(Math.max(0,speed)/nominalWalkSpeed,.1,3.8):.55+moving*.45;
     walkRate=reset?requestedRate:THREE.MathUtils.damp(walkRate,requestedRate,16,dt);actions.Walk.setEffectiveTimeScale(walkRate);
     actions.Throw.paused=true;actions.Throw.time=THREE.MathUtils.clamp(gesture.cast,0,1)*actions.Throw.getClip().duration;
     for(const [bone,q]of groundPose)bone.quaternion.copy(q);groundPose.clear();
     capturePose.restore();crawlPose.restore();
     if(seatHipSaved){bones.Hips.position.copy(seatHipSaved);seatHipSaved=null;}
+    walkingArms?.restore();
     for(const [bone,rotation]of poseSaved)bone.quaternion.copy(rotation);poseSaved.clear();handMotion.restore();mixer.update(dt);
     handMotion.apply({time,dt,reset,seated:write>.35,mood:write>.35?'writing':'resting',moving,carrying:false});settleNeckPose(time,dt);
+    walkingArms?.apply({weight:neckContact?0:weights.Walk||0,seated,crawling,restraint:phase==='stunned'?'stunned':'free',teacher:true,walkTime:actions.Walk.time,cycleDuration:actions.Walk.getClip().duration});
     sitOnOfficeChair(seated&&phase!=='stunned',dt,reset);
     // Look offset is applied after sampling, never accumulated into the bind pose.
-    lookValue=THREE.MathUtils.lerp(lookValue,THREE.MathUtils.clamp(look,-.5,.5),alpha);
+    const yawTarget=Number.isFinite(lookYaw)?lookYaw:THREE.MathUtils.clamp(look,-.5,.5);
+    lookValue+=Math.atan2(Math.sin(yawTarget-lookValue),Math.cos(yawTarget-lookValue))*alpha;lookPitchValue=THREE.MathUtils.lerp(lookPitchValue,Number(lookPitch)||0,alpha);
     const characterRotation=group.getWorldQuaternion(new THREE.Quaternion()),headParent=bones.Head.parent.getWorldQuaternion(new THREE.Quaternion());
-    lookRotation.setFromAxisAngle(new THREE.Vector3(0,1,0).applyQuaternion(characterRotation),lookValue);
+    lookRotation.setFromEuler(new THREE.Euler(lookPitchValue,lookValue,0,'YXZ')).premultiply(characterRotation).multiply(characterRotation.clone().invert());
     saveBone(bones.Head);bones.Head.quaternion.premultiply(headParent.clone().invert().multiply(lookRotation).multiply(headParent));
     crawlPose.apply({active:crawling&&!seated,time,dt,speed:Number.isFinite(speed)?speed:0,reset});
     const support={};for(const side of ['Left','Right']){const foot=bones[side+'Foot'];if(foot)support[side]={height:group.worldToLocal(foot.getWorldPosition(new THREE.Vector3())).y,rotation:foot.getWorldQuaternion(new THREE.Quaternion())};}
@@ -180,5 +199,5 @@ export function createRiggedTeacher(gltf){
   update(0,{phase:'watching'});
   return{group,bones,update,getHand:side=>anchors[side],castChalk:progress=>{gesture.cast=THREE.MathUtils.clamp(Number(progress)||0,0,1);},gripNeck,setGesture:value=>{gesture={card:false,cast:0,...value};},
     dispose(){mixer.stopAllAction();mixer.uncacheRoot(model);},
-    diagnostics:()=>({asset:group.userData.asset,clips:Object.keys(actions),weights:{...weights},height:2.08,animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),seatedWeight:seatWeight,capture:capturePose.state(),crawl:crawlPose.state()})};
+    diagnostics:()=>({asset:group.userData.asset,clips:Object.keys(actions),weights:{...weights},height:2.08,animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),headLook:{yaw:lookValue,pitch:lookPitchValue},seatedWeight:seatWeight,capture:capturePose.state(),crawl:crawlPose.state()})};
 }

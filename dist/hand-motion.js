@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {strugglePose} from './capture-poses.js?v=campus-52';
+import {strugglePose} from './capture-poses.js?v=campus-57';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 // Pose the palm using the actual digit bases. The female right rig has its
 // transverse axis reversed, so a left/right sign alone is not sufficient.
@@ -48,7 +48,7 @@ export function createStudentHandMotion(group,bones,{seed=0,authoredNeutral=fals
   restore(){for(const[b,q]of saved)b.quaternion.copy(q);saved.clear();},
   apply({time=0,dt=0,reset=false,seated=true,mood='resting',restraint='free',moving=0,carrying=false,capture=null}={}){
    const a=reset?1:1-Math.exp(-13*dt),phase=time+seed*.73;
-   const freeMood=!seated&&!carrying&&['writing','computer','phone','snack','note','thinking','chat','hero'].includes(mood)?'resting':mood;
+   const freeMood=!seated&&!carrying&&['writing','computer','phone','snack','thinking','chat','hero'].includes(mood)?'resting':mood;
    const kind=capture&&capture.kind!=='free'?capture.kind:restraint==='free'?freeMood:restraint;
    const poseTime=capture?.age??time;
    const posed=['carried','bound','rescuing','stunned','recovering'].includes(kind);restraintBlend=T.MathUtils.damp(restraintBlend,posed?1:0,11,dt);
@@ -57,16 +57,16 @@ export function createStudentHandMotion(group,bones,{seed=0,authoredNeutral=fals
     // Most of the time a hand simply stays relaxed or holds its contact point.
     // Visible wrist articulation belongs to a gesture, not a constant idle wobble.
     let curl=authoredNeutral?.08:.18,rx=0,ry=0,rz=0,thumb=authoredNeutral?.05:.12,activeGrip=posed;
-    if(kind==='writing'||kind==='computer'){
+    if(kind==='writing'){
      activeGrip=right;curl=right?(authoredNeutral?.24:.52):.16;thumb=right?(authoredNeutral?.35:.55):.12;rx=right?.025*Math.sin(phase*5.4):0;
-    }else if(['phone','snack','note'].includes(kind)||(carrying&&restraint==='free'&&kind!=='recovering')){
-     const holds=!right||kind==='note'||(!authoredNeutral&&carrying);activeGrip=holds;curl=holds?.63:.19;thumb=holds?.56:.15;
+    }else if(['phone','snack'].includes(kind)||(carrying&&restraint==='free'&&kind!=='recovering')){
+     const holds=!right||(!authoredNeutral&&carrying);activeGrip=holds;curl=holds?.63:.19;thumb=holds?.56:.15;
     }else if(kind==='carried'){const lift=T.MathUtils.smoothstep(strugglePose(poseTime)[side.toLowerCase()][1],-.08,.10);curl=.46+.31*lift;thumb=.50+.15*lift;}
     else if(kind==='bound'){curl=.32+.018*squeeze;thumb=.42;}
     else if(kind==='rescuing'){curl=.25+.38*squeeze;thumb=.30+.22*squeeze;}
     else if(kind==='stunned'){curl=.22;thumb=.13;}
     else if(kind==='recovering'){curl=.26;thumb=.20;}
-    const tableContact=authoredTableContact&&seated&&!posed&&restraint==='free'&&(['resting','writing','computer'].includes(kind)||(right&&kind==='snack'));
+    const tableContact=authoredTableContact&&seated&&!posed&&restraint==='free'&&(['resting','writing'].includes(kind)||(right&&kind==='snack'));
     h.contactWeight=reset?(tableContact?1:0):T.MathUtils.damp(h.contactWeight,tableContact?1:0,13,dt);
     if(tableContact){activeGrip=false;rx=0;}
     for(const[k,v]of Object.entries({curl,rx,ry,rz,thumb}))values[k]=T.MathUtils.lerp(values[k],v,a);

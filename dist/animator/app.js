@@ -3,7 +3,7 @@ import {createRigView} from './rig-view.js';
 import {downloadProject,importProjectFile,downloadAnimatedGLB,exportGameClip} from './animation-io.js';
 
 export const MODEL_LABELS=Object.freeze({boy:'男同学',girl:'紫发女同学',ponytail:'棕马尾女同学',glasses:'眼镜同学',teacher:'老师'});
-const CLIP_LABELS={Idle:'站立',Walk:'走路',Sit:'坐姿',Write:'写字',Snack:'拿零食',Phone:'手机',Note:'纸条',Think:'思考',Carry:'持物站立',WalkCarry:'持物走路',Card:'举手',Throw:'投掷'};
+const CLIP_LABELS={Idle:'站立',Walk:'走路',Sit:'坐姿',Write:'写字',Snack:'拿零食',Phone:'手机',Think:'思考',Carry:'持物站立',WalkCarry:'持物走路',Card:'举手',Throw:'投掷'};
 const copy=value=>JSON.parse(JSON.stringify(value));
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 const storageKey=id=>'campus.animator.v1.'+id;
