@@ -1,7 +1,7 @@
 import {Euler,Quaternion} from './vendor/three.module.js';
 export const HAND_ANIMATION_FORMAT='campus-first-person-hands';
 export const HAND_ANIMATION_VERSION=1;
-export const HAND_CLIP_IDS=Object.freeze(['student-idle','student-walk','student-crawl','teacher-idle','teacher-walk']);
+export const HAND_CLIP_IDS=Object.freeze(['student-idle','student-walk','student-crawl-idle','student-crawl','teacher-idle','teacher-walk']);
 export const HAND_FINGERS=Object.freeze(['Thumb','Index','Middle','Pinky']);
 export const HAND_EASINGS=Object.freeze(['linear','smoothstep','step']);
 export const HAND_ANIMATION_MAX_BYTES=262144;
@@ -49,7 +49,7 @@ export function sampleHandAnimationClip(clip,seconds){
 // A new clip contains one static pose, never a sampled legacy animation.
 // Every frame after this is authored by the user in the editor.
 export function createHandAnimationDocument(){
- const clips={};for(const id of HAND_CLIP_IDS){const crawl=id==='student-crawl';
+ const clips={};for(const id of HAND_CLIP_IDS){const crawl=id.startsWith('student-crawl');
   const hand=side=>({position:[side*(crawl?.26:.24),crawl?-.38:-.34,crawl?-.60:-.62],rotation:[crawl?-1.35:-.65,0,side*(crawl?.06:.11)],curl:.18});
   clips[id]={duration:id.endsWith('idle')?2:crawl?1.6:1.2,loop:true,easing:'smoothstep',keyframes:[{time:0,left:hand(-1),right:hand(1)}]};
  }return{format:HAND_ANIMATION_FORMAT,version:1,clips};

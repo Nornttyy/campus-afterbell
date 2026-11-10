@@ -9,9 +9,9 @@ import {loadGeometry} from './gltf-geometry.mjs';
 const clone=o=>JSON.parse(JSON.stringify(o)),Q=()=>new T.Quaternion(),V=()=>new T.Vector3(),DT=1/60;
 const storage=()=>{const data=new Map();return{getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};};
 const near=(a,b,epsilon=1e-8)=>assert.ok(Math.abs(a-b)<epsilon,`${a} differs from ${b}`);
-test('initial templates contain five independent stationary poses; creating them does not save',()=>{
+test('initial templates contain six independent stationary poses; creating them does not save',()=>{
  const a=createHandAnimationDocument(),b=createHandAnimationDocument();assert.equal(validateHandAnimationDocument(a).ok,true);
- assert.equal(HAND_CLIP_IDS.length,5);for(const id of HAND_CLIP_IDS){const c=a.clips[id];assert.equal(c.keyframes.length,1);assert.equal(c.keyframes[0].time,0);assert.deepEqual(sampleHandAnimationClip(c,0),sampleHandAnimationClip(c,c.duration));}
+ assert.equal(HAND_CLIP_IDS.length,6);for(const id of HAND_CLIP_IDS){const c=a.clips[id];assert.equal(c.keyframes.length,1);assert.equal(c.keyframes[0].time,0);assert.deepEqual(sampleHandAnimationClip(c,0),sampleHandAnimationClip(c,c.duration));}
  a.clips['student-walk'].keyframes[0].left.position[0]=2;assert.notDeepEqual(a,b);assert.equal(loadHandAnimations(storage()),null);
 });
 for(const [name,change]of [
@@ -49,14 +49,15 @@ test('walking to crawling crossfades from the last rendered pose rather than sna
  const s=storage();saveHandAnimations(createHandAnimationDocument(),s);const r=createHandAnimationRuntime({storage:s,eventTarget:null});let p;for(let i=0;i<20;i++)p=r.sample({movement:1},i*.02);const firstCrawl=r.sample({movement:1,crawlBlend:1},.40);assert.deepEqual(firstCrawl.left.position,p.left.position);near(firstCrawl.weight,1);let maxStep=0,previous=firstCrawl;
  for(let i=1;i<15;i++){const next=r.sample({movement:1,crawlBlend:1},.40+i*.02);maxStep=Math.max(maxStep,new T.Vector3(...next.left.position).distanceTo(new T.Vector3(...previous.left.position)));previous=next;}assert.ok(maxStep<.15,`switch teleports ${maxStep}m`);assert.equal(previous.clipId,'student-crawl');r.dispose();
 });
-test('empty standing student and teacher select their own idle, never a stopped or rising crawler',()=>{
+test('empty standing student and teacher select their own idle, never a standing idle for a stopped or rising crawler',()=>{
  for(const role of ['student','teacher']){
   assert.equal(selectHandAnimationClip({role,movement:0,freeLook:true}),`${role}-idle`);
   assert.equal(selectHandAnimationClip({role,movement:.01}),`${role}-idle`);
   assert.equal(selectHandAnimationClip({role,movement:.02}),`${role}-walk`);
   for(const special of [{seated:true},{carrying:true},{holding:true},{eating:true},{drawerOpen:true},{computerActive:true},{bookRaised:true},{caught:true},{captivity:'carried'},{writing:true},{throwing:true},{penTwirling:true},{penWriting:true},{freeLook:false}])assert.equal(selectHandAnimationClip({role,movement:0,...special}),null);
  }
- for(const extra of [{crouched:true},{crawling:true},{crawlBlend:1},{crawlBlend:.25}])assert.equal(selectHandAnimationClip({role:'student',movement:0,...extra}),null);
+ for(const extra of [{crouched:true},{crawling:true},{crawlBlend:1}])assert.equal(selectHandAnimationClip({role:'student',movement:0,...extra}),'student-crawl-idle');
+ assert.equal(selectHandAnimationClip({role:'student',movement:0,crawlBlend:.25}),null);
  assert.equal(selectHandAnimationClip({role:'teacher',movement:1,crouched:true}),null);
 });
 test('stationary idle advances on scene time and walk/idle transitions preserve the last visible pose for either role',()=>{
@@ -80,7 +81,7 @@ test('stationary idle advances on scene time and walk/idle transitions preserve 
  }
 });
 test('legacy walk-only documents leave idle to the game and fade a stopped crawler out',()=>{
- const s=storage(),d=createHandAnimationDocument();delete d.clips['student-idle'];delete d.clips['teacher-idle'];saveHandAnimations(d,s);
+ const s=storage(),d=createHandAnimationDocument();delete d.clips['student-idle'];delete d.clips['teacher-idle'];delete d.clips['student-crawl-idle'];saveHandAnimations(d,s);
  const r=createHandAnimationRuntime({storage:s,eventTarget:null});for(let i=0;i<10;i++)assert.equal(r.sample({movement:0},i*.02),null);
  let p;for(let i=0;i<20;i++)p=r.sample({movement:1,crouched:true},1+i*.02);assert.equal(p.clipId,'student-crawl');
  p=r.sample({movement:0,crouched:true},1.4);assert.ok(p.weight>0&&p.weight<1);r.sample({movement:0,crouched:true},1.5);assert.equal(r.sample({movement:0,crouched:true},1.6),null);r.dispose();
