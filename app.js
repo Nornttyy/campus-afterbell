@@ -1,6 +1,6 @@
-import {setupControlSettings} from './control-settings64.js?v=campus-64';
-import {playCampusFoley} from './foley-audio54.js?v=campus-64';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-64';
+import {setupControlSettings} from './control-settings64.js?v=campus-65';
+import {playCampusFoley} from './foley-audio54.js?v=campus-65';
+import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-65';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -157,7 +157,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-64'),import('./classroom-game.js?v=campus-64')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-65'),import('./classroom-game.js?v=campus-65')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}

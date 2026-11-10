@@ -1,3 +1,4 @@
+import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-65';
 // Elevator operation is enabled; boarding and per-round limits are authoritative.
 export const ELEVATOR_ENABLED=true;
 export const TEACHER_EYE_HEIGHT=1.95;
@@ -129,14 +130,27 @@ export const DESKS=Object.freeze(deskSolids());
 export function createLayoutContext(seats=SEATS,doorState={}){
  const context={map:seats[0]?.map||'classroom',seats,desks:deskSolids(seats),chairBacks:chairBackSolids(seats),routeGrids:new Map(),officeLocked:undefined,rearDoorClosed:undefined,elevatorClosed:undefined};return updateLayoutDoors(context,doorState);
 }
-export function updateLayoutDoors(context,{officeLocked=context.officeLocked??false,rearDoorClosed=context.rearDoorClosed??false,elevatorClosed=context.elevatorClosed??false}={}){
- elevatorClosed=!ELEVATOR_ENABLED||elevatorClosed;
- if(context.officeLocked===!!officeLocked&&context.rearDoorClosed===!!rearDoorClosed&&context.elevatorClosed===!!elevatorClosed)return context;
- context.officeLocked=!!officeLocked;context.rearDoorClosed=!!rearDoorClosed;context.elevatorClosed=!!elevatorClosed;
- const rear=DOORS[0],leaves=[rearDoorClosed?V(7.23,7.37,rear.minZ,rear.maxZ,.04,3.02):DOOR_LEAVES[0],DOOR_LEAVES[1]];
- if(officeLocked)leaves.push(V(OFFICE.doorMinX,OFFICE.doorMaxX,8.85,8.97,.02,3.02));
- else for(const x of [OFFICE.doorMinX,OFFICE.doorMaxX])leaves.push(V(x-.092,x+.092,8.91,9.81,0,3.02));
- if(elevatorClosed)leaves.push(V(LIFT.minX,LIFT.maxX,portalZ-.22,portalZ+.02,.02,3.12));
+export function updateLayoutDoors(context,state={}){
+ const {officeLocked=context.officeLocked??false,rearDoorClosed=context.rearDoorClosed??false,frontDoorClosed=context.frontDoorClosed??false,officeDoorClosed=Object.hasOwn(state,'officeLocked')?officeLocked:context.officeDoorClosed??officeLocked,elevatorClosed=context.elevatorClosed??false}=state;
+ context.officeLocked=!!officeLocked;context.rearDoorClosed=!!rearDoorClosed;context.frontDoorClosed=!!frontDoorClosed;context.officeDoorClosed=!!officeDoorClosed;context.elevatorClosed=!ELEVATOR_ENABLED||!!elevatorClosed;
+ const closed={rear:context.rearDoorClosed,front:context.frontDoorClosed,office:context.officeDoorClosed};
+ if(!context.doorMotion)context.doorMotion=createSchoolDoorMotion(closed);
+ if(state.doorMotion)copySchoolDoorMotion(context.doorMotion,state.doorMotion);
+ else for(const [id,key]of [['rear','rearDoorClosed'],['front','frontDoorClosed'],['office','officeDoorClosed']])if(Object.hasOwn(state,key)||id==='office'&&Object.hasOwn(state,'officeLocked'))context.doorMotion[id]={amount:closed[id]?0:1,target:closed[id]?0:1};
+ return rebuildDoorCollisions(context);
+}
+export function queueLayoutDoors(context,state={}){
+ if(Object.hasOwn(state,'officeLocked'))context.officeLocked=!!state.officeLocked;
+ const changes={};for(const [id,key]of [['rear','rearDoorClosed'],['front','frontDoorClosed'],['office','officeDoorClosed']])if(Object.hasOwn(state,key)){context[key]=!!state[key];changes[id]=context[key];}
+ if(!Object.hasOwn(state,'officeDoorClosed')&&Object.hasOwn(state,'officeLocked')){context.officeDoorClosed=!!state.officeLocked;changes.office=context.officeDoorClosed;}
+ setSchoolDoorTargets(context.doorMotion,changes);return rebuildDoorCollisions(context);
+}
+export function advanceLayoutDoors(context,dt,actors=[]){if(advanceSchoolDoors(context.doorMotion,dt,actors,{doors:DOORS,office:OFFICE}))rebuildDoorCollisions(context);return context;}
+export function layoutDoorSnapshot(context){return schoolDoorSnapshot(context.doorMotion);}
+function rebuildDoorCollisions(context){
+ const signature=JSON.stringify([context.elevatorClosed,...SCHOOL_DOOR_IDS.map(id=>context.doorMotion[id].amount)]);if(context._doorCollisionSignature===signature)return context;context._doorCollisionSignature=signature;
+ const leaves=SCHOOL_DOOR_IDS.flatMap(id=>schoolDoorSegments(id,context.doorMotion[id].amount,{doors:DOORS,office:OFFICE}));
+ if(context.elevatorClosed)leaves.push(V(LIFT.minX,LIFT.maxX,portalZ-.22,portalZ+.02,.02,3.12));
  context.walls=[...baseWalls,...leaves];context.wallVolumes=[...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...leaves,...headers];
  context.walkSolids=[...context.desks,...context.chairBacks,...context.walls,LECTERN,...OFFICE_SOLIDS,...(context.dynamicSolids||[])];context.routeGrids.clear();context.projectileColliderCache?.clear();return context;
 }

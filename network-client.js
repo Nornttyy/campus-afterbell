@@ -1,3 +1,8 @@
+import {createLayoutContext,updateLayoutDoors,moveInRoom} from './classroom-layout.js?v=campus-65';
+import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-65';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-65';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-65';
+import {applyNetworkDelta} from './network-state65.js?v=campus-65';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
 const NO_ROOM_SERVICE='这个地址没有多人房间服务，请先玩单人模式，或填写已部署的联机服务器地址。';
@@ -32,13 +37,14 @@ async function requestJSON(url,options={},schema={}){
  catch(error){if(error instanceof RoomConnectionError)throw error;throw new RoomConnectionError(error.name==='AbortError'?'联机服务器响应超时，请稍后重试。':'无法连接联机服务器，请检查网络和服务器地址。',{terminal:false});}
  finally{clearTimeout(timer);}
 }
-function validRoom(room){return object(room)&&/^\d{6}$/.test(room.code)&&typeof room.selfId==='string'&&typeof room.hostId==='string'&&Array.isArray(room.members)&&room.members.length>0&&room.members.length<=16&&room.members.every(m=>object(m)&&typeof m.id==='string'&&typeof m.connected==='boolean'&&['student','teacher'].includes(m.role))&&room.members.some(m=>m.id===room.selfId)&&room.members.some(m=>m.id===room.hostId);}
+function validRoom(room){return object(room)&&/^\d{6}$/.test(room.code)&&typeof room.selfId==='string'&&typeof room.hostId==='string'&&Array.isArray(room.members)&&room.members.length>0&&room.members.length<=8&&room.members.every(m=>object(m)&&typeof m.id==='string'&&typeof m.connected==='boolean'&&['student','teacher'].includes(m.role))&&room.members.some(m=>m.id===room.selfId)&&room.members.some(m=>m.id===room.hostId);}
 function validActor(actor){return object(actor)&&Number.isInteger(actor.id)&&['x','z','yaw'].every(k=>finite(actor[k]));}
 function validState(state,room=null){return object(state)&&validRoom(state.room)&&(!room||state.room.code===room.code&&state.room.selfId===room.selfId)&&['student','teacher'].includes(state.role)&&['ready','playing','won','lost'].includes(state.status)&&['gathering','seating','class'].includes(state.stage)&&typeof state.map==='string'&&validActor(state.player)&&validActor(state.teacher)&&Array.isArray(state.students)&&state.students.every(validActor)&&object(state.drawer)&&Array.isArray(state.drawer.slots)&&state.drawer.slots.every(s=>object(s)&&Number.isInteger(s.id))&&Array.isArray(state.seats)&&Array.isArray(state.books)&&object(state.completed)&&finite(state.score)&&finite(state.target)&&finite(state.elapsed)&&Number.isSafeInteger(state.sequence)&&Array.isArray(state.events)&&state.events.every(e=>object(e)&&typeof e.type==='string');}
 function validSession(result){return object(result)&&typeof result.token==='string'&&result.token.length>=16&&validRoom(result.room)&&validState(result.state,result.room);}
-function readEvent(data,type,room){
+function readEvent(data,type,room,previous){
  let message;try{message=JSON.parse(data);}catch{throw protocolError();}
- if(type==='state'&&!validState(message,room))throw protocolError();
+ if(type==='patch'){if(!object(message)||!previous||message.baseSequence!==previous.sequence||!Number.isSafeInteger(message.sequence)||message.sequence<message.baseSequence)throw protocolError();try{const next=applyNetworkDelta(previous,message.patch);if(next.sequence!==message.sequence)throw protocolError();message=next;}catch{throw protocolError();}}
+ if((type==='state'||type==='patch')&&!validState(message,room))throw protocolError();
  if(type==='voice'&&(!object(message)||typeof message.from!=='string'||!['offer','answer','ice','mute'].includes(message.kind)||!object(message.payload)))throw protocolError();
  if(type==='error'&&(!object(message)||!text(message.message)))throw protocolError();
  return message;
@@ -61,43 +67,44 @@ export async function connectCampusRoom({endpoint=defaultCampusEndpoint(),code='
 }
 export class NetworkRound{
  constructor({endpoint,result,onRoom=()=>{},onError=()=>{},onVoice=()=>{}}){
-  this.network=true;this.endpoint=endpoint;this.token=result.token;this.room=result.room;this._state=result.state;this._events=[...result.state.events];this._sequence=result.state.sequence;this._queued=[];this._last={};this._localPaused=false;this._closed=false;this._connected=false;this._onRoom=onRoom;this._onError=onError;this._controller=null;this._retry=null;this._busy=false;this._look=null;this._lookSeq=0;this._frames=[];
+  this.network=true;this.endpoint=endpoint;this.token=result.token;this.room=result.room;this._state=result.state;this._events=[...result.state.events];this._sequence=result.state.sequence;this._queued=[];this._last={};this._localPaused=false;this._closed=false;this._connected=false;this._onRoom=onRoom;this._onError=onError;this._controller=null;this._retry=null;this._busy=false;this._look=null;this._lookSeq=0;this._frames=[];this._moveSeq=0;this._localMotion={x:0,z:0};this._visualPosition=null;this._correction={x:0,z:0};this._receivedAt=performance.now();this._rtt=60;this._predictionLayout=null;this._visualTime=result.state.sceneElapsed;this._clockCorrection=0;
   this.voice=new RoomVoice(this,onVoice);this._timer=setInterval(()=>this._flush(),40);this._listen();this._onRoom(this.room,this._state);
  }
- get player(){return this._look?{...this._state.player,yaw:this._look.yaw,pitch:this._look.pitch}:this._state.player;}get teacher(){return this._state.teacher;}get status(){return this._state.status;}get paused(){return this._localPaused;}get elapsed(){return this._state.elapsed;}get map(){return this._state.map;}
- snapshot(){return {...this._state,...this._interpolatedActors(),player:this.player,paused:this._localPaused||!this._connected,network:true,connection:this._terminalError?'failed':this._connected?'connected':'connecting',room:this.room};}
- step(){return this.snapshot();}reset(){return this.snapshot();}start(){return this.snapshot();}
+ get player(){const p=this._state.player;return this._look||this._visualPosition?{...p,...this._visualPosition,...(this._look?{yaw:this._look.yaw,pitch:this._look.pitch}:{})}:p;}get teacher(){return this._state.teacher;}get status(){return this._state.status;}get paused(){return this._localPaused;}get elapsed(){return this._state.elapsed;}get map(){return this._state.map;}
+ snapshot(){return {...this._state,...this._interpolatedActors(),player:this.player,sceneElapsed:this._visualTime??this._state.sceneElapsed,paused:this._localPaused||!this._connected,network:true,connection:this._terminalError?'failed':this._connected?'connected':'connecting',room:this.room};}
+ step(dt=0){this._advanceLocal(dt);return this.snapshot();}reset(){return this.snapshot();}start(){return this.snapshot();}
  drainEvents(){const e=this._events;this._events=[];return e;}
  async _post(path,data){try{return await requestJSON(`${this.endpoint}${path}?room=${encodeURIComponent(this.room.code)}`,{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${this.token}`},body:JSON.stringify(data)},{validate:out=>object(out)&&out.ok===true&&(path!=='/api/command'||Array.isArray(out.results)&&out.results.every(value=>typeof value==='boolean'))});}catch(error){if(error.terminal&&!this._closed)this._terminate(error);throw error;}}
- _disconnected(){this._connected=false;this._queued=[];this._last={};this._look=null;this._frames=[];}
+ _disconnected(){this._connected=false;this._queued=[];this._last={};this._look=null;this._frames=[];this._visualPosition=null;this._localMotion={x:0,z:0};this._correction={x:0,z:0};this._visualTime=null;this._clockCorrection=0;}
  _terminate(error){if(this._terminalError||this._closed)return;this._terminalError=error;this._disconnected();clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this._controller?.abort();this.voice.close();this._onError(error.message);}
  command(name,...args){
   if(this._closed||this._terminalError||!this._connected)return false;
   if(name==='setComputerPlayback'&&this._state.role!=='student')return false;
   if(name==='setWriting'&&args[0]===false&&this._state.role!=='teacher')return false;
   if(name==='setRescue'&&args[0]===null&&this._state.role==='teacher')return false;
+  if(name==='setMovement'&&args.length===2&&args.every(finite)){const n=Math.max(1,Math.hypot(...args));this._localMotion={x:args[0]/n,z:args[1]/n};}
   if(['setMovement','setLook','setCrouch','setComputerPlayback'].includes(name)){
    const key=JSON.stringify(args),now=performance.now();if(this._last[name]?.key===key&&now-this._last[name].at<180)return true;this._last[name]={key,at:now};
    const old=this._queued.findIndex(c=>c.name===name);if(old>=0)this._queued.splice(old,1);
   }
-  let inputSeq=0;if(name==='setLook'&&args.slice(0,2).every(Number.isFinite)){inputSeq=++this._lookSeq;this._look={yaw:Math.atan2(Math.sin(args[0]),Math.cos(args[0])),pitch:Math.max(-1.3,Math.min(1.3,args[1])),sequence:inputSeq};}
+  let inputSeq=name==='setMovement'?++this._moveSeq:0;if(name==='setLook'&&args.slice(0,2).every(Number.isFinite)){inputSeq=++this._lookSeq;this._look={yaw:Math.atan2(Math.sin(args[0]),Math.cos(args[0])),pitch:Math.max(-1.3,Math.min(1.3,args[1])),sequence:inputSeq};}
   if(name==='stopComputer'&&!this._state.player.computerActive)return false;
   this._queued.push({name,args,inputSeq});if(this._queued.length>24)this._queued.splice(0,this._queued.length-24);return true;
  }
- async _flush(){if(this._closed||this._terminalError||!this._connected||this._busy||!this._queued.length)return;this._busy=true;const commands=this._queued.splice(0,12);try{await this._post('/api/command',{commands});}catch(error){if(this._look&&commands.some(c=>c.name==='setLook'&&c.inputSeq===this._look.sequence))this._look=null;if(error!==this._terminalError&&!this._closed){if(!error.status||error.status===408||error.status>=500){this._disconnected();this._controller?.abort();}this._onError(error.message);}}finally{this._busy=false;}}
+ async _flush(){if(this._closed||this._terminalError||!this._connected||this._busy||!this._queued.length)return;this._busy=true;const commands=this._queued.splice(0,12),sent=performance.now();try{await this._post('/api/command',{commands});this._rtt=this._rtt*.8+Math.min(500,performance.now()-sent)*.2;}catch(error){if(this._look&&commands.some(c=>c.name==='setLook'&&c.inputSeq===this._look.sequence))this._look=null;if(error!==this._terminalError&&!this._closed){if(!error.status||error.status===408||error.status>=500){this._disconnected();this._controller?.abort();}this._onError(error.message);}}finally{this._busy=false;}}
  async _listen(){
   if(this._closed||this._terminalError)return;this._retry=null;const controller=this._controller=new AbortController();let reader,watchdog,timedOut=false;
   const heartbeat=()=>{clearTimeout(watchdog);watchdog=setTimeout(()=>{timedOut=true;this._disconnected();controller.abort();},STREAM_TIMEOUT);};heartbeat();
   try{
-   const res=await fetch(`${this.endpoint}/api/events?room=${this.room.code}&since=${this._sequence}`,{headers:{authorization:`Bearer ${this.token}`,accept:'text/event-stream'},signal:controller.signal,cache:'no-store'});
+   const res=await fetch(`${this.endpoint}/api/events?room=${this.room.code}&since=${this._sequence}&delta=1`,{headers:{authorization:`Bearer ${this.token}`,accept:'text/event-stream'},signal:controller.signal,cache:'no-store'});
    if(!res.ok){try{await readJSON(res);}catch(error){if(res.status>=400&&res.status<500&&![408,429].includes(res.status))error.terminal=true;throw error;}}
    if(mime(res)!=='text/event-stream'||!res.body){await res.body?.cancel().catch(()=>{});throw protocolError();}
    reader=res.body.getReader();const decoder=new TextDecoder();let buffer='';
    while(!this._closed&&!this._terminalError){const {value,done}=await reader.read();if(done)break;buffer=(buffer+decoder.decode(value,{stream:true})).replace(/\r\n/g,'\n');let index;
     // Browser scene compilation can delay reads and coalesce many valid SSE
     // events into one large chunk. Limit each event, not the transport batch.
-    while((index=buffer.indexOf('\n\n'))>=0){if(index>524288)throw protocolError();const packet=buffer.slice(0,index);buffer=buffer.slice(index+2);let type='message',data='';for(const line of packet.split('\n')){if(line.startsWith('event:'))type=line.slice(6).trim();if(line.startsWith('data:'))data+=(data?'\n':'')+line.slice(5).trimStart();}if(!data||!['state','voice','error'].includes(type))continue;const message=readEvent(data,type,this.room);
-     if(type==='state'){heartbeat();if(message.sequence<this._sequence)continue;this._connected=true;const before=this.room,previous=this._state;this._state=message;const actorChanged=previous.player.id!==message.player.id||previous.player.seated!==message.player.seated||previous.map!==message.map;if(actorChanged)this._look=null;else if(this._look&&(message.inputAck?.look||0)>=this._look.sequence)this._look=null;if(previous.map!==message.map||previous.stage!==message.stage)this._frames=[];this._frames.push({time:performance.now(),state:message});if(this._frames.length>5)this._frames.shift();this.room=message.room;this._events.push(...message.events.filter(event=>!Number.isSafeInteger(event.networkSequence)||event.networkSequence>this._sequence));this._sequence=message.sequence;this.voice.sync(this.room);if(JSON.stringify(before)!==JSON.stringify(this.room))this._onRoom(this.room,this._state);}
+    while((index=buffer.indexOf('\n\n'))>=0){if(index>524288)throw protocolError();const packet=buffer.slice(0,index);buffer=buffer.slice(index+2);let type='message',data='';for(const line of packet.split('\n')){if(line.startsWith('event:'))type=line.slice(6).trim();if(line.startsWith('data:'))data+=(data?'\n':'')+line.slice(5).trimStart();}if(!data||!['state','patch','voice','error'].includes(type))continue;const message=readEvent(data,type,this.room,this._state);
+     if(type==='state'||type==='patch'){heartbeat();if(message.sequence<this._sequence)continue;this._connected=true;const before=this.room,previous=this._state;this._state=message;this._reconcileLocal(previous,message);const actorChanged=previous.player.id!==message.player.id||previous.player.seated!==message.player.seated||previous.map!==message.map;if(actorChanged)this._look=null;else if(this._look&&(message.inputAck?.look||0)>=this._look.sequence)this._look=null;if(previous.map!==message.map||previous.stage!==message.stage)this._frames=[];this._frames.push({time:performance.now(),state:message,students:new Map(message.students.map(p=>[p.id,p]))});if(this._frames.length>5)this._frames.shift();this.room=message.room;this._events.push(...message.events.filter(event=>!Number.isSafeInteger(event.networkSequence)||event.networkSequence>this._sequence));this._sequence=message.sequence;this.voice.sync(this.room);if(JSON.stringify(before)!==JSON.stringify(this.room))this._onRoom(this.room,this._state);}
      if(type==='voice')this.voice.receive(message).catch(error=>this._onError('语音连接失败：'+error.message));
      if(type==='error'){if(message.terminal===true)throw new RoomConnectionError(message.message);this._onError(message.message);}
     }
@@ -107,10 +114,39 @@ export class NetworkRound{
   finally{clearTimeout(watchdog);this._disconnected();try{await reader?.cancel();}catch{}reader?.releaseLock();}
   if(!this._closed&&!this._terminalError)this._retry=setTimeout(()=>this._listen(),1500);
  }
+ _canPredict(state=this._state){const p=state.player;return this._connected&&!this._localPaused&&state.status==='playing'&&!p.seated&&!p.caught&&(!p.captivity||p.captivity==='free')&&!(p.stunLeft>0);}
+ _moveVisual(position,movement,dt){
+  const actor={...this._state.player,...position,...(this._look?{yaw:this._look.yaw}:{})};
+  if(this._state.elevator?.phase==='travel'){moveElevatorPassenger(actor,movement,dt,this._predictionLayout);return{x:actor.x,z:actor.z};}
+  const speed=(actor.crouched?CRAWL_TUNING.speed:normalWalkSpeed(actor))*movementScale(actor,movement);
+  return moveInRoom(actor,movement.x*speed*dt,movement.z*speed*dt,.18,this._predictionLayout);
+ }
+ _reconcileLocal(previous,state){
+  this._receivedAt=performance.now();
+  if(this._visualTime==null||previous.map!==state.map||previous.stage!==state.stage||Math.abs(this._visualTime-state.sceneElapsed)>.5){this._visualTime=state.sceneElapsed;this._clockCorrection=0;}else this._clockCorrection=state.sceneElapsed+Math.min(.12,this._rtt/2000)-this._visualTime;
+  if(!this._predictionLayout||previous.map!==state.map||previous.seats!==state.seats)this._predictionLayout=createLayoutContext(state.seats,state);
+  updateLayoutDoors(this._predictionLayout,{...state,elevatorClosed:state.elevator?.phase==='travel'});
+  const p=state.player,old=previous.player,discontinuity=previous.map!==state.map||previous.stage!==state.stage||p.id!==old.id||p.seated!==old.seated||p.seatId!==old.seatId||p.captivity!==old.captivity||previous.elevator?.phase!==state.elevator?.phase;
+  if(!this._visualPosition||discontinuity||!this._canPredict(state)||Math.hypot(p.x-this._visualPosition.x,p.z-this._visualPosition.z)>1){this._visualPosition={x:p.x,z:p.z};this._correction={x:0,z:0};if(discontinuity)this._localMotion={x:0,z:0};return;}
+  // Never reconcile a newly reversed/released input against a snapshot that
+  // has not applied it yet. Prediction remains bounded during connection loss.
+  if((state.inputAck?.move||0)<this._moveSeq)return;
+  const lead=Math.min(.12,Math.max(0,this._rtt/2000)),motion=state.inputAck?.movement||{x:0,z:0},target=this._moveVisual(p,motion,lead);
+  this._correction={x:target.x-this._visualPosition.x,z:target.z-this._visualPosition.z};
+ }
+ _advanceLocal(dt){
+  if(finite(dt)&&dt>0&&this._connected&&!this._localPaused&&this._state.status==='playing'&&performance.now()-this._receivedAt<=250){const step=Math.min(.1,dt),adjust=Math.max(-step*.25,Math.min(step*.25,(this._clockCorrection||0)*(1-Math.exp(-8*step))));this._visualTime=(this._visualTime??this._state.sceneElapsed)+step+adjust;this._clockCorrection=(this._clockCorrection||0)-adjust;}
+  if(!finite(dt)||dt<=0||!this._canPredict()||performance.now()-this._receivedAt>250)return;
+  if(!this._predictionLayout)this._predictionLayout=createLayoutContext(this._state.seats,this._state);
+  if(!this._visualPosition)this._visualPosition={x:this._state.player.x,z:this._state.player.z};
+  let remaining=Math.min(dt,.1);while(remaining>1e-8){const step=Math.min(remaining,1/60),p=this._moveVisual(this._visualPosition,this._localMotion,step),weight=1-Math.exp(-14*step),dx=this._correction.x*weight,dz=this._correction.z*weight;
+   this._visualPosition=moveInRoom(p,dx,dz,.18,this._predictionLayout);this._correction.x-=dx;this._correction.z-=dz;remaining-=step;
+  }
+ }
  _interpolatedActors(){
   const frames=this._frames;if(frames.length<2)return{};const target=performance.now()-70;let a=frames[0],b=frames[frames.length-1];for(let i=1;i<frames.length;i++)if(frames[i].time>=target){a=frames[i-1];b=frames[i];break;}
   const t=Math.max(0,Math.min(1,(target-a.time)/Math.max(1,b.time-a.time))),blend=(x,y)=>{if(!x||!y||x.captivity!==y.captivity||x.seated!==y.seated||x.visible!==y.visible||Math.hypot(x.x-y.x,x.z-y.z)>2)return y;const turn=Math.atan2(Math.sin(y.yaw-x.yaw),Math.cos(y.yaw-x.yaw));return{...y,x:x.x+(y.x-x.x)*t,z:x.z+(y.z-x.z)*t,yaw:x.yaw+turn*t};};
-  return{students:this._state.students.map(p=>p.isPlayer?p:blend(a.state.students.find(s=>s.id===p.id),b.state.students.find(s=>s.id===p.id))||p),teacher:this._state.role==='teacher'?this._state.teacher:blend(a.state.teacher,b.state.teacher)};
+  return{students:this._state.students.map(p=>p.isPlayer?p:blend(a.students?.get(p.id),b.students?.get(p.id))||p),teacher:this._state.role==='teacher'?this._state.teacher:blend(a.state.teacher,b.state.teacher)};
  }
  pause(value=true){this._localPaused=Boolean(value);if(value){this.command('setComputerPlayback',{playing:false,visible:false,mediaTime:0});this.command('setMovement',0,0);this.command('hold',false);this.command('setCrouch',false);this.command('setRescue',null);}return this.snapshot();}
  setPreference(rolePreference,character){return this.command('setPreference',{rolePreference,character});}

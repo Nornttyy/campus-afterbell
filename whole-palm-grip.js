@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {createFingerRig,handFrame} from './hand-motion.js?v=campus-64';
-import {WHOLE_PALM_PROFILES} from './whole-palm-profiles54.js?v=campus-64';
+import {createFingerRig,handFrame} from './hand-motion.js?v=campus-65';
+import {WHOLE_PALM_PROFILES} from './whole-palm-profiles54.js?v=campus-65';
 const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
 
 // The four visible digits wrap around separate actual surface patches. Fits

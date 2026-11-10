@@ -1,7 +1,7 @@
-import {ClassroomRound} from './classroom-rules.js?v=campus-64';
-import {TeacherRound} from './teacher-rules.js?v=campus-64';
-import {updateLayoutDoors,CAMPUS_MAPS} from './classroom-layout.js?v=campus-64';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-64';
+import {ClassroomRound} from './classroom-rules.js?v=campus-65';
+import {TeacherRound} from './teacher-rules.js?v=campus-65';
+import {updateLayoutDoors,CAMPUS_MAPS} from './classroom-layout.js?v=campus-65';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-65';
 
 const elevatorRound=Base=>class extends Base{
  reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();return this.snapshot();}
@@ -61,6 +61,6 @@ export function switchSoloRole(round,role){
  const p=round.player;Object.assign(next.player,{x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,character:p.character,variant:p.variant});
  if(role==='teacher')Object.assign(next.teacher,{x:p.x,z:p.z,yaw:p.yaw});
  next.elevator=round.elevator;next.paused=round.paused;next._sessionElapsed=round._sessionElapsed;next._stageElapsed=round._stageElapsed;
- updateLayoutDoors(next.layout,{officeLocked:round.layout.officeLocked,rearDoorClosed:round.layout.rearDoorClosed,elevatorClosed:false});
+ updateLayoutDoors(next.layout,{officeLocked:round.layout.officeLocked,officeDoorClosed:round.layout.officeDoorClosed,frontDoorClosed:round.layout.frontDoorClosed,rearDoorClosed:round.layout.rearDoorClosed,doorMotion:round.snapshot().doorMotion,elevatorClosed:false});
  next._events=[];return next;
 }
