@@ -54,7 +54,7 @@ test('seat ownership, item completion and door duration are authoritative for se
  Object.assign(a.context.player,{x:6.7,z:door.center,yaw:-Math.PI/2});r.command(a,'setDoorUse',[true]);r.tick(.1);assert.equal(r.snapshot(a).doorUse.holding,false,'looking away must cancel the interaction');
  Object.assign(a.context.player,{x:6.7,z:door.center,yaw:Math.PI/2});r.command(a,'setDoorUse',[true]);for(let i=0;i<31;i++)r.tick(.1);assert.equal(r.sim.layout.rearDoorClosed,false,'closed leaf can be reopened from corridor');
  a.context.player._slots=[{id:0,action:'banana',readyAt:0,progress:0}];a.context.player._selectedSlot=0;a.context.player._drawnSlot=0;a.context.player.seated=true;a.context.player.action='banana';a.context.selected='banana';r.command(a,'hold',[true]);for(let i=0;i<31;i++)r.tick(.1);assert.equal(r.snapshot(a).selected,'bananaPeel');assert.equal(a.context.player._slots[0].action,'bananaPeel');
- const other=new CampusRoom({code:'111111',seed:74});assert.notDeepEqual(r.sim.seats,other.sim.seats);assert.equal(other.sim.layout.rearDoorClosed,false);assert.equal(SEATS[0].pattern,'pairs');
+ const other=new CampusRoom({code:'111111',seed:74});assert.notDeepEqual(r.sim.seats,other.sim.seats);assert.equal(other.sim.layout.rearDoorClosed,true);assert.equal(SEATS[0].pattern,'pairs');
 });
 
 test('browser adapter predicts each mouse delta immediately and reconciles acknowledged look',async()=>{

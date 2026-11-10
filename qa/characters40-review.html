@@ -4,10 +4,10 @@
 <section id="recording-preview" hidden aria-label="动作视频回放"><header><strong>3秒动作回放</strong><button id="close-recording" aria-label="关闭回放">关闭</button></header><video id="recorded-video" controls playsinline loop preload="metadata"></video><a id="download-recording">下载视频</a><small id="recording-info"></small></section>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-64';
-import {loadTeacherModel} from '../dist/imported-actors.js?v=campus-64';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-64';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-64';
+import {loadStudentAssets,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-65';
+import {loadTeacherModel} from '../dist/imported-actors.js?v=campus-65';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-65';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-65';
 const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(1.3,devicePixelRatio));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.08;document.body.append(renderer.domElement);
 const scene=new T.Scene();scene.background=new T.Color('#dfe8e8');scene.add(new T.HemisphereLight('#edf5ff','#dce3e3',2.5));const sun=new T.DirectionalLight('#fff8ed',4.0);sun.position.set(-10.7,6.4,6.7);scene.add(sun);const fill=new T.DirectionalLight('#e5eef4',.85);fill.position.set(5,4,6);scene.add(fill);
 const camera=new T.PerspectiveCamera(32,1,.02,50),pivot=new T.Group(),furniture=new T.Group();scene.add(pivot);pivot.add(furniture);const floor=new T.Mesh(new T.PlaneGeometry(240,240),new T.MeshStandardMaterial({color:'#c8d3cc',roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.01;scene.add(floor);const grid=new T.GridHelper(240,480,'#a8b6ad','#a8b6ad');grid.position.y=.001;scene.add(grid);

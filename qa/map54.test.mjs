@@ -72,7 +72,7 @@ test('round and one-use lift reconstruct terrain-compatible seats while preservi
 test('pre-class exterior boundaries stay closed while class and office door rules remain independent',()=>{
  const r=new ClassroomRound({seed:3});r.start({gathering:true});
  for(const [p,dx,dz]of [[{x:CORRIDOR.maxX-.3,z:0},3,0],[{x:CLASSROOM.minX+.4,z:0},-3,0],[{x:0,z:-9.6},0,-3],[{x:6,z:OFFICE.maxZ-.4},0,3],[{x:LIFT.x,z:LIFT.minZ+.3},0,-3]]){const q=moveInRoom(p,dx,dz,.18,r.layout);assert.equal(blocked(q.x,q.z,.18,r.layout),false);assert.ok(Math.hypot(q.x-p.x,q.z-p.z)<.5);}
- assert.equal(r.layout.officeLocked,false);r.startBell();assert.equal(r.layout.officeLocked,true);assert.ok(walkRoute(LIFT,{x:6.8,z:7},.18,r.layout).length);assert.deepEqual(walkRoute(LIFT,TEACHER_SPAWN,.18,r.layout),[]);
+ assert.equal(r.layout.officeLocked,false);r.startBell();assert.equal(r.layout.officeLocked,true);r.step(1.2);assert.ok(walkRoute(LIFT,{x:6.8,z:7},.18,r.layout).length);assert.deepEqual(walkRoute(LIFT,TEACHER_SPAWN,.18,r.layout),[]);
  assert.equal(floorHeight(BOARD.x,BOARD.z,'tiered'),.16);
 });
 

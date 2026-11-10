@@ -1,0 +1,49 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>8 人真实联机检查</title><style>
+*{box-sizing:border-box}[hidden]{display:none!important}html{background:#e9e9e1;color:#22332d;font:14px system-ui}body{margin:12px}header,.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}button,select{font:inherit;border:1px solid #7a8c80;background:#fffdf2;border-radius:5px;padding:7px 12px;min-height:36px}button:disabled{opacity:.45}#viewport{position:relative;width:min(100%,1120px);height:min(64vh,630px);overflow:hidden}#scene{width:100%;height:100%;display:block;background:#d5e0e2;outline:none;border:1px solid #a3aca4}output{white-space:pre-wrap;font:13px ui-monospace,monospace}#errors{color:#aa352c;max-height:100px;overflow:auto}small{color:#5c6b62}#status{font-weight:600}#hud{margin:7px 0}
+</style></head><body data-ready="loading"><header><b>真实 8 人联机</b><button id="create">创建8人</button><button id="walk" disabled title="视角所在玩家留在原地，其余玩家持续真实移动">全部走路</button><button id="stop" disabled>停</button><button id="bell" disabled>开始上课</button><button id="close" disabled>关闭测试</button></header>
+<div class="bar"><label>视角 <select id="view" aria-label="玩家视角"><option value="0">房主 · 老师候选</option></select></label><label>画质 <select id="quality" aria-label="画质"><option value="high">高</option><option value="low">低</option></select></label><button id="left">向左看</button><button id="right">向右看</button><span id="status">正在加载真实场景</span></div>
+<main id="viewport"><canvas id="scene" tabindex="0" aria-label="真实多人场景"></canvas></main><div id="hud"></div><small>WASD 移动当前玩家；在画面拖动鼠标转头。只使用真实网络输入，不修改服务器坐标。关闭测试会离开全部 8 个客户端。</small><p><output id="metrics"></output></p><output id="errors"></output>
+<script type="module">
+import {connectCampusRoom} from '../dist/network-client.js?v=campus-65';
+import {createClassroom} from '../dist/classroom.js?v=campus-65';
+// Split the eight test SSE streams across two loopback host names: Chrome
+// limits HTTP/1.1 to six connections per origin. Both names reach the same server.
+const endpoint='http://127.0.0.1:8933',canvas=document.querySelector('#scene'),status=document.querySelector('#status'),metrics=document.querySelector('#metrics'),errors=document.querySelector('#errors'),view=document.querySelector('#view'),buttons=['walk','stop','bell','close'].map(id=>document.getElementById(id));
+let scene=null,peers=[],selected=0,walking=false,alive=true,connecting=false,raf=0,last=performance.now(),lastStats=0,walkStart=0,drag=null,intervals=[],failures=[],generation=0;const keys=new Set();
+function error(message){const text=String(message?.message||message);if(failures.at(-1)!==text)failures.push(text);failures=failures.slice(-8);errors.textContent=failures.join('\n');document.body.dataset.errors=JSON.stringify(failures);}
+window.addEventListener('error',e=>error(e.message));window.addEventListener('unhandledrejection',e=>error(e.reason));
+function updateButtons(){for(const b of buttons)b.disabled=!peers.length;document.querySelector('#create').disabled=connecting||peers.length>0;}
+function current(){return peers[selected];}
+function look(dx,dy=0){const p=current();if(!p)return;p.setLook((p.player.yaw||0)+dx,Math.max(-1.15,Math.min(1.3,(p.player.pitch||0)+dy)));}
+async function close(){generation++;walking=false;keys.clear();const prior=peers;peers=[];connecting=false;updateButtons();await Promise.allSettled(prior.map(p=>p.leave()));status.textContent='全部客户端已退出';document.body.dataset.connected='0';document.body.dataset.room='';if(scene)scene.setGameplay(null);}
+document.querySelector('#create').onclick=async()=>{
+ const run=++generation;connecting=true;failures=[];errors.textContent='';status.textContent='正在创建 8 个独立网络客户端';updateButtons();
+ try{for(let i=0;i<8;i++){const peer=await connectCampusRoom({endpoint:i<4?endpoint:'http://localhost:8933',code:peers[0]?.room.code||'',name:i?'检查同学'+i:'检查房主',character:['boy','girl','glasses','ponytail'][i%4],rolePreference:i?'student':'teacher',onError:error});if(run!==generation){await peer.leave();return;}peers.push(peer);status.textContent=`已连接 ${peers.length} / 8`;}
+  view.innerHTML=peers.map((p,i)=>`<option value="${i}">${i?'同学 '+i:'房主 · 老师候选'}</option>`).join('');selected=0;peers[0].setLook(.32,.05);document.body.dataset.room=peers[0].room.code;document.body.dataset.ready=scene?'ready':'loading';status.textContent='8 人已连接';canvas.focus();
+ }catch(e){error(e);await close();}finally{connecting=false;updateButtons();}
+};
+document.querySelector('#walk').onclick=()=>{walking=true;walkStart=performance.now();status.textContent='其余 7 人在走廊行走，当前视角可用 WASD 控制';canvas.focus();};
+document.querySelector('#stop').onclick=()=>{walking=false;keys.clear();for(const p of peers)p.setMovement(0,0);status.textContent='所有玩家停止';};
+document.querySelector('#bell').onclick=()=>{peers[0]?.startBell();status.textContent='已向房主发送开始上课';};
+document.querySelector('#close').onclick=()=>close().catch(error);
+view.onchange=()=>{current()?.setMovement(0,0);keys.clear();selected=Number(view.value);canvas.focus();};
+document.querySelector('#quality').onchange=e=>scene?.setQuality(e.target.value);
+document.querySelector('#left').onclick=()=>look(.35);document.querySelector('#right').onclick=()=>look(-.35);
+canvas.addEventListener('pointerdown',e=>{canvas.focus();drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;look(-(e.clientX-drag.x)*.004,(e.clientY-drag.y)*.003);drag={x:e.clientX,y:e.clientY};});canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
+window.addEventListener('keydown',e=>{if(document.activeElement!==canvas)return;if(['KeyW','KeyA','KeyS','KeyD'].includes(e.code)){keys.add(e.code);e.preventDefault();}});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();for(const p of peers)p.setMovement(0,0);});
+function frame(now){if(!alive)return;raf=requestAnimationFrame(frame);const dt=Math.min(.1,Math.max(0,(now-last)/1000));last=now;if(document.hidden)return;if(dt>0)intervals.push(dt*1000);if(intervals.length>180)intervals.shift();
+ for(let i=0;i<peers.length;i++){const p=peers[i];if(i===selected){let x=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0),z=(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0),n=Math.max(1,Math.hypot(x,z)),yaw=p.player.yaw||0;x/=n;z/=n;p.setMovement(Math.sin(yaw)*z-Math.cos(yaw)*x,Math.cos(yaw)*z+Math.sin(yaw)*x);}
+  else if(walking){const phase=(now-walkStart)/1000,direction=Math.floor(phase/4)%2?-1:1;p.setLook(direction>0?0:Math.PI,.02);p.setMovement(0,direction);}else p.setMovement(0,0);
+  p.step(dt);const events=p.drainEvents();if(i===selected)for(const event of events)scene?.playWorldEffect(event);
+ }
+ const state=current()?.snapshot();if(scene&&state)scene.setGameplay(state);
+ if(now-lastStats>250){lastStats=now;const sorted=[...intervals].sort((a,b)=>a-b),average=intervals.reduce((a,b)=>a+b,0)/Math.max(1,intervals.length),connected=peers.filter(p=>p.snapshot().connection==='connected').length;
+ const data={connected,clients:peers.length,room:state?.room?.code||'',view:selected,role:state?.role,stage:state?.stage,sequence:state?.sequence,sceneElapsed:state?.sceneElapsed,authoritativeSceneElapsed:current()?._state.sceneElapsed,frameMs:Number(average.toFixed(2)),p95Ms:Number((sorted[Math.floor(sorted.length*.95)]||0).toFixed(2)),fps:Number((1000/Math.max(1,average)).toFixed(1)),errors:failures.length,walking,renderer:canvas.dataset.sceneDebug?JSON.parse(canvas.dataset.sceneDebug):null};
+ document.body.dataset.connected=String(connected);document.body.dataset.performance=JSON.stringify(data);metrics.textContent=JSON.stringify(data,null,2);document.querySelector('#hud').textContent=state?`房间 ${state.room.code} · ${connected}/8 连接 · ${state.role==='teacher'?'老师':'学生'} · ${state.stage} · 位置 ${state.player.x.toFixed(2)}, ${state.player.z.toFixed(2)}`:'';
+ }
+}
+raf=requestAnimationFrame(frame);
+try{scene=await createClassroom(canvas,{active:true,snapEntry:true});scene.setQuality(document.querySelector('#quality').value);document.body.dataset.ready='ready';status.textContent=peers.length?'8 人场景已就绪':'场景已就绪，点击创建8人';}catch(e){error(e);status.textContent='场景加载失败';document.body.dataset.ready='failed';}
+window.addEventListener('pagehide',()=>{alive=false;cancelAnimationFrame(raf);for(const peer of peers){fetch(`${peer.endpoint}/api/leave?room=${peer.room.code}`,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+peer.token},body:'{}',keepalive:true}).catch(()=>{});peer.dispose();}peers=[];scene?.dispose();},{once:true});
+</script></body></html>

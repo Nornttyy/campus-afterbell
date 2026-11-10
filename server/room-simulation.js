@@ -1,4 +1,4 @@
-import {reachesRearDoor} from '../dist/door-interaction54.js';
+import {reachesSchoolDoor} from '../dist/door-interaction54.js';
 import {validComputerPlayback} from '../dist/computer-rules55.js';
 import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from '../dist/round-settings55.js';
 import {movementScale} from '../dist/movement55.js';
@@ -72,10 +72,11 @@ class SharedRound extends TeacherRound{
  }
 }
 
+export const MAX_ROOM_PLAYERS=8;
 export class CampusRoom{
- constructor({code,seed=Date.now()>>>0,map='classroom',floor=1,maxPlayers=16,settings=DEFAULT_ROUND_SETTINGS}={}){
+ constructor({code,seed=Date.now()>>>0,map='classroom',floor=1,maxPlayers=MAX_ROOM_PLAYERS,settings=DEFAULT_ROUND_SETTINGS}={}){
   if(!validRoundSettings(settings))throw new RoomError(400,'时长须为5–20分钟，捣蛋目标须为30–120');this.settings={...settings};
-  this.code=code;this.seed=seed;this.map=Layout.CAMPUS_MAPS.includes(map)?map:'classroom';this.floor=Math.max(1,Math.min(8,Number(floor)||1));this.maxPlayers=maxPlayers;this.members=new Map();this.hostId=null;this.sequence=0;this.events=[];this.createdAt=Date.now();this.updatedAt=this.createdAt;
+  this.code=code;this.seed=seed;this.map=Layout.CAMPUS_MAPS.includes(map)?map:'classroom';this.floor=Math.max(1,Math.min(8,Number(floor)||1));this.maxPlayers=Math.max(2,Math.min(MAX_ROOM_PLAYERS,Number.isInteger(maxPlayers)?maxPlayers:MAX_ROOM_PLAYERS));this.members=new Map();this.hostId=null;this.sequence=0;this.events=[];this.createdAt=Date.now();this.updatedAt=this.createdAt;
   this.elevator=createElevator();
   this.sim=new SharedRound({seed,map:this.map,...this.settings});this.sim.room=this;this.teacherActor=this.sim.player;this.teacherContext=context(this.teacherActor);this.sim.start({gathering:true});
   // Only connected humans are the hidden mischievous students. Remaining
@@ -92,7 +93,7 @@ export class CampusRoom{
  join({name,character='boy',rolePreference='student'}={}){
   if(this.elevator.phase==='travel')throw new RoomError(409,'电梯正在运行，请稍后加入');
   if(this.sim.stage!=='gathering'||this.sim.status!=='playing')throw new RoomError(409,'本局已开始，请等下一局');
-  if(this.members.size>=this.maxPlayers)throw new RoomError(409,'房间已满');
+  if(this.members.size>=this.maxPlayers)throw new RoomError(409,`房间已满，最多${this.maxPlayers}人`);
   const used=new Set([...this.members.values()].map(m=>m.studentId)),actor=this.sim.students.find(s=>!used.has(s.id));
   if(!actor)throw new RoomError(409,'没有空位');
   const id=randomUUID(),member={id,token:randomBytes(24).toString('base64url'),name:cleanName(name),character:variants.has(character)?character:'boy',rolePreference:rolePreference==='teacher'?'teacher':'student',role:'student',studentId:actor.id,connected:true,lastInput:Date.now(),lastSeen:Date.now(),lastSequence:0};
@@ -163,7 +164,15 @@ export class CampusRoom{
   if(command==='startBell')return this.begin(member,args[0]);
   if(command==='rematch')return this.rematch(member);
   if(command==='configureRound')return this.configureRound(member,args[0]);
-  if(command==='setDoorUse'){if(typeof args[0]!=='boolean'||args[1]!==undefined&&typeof args[1]!=='boolean')throw new RoomError(400,'无效交互');const desired=args[1]??!this.sim.layout.rearDoorClosed;if(!args[0]){member.doorUse=false;member.doorProgress=0;return true;}if(this.sim.layout.rearDoorClosed===desired||!reachesRearDoor(member.context.player,this.sim.layout))return false;if(!member.doorUse||member.doorTarget!==desired)member.doorProgress=0;member.doorUse=true;member.doorTarget=desired;return true;}
+  if(command==='setDoorUse'){
+   const id=args[2]??'rear',key=id==='office'?'officeDoorClosed':id+'DoorClosed';
+   if(typeof args[0]!=='boolean'||args[1]!==undefined&&typeof args[1]!=='boolean'||!['rear','front','office'].includes(id))throw new RoomError(400,'无效交互');
+   const desired=args[1]??!this.sim.layout[key];
+   if(!args[0]){member.doorUse=false;member.doorProgress=0;return true;}
+   if(id==='office'&&this.sim.layout.officeLocked||this.sim.layout[key]===desired||!reachesSchoolDoor(member.context.player,this.sim.layout,id))return false;
+   if(!member.doorUse||member.doorTarget!==desired||member.doorId!==id)member.doorProgress=0;
+   member.doorUse=true;member.doorId=id;member.doorTarget=desired;return true;
+  }
   if(command==='travelFloor')return this.travelFloor(member,args[0]);
   if(command==='setPreference'){this.preference(member,args[0]);return true;}
   const allowed=member.role==='teacher'?teacherCommands:studentCommands;if(!allowed.has(command))throw new RoomError(400,'不支持的操作');
@@ -185,7 +194,7 @@ export class CampusRoom{
   return this.withMember(member,sim=>{
    const prototype=member.role==='teacher'?TeacherRound.prototype:ClassroomRound.prototype,method=prototype[command];
    if(typeof method!=='function')return false;
-   const result=method.apply(sim,args);if(command==='setLook'&&result&&Number.isSafeInteger(inputSeq)&&inputSeq>0)member.lookSequence=Math.max(member.lookSequence||0,inputSeq);return result;
+   const result=method.apply(sim,args);if(result&&Number.isSafeInteger(inputSeq)&&inputSeq>0){if(command==='setLook')member.lookSequence=Math.max(member.lookSequence||0,inputSeq);if(command==='setMovement')member.moveSequence=Math.max(member.moveSequence||0,inputSeq);}return result;
   });
  }
  tick(dt){
@@ -209,9 +218,9 @@ export class CampusRoom{
   if(this.teacherMember&&Date.now()-this.teacherMember.lastInput>500)this.sim._movement={x:0,z:0};
   this.sim.step(dt);for(const key of CONTEXT)ctx[key]=this.sim[key];
   for(const member of this.members.values()){
-   if(!member.doorUse)continue;const p=member.context.player;
-   if(!member.connected||this.sim.layout.rearDoorClosed===member.doorTarget||!reachesRearDoor(p,this.sim.layout)||this.sim._restrained(p)||p.seated){member.doorUse=false;member.doorProgress=0;continue;}
-   member.doorProgress=(member.doorProgress||0)+dt/3;if(member.doorProgress>=1){ClassroomRound.prototype.setRearDoor.call(this.sim,member.doorTarget);member.doorUse=false;member.doorProgress=0;}
+   if(!member.doorUse)continue;const p=member.context.player,id=member.doorId||'rear',key=id==='office'?'officeDoorClosed':id+'DoorClosed';
+   if(!member.connected||this.sim.layout[key]===member.doorTarget||id==='office'&&this.sim.layout.officeLocked||!reachesSchoolDoor(p,this.sim.layout,id)||this.sim._restrained(p)||p.seated){member.doorUse=false;member.doorProgress=0;continue;}
+   member.doorProgress=(member.doorProgress||0)+dt/3;if(member.doorProgress>=1){ClassroomRound.prototype.setSchoolDoor.call(this.sim,id,member.doorTarget);member.doorUse=false;member.doorProgress=0;}
   }
   const incoming=this.sim.drainEvents();for(const event of incoming)this.events.push({...event,networkSequence:++this.sequence});
   if(this.events.length>100)this.events.splice(0,this.events.length-100);this.sequence++;
@@ -219,11 +228,11 @@ export class CampusRoom{
  publicRoom(self){return {settings:{...this.settings},code:this.code,hostId:this.hostId,selfId:self.id,stage:this.sim.stage,seed:this.seed,floor:this.floor,map:this.map,maxPlayers:this.maxPlayers,members:[...this.members.values()].map(m=>({id:m.id,name:m.name,character:m.character,rolePreference:m.rolePreference,role:m.role,connected:m.connected,...(self.role==='teacher'&&m.id!==self.id?{}:{studentId:m.role==='teacher'?-1:m.studentId})}))};}
  snapshot(member){
   const state=this.withMember(member,sim=>TeacherRound.prototype.snapshot.call(sim));
-  state.doorUse={holding:Boolean(member.doorUse),progress:member.doorProgress||0};state.interaction={kind:member.doorUse?'rear-door':null,progress:member.doorProgress||0};
+  state.doorUse={holding:Boolean(member.doorUse),id:member.doorId||'rear',progress:member.doorProgress||0};state.interaction={kind:member.doorUse?'rear-door':null,doorId:member.doorId||'rear',progress:member.doorProgress||0};
   state.teamSize=this.sim._team.size;state.network=true;state.floor=this.floor;state.layoutSeed=this.seed;state.room=this.publicRoom(member);
   state.elevator=elevatorSnapshot(this.elevator,[...this.members.values()].map(m=>({player:m.context.player,connected:m.connected})),{stage:state.stage,status:state.status,host:member.id===this.hostId});
   state.lobbyRole=state.stage==='gathering'?member.rolePreference:null;
-  state.inputAck={look:member.lookSequence||0};state.player.name=member.name;state.player.character=member.character;
+  state.inputAck={look:member.lookSequence||0,move:member.moveSequence||0,movement:{...member.context._movement}};state.player.name=member.name;state.player.character=member.character;
   const selfId=member.role==='teacher'?-1:member.studentId;
   state.students=state.students.map(p=>{const actor=this.sim.students[p.id],carrying=actor._drawnSlot!=null&&!this.sim._restrained(actor),heldAction=carrying?actor._slots[actor._drawnSlot]?.action||actor.action:null;return{...p,previewRole:state.stage==='gathering'?[...this.members.values()].find(m=>m.studentId===p.id)?.rolePreference:null,carrying,heldAction,drawerOpen:Boolean(actor._drawerOpen&&!actor._usingOfficeStock),penTaken:Boolean(actor._penTaken),isPlayer:p.id===selfId,isTeammate:this.sim._team.has(p.id)&&p.id!==selfId,networkHuman:Boolean(actor.networkHuman),character:actor.character||actor.variant};});
   state.teacher.networkHuman=Boolean(this.teacherMember);state.teacher.name=this.teacherMember?.name||'老师';

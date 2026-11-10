@@ -2,9 +2,9 @@
 <style>html,body{margin:0;height:100%;font:14px sans-serif;background:#ddd}canvas{display:block;width:100vw;height:100vh}nav{position:fixed;top:8px;left:8px;right:8px;display:flex;gap:6px;flex-wrap:wrap;background:#fffe;padding:8px;border-radius:6px}button,select{font:inherit;padding:7px}output{position:fixed;bottom:8px;left:8px;background:#fffe;padding:8px;max-width:90vw;white-space:pre-wrap}i{position:fixed;top:50%;left:50%;width:4px;height:4px;background:#fff;border:1px solid #123;border-radius:50%}[hidden]{display:none!important}</style>
 <canvas></canvas><nav><select id="food"><option value="burger">汉堡</option><option value="snack">辣条</option><option value="drink">饮料</option><option value="banana">香蕉</option><option value="garlic">大蒜</option></select><button id="reset">新局（真实随机库存）</button><button id="drawer">看抽屉</button><button id="screen">看电脑</button><button id="e">E 交互</button><button id="q">Q 返回</button><button id="use">按住食用／松开投掷</button><button id="hide">隐藏工具（` 恢复）</button></nav><i></i><output>加载正式教室与真实 GLB…</output>
 <script type="module">
-import {createClassroom} from '../dist/classroom.js?v=campus-64';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-64';
-import {interactionIntent} from '../dist/interaction-intent54.js?v=campus-64';
+import {createClassroom} from '../dist/classroom.js?v=campus-65';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-65';
+import {interactionIntent} from '../dist/interaction-intent54.js?v=campus-65';
 const canvas=document.querySelector('canvas'),out=document.querySelector('output'),nav=document.querySelector('nav');let error='',round,last=performance.now();
 window.addEventListener('error',e=>error=e.message);window.addEventListener('unhandledrejection',e=>error=String(e.reason?.stack||e.reason));
 const renderer=await createClassroom(canvas,{snapEntry:true});

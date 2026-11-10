@@ -18,11 +18,11 @@ function census(room){
 function fixture(count=3,seed=76){const room=new CampusRoom({code:'575757',seed});const people=Array.from({length:count},(_,i)=>room.join({name:`玩家${i}`,character:'ponytail',rolePreference:i===0?'teacher':'student'}));return{room,people};}
 function beginClass(room,host){room.begin(host);for(let i=0;i<301;i++)room.tick(.1);assert.equal(room.sim.stage,'class');}
 
-for(const [index,pattern]of LAYOUT_PATTERNS.entries())test(`${pattern}: 1–16 humans replace ordinary AI within the actual 20/30-seat capacity`,()=>{
- for(let count=1;count<=16;count++){
+for(const [index,pattern]of LAYOUT_PATTERNS.entries())test(`${pattern}: 1–8 humans replace ordinary AI within the actual 20/30-seat capacity`,()=>{
+ for(let count=1;count<=8;count++){
   const {room,people}=fixture(count,72+index);assert.equal(room.sim.seats[0].pattern,pattern);assert.equal(room.sim.seats.length,pattern.startsWith('rows-')?20:30);
   assert.equal(census(room).ai.length,room.sim.seats.length-count);
-  assert.throws(()=>{while(room.members.size<16)room.join({});room.join({});},/房间已满/);
+  assert.throws(()=>{while(room.members.size<8)room.join({});room.join({});},/房间已满/);
   // Use a fresh room so the capacity-limit check does not change this roster.
   const current=fixture(count,72+index),r=current.room;
   if(count===1){assert.throws(()=>r.begin(current.people[0]),/两位/);continue;}
@@ -71,9 +71,9 @@ test('a departing uncaptured student cannot leave a finished capture condition p
 });
 
 test('changing maps and rematching repartitions capacities while retaining members only once',()=>{
- const {room,people}=fixture(16,75);room._rebuild('computer7',76);assert.equal(census(room).capacity,20);assert.equal(room.sim._team.size,16);room.begin(people[0]);census(room);
- room.sim._finish('won','mischief');room.rematch(people[0]);census(room);assert.equal(room.sim._team.size,16);room.begin(people[0]);census(room);
- room.sim._finish('won','mischief');room.rematch(people[0]);assert.equal(census(room).capacity,30);room.begin(people[0]);assert.equal(census(room).ai.length,15);
+ const {room,people}=fixture(8,75);room._rebuild('computer7',76);assert.equal(census(room).capacity,20);assert.equal(room.sim._team.size,8);room.begin(people[0]);census(room);
+ room.sim._finish('won','mischief');room.rematch(people[0]);census(room);assert.equal(room.sim._team.size,8);room.begin(people[0]);census(room);
+ room.sim._finish('won','mischief');room.rematch(people[0]);assert.equal(census(room).capacity,30);room.begin(people[0]);assert.equal(census(room).ai.length,23);
 });
 
 test('human seating before AI arrival makes the arriving AI choose a free seat',()=>{

@@ -2,8 +2,8 @@
 // Profiles are applied after each real animation update, as runtime will do.
 import {readFileSync,writeFileSync} from 'node:fs';
 import * as T from '../dist/vendor/three.module.js';
-import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-64';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-64';
+import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-65';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-65';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {propSurface} from './whole-palm-geometry54.mjs';
 const V=(...v)=>new T.Vector3(...v),parts=['Palm','Thumb','Index','Middle','Pinky'];

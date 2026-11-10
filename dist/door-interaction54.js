@@ -1,14 +1,27 @@
-import {DOORS,DOOR_LEAVES} from './classroom-layout.js?v=campus-64';
-// Test the actual open/closed leaf, rather than an invisible doorway centre.
-export function reachesRearDoor(player,layout){
- const index=DOORS.findIndex(d=>d.id==='rear'),door=DOORS[index],leaf=layout.rearDoorClosed?{minX:7.20,maxX:7.40,minZ:door.minZ,maxZ:door.maxZ}:DOOR_LEAVES[index];
- let lo=0,hi=1;
- for(const [axis,direction]of [['X',Math.sin(player.yaw)*1.9],['Z',Math.cos(player.yaw)*1.9]]){
-  const origin=player[axis.toLowerCase()],min=leaf['min'+axis]-.10,max=leaf['max'+axis]+.10;
-  if(Math.abs(direction)<1e-8){if(origin<min||origin>max)return false;continue;}
-  let a=(min-origin)/direction,b=(max-origin)/direction;if(a>b)[a,b]=[b,a];lo=Math.max(lo,a);hi=Math.min(hi,b);if(lo>hi)return false;
- }
- return hi>=0&&lo<=1;
+import {DOORS} from './classroom-layout.js?v=campus-65';
+import {OFFICE} from './classroom-layout.js?v=campus-65';
+import {schoolDoorSegments,schoolDoorMotionBlocked,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-65';
+// Aim at the actual animated leaf, not an invisible doorway centre.
+export function reachesSchoolDoor(player,layout,id='rear'){
+ if(!SCHOOL_DOOR_IDS.includes(id))return false;
+ const amount=layout.doorMotion?.[id]?.amount??(id==='office'?layout.officeLocked?0:1:layout[id+'DoorClosed']?0:1);
+ const leaves=schoolDoorSegments(id,amount,{doors:DOORS,office:OFFICE});
+ return leaves.some(leaf=>{
+  let lo=0,hi=1;
+  for(const [axis,direction]of [['X',Math.sin(player.yaw)*1.9],['Z',Math.cos(player.yaw)*1.9]]){
+   const origin=player[axis.toLowerCase()],min=leaf['min'+axis]-.10,max=leaf['max'+axis]+.10;
+   if(Math.abs(direction)<1e-8){if(origin<min||origin>max)return false;continue;}
+   let a=(min-origin)/direction,b=(max-origin)/direction;if(a>b)[a,b]=[b,a];lo=Math.max(lo,a);hi=Math.min(hi,b);if(lo>hi)return false;
+  }
+  return hi>=0&&lo<=1;
+ });
+}
+export const reachesRearDoor=(player,layout)=>reachesSchoolDoor(player,layout,'rear');
+export function schoolDoorSweepBlocked(id,actors){
+ if(id==='rear')return rearDoorSweepBlocked(actors);
+ if(!SCHOOL_DOOR_IDS.includes(id))return true;
+ for(let i=0;i<24;i++)if(schoolDoorMotionBlocked(id,i/24,(i+1)/24,actors,{doors:DOORS,office:OFFICE}))return true;
+ return false;
 }
 // The rear leaf pivots from +X (open) to -Z (closed). Check the entire
 // quarter-disc swept by the leaf, not only its final thin collision box.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-64';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-65';
 import {loadGeometry} from './gltf-geometry.mjs';
 const V=(...v)=>new T.Vector3(...v),DT=1/60;
 function tick(actor,t,seconds=2){for(let i=0;i<seconds/DT;i++)actor.update(t+=DT);actor.group.updateMatrixWorld(true);return t;}

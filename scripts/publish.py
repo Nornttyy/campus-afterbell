@@ -74,7 +74,7 @@ def publish_branch(branch,entries):
  if old and old['tree']['sha']==tree['sha']:
   print(branch+' is already up to date',flush=True)
   return parents[0]
- commit=api('git/commits',{'message':'Polish classroom effects, controls, elevator travel and 8k model budgets','tree':tree['sha'],'parents':parents})
+ commit=api('git/commits',{'message':'Smooth eight-player networking and classroom doors; preserve interaction bindings','tree':tree['sha'],'parents':parents})
  if current:
   assert api('git/ref/heads/'+branch)['object']['sha']==parents[0],'Remote changed during upload'
   api('git/refs/heads/'+branch,{'sha':commit['sha'],'force':False},method='PATCH')

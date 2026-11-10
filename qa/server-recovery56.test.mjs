@@ -87,7 +87,21 @@ test('repeated state deliveries do not replay gameplay events in the browser ada
 });
 
 test('a silent SSE stream times out and reconnects instead of leaving the player frozen forever',async t=>{
- const f=await start(t,{snapshotHz:1e-9}),errors=[];let round;try{
+ const f=await start(t),errors=[];
+ // Simulate a gateway that delivers the initial state, then silently stops
+ // forwarding SSE bytes. Keep the production server's normal 15Hz cadence.
+ f.runtime.server.prependListener('request',(request,response)=>{
+  if(new URL(request.url,'http://localhost').pathname!=='/api/events')return;
+  const write=response.write.bind(response);let firstState=false;
+  response.write=(chunk,...args)=>{
+   if(/event: (?:state|patch)\n/.test(String(chunk))){
+    if(firstState){const done=args.find(arg=>typeof arg==='function');done?.();return true;}
+    firstState=true;
+   }
+   return write(chunk,...args);
+  };
+ });
+ let round;try{
   round=await connectCampusRoom({endpoint:f.base,code:f.person.room.code,onError:error=>errors.push(error)});await wait(()=>round.snapshot().connection==='connected');
   const first=round._controller;await wait(()=>round._retry,12000);assert.equal(first.signal.aborted,true);assert.equal(round.snapshot().connection,'connecting');assert.match(errors[0],/超时/);
   await wait(()=>round.snapshot().connection==='connected');assert.notEqual(round._controller,first);assert.equal(round._terminalError,undefined);

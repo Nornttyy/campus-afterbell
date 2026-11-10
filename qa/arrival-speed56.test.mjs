@@ -38,22 +38,22 @@ for(const map of CAMPUS_MAPS)test(`${map}: all six layouts finish 20/30-seat arr
  t.diagnostic(JSON.stringify({map,cases:results.length,lastSeated:Math.max(...results.map(s=>s.lastSeated)),peak:Math.max(...results.map(s=>s.peak))}));
 });
 
-for(let seed=0;seed<LAYOUT_PATTERNS.length;seed++)test(`${LAYOUT_PATTERNS[seed]}: a full 16-person room supports human seat claims without AI boosts`,t=>{
+for(let seed=0;seed<LAYOUT_PATTERNS.length;seed++)test(`${LAYOUT_PATTERNS[seed]}: a full 8-person room supports human seat claims without AI boosts`,t=>{
  const room=new CampusRoom({code:'speed56',seed,map:seed%2?'tiered':'classroom'}),people=[];
- for(let i=0;i<16;i++)people.push(room.join({name:'P'+i,rolePreference:i?'student':'teacher'}));
+ for(let i=0;i<8;i++)people.push(room.join({name:'P'+i,rolePreference:i?'student':'teacher'}));
  assert.ok(room.begin(people[0]));const claims=new Set();let redirected=0;
  const result=record(room.sim,dt=>room.tick(dt),time=>{
   // Humans can choose AI-reserved seats while the queue is still arriving.
   // Place the test human beside a real free chair before sending the normal
   // interaction command; no AI is repositioned or force-seated in this test.
   if(Math.abs(time-5)>DT/4&&Math.abs(time-11)>DT/4)return;
-  for(const human of people.filter(p=>p.role==='student'&&!p.context.player.seated).slice(0,time<6?8:15)){
+  for(const human of people.filter(p=>p.role==='student'&&!p.context.player.seated).slice(0,time<6?4:7)){
    const reserved=[...room.sim._seatingRoutes.keys()].map(id=>room.sim.students[id]).filter(s=>!s.seated&&!claims.has(s._targetSeatId));
    const seat=reserved.length?room.sim.seats[reserved.at(-1)._targetSeatId]:room.sim.seats.find(s=>!claims.has(s.id)&&!room.sim.students.some(a=>a.seated&&a.seatId===s.id));
    if(!seat)continue;Object.assign(human.context.player,{x:seat.x,z:seat.z,seated:false});assert.equal(room.command(human,'interact',[seat.id]),'seated');claims.add(seat.id);if(reserved.length)redirected++;
   }
  });
- assert.ok(redirected>0);assert.equal(people.filter(p=>p.role==='student'&&p.context.player.seated).length,15);t.diagnostic(JSON.stringify({...result,redirected}));
+ assert.ok(redirected>0);assert.equal(people.filter(p=>p.role==='student'&&p.context.player.seated).length,7);t.diagnostic(JSON.stringify({...result,redirected}));
 });
 
 test('normal teacher movement is faster than students in solo and authoritative multiplayer',()=>{
