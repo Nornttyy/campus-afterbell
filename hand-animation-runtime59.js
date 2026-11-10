@@ -1,4 +1,4 @@
-import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-61';
+import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-62';
 export const HAND_ANIMATION_STORAGE_KEY='campus.handAnimations.v1';
 export const HAND_ANIMATION_CHANGE_EVENT='campus:hand-animations-changed';
 function defaultStorage(){try{return globalThis.localStorage||null;}catch{return null;}}
@@ -16,8 +16,8 @@ function blocked(s){return Boolean(s.freeLook===false||s.seated||s.carrying||s.h
 export function selectHandAnimationClip(state={}){
  if(blocked(state))return null;
  const teacher=state.role==='teacher',moving=state.movement>.01,crawling=state.crawlBlend>.5||state.crouched||state.crawling;
- if(crawling)return teacher||!moving?null:'student-crawl';
- // A stopped crawler keeps the prone game pose while the body rises; a
+ if(crawling)return teacher?null:moving?'student-crawl':'student-crawl-idle';
+ // Keep the prone pose while the body rises; a
  // standing idle must never pull the hands up during that transition.
  if(!moving)return state.crawlBlend>.01?null:teacher?'teacher-idle':'student-idle';
  return teacher?'teacher-walk':'student-walk';
