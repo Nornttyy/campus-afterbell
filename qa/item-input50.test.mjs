@@ -23,7 +23,7 @@ function fixture({map='classroom',teacher=false}={}){
  for(const s of round.students)s._decisionAt=Infinity;round.teacher.x=round.teacher.z=40;
  const send=(type,props={})=>{const e=new Event(type,{cancelable:true});for(const[k,v]of Object.entries(props))Object.defineProperty(e,k,{value:v});doc.dispatchEvent(e);};
  const advance=seconds=>{for(let left=seconds;left>1e-9;){const dt=Math.min(1/60,left);left-=dt;now+=dt*1000;const pending=[...frames.values()];frames.clear();for(const fn of pending)fn(now);}};
- return{round,commands,sounds,worldEffects,setPlayback:value=>playback=value,setAxes:value=>axes={...axes,...value},get rendered(){return rendered;},element:doc.querySelector,advance,mouse:pressed=>send(pressed?'mousedown':'mouseup',{button:0}),key:code=>{send('keydown',{code});send('keyup',{code});},target:t=>target=t,
+ return{round,commands,sounds,worldEffects,setPlayback:value=>playback=value,setAxes:value=>axes={...axes,...value},get rendered(){return rendered;},element:doc.querySelector,advance,send,mouse:pressed=>send(pressed?'mousedown':'mouseup',{button:0}),key:code=>{send('keydown',{code});send('keyup',{code});},target:t=>target=t,
   take(kind){round.player.pitch=.55;round.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};round.player._selectedSlot=0;round.player._drawnSlot=null;round.selected=round.player.action=kind;target={kind:'desk'};if(!round.player._drawerOpen)this.key('KeyE');target={kind:'item',slot:0};this.key('KeyE');target=null;assert.equal(round.snapshot().drawer.drawnSlot,0);},
   close(){game.dispose();for(const[name,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name];}}
  };
@@ -156,4 +156,19 @@ test('actual multiplayer lobby preference shows teacher stamina before seating a
   room.preference(member,{rolePreference:'teacher'});room.begin(member);f.advance(.1);assert.equal(f.rendered.stage,'seating');assert.equal(f.rendered.role,'teacher');assert.equal(f.element('#teacher-stamina').hidden,false);assert.equal(f.element('#stamina-number').textContent,'100%');
   f.round.snapshot=snapshot;
  }finally{f.close();}
+});
+
+
+test('saved custom controls drive real interactions, keyboard use, return and crawl',()=>{
+ const original=Object.getOwnPropertyDescriptor(globalThis,'localStorage');
+ Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:()=>JSON.stringify({keys:{interact:'KeyF',return:'KeyR',use:'Space',crawl:'KeyC'}})}});
+ const f=fixture();try{
+  f.round.player.pitch=.55;f.round.player._slots[0]={id:0,action:'burger',progress:0,readyAt:0};f.round.player._selectedSlot=0;f.round.player._drawnSlot=null;f.round.selected=f.round.player.action='burger';
+  f.target({kind:'desk'});f.key('KeyE');assert.equal(f.round.player._drawerOpen,false,'old E binding still executes');f.key('KeyF');assert.equal(f.round.player._drawerOpen,true);
+  f.target({kind:'item',slot:0});f.key('KeyF');assert.equal(f.round.snapshot().drawer.drawnSlot,0);
+  f.mouse(true);f.advance(.2);f.mouse(false);assert.equal(f.round.snapshot().actionProgress,0,'mouse still consumes while Use is bound to Space');
+  f.send('keydown',{code:'Space'});f.advance(1);assert.ok(f.round.snapshot().actionProgress>.3);f.send('keyup',{code:'Space'});assert.equal(f.round.snapshot().actionProgress,0);
+  f.target({kind:'desk'});f.key('KeyR');assert.equal(f.round.snapshot().drawer.drawnSlot,null);assert.equal(f.round.player._drawerOpen,true,'returning food also closed/opened desk');
+  Object.assign(f.round.player,{seated:false,seatId:null,x:8.8,z:1});f.send('keydown',{code:'KeyC'});f.advance(.05);assert.equal(f.round.player.crouched,true);f.send('keyup',{code:'KeyC'});assert.equal(f.round.player.crouched,false);
+ }finally{f.close();if(original)Object.defineProperty(globalThis,'localStorage',original);else delete globalThis.localStorage;}
 });

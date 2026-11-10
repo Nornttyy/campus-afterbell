@@ -1,8 +1,10 @@
 import * as T from './vendor/three.module.js';
 export const CAMPUS_ARTWORK_SOURCES=Object.freeze({
- teacherTutorial:'./assets/posters/teacher-tutorial54.png?v=black-brush54',
- studentTutorial:'./assets/posters/student-tutorial54.png?v=black-brush54',
- classroomNotice:'./assets/posters/classroom-notice54.png'
+ teacherTutorial:'./assets/posters/teacher-tutorial64.png?v=black-brush64',
+ studentTutorial:'./assets/posters/student-tutorial64.png?v=black-brush64',
+ classroomNotice:'./assets/posters/classroom-notice54.png',
+ graffitiSnack:'./assets/posters/graffiti-snack64.png',
+ graffitiHomework:'./assets/posters/graffiti-homework64.png'
 });
 export async function loadCampusArtwork(sources=CAMPUS_ARTWORK_SOURCES,{loader=new T.TextureLoader()}={}){
  const entries=await Promise.all(Object.entries(sources).map(async([key,path])=>{

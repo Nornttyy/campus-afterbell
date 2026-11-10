@@ -1,9 +1,11 @@
 import * as T from './vendor/three.module.js';
-import {handFrame} from './hand-motion.js?v=campus-63';
+import {handFrame} from './hand-motion.js?v=campus-64';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const clamp=T.MathUtils.clamp;
 function frame(along,normal){const y=along.clone().normalize(),z=normal.clone().addScaledVector(y,-normal.dot(y)).normalize(),x=V().crossVectors(y,z).normalize();return Q().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));}
-const STRIDE=.28,STANCE=.66;
+// Longer alternating reaches slow the crawl without speeding up world travel.
+export const CRAWL_GAIT=Object.freeze({stride:.34,stance:.70});
+const {stride:STRIDE,stance:STANCE}=CRAWL_GAIT;
 function contactCycle(phase){
  if(phase<STANCE)return{sweep:STRIDE*.5-STRIDE*phase/STANCE,lift:0};
  const u=(phase-STANCE)/(1-STANCE),u2=u*u,u3=u2*u,m=-STRIDE*(1-STANCE)/STANCE;
@@ -70,14 +72,14 @@ export function createCrawlPose(group,bones){
   worldRotation(bones.Head,Q().setFromAxisAngle(V(1,0,0),.08).multiply(reference.get(bones.Head).world));
   for(const [side,sign]of [['Left',1],['Right',-1]]){
    const p=((phase+(side==='Left'?0:.5))%1+1)%1,handCycle=contactCycle(p),swing=handCycle.lift*gaitWeight,sweep=handCycle.sweep*gaitWeight;
-   const shoulder=at(side+'Arm'),handGoal=V(shoulder.x+sign*.045,hands[side].height+swing*.045,shoulder.z+.035+sweep);
-   solve(bones[side+'Arm'],bones[side+'ForeArm'],bones[side+'Hand'],handGoal,V(shoulder.x+sign*.36,shoulder.y-.04,shoulder.z-.12));
+   const shoulder=at(side+'Arm'),handGoal=V(shoulder.x+sign*.045,hands[side].height+swing*.045,shoulder.z+.055+sweep);
+   solve(bones[side+'Arm'],bones[side+'ForeArm'],bones[side+'Hand'],handGoal,V(shoulder.x+sign*.30,shoulder.y-.045,shoulder.z-.10));
    worldRotation(bones[side+'Hand'],frame(V(sign*.12,0,1),V(0,1,0)).multiply(hands[side].basis));
    const footCycle=contactCycle((p+.5)%1),footLift=footCycle.lift*gaitWeight,footSweep=footCycle.sweep*gaitWeight;
-   const hip=at(side+'UpLeg'),footGoal=V(hip.x+sign*.09,feet[side].height+footLift*.025,hip.z-.25*limbs[side].leg/.53+footSweep);
-   solve(bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],footGoal,V(hip.x+sign*.45,hip.y,hip.z+.24));
+   const hip=at(side+'UpLeg'),footGoal=V(hip.x+sign*.09,feet[side].height+footLift*.025,hip.z-.28*limbs[side].leg/.53+footSweep);
+   solve(bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],footGoal,V(hip.x+sign*.29,hip.y-.025,hip.z+.22));
    worldRotation(bones[side+'Foot'],reference.get(bones[side+'Foot']).world);
-   const sole=minimumY(samples[side+'Foot']);if(sole<.001){footGoal.y+=.001-sole;solve(bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],footGoal,V(hip.x+sign*.45,hip.y,hip.z+.24));worldRotation(bones[side+'Foot'],reference.get(bones[side+'Foot']).world);}
+   const sole=minimumY(samples[side+'Foot']);if(sole<.001){footGoal.y+=.001-sole;solve(bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],footGoal,V(hip.x+sign*.29,hip.y-.025,hip.z+.22));worldRotation(bones[side+'Foot'],reference.get(bones[side+'Foot']).world);}
   }
   for(const[b,s]of saved){b.quaternion.slerpQuaternions(s.q,b.quaternion.clone(),blend);if(b===hips)b.position.lerpVectors(s.p,b.position.clone(),blend);}
   // A quaternion crossfade alone drops the still-extended shoes below the

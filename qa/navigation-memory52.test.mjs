@@ -8,8 +8,8 @@ test('seat-to-grid routing avoids the short diagonal crossing at the real deskto
   // The former .06m connector sampling missed this real expanded desktop
   // corner. Both endpoints are free; the tiny interval between them is solid.
   assert.equal(blocked(start.x,start.z,radius,context),false);
-  assert.equal(blocked(-2.65,-5.09,radius,context),false);
-  assert.equal(blocked(-2.728260869565217,-5.102173913043478,radius,context),true);
+  assert.equal(blocked(-2.65+.45,-5.09,radius,context),false);
+  assert.equal(blocked(-2.728260869565217+.45,-5.102173913043478,radius,context),true);
   const route=walkRoute(start,end,radius,context);assert.ok(route.length);assert.deepEqual(route.at(-1),end);
   let previous=start;
   for(const next of route){

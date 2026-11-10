@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCampusServer} from '../server/server.js';
 import {CampusRoom} from '../server/room-simulation.js';
+import {elevatorDuration} from '../dist/elevator-session.js';
 import {TEACHER_SPAWN,SEATS,DOORS,LIFT} from '../dist/classroom-layout.js';
 
 async function api(base,path,data,token,extra={}){const res=await fetch(base+path,{method:data?'POST':'GET',headers:{...(data?{'content-type':'application/json'}:{}),...(token?{authorization:`Bearer ${token}`} :{}),...extra},body:data?JSON.stringify(data):undefined});return{status:res.status,data:await res.json()};}
@@ -22,7 +23,7 @@ test('two independent HTTP peers share authoritative room, roles, movement, reco
   assert.equal((await command(b,'setMovement',[999,0])).status,400);
   assert.equal((await command(a,'travelFloor',['computer7'])).status,409);
   const live=runtime.rooms.get(a.room.code);let passenger=0;for(const m of live.members.values())Object.assign(m.context.player,{x:LIFT.x+(passenger++?-.4:.4),z:LIFT.z,seated:false});
-  assert.equal((await command(a,'travelFloor',['computer7'])).data.ok,true);assert.equal(live.map,'classroom');live.tick(3);
+  assert.equal((await command(a,'travelFloor',['computer7'])).data.ok,true);assert.equal(live.map,'classroom');live.tick(elevatorDuration('classroom','computer7'));
   await second.wait(m=>m.type==='state'&&m.data.map==='computer7');
   assert.equal((await command(a,'startBell')).data.results[0],true);
   const teacher=(await first.wait(m=>m.type==='state'&&m.data.role==='teacher')).data;

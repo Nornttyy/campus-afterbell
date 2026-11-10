@@ -167,7 +167,7 @@ export async function createRigView(canvas,{onSelect,onPoseChange,onDragEnd,onLo
   function asset(modelId){
     if(!EDITOR_MODELS[modelId])return Promise.reject(new Error('未知人物：'+modelId));
     if(!cache.has(modelId)){
-      const url=new URL('../assets/models/'+EDITOR_MODELS[modelId]+'.glb',import.meta.url);
+      const url=new URL('../assets/models/'+EDITOR_MODELS[modelId]+'.glb?v=mesh-64',import.meta.url);
       const task=(async()=>{
         const response=await fetch(url);if(!response.ok)throw new Error('模型加载失败（'+response.status+'）');
         const bytes=await response.arrayBuffer(),gltf=await loader.parseAsync(bytes,url.href.slice(0,url.href.lastIndexOf('/')+1));

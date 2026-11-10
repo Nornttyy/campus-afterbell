@@ -6,7 +6,7 @@ import {randomUUID,randomBytes} from 'node:crypto';
 import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
 import * as Layout from '../dist/classroom-layout.js';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator} from '../dist/elevator-session.js';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from '../dist/elevator-session.js';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
@@ -137,7 +137,7 @@ export class CampusRoom{
   const error=departureError(this.elevator,people,{map,currentMap:this.map,stage:this.sim.stage,status:this.sim.status,host:member.id===this.hostId});
   if(error)throw new RoomError(member.id!==this.hostId?403:Layout.CAMPUS_MAPS.includes(map)?409:400,error);
   for(const m of this.members.values()){m.context._movement={x:0,z:0};m.context.holding=false;m.context.player.holding=false;m.context.player.crouched=false;m.context._rescueId=null;m.context._rescueProgress=0;m.doorUse=false;m.doorProgress=0;}
-  departElevator(this.elevator,map);Layout.updateLayoutDoors(this.sim.layout,{elevatorClosed:true});this.events.push({type:'elevator-start',map,networkSequence:++this.sequence});return true;
+  departElevator(this.elevator,map,this.map);Layout.updateLayoutDoors(this.sim.layout,{elevatorClosed:true});this.events.push({type:'elevator-start',map,networkSequence:++this.sequence});return true;
  }
  rematch(member){
   if(member.id!==this.hostId)throw new RoomError(403,'等待房主开始下一局');
@@ -157,9 +157,9 @@ export class CampusRoom{
   if(command==='setComputerPlayback'&&member.role==='teacher')return false;
   if(command==='setWriting'&&args[0]===false&&member.role!=='teacher')return false;
   if(command==='setRescue'&&args[0]===null&&member.role==='teacher')return false;
-  // All transports, seating and interactions remain frozen while the cabin
-  // travels. Look is harmless; a repeated old floor command is still checked.
-  if(this.elevator.phase==='travel'&&!['setLook','travelFloor'].includes(command))return false;
+  // Walking/look remain live in the cabin; seating and outside interactions
+  // wait for arrival. Repeated floor commands still pass through validation.
+  if(this.elevator.phase==='travel'&&!['setMovement','setLook','travelFloor'].includes(command))return false;
   if(command==='startBell')return this.begin(member,args[0]);
   if(command==='rematch')return this.rematch(member);
   if(command==='configureRound')return this.configureRound(member,args[0]);
@@ -190,7 +190,11 @@ export class CampusRoom{
  }
  tick(dt){
   if(this.elevator.phase==='travel'){
-   const map=advanceElevator(this.elevator,dt);
+   if(!Number.isFinite(dt)||dt<=0)return;
+   const step=Math.min(dt,this.elevator.remaining,30);
+   for(const m of this.members.values()){if(!m.connected)continue;if(Date.now()-m.lastInput>500)m.context._movement={x:0,z:0};moveElevatorPassenger(m.context.player,m.context._movement,step,this.sim.layout);}
+   this.sim._sessionElapsed+=step;
+   const map=advanceElevator(this.elevator,step);
    if(map){
     const trip=this.elevator,poses=new Map([...this.members.values()].map(m=>{const p=m.context.player;return[m.id,{x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch}];}));
     this._rebuild(map);this.elevator=trip;

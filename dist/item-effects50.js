@@ -2,7 +2,7 @@ import * as T from './vendor/three.module.js';
 
 // A small, stable set of readable meshes; simulation snapshots own every clock.
 // No new particle is allocated each frame and pause cannot keep effects moving.
-export function createItemEffects50(scene,{floorAt=()=>0,getActor=()=>null}={}){
+export function createItemEffects50(scene,{floorAt=()=>0,getActor=()=>null,camera=null}={}){
  const root=new T.Group();root.name='classroom-item-effects50';scene.add(root);
  const pools={peels:new Map(),burps:new Map(),stars:new Map(),ink:new Map()},geometries=new Set(),materials=new Set();
  const geometry=g=>(geometries.add(g),g),material=m=>(materials.add(m),m);
@@ -19,8 +19,16 @@ export function createItemEffects50(scene,{floorAt=()=>0,getActor=()=>null}={}){
  const puffGeometry=geometry(new T.IcosahedronGeometry(1,2));
  function makeBurp(){const group=new T.Group(),m=material(new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{opacity:{value:1}},vertexShader:`varying vec3 n;varying vec3 eye;void main(){vec4 p=modelViewMatrix*vec4(position,1.0);n=normalize(normalMatrix*normal);eye=-p.xyz;gl_Position=projectionMatrix*p;}`,fragmentShader:`uniform float opacity;varying vec3 n;varying vec3 eye;void main(){float f=max(0.,dot(normalize(n),normalize(eye)));float edge=smoothstep(0.,.6,f);vec3 colour=mix(vec3(.24,.40,.10),vec3(.64,.76,.24),f);gl_FragColor=vec4(colour,edge*.27*opacity);#include <tonemapping_fragment>\n#include <colorspace_fragment>}`.replace(';#include',';\n#include')}));for(let i=0;i<3;i++){const puff=new T.Mesh(puffGeometry,m);puff.userData.phase=i;group.add(puff);}group.userData.material=m;return group;}
  const starShape=new T.Shape();for(let i=0;i<10;i++){const a=Math.PI*.5+i*Math.PI/5,r=i%2?.43:1;const x=Math.cos(a)*r,y=Math.sin(a)*r;i?starShape.lineTo(x,y):starShape.moveTo(x,y);}starShape.closePath();
- const starGeometry=geometry(new T.ExtrudeGeometry(starShape,{depth:.12,bevelEnabled:false})),starMaterial=material(new T.MeshBasicMaterial({color:'#ffd73c',toneMapped:false}));
- function makeStars(){const g=new T.Group();for(let i=0;i<3;i++){const star=new T.Mesh(starGeometry,starMaterial);star.scale.setScalar(.078);g.add(star);}return g;}
+ const starGeometry=geometry(new T.ExtrudeGeometry(starShape,{depth:.10,bevelEnabled:true,bevelThickness:.06,bevelSize:.035,bevelSegments:2,curveSegments:1})),starMaterial=material(new T.MeshBasicMaterial({color:'#ffdd58',toneMapped:false}));
+ const starCore=material(new T.MeshBasicMaterial({color:'#fff5bb',toneMapped:false}));
+ const haloGeometry=geometry(new T.PlaneGeometry(.42,.42));
+ const haloMaterial=material(new T.ShaderMaterial({transparent:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide,uniforms:{},vertexShader:`varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec2 v;void main(){vec2 p=v-.5;float a=pow(max(0.,1.-length(p)*2.),3.0);gl_FragColor=vec4(1.,.76,.20,a*.48);}`}));
+ // Tapered, translucent swept ribbon, not a solid hoop around the head.
+ const trailGeometry=geometry(new T.BufferGeometry()),trailPoints=[],trailUV=[],trailIndices=[];
+ for(let i=0;i<=64;i++){const t=i/64,a=t*Math.PI*1.48,w=.003+.032*t*t;for(const side of [-1,1]){const radius=.39+side*w;trailPoints.push(Math.cos(a)*radius,Math.sin(a)*radius,Math.sin(a*2)*.012);trailUV.push(t,(side+1)/2);}if(i<64){const n=i*2;trailIndices.push(n,n+1,n+2,n+1,n+3,n+2);}}
+ trailGeometry.setAttribute('position',new T.Float32BufferAttribute(trailPoints,3));trailGeometry.setAttribute('uv',new T.Float32BufferAttribute(trailUV,2));trailGeometry.setIndex(trailIndices);
+ const trailMaterial=material(new T.ShaderMaterial({transparent:true,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending,vertexShader:`varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec2 v;void main(){float d=abs(v.y-.5)*2.;float core=pow(max(0.,1.-d),5.);float glow=pow(max(0.,1.-d),1.3)*.36;float fade=pow(v.x,.85);gl_FragColor=vec4(1.,.87,.44,(core+glow)*fade);}`}));
+ function makeStars(){const g=new T.Group();g.name='stun-orbit';const stars=[];for(let i=0;i<3;i++){const star=new T.Group(),body=new T.Mesh(starGeometry,starMaterial),core=new T.Mesh(starGeometry,starCore),halo=new T.Mesh(haloGeometry,haloMaterial);body.scale.setScalar(.068);core.scale.set(.057,.057,.06);core.position.z=.014;halo.position.z=-.013;star.add(halo,body,core);stars.push(star);g.add(star);}const trail=new T.Mesh(trailGeometry,trailMaterial);trail.rotation.x=Math.PI/2-.30;g.add(trail);g.userData.stars=stars;g.userData.trail=trail;return g;}
  // A curved irregular stain sits just ahead of the face surface. It does not
  // tint the shirt or hair, which share the same imported texture atlas.
  const stainVertices=[0,0,.06],stainIndices=[],segments=48;
@@ -37,8 +45,8 @@ export function createItemEffects50(scene,{floorAt=()=>0,getActor=()=>null}={}){
   for(const b of state.burps||[]){const group=acquire(pools.burps,b.id,makeBurp);group.position.set(b.x,b.y,b.z);group.rotation.y=b.yaw||0;const fade=Math.min(1,b.age/.12,Math.max(0,(b.lifetime-b.age)/.45));group.userData.material.uniforms.opacity.value=fade;group.children.forEach((p,i)=>{const growth=.10+.11*Math.min(1,b.age/.4),phase=b.age*2+i*2.1;p.scale.set(growth*(1+i*.12),growth*.72,growth*1.25);p.position.set(Math.sin(phase)*.035,Math.cos(phase)*.025,-i*.13);});}
   const actors=[...(state.students||[]),{...state.teacher,id:-1}];
   for(const s of actors){if(s.visible===false||!Number.isFinite(s.x)||!Number.isFinite(s.z))continue;const local=s.id===state.player?.id;
-   if(s.stunLeft>0&&!local){const stars=acquire(pools.stars,s.id,makeStars),at=actorHead(s,state);stars.position.copy(at).add(new T.Vector3(0,.45,0));stars.children.forEach((star,i)=>{const a=time*2.8+i*Math.PI*2/3;star.position.set(Math.cos(a)*.28,Math.sin(a*2)*.025,Math.sin(a)*.22);star.rotation.set(.15,a+Math.PI/2,Math.sin(a)*.2);});}
-   if(s.inkLeft>0&&!local){const stain=acquire(pools.ink,s.id,makeInk),at=actorHead(s,state),yaw=s.yaw||0,forward=s.id===-1?.31:.28;stain.position.copy(at).add(new T.Vector3(Math.sin(yaw)*forward,-.055,Math.cos(yaw)*forward));stain.rotation.set(0,yaw,0);stain.scale.set(s.id===-1?.38:.31,s.id===-1?.35:.30,1);stain.material.opacity=.97*Math.min(1,s.inkLeft/1.5);}
+   if(s.stunLeft>0&&!local){const stars=acquire(pools.stars,s.id,makeStars),at=actorHead(s,state);stars.position.copy(at).add(new T.Vector3(0,s.id===-1?.65:.48,0));stars.userData.stars.forEach((star,i)=>{const a=time*2.25+i*Math.PI*2/3;star.position.set(Math.cos(a)*.39,Math.sin(a)*.39*Math.sin(.30)+Math.sin(a*2)*.012,Math.sin(a)*.39*Math.cos(.30));if(camera){star.quaternion.copy(camera.getWorldQuaternion(worldQuaternion));star.rotateZ(Math.sin(a)*.22);}else star.rotation.set(.15,a+Math.PI/2,Math.sin(a)*.2);});stars.userData.trail.rotation.z=time*2.25-Math.PI*1.48;}
+   if(s.inkLeft>0&&!local&&!getActor(s.id??-1)){const stain=acquire(pools.ink,s.id,makeInk),at=actorHead(s,state),yaw=s.yaw||0,forward=s.id===-1?.31:.28;stain.position.copy(at).add(new T.Vector3(Math.sin(yaw)*forward,-.055,Math.cos(yaw)*forward));stain.rotation.set(0,yaw,0);stain.scale.set(s.id===-1?.38:.31,s.id===-1?.35:.30,1);stain.material.opacity=.97*Math.min(1,s.inkLeft/1.5);}
   }
   // Reuse a bounded pool; completed item IDs cannot grow memory for an endless class.
   for(const pool of Object.values(pools))for(const [id,mesh]of pool)if(!mesh.visible){mesh.removeFromParent();if(mesh.userData.material){materials.delete(mesh.userData.material);mesh.userData.material.dispose();}if(pool===pools.ink){materials.delete(mesh.material);mesh.material.dispose();}pool.delete(id);}

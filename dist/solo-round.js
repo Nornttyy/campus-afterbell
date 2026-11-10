@@ -1,7 +1,7 @@
-import {ClassroomRound} from './classroom-rules.js?v=campus-63';
-import {TeacherRound} from './teacher-rules.js?v=campus-63';
-import {updateLayoutDoors,CAMPUS_MAPS} from './classroom-layout.js?v=campus-63';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator} from './elevator-session.js?v=campus-63';
+import {ClassroomRound} from './classroom-rules.js?v=campus-64';
+import {TeacherRound} from './teacher-rules.js?v=campus-64';
+import {updateLayoutDoors,CAMPUS_MAPS} from './classroom-layout.js?v=campus-64';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-64';
 
 const elevatorRound=Base=>class extends Base{
  reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();return this.snapshot();}
@@ -13,19 +13,34 @@ const elevatorRound=Base=>class extends Base{
   for(const actor of this.students)if(actor!==this.player){actor.isTeammate=false;actor._profile=null;actor._slots=[];actor.holding=false;actor._drawnSlot=null;}
  }
  _inputAllowed(){return this.elevator?.phase!=='travel'&&super._inputAllowed();}
+ setMovement(x,z){
+  if(this.elevator?.phase!=='travel')return super.setMovement(x,z);
+  if(!super._inputAllowed()||!Number.isFinite(x)||!Number.isFinite(z))return false;
+  const n=Math.max(1,Math.hypot(x,z));this._movement={x:x/n,z:z/n};return true;
+ }
+ setLook(yaw,pitch){
+  if(this.elevator?.phase!=='travel')return super.setLook(yaw,pitch);
+  if(!super._inputAllowed()||!Number.isFinite(yaw)||!Number.isFinite(pitch))return false;
+  this.player.yaw=Math.atan2(Math.sin(yaw),Math.cos(yaw));this.player.pitch=Math.max(-1.3,Math.min(1.3,pitch));return true;
+ }
  snapshot(){const s=super.snapshot();s.floor=CAMPUS_MAPS.indexOf(this.map)+1;s.elevator=elevatorSnapshot(this.elevator,[{player:this.player}],this);if(s.elevator.phase==='travel')s.startBellAvailable=false;return s;}
  travelFloor(map){
   const error=departureError(this.elevator,[{player:this.player}],{map,currentMap:this.map,stage:this.stage,status:this.status});
   if(error||this.paused){if(error)this._events.push({type:'elevator-denied',message:error});return false;}
   this.hold(false);this._movement={x:0,z:0};this._doorUse=false;this._doorProgress=0;this.player.crouched=false;
-  departElevator(this.elevator,map);updateLayoutDoors(this.layout,{elevatorClosed:true});this._events.push({type:'elevator-start',map});return true;
+  departElevator(this.elevator,map,this.map);updateLayoutDoors(this.layout,{elevatorClosed:true});this._events.push({type:'elevator-start',map});return true;
  }
  step(dt){
   if(this.elevator?.phase!=='travel')return super.step(dt);
   if(this.paused||this.status!=='playing')return this.snapshot();
-  const map=advanceElevator(this.elevator,dt);
+  if(!Number.isFinite(dt)||dt<=0)return this.snapshot();
+  const step=Math.min(dt,this.elevator.remaining,30);
+  moveElevatorPassenger(this.player,this._movement,step,this.layout);
+  this._sessionElapsed+=step;
+  if(this.player.id===-1)Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw});
+  const map=advanceElevator(this.elevator,step);
   if(map){
-   const trip=this.elevator,p=this.player,pose={x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch},seed=this.seed;
+   const trip=this.elevator,p=this.player,pose={x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,character:p.character,variant:p.variant},seed=this.seed;
    this.map=map;super.reset(seed);this._soloStudents();super.start({gathering:true});Object.assign(this.player,pose);this.elevator=trip;
    if(this.player.id===-1)Object.assign(this.teacher,{x:pose.x,z:pose.z,yaw:pose.yaw});
    updateLayoutDoors(this.layout,{elevatorClosed:false});this._events.push({type:'elevator-arrived',map});

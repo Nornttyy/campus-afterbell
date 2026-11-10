@@ -4,7 +4,7 @@ import {createClassroomGame} from '../dist/classroom-game.js';
 import {ClassroomRound,CLASSROOM_ACTIONS} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
 import {CampusRoom} from '../server/room-simulation.js';
-import {DOORS,OFFICE_CHAIR} from '../dist/classroom-layout.js';
+import {DOORS,OFFICE_CHAIR,ROLE_LOCKER} from '../dist/classroom-layout.js';
 import {interactionIntent} from '../dist/interaction-intent54.js';
 import {hud54Model} from '../dist/reference-hud54.js';
 import {readFileSync} from 'node:fs';
@@ -103,8 +103,8 @@ test('server door completion checks a second human and AI entering during the 3-
 
 
 test('formal E opens the locker selected by a centre ray at the real approach position',()=>{
- const f=fixture(),world=campusScene();try{f.round.stage='gathering';Object.assign(f.round.player,{x:8.85,z:6.65,seated:false,yaw:Math.PI/2,pitch:.06});
- const locker=world.campus.getTargets().lockers[0],ray=new T.Raycaster(new T.Vector3(8.85,1.65,6.65),new T.Vector3(1,-Math.tan(.06),0).normalize(),0,2.5),hit=ray.intersectObject(locker.object,true)[0];assert.ok(hit);f.target({kind:hit.object.userData.campusTarget.type,id:locker.id});f.key('KeyE');assert.equal(f.lockerOpens,1);f.round.stage='class';f.key('KeyE');assert.equal(f.lockerOpens,1,'role changes remain pre-class only');
+ const f=fixture(),world=campusScene();try{f.round.stage='gathering';Object.assign(f.round.player,{x:ROLE_LOCKER.x-1.79,z:ROLE_LOCKER.z,seated:false,yaw:Math.PI/2,pitch:.06});
+ const locker=world.campus.getTargets().lockers[0],ray=new T.Raycaster(new T.Vector3(ROLE_LOCKER.x-1.79,1.65,ROLE_LOCKER.z),new T.Vector3(1,-Math.tan(.06),0).normalize(),0,2.5),hit=ray.intersectObject(locker.object,true)[0];assert.ok(hit);f.target({kind:hit.object.userData.campusTarget.type,id:locker.id});f.key('KeyE');assert.equal(f.lockerOpens,1);f.round.stage='class';f.key('KeyE');assert.equal(f.lockerOpens,1,'role changes remain pre-class only');
  }finally{world.dispose();f.close();}
 });
 

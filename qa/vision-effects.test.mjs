@@ -2,9 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createVisionEffects,visionEffectState} from '../dist/vision-effects.js';
 
-test('any confirmed flash is fully opaque until its authoritative timer expires',()=>{
+test('flash covers the HUD at impact, holds white, then recovers continuously from authoritative time',()=>{
  const sample=(left,duration=7,strength=1)=>visionEffectState({player:{flashLeft:left,flashDuration:duration,flashStrength:strength}}).flashAlpha;
- for(const left of [7,2.5,1.25,.01])assert.equal(sample(left),1);
+ for(const left of [7,2.5,1.35])assert.equal(sample(left),1);
+ const alphas=[1.35,1.2,.8,.4,.01,0].map(left=>sample(left));
+ for(let i=1;i<alphas.length;i++)assert.ok(alphas[i]<alphas[i-1]);
+ assert.ok(sample(.01)<.001);assert.ok(Math.abs(sample(1.35)-sample(1.349))<.00001);
  assert.equal(sample(0),0);assert.equal(sample(7,7,.4),1);assert.equal(sample(7,7,0),0);
 });
 test('ink keeps its full mask until the final two seconds, including nondefault durations',()=>{
@@ -49,10 +52,16 @@ test('white flash composes over ink, resizing redraws only once and fallback lis
 // Head-attached bubbles have a fixed size; the server timer determines duration.
 test('attached gum uses the server remaining time and expires cleanly',()=>{
  const small=visionEffectState({player:{bubbleLeft:3,bubbleSize:.2}}),large=visionEffectState({player:{bubbleLeft:9,bubbleSize:1}});assert.equal(small.gumAlpha,1);assert.equal(large.gumAlpha,1);assert.ok(large.gumSize>small.gumSize);assert.equal(visionEffectState({player:{bubbleLeft:0,bubbleSize:1}}).gumAlpha,0);
- const f=fixture(),effect=createVisionEffects(f.host),[canvas]=f.canvases;const snapshot={player:{bubbleLeft:5,bubbleSize:.7}};effect.update(snapshot);assert.equal(canvas.hidden,false);assert.ok(canvas.ctx.calls.some(c=>c.name==='ellipse'));const count=canvas.ctx.calls.length;effect.update(snapshot);assert.equal(canvas.ctx.calls.length,count);effect.update(null);assert.equal(canvas.hidden,true);effect.dispose();
+ const f=fixture(),effect=createVisionEffects(f.host),[canvas]=f.canvases;const snapshot={player:{bubbleLeft:5,bubbleSize:.7}};effect.update(snapshot);assert.equal(canvas.hidden,false);assert.ok(canvas.ctx.calls.some(c=>c.name==='drawImage'));const count=canvas.ctx.calls.length;effect.update(snapshot);assert.equal(canvas.ctx.calls.length,count);effect.update(null);assert.equal(canvas.hidden,true);effect.dispose();
 });
 
-test('head-attached gum has a fixed screen footprint regardless of charge',()=>{
- const f=fixture(),effect=createVisionEffects(f.host),[canvas]=f.canvases;effect.update({player:{bubbleLeft:3,bubbleSize:.1}});const small=canvas.ctx.calls.filter(c=>c.name==='scale').at(-1).args;
- effect.update({player:{bubbleLeft:9,bubbleSize:1}});const large=canvas.ctx.calls.filter(c=>c.name==='scale').at(-1).args;assert.deepEqual(large,small);effect.dispose();
+test('head-attached gum recolors the same ink silhouette and has a fixed footprint at any charge',()=>{
+ const f=fixture(),effect=createVisionEffects(f.host),[canvas,ink,gum]=f.canvases;
+ effect.update({player:{bubbleLeft:3,bubbleSize:.1}});const small=canvas.ctx.calls.filter(c=>c.name==='drawImage').at(-1).args;
+ const path=ctx=>ctx.calls.filter(c=>['moveTo','quadraticCurveTo','bezierCurveTo','ellipse'].includes(c.name)).map(({name,args})=>({name,args}));
+ assert.deepEqual(path(gum.ctx),path(ink.ctx));
+ const cached=gum.ctx.calls.length;
+ effect.update({player:{bubbleLeft:9,bubbleSize:1}});const large=canvas.ctx.calls.filter(c=>c.name==='drawImage').at(-1).args;assert.deepEqual(large,small);assert.equal(gum.ctx.calls.length,cached);
+ effect.update({player:{bubbleLeft:.6,bubbleSize:1}});assert.equal(canvas.ctx.calls.filter(c=>c.name==='drawImage').at(-1).alpha,.5);
+ effect.dispose();
 });

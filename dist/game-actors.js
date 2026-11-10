@@ -1,12 +1,13 @@
-import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-63';
-import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-63';
-import {createHandSupport} from './hand-support55.js?v=campus-63';
+import {requireModelBudget} from './model-budget64.js';
+import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-64';
+import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-64';
+import {createHandSupport} from './hand-support55.js?v=campus-64';
 import * as THREE from './vendor/three.module.js';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-63';
-import {clonePropAsset,propContact} from './prop-assets.js?v=campus-63';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-63';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-63';
-export {loadPropAssets} from './prop-assets.js?v=campus-63';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-64';
+import {clonePropAsset,propContact} from './prop-assets.js?v=campus-64';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-64';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-64';
+export {loadPropAssets} from './prop-assets.js?v=campus-64';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
 // First-person hands use camera coordinates: the scene is in front at -Z.
@@ -25,6 +26,10 @@ const sphere=new THREE.SphereGeometry(1,32,24),box=new THREE.BoxGeometry(1,1,1),
 const tmpA=new THREE.Vector3(),tmpB=new THREE.Vector3();
 function mesh(parent,geo,material,p=[0,0,0],s=[1,1,1],r=null){const m=new THREE.Mesh(geo,material);m.position.set(...p);m.scale.set(...s);if(r)m.rotation.set(...r);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 const oval=(parent,material,p,s,r=null)=>mesh(parent,sphere,material,p,s,r);
+// Millimetre-sized rice, sesame and phone controls keep their authored positions
+// and dimensions without carrying the same tessellation as a character cheek.
+const propDetailSphere=new THREE.SphereGeometry(1,12,8);
+const detailOval=(parent,material,p,s,r=null)=>mesh(parent,propDetailSphere,material,p,s,r);
 const cube=(parent,material,p,s,r=null)=>mesh(parent,box,material,p,s,r);
 function curve(parent,material,points,r=.004){return mesh(parent,new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),Math.max(8,points.length*4),r,6,false),material);}
 function shapeRect(w,h,r){const s=new THREE.Shape(),x=-w/2,y=-h/2;s.moveTo(x+r,y);s.lineTo(x+w-r,y);s.quadraticCurveTo(x+w,y,x+w,y+r);s.lineTo(x+w,y+h-r);s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);s.lineTo(x+r,y+h);s.quadraticCurveTo(x,y+h,x,y+h-r);s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);return s;}
@@ -295,14 +300,14 @@ function phoneProp(){
   const group=new THREE.Group();group.name='handheld-phone';
   mesh(group,rounded(.115,.208,.013,.014),mat('phoneCase','#eef0eb',.54));
   mesh(group,rounded(.097,.159,.001,.006),new THREE.MeshBasicMaterial({color:'#294a61'}),[0,.003,.011]);
-  cube(group,mat('phoneSpeaker','#3b4247'),[0,.093,.010],[.022,.003,.002]);oval(group,black,[.026,.092,.010],[.002,.002,.001]);
+  cube(group,mat('phoneSpeaker','#3b4247'),[0,.093,.010],[.022,.003,.002]);detailOval(group,black,[.026,.092,.010],[.002,.002,.001]);
   const icons=['#70a985','#df8c51','#609bc0','#d3b95d','#ad86b8','#d2e3df'].map(color=>new THREE.MeshBasicMaterial({color}));
   for(let row=0;row<4;row++)for(let col=0;col<3;col++){
     const x=(col-1)*.028,y=.057-row*.033;
     mesh(group,rounded(.019,.020,.001,.004),icons[(row*3+col)%icons.length],[x,y,.013]);
     cube(group,icons[5],[x,y-.013,.013],[.013,.001,.001]);
   }
-  oval(group,mat('phoneHome','#b7c2c6',.4),[0,-.091,.009],[.008,.008,.001]);oval(group,cuffMat,[0,-.091,.010],[.006,.006,.001]);
+  detailOval(group,mat('phoneHome','#b7c2c6',.4),[0,-.091,.009],[.008,.008,.001]);detailOval(group,cuffMat,[0,-.091,.010],[.006,.006,.001]);
   batch(group);return group;
 }
 
@@ -402,7 +407,7 @@ function burgerProp(){
     const j=crust.findIndex((point,index)=>index>0&&point[0]>=r),a=crust[j-1],b=crust[j],slope=(b[1]-a[1])/(b[0]-a[0]);
     const surfaceY=THREE.MathUtils.lerp(a[1],b[1],(r-a[0])/(b[0]-a[0]));
     const normal=v(-Math.cos(angle)*slope,1,-Math.sin(angle)*slope).normalize();
-    const seed=oval(group,sesame,[x+normal.x*.0011,surfaceY+normal.y*.0011,z+normal.z*.0011],[.0021,.0016,.0045]);
+    const seed=detailOval(group,sesame,[x+normal.x*.0011,surfaceY+normal.y*.0011,z+normal.z*.0011],[.0021,.0016,.0045]);
     seed.quaternion.setFromUnitVectors(axisY,normal).multiply(new THREE.Quaternion().setFromAxisAngle(axisY,angle));
   }
   batch(group);return group;
@@ -442,8 +447,8 @@ function lunchProp(){
  const g=new THREE.Group();g.name='teacher-lunchbox';const steel=mat('lunchSteel','#b8c7c8',.38,.45),rice=mat('lunchRice','#fff5dc',.9),veg=mat('lunchGreens','#6a9a3a',.82),meat=mat('lunchMeat','#b87339',.83);
  mesh(g,rounded(.215,.050,.14,.017),steel);mesh(g,rounded(.194,.022,.130,.011),mat('lunchInner','#657b7e',.47,.25),[0,.027,0]);
  mesh(g,rounded(.110,.026,.113,.012),rice,[-.034,.039,0]);cube(g,steel,[.026,.045,0],[.004,.026,.127]);
- for(let i=0;i<5;i++){const a=i*2.1;oval(g,veg,[.065+.014*Math.cos(a),.045,-.036+.013*Math.sin(a)],[.014,.010,.012]);}for(let i=0;i<3;i++)mesh(g,rounded(.040,.014,.022,.005),meat,[.065,.043,.006+i*.023],[1,1,1],[0,.12,0]);
- for(let i=0;i<20;i++){const x=-.077+(i%5)*.019,z=-.042+Math.floor(i/5)*.027;oval(g,rice,[x,.054,z],[.0035,.0015,.008]);}batch(g);return g;
+ for(let i=0;i<5;i++){const a=i*2.1;detailOval(g,veg,[.065+.014*Math.cos(a),.045,-.036+.013*Math.sin(a)],[.014,.010,.012]);}for(let i=0;i<3;i++)mesh(g,rounded(.040,.014,.022,.005),meat,[.065,.043,.006+i*.023],[1,1,1],[0,.12,0]);
+ for(let i=0;i<20;i++){const x=-.077+(i%5)*.019,z=-.042+Math.floor(i/5)*.027;detailOval(g,rice,[x,.054,z],[.0035,.0015,.008]);}batch(g);return g;
 }
 function penProp(){return createSchoolPen();}
 
@@ -451,21 +456,16 @@ export const THROWABLE_ITEM_KINDS=Object.freeze(['smoke','flash','ink','bananaPe
 export const FOOD_ITEM_KINDS=Object.freeze(['snack','drink','burger','banana','garlic','gum','lunch']);
 export const DESK_ITEM_KINDS=Object.freeze([...FOOD_ITEM_KINDS,'pen','phone',...THROWABLE_ITEM_KINDS]);
 
+const deskItemFactories=Object.freeze({
+ snack:snackProp,phone:phoneProp,smoke:smokeProp,flash:flashProp,ink:inkProp,
+ drink:drinkProp,burger:burgerProp,banana:bananaProp,bananaPeel:()=>bananaProp(true),
+ garlic:garlicProp,gum:gumProp,lunch:lunchProp,pen:penProp
+});
 export function createDeskItem(action){
-  const imported=clonePropAsset(action);if(imported)return imported;
-  if(action==='snack')return snackProp();
-  if(action==='phone')return phoneProp();
-  if(action==='smoke')return smokeProp();
-  if(action==='flash')return flashProp();
-  if(action==='ink')return inkProp();
-  if(action==='drink')return drinkProp();
-  if(action==='burger')return burgerProp();
-  if(action==='banana'||action==='bananaPeel')return bananaProp(action==='bananaPeel');
-  if(action==='garlic')return garlicProp();
-  if(action==='gum')return gumProp();
-  if(action==='lunch')return lunchProp();
-  if(action==='pen')return penProp();
-  throw new RangeError(`Unknown desk item: ${action}`);
+  if(!Object.hasOwn(deskItemFactories,action))throw new RangeError(`Unknown desk item: ${action}`);
+  const factory=deskItemFactories[action];
+  // The same gate applies to normal GLBs and every offline/error fallback.
+  return requireModelBudget(clonePropAsset(action)||factory(),`道具 ${action}`);
 }
 
 export function createDeskHands({createHand}={}){

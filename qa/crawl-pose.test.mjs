@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createCrawlPose} from '../dist/crawl-pose.js';
+import {createCrawlPose,CRAWL_GAIT} from '../dist/crawl-pose.js';
 import {CRAWL_TUNING} from '../dist/crawl-profile.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 const assets={boy:'student-boy-v4',girl:'student-girl-v4',glasses:'student-glasses-v2',ponytail:'student-ponytail-v1',teacher:'teacher-v2'},V=()=>new T.Vector3();
@@ -23,20 +23,22 @@ async function fixture(file){
 }
 
 for(const[role,file]of Object.entries(assets))test(`${role}: crawling is horizontal, preserves bone lengths and plants alternating actual palms and soles`,async()=>{
- const f=await fixture(file),{group,bones,pose}=f,cycle=(.28/.66)/CRAWL_TUNING.speed,dt=cycle/48,forward=V().set(Math.sin(group.rotation.y),0,Math.cos(group.rotation.y));
- let previous=null;
+ const f=await fixture(file),{group,bones,pose}=f,cycle=(CRAWL_GAIT.stride/CRAWL_GAIT.stance)/CRAWL_TUNING.speed,dt=cycle/48,forward=V().set(Math.sin(group.rotation.y),0,Math.cos(group.rotation.y));
+ let previous=null;const bends={arm:[],leg:[]};
  for(let i=0;i<48;i++){
   const t=i*dt;pose.restore();group.position.x=forward.x*t*CRAWL_TUNING.speed;group.position.z=forward.z*t*CRAWL_TUNING.speed;
   pose.apply({active:true,time:t,dt,speed:CRAWL_TUNING.speed,reset:i===0});const box=f.bounds();
   assert.ok(box.min.y>-.002,`${role}: skin went below floor (${box.min.y})`);assert.ok(box.max.y<CRAWL_TUNING.bodyMaxY,`${role}: body remained upright (${box.max.y})`);
   const torso=f.local(bones.Spine2).sub(f.local(bones.Hips)).normalize();assert.ok(torso.z>.98&&Math.abs(torso.y)<.1,'torso did not turn toward horizontal +Z');
+  for(const [kind,names]of [['arm',['LeftArm','LeftForeArm','LeftHand']],['leg',['LeftUpLeg','LeftLeg','LeftFoot']]]){const[a,b,c]=names.map(n=>f.local(bones[n]));bends[kind].push(a.sub(b).angleTo(c.sub(b)));}
   for(const[b,r]of f.rest)if(b!==bones.Hips)assert.ok(b.position.distanceTo(r.p)<1e-10,`${role}: ${b.name} changed bone length`);
   const current={};for(const side of ['Left','Right'])for(const part of ['Hand','Foot']){
    const phase=(pose.state().phase+(side==='Left'?0:.5)+(part==='Foot'?.5:0))%1,key=side+part,world=bones[key].getWorldPosition(V());current[key]={phase,world};
-   if(phase<.66)assert.ok(f.low(key)>=-.002&&f.low(key)<.013,`${key} not on the floor in support (${f.low(key)})`);
-   if(previous&&phase>.03&&phase<.62&&previous[key].phase>.03&&previous[key].phase<.62)assert.ok(Math.abs(world.clone().sub(previous[key].world).dot(forward))<.002,`${key} skids during world-space support`);
+   if(phase<CRAWL_GAIT.stance)assert.ok(f.low(key)>=-.002&&f.low(key)<.013,`${key} not on the floor in support (${f.low(key)})`);
+   if(previous&&phase>.03&&phase<CRAWL_GAIT.stance-.04&&previous[key].phase>.03&&previous[key].phase<CRAWL_GAIT.stance-.04)assert.ok(Math.abs(world.clone().sub(previous[key].world).dot(forward))<.002,`${key} skids during world-space support`);
   }previous=current;
  }
+ for(const [kind,angles]of Object.entries(bends))assert.ok(Math.max(...angles)-Math.min(...angles)>.5,`${role}: ${kind} stays rigid rather than reaching and recovering`);
 });
 
 for(const[role,file]of Object.entries(assets))test(`${role}: stationary crawl does not paddle and exit restores the incoming mixer pose`,async()=>{

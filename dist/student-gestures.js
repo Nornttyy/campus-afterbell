@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=campus-63';
-import {STUDY_BOOK_POSE} from './study-book58.js?v=campus-63';
-import {createPenFingerContact} from './pen-motion.js?v=campus-63';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-64';
+import {studyBookPose} from './study-book58.js?v=campus-64';
+import {createPenFingerContact} from './pen-motion.js?v=campus-64';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const armName=/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/;
 
@@ -18,6 +18,9 @@ export function createStudentGestures(group,bones,clips,attachments){
  const fingerRig=createFingerRig(group,bones,'Right');
  const typingRigs={Left:createFingerRig(group,bones,'Left'),Right:fingerRig},typingTips={Left:[],Right:[]};
  const readingTips=Object.fromEntries(['Left','Right'].map(side=>[side,createPenFingerContact(group,bones,{side,finger:'Middle'})]));
+ const readingPads={Left:{Middle:[],Thumb:[]},Right:{Middle:[],Thumb:[]}};
+ group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const {skinIndex,skinWeight}=mesh.geometry.attributes;for(let i=0;i<skinIndex.count;i++){let max=0,name='';for(let k=0;k<4;k++)if(skinWeight.getComponent(i,k)>max){max=skinWeight.getComponent(i,k);name=mesh.skeleton.bones[skinIndex.getComponent(i,k)].name;}for(const side of ['Left','Right'])if(name.includes(side+'Hand')){if(/Thumb3$/.test(name))readingPads[side].Thumb.push({mesh,index:i});else if(/(?:Index|Middle|Ring|Pinky)3$/.test(name))readingPads[side].Middle.push({mesh,index:i});}}});
+ function readingPad(side,finger,normal,origin=null,orientation=null){let chosen=null,score=finger==='Thumb'?-Infinity:Infinity;const updated=new Set(),inverse=orientation?.clone().invert(),sign=side==='Left'?1:-1;for(const {mesh,index}of readingPads[side][finger]){if(!updated.has(mesh.skeleton)){mesh.skeleton.update();updated.add(mesh.skeleton);}const p=mesh.getVertexPosition(index,V()).applyMatrix4(mesh.matrixWorld);if(origin&&inverse){const local=p.clone().sub(origin).applyQuaternion(inverse);if(sign*local.x<0||sign*local.x>.335||local.y<0||local.y>.45)continue;}const value=p.dot(normal);if(finger==='Thumb'?value>score:value<score){score=value;chosen=p;}}return chosen||readingTips[side]();}
  let tipSample=null,best=-Infinity;
  group.updateMatrixWorld(true);const tipBone=bones.RightHandIndex3,tipOrigin=tipBone.getWorldPosition(V()),tipAxis=tipOrigin.clone().sub(tipBone.parent.getWorldPosition(V())).normalize();
  group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const joint=mesh.skeleton.bones.indexOf(tipBone),{skinIndex,skinWeight}=mesh.geometry.attributes;if(joint<0)return;
@@ -112,16 +115,27 @@ export function createStudentGestures(group,bones,clips,attachments){
    for(let k=0;k<3;k++){const tip=typingPoint(side,true),wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q()),target=wrist.getWorldPosition(V()).add(contact.clone().sub(tip));arm(side,target);wrist.quaternion.copy(wrist.parent.getWorldQuaternion(Q()).invert().multiply(rotation));group.updateMatrixWorld(true);}
   }
  }
- function readBook(){
-  const character=group.getWorldQuaternion(Q()),bookRotation=Q().setFromEuler(new T.Euler(...STUDY_BOOK_POSE.rotation));
+ function readBook(time){
+  const pose=studyBookPose(time),character=group.getWorldQuaternion(Q()),bookRotation=Q().setFromEuler(new T.Euler(...pose.rotation));
   for(const side of ['Left','Right']){
    const sign=side==='Left'?1:-1;
-   for(const d of typingRigs[side].digits){const curl=d.finger==='Thumb'?.12:.08;d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,curl*[.62,.87,.62][d.n-1]));}
-   orient(side,V(0,.12,1).normalize().applyQuaternion(character),V(0,-1,.12).normalize().applyQuaternion(character));
-   const contact=group.localToWorld(V(sign*.14,-.004,-.004).applyAxisAngle(V(0,1,0),sign*.14).applyQuaternion(bookRotation).add(V(...STUDY_BOOK_POSE.position)));
+   // Curved fingers support the outside cover; the thumb opposes them
+   // around its lower outer corner. Use real skin pads, not bone tips.
+   for(const d of typingRigs[side].digits){const curl=d.finger==='Thumb'?.42:.55;d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,curl*[.62,.87,.62][d.n-1]));}
+   const page=Q().setFromAxisAngle(V(0,1,0),sign*.14),orientation=character.clone().multiply(bookRotation).multiply(page);
+   orient(side,V(0,1,0).applyQuaternion(orientation),V(0,0,1).applyQuaternion(orientation));
+   const normal=V(0,0,1).applyQuaternion(orientation),contact=group.localToWorld(V(sign*.29,.110,.022).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
    for(let k=0;k<3;k++){group.updateMatrixWorld(true);const tip=readingTips[side](),wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q()),target=wrist.getWorldPosition(V()).add(contact.clone().sub(tip));arm(side,target);wrist.quaternion.copy(wrist.parent.getWorldQuaternion(Q()).invert().multiply(rotation));}
+   const planeOrigin=group.localToWorld(V(...pose.position));
+   for(let k=0;k<2;k++){group.updateMatrixWorld(true);const pad=readingPad(side,'Middle',normal,planeOrigin,orientation),wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q()),offset=.006-pad.clone().sub(planeOrigin).dot(normal);arm(side,wrist.getWorldPosition(V()).addScaledVector(normal,offset));wrist.quaternion.copy(wrist.parent.getWorldQuaternion(Q()).invert().multiply(rotation));}
+   // The thumb goes round the outside lower corner, opposing the curled
+   // fingers behind the cover. Its middle joint stays outside the page edge.
+   const thumbContact=group.localToWorld(V(sign*.34,-.035,-.025).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
+   for(let k=0;k<4;k++){group.updateMatrixWorld(true);const base=bones[side+'HandThumb1'],middle=bones[side+'HandThumb2'],root=base.getWorldPosition(V()),mid=middle.getWorldPosition(V()),tip=readingPad(side,'Thumb',normal),upper=root.distanceTo(mid),lower=mid.distanceTo(tip),direction=thumbContact.clone().sub(root),distance=T.MathUtils.clamp(direction.length(),Math.abs(upper-lower)+.002,upper+lower-.001);direction.normalize();const pole=V(sign,0,0).applyQuaternion(orientation).addScaledVector(direction,-V(sign,0,0).applyQuaternion(orientation).dot(direction)).normalize(),along=(upper*upper+distance*distance-lower*lower)/(2*distance),height=Math.sqrt(Math.max(0,upper*upper-along*along));aim(base,middle,root.clone().addScaledVector(direction,along).addScaledVector(pole,height));group.updateMatrixWorld(true);const at=middle.getWorldPosition(V()),from=readingPad(side,'Thumb',normal).sub(at).normalize(),to=thumbContact.clone().sub(at).normalize(),parent=middle.parent.getWorldQuaternion(Q());middle.quaternion.premultiply(parent.clone().invert().multiply(Q().setFromUnitVectors(from,to)).multiply(parent));}
+
   }
  }
+
  return {
   restore(){for(const[b,q]of saved)b.quaternion.copy(q);saved.clear();},
   apply({time,dt,reset,seated,mood,carrying,moving,restraint,walkTime=0}){
@@ -131,14 +145,14 @@ export function createStudentGestures(group,bones,clips,attachments){
    blend=reset?(active?1:0):T.MathUtils.damp(blend,active?1:0,15,dt);
    // Let the torso come back from the keyboard gradually while the hands
    // slide to the desk edge; dropping the parent pose first jerks both arms.
-   typingBlend=reset?(typing?1:0):T.MathUtils.damp(typingBlend,typing?1:0,computerIdle?4:15,dt);if(typingBlend>.0001)computerLean(typingBlend);
+   typingBlend=reset?(typing?1:reading?.3:0):T.MathUtils.damp(typingBlend,typing?1:reading?.3:0,computerIdle?4:15,dt);if(typingBlend>.0001)computerLean(typingBlend);
    for(const side of ['Left','Right']){const owned=active&&(typing||computerIdle||reading||thinking||side==='Left'||!seated||mood==='phone');sideBlend[side]=reset?(owned?1:0):T.MathUtils.damp(sideBlend[side],owned?1:0,15,dt);}
    if(!active&&blend<.0001){for(const b of managed)previous.set(b,b.quaternion.clone());return;}
    for(const b of managed)saved.set(b,b.quaternion.clone());
    if(active){
     if(typing)keyboard(time);
     else if(computerIdle)computerRest();
-    else if(reading)readBook();
+    else if(reading)readBook(time);
     else if(thinking){freeHand('Left',true,0,0);freeHand('Right',true,0,0);}
     else {hold('Left',{seated,mood,time,nearCenter:mood==='phone'&&seated});
      if(mood==='phone'&&seated)phoneTap(time);else if(!seated)freeHand('Right',false,moving,walkTime);

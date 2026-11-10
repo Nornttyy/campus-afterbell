@@ -1,10 +1,13 @@
+// Elevator operation is enabled; boarding and per-round limits are authoritative.
+export const ELEVATOR_ENABLED=true;
 export const TEACHER_EYE_HEIGHT=1.95;
 // Metres, shared by rendering and authoritative collision. The user's plan is
 // rotated in world space: office at +Z, lift at -Z, corridor along the right.
-export const CLASSROOM=Object.freeze({minX:-7.20,maxX:7.20,minZ:-10.00,maxZ:8.80});
-export const CORRIDOR=Object.freeze({minX:7.40,maxX:11.00,minZ:-10.00,maxZ:8.80});
-export const OFFICE=Object.freeze({minX:-1.20,maxX:11.00,minZ:9.02,maxZ:20.80,doorX:9.20,doorMinX:8.30,doorMaxX:10.10});
-export const LIFT=Object.freeze({minX:8.10,maxX:10.60,minZ:-13.00,maxZ:-10.20,x:9.35,z:-11.70});
+export const CLASSROOM=Object.freeze({minX:-6.65,maxX:7.20,minZ:-10.00,maxZ:8.80});
+export const CORRIDOR=Object.freeze({minX:7.40,maxX:12.44,minZ:-17.52,maxZ:8.80});
+export const OFFICE=Object.freeze({minX:-1.20,maxX:CORRIDOR.maxX,minZ:9.02,maxZ:20.80,doorX:9.20,doorMinX:8.30,doorMaxX:10.10});
+export const LIFT=Object.freeze({minX:8.10,maxX:10.60,minZ:CORRIDOR.minZ-3,maxZ:CORRIDOR.minZ-.20,x:9.35,z:CORRIDOR.minZ-1.70});
+export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:CORRIDOR.minZ+.65});
 export const ROOM=Object.freeze({minX:CLASSROOM.minX,maxX:CORRIDOR.maxX,minZ:LIFT.minZ,maxZ:OFFICE.maxZ});
 export const CEILING_HEIGHT=4.51,TIERED_CEILING_HEIGHT=5.55;
 export const TEACHER_SPAWN=Object.freeze({x:9.20,z:12.00,yaw:Math.PI,pitch:.025});
@@ -13,7 +16,7 @@ export const OFFICE_CHAIR=Object.freeze({id:'office-chair',deskId:OFFICE_DESK.id
 export const OFFICE_DESKS=Object.freeze([OFFICE_DESK,...[[2.1,16.1],[6.1,16.1],[2.1,18.9],[6.1,18.9]].map(([x,z],i)=>Object.freeze({id:'office-work-'+i,x,z,width:2.20,depth:1.02,yaw:0,drawerX:x,drawerZ:z-.52}))]);
 export const OFFICE_CHAIRS=Object.freeze([OFFICE_CHAIR,...OFFICE_DESKS.slice(1).map(d=>Object.freeze({id:d.id+'-chair',deskId:d.id,x:d.x,z:d.z-1.14,yaw:0}))]);
 export const OFFICE_BOARD=Object.freeze({x:8,z:20.35});
-export const ROLE_LOCKER=Object.freeze({x:10.64,z:6.65,yaw:-Math.PI/2});
+export const ROLE_LOCKER=Object.freeze({x:CORRIDOR.maxX-.36,z:6.65,yaw:-Math.PI/2});
 export const START_BELL_POSITION=Object.freeze({x:7.43,z:3.15});
 export const CAMPUS_MAPS=Object.freeze(['classroom','night','tiered','computer','classroom5','night6','computer7','tiered8']);
 export function mapKind(map='classroom'){const kind=String(map).replace(/[0-9]+$/,'');return kind;}
@@ -23,7 +26,9 @@ function layoutRandom(seed){let n=Number(seed)>>>0;return()=>{n=(Math.imul(n,166
 // run rooms with different layouts in the same JavaScript process safely.
 export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
  const random=layoutRandom(seed),pattern=LAYOUT_PATTERNS.includes(arrangement)?arrangement:LAYOUT_PATTERNS[(Number(seed)>>>0)%LAYOUT_PATTERNS.length],raw=[];
- const add=(x,z,yaw=0)=>raw.push({deskX:x,deskZ:z,yaw});
+ // Translate each left-hand desk cluster intact, preserving paired tops, the
+ // fixed right-hand stair lane and all authored model sizes.
+ const add=(x,z,yaw=0)=>raw.push({deskX:mapKind(map)==='tiered'?(x< -3?x+.15:x):x< -3?x+.45:x,deskZ:z,yaw});
  if(pattern==='rows-wide'||pattern==='rows-long'){
   const wide=pattern==='rows-wide',xs=wide?[-5,-2.5,0,2.5,5]:[-4.8,-1.6,1.6,4.8];
   // Four rows of five or five rows of four. On terraces the front two rows
@@ -58,23 +63,36 @@ export const SEATS=createSeatLayout(73);
 export const PLAYER_SEAT=9;
 export const FRIEND_SEATS=Object.freeze([2,6,16,27]);
 export const COVERED_SEATS=Object.freeze([PLAYER_SEAT,...FRIEND_SEATS,0,5,10,15,20,25]);
-export const AISLES=Object.freeze([-6.84,-3.35,1.14,6.84]);
+export const AISLES=Object.freeze([CLASSROOM.minX+.27,-3.35,1.14,6.84]);
 export const BOARD=Object.freeze({x:1.25,z:7.45});
-export const DETENTION=Object.freeze([-6.30,-5.45,-4.60,4.60,5.45,6.30].map((x,id)=>Object.freeze({id,x,z:8.08})));
+export const DETENTION=Object.freeze([-5.85,-5.00,-4.15,4.60,5.45,6.30].map((x,id)=>Object.freeze({id,x,z:8.08})));
 export const DOORS=Object.freeze([-8.00,7.00].map((center,i)=>Object.freeze({id:i===0?'rear':'front',center,minZ:center-.80,maxZ:center+.80})));
 export const PARTITIONS=Object.freeze([{minX:7.20,maxX:7.40,minZ:-10.20,maxZ:DOORS[0].minZ},{minX:7.20,maxX:7.40,minZ:DOORS[0].maxZ,maxZ:DOORS[1].minZ},{minX:7.20,maxX:7.40,minZ:DOORS[1].maxZ,maxZ:9.02}]);
 export const LECTERN=Object.freeze({minX:-1.52,maxX:-.17,minZ:7.20,maxZ:8.02});
 const V=(minX,maxX,minZ,maxZ,minY=0,maxY=CEILING_HEIGHT)=>Object.freeze({minX,maxX,minZ,maxZ,minY,maxY});
 export const DOOR_LEAVES=Object.freeze(DOORS.map(d=>V(7.30,8.88,d.maxZ-.07,d.maxZ+.07,.04,3.02)));
-const boundaries=[V(-7.40,-7.20,-10.20,9.02),V(-7.20,8.10,-10.20,-10.00),V(10.60,11.20,-10.20,-10.00),V(-7.20,8.30,8.80,9.02),V(10.10,11.20,8.80,9.02),V(OFFICE.maxX,OFFICE.maxX+.20,-10.20,OFFICE.maxZ+.20),V(OFFICE.minX-.20,OFFICE.minX,8.80,OFFICE.maxZ+.20),V(OFFICE.minX,OFFICE.maxX+.20,OFFICE.maxZ,OFFICE.maxZ+.20),V(7.90,8.10,-13.20,-10.00),V(10.60,10.80,-13.20,-10.00),V(8.10,10.60,-13.20,-13.00)];
-const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(8.30,10.10,8.80,9.02,3.08),V(8.10,10.60,-10.20,-10.00,3.12)];
+// Continuous shell: classroom proportions are independent of the longer corridor.
+// The lift portal/cabin use the corridor's end, never the classroom's rear wall.
+const portalZ=CORRIDOR.minZ,west=CLASSROOM.minX;
+const boundaries=[
+ V(west-.20,west,CLASSROOM.minZ-.20,OFFICE.minZ),
+ V(west,CORRIDOR.minX,CLASSROOM.minZ-.20,CLASSROOM.minZ),
+ V(CLASSROOM.maxX,CORRIDOR.minX,portalZ-.20,CLASSROOM.minZ-.20),
+ V(CORRIDOR.minX,LIFT.minX,portalZ-.20,portalZ),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ-.20,portalZ),
+ V(west,OFFICE.doorMinX,CLASSROOM.maxZ,OFFICE.minZ),V(OFFICE.doorMaxX,CORRIDOR.maxX+.20,CLASSROOM.maxZ,OFFICE.minZ),
+ V(OFFICE.maxX,OFFICE.maxX+.20,portalZ-.20,OFFICE.maxZ+.20),
+ V(OFFICE.minX-.20,OFFICE.minX,CLASSROOM.maxZ,OFFICE.maxZ+.20),V(OFFICE.minX,OFFICE.maxX+.20,OFFICE.maxZ,OFFICE.maxZ+.20),
+ V(LIFT.minX-.20,LIFT.minX,LIFT.minZ-.20,portalZ),V(LIFT.maxX,LIFT.maxX+.20,LIFT.minZ-.20,portalZ),V(LIFT.minX,LIFT.maxX,LIFT.minZ-.20,LIFT.minZ)
+];
+const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(8.30,10.10,8.80,9.02,3.08),V(LIFT.minX,LIFT.maxX,portalZ-.20,portalZ,3.12)];
 const baseWalls=Object.freeze([...PARTITIONS,...boundaries]);
-export const WALLS=Object.freeze([...baseWalls,...DOOR_LEAVES]);
-export const WALL_VOLUMES=Object.freeze([...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...DOOR_LEAVES,...headers]);
-const fixedCeilings=Object.freeze([V(7.40,11.20,-10.20,9.02,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,9.02,OFFICE.maxZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(7.90,10.80,-13.20,-10.00,3.12,3.28)]);
-const flatCeilings=Object.freeze([V(-7.40,7.40,-10.20,9.02,CEILING_HEIGHT,CEILING_HEIGHT+.16),...fixedCeilings]);
-const raisedCeilings=Object.freeze([V(-7.40,7.40,-10.20,9.02,TIERED_CEILING_HEIGHT,TIERED_CEILING_HEIGHT+.16),...fixedCeilings]);
-const raisedUpperWalls=Object.freeze([V(-7.40,-7.20,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(7.20,7.40,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(-7.20,7.20,-10.20,-10.00,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(-7.20,7.20,8.80,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT)]);
+const sealedLift=ELEVATOR_ENABLED?[]:[V(LIFT.minX,LIFT.maxX,portalZ-.22,portalZ+.02,.02,3.12)];
+export const WALLS=Object.freeze([...baseWalls,...DOOR_LEAVES,...sealedLift]);
+export const WALL_VOLUMES=Object.freeze([...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...DOOR_LEAVES,...sealedLift,...headers]);
+const fixedCeilings=Object.freeze([V(CORRIDOR.minX,CORRIDOR.maxX+.20,portalZ-.20,9.02,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,9.02,OFFICE.maxZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(LIFT.minX-.20,LIFT.maxX+.20,LIFT.minZ-.20,portalZ,3.12,3.28)]);
+const flatCeilings=Object.freeze([V(west-.20,7.40,-10.20,9.02,CEILING_HEIGHT,CEILING_HEIGHT+.16),...fixedCeilings]);
+const raisedCeilings=Object.freeze([V(west-.20,7.40,-10.20,9.02,TIERED_CEILING_HEIGHT,TIERED_CEILING_HEIGHT+.16),...fixedCeilings]);
+const raisedUpperWalls=Object.freeze([V(west-.20,west,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(7.20,7.40,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(west,7.20,-10.20,-10.00,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(west,7.20,8.80,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT)]);
 export function ceilingVolumes(map='classroom'){return mapKind(map)==='tiered'?raisedCeilings:flatCeilings;}
 // The teacher laptop is only present on computer floors. Separate base and
 // lid bounds avoid treating the air above its keyboard as a solid monitor.
@@ -86,21 +104,21 @@ export const OFFICE_SOLIDS=Object.freeze([
  // Monitor shells and books sit above each physical desk, so thrown items
  // cannot pass straight through their visible screens.
  ...OFFICE_DESKS.map(d=>V(d.x-.79,d.x-.05,d.z+.12,d.z+.24,.985,1.58)),
- V(10.32,10.98,11.075,14.925,0,1.065),V(10.27,10.99,5.75,7.55,0,2.28),V(OFFICE_BOARD.x-1.35,OFFICE_BOARD.x+1.35,OFFICE_BOARD.z-.37,OFFICE_BOARD.z+.37,0,2.48),V(10.25,10.98,-9.75,-8.92,0,1.72)
+ V(OFFICE.maxX-.68,OFFICE.maxX-.02,11.075,14.925,0,1.065),V(ROLE_LOCKER.x-.37,ROLE_LOCKER.x+.35,5.75,7.55,0,2.28),V(OFFICE_BOARD.x-1.35,OFFICE_BOARD.x+1.35,OFFICE_BOARD.z-.37,OFFICE_BOARD.z+.37,0,2.48),V(CORRIDOR.maxX-.75,CORRIDOR.maxX-.02,CORRIDOR.minZ+.25,CORRIDOR.minZ+1.08,0,1.72)
 ]);
 export function floorHeight(x,z,map='classroom'){
  if(Math.abs(x)<=3.15&&z>=6.50&&z<=8.80)return .16;
- if(mapKind(map)!=='tiered'||x>=7.20||x< -7.20||z< -10.00||z>=1.50)return 0;
+ if(mapKind(map)!=='tiered'||x>=7.20||x<CLASSROOM.minX||z< -10.00||z>=1.50)return 0;
  let h=0;for(const edge of [1.30,-2.30,-5.90])h+=z<edge?.24:z<edge+.20?.12:0;
  return Math.min(h,Math.max(0,Math.floor((7.20-x+1e-8)/.20))*.12);
 }
 export function actorFloorHeight(actor,map='classroom',carrier=null){const support=actor.captivity==='carried'&&carrier?carrier:actor;return floorHeight(support.x,support.z,map);}
 export function floorTiles(map='tiered'){
  if(mapKind(map)!=='tiered')return [];
- const xs=[-7.20,6.00,6.20,6.40,6.60,6.80,7.00,7.20],zs=[-10.00,-5.90,-5.70,-2.30,-2.10,1.30,1.50],out=[];
+ const xs=[CLASSROOM.minX,6.00,6.20,6.40,6.60,6.80,7.00,7.20],zs=[-10.00,-5.90,-5.70,-2.30,-2.10,1.30,1.50],out=[];
  for(let i=0;i<xs.length-1;i++)for(let j=0;j<zs.length-1;j++){const h=floorHeight((xs[i]+xs[i+1])/2,(zs[j]+zs[j+1])/2,map);if(h>0)out.push({minX:xs[i],maxX:xs[i+1],minZ:zs[j],maxZ:zs[j+1],height:h});}return out;
 }
-export function walkableFootprint(x,z,r=.18){return (x>=CLASSROOM.minX+r&&x<=CORRIDOR.maxX-r&&z>=CLASSROOM.minZ+r&&z<=CLASSROOM.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=CLASSROOM.maxZ-r&&z<=OFFICE.maxZ-r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=LIFT.minZ+r&&z<=CLASSROOM.minZ+.40);}
+export function walkableFootprint(x,z,r=.18){return (x>=CLASSROOM.minX+r&&x<=CORRIDOR.maxX-r&&z>=CLASSROOM.minZ+r&&z<=CLASSROOM.maxZ-r)||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=CLASSROOM.maxZ-r&&z<=OFFICE.maxZ-r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=LIFT.minZ+r&&z<=CORRIDOR.minZ+.40);}
 export function clearWallSegment(a,b,context=null){
  for(const w of context?.walls||WALLS){let lo=0,hi=1;for(const axis of ['X','Z']){const k=axis.toLowerCase(),d=b[k]-a[k];if(Math.abs(d)<1e-8){if(a[k]<w['min'+axis]||a[k]>w['max'+axis]){lo=2;break;}}else{let u=(w['min'+axis]-a[k])/d,v=(w['max'+axis]-a[k])/d;if(u>v)[u,v]=[v,u];lo=Math.max(lo,u);hi=Math.min(hi,v);}}if(lo<=hi&&hi>=0&&lo<=1)return false;}return true;
 }
@@ -112,12 +130,13 @@ export function createLayoutContext(seats=SEATS,doorState={}){
  const context={map:seats[0]?.map||'classroom',seats,desks:deskSolids(seats),chairBacks:chairBackSolids(seats),routeGrids:new Map(),officeLocked:undefined,rearDoorClosed:undefined,elevatorClosed:undefined};return updateLayoutDoors(context,doorState);
 }
 export function updateLayoutDoors(context,{officeLocked=context.officeLocked??false,rearDoorClosed=context.rearDoorClosed??false,elevatorClosed=context.elevatorClosed??false}={}){
+ elevatorClosed=!ELEVATOR_ENABLED||elevatorClosed;
  if(context.officeLocked===!!officeLocked&&context.rearDoorClosed===!!rearDoorClosed&&context.elevatorClosed===!!elevatorClosed)return context;
  context.officeLocked=!!officeLocked;context.rearDoorClosed=!!rearDoorClosed;context.elevatorClosed=!!elevatorClosed;
  const rear=DOORS[0],leaves=[rearDoorClosed?V(7.23,7.37,rear.minZ,rear.maxZ,.04,3.02):DOOR_LEAVES[0],DOOR_LEAVES[1]];
  if(officeLocked)leaves.push(V(OFFICE.doorMinX,OFFICE.doorMaxX,8.85,8.97,.02,3.02));
  else for(const x of [OFFICE.doorMinX,OFFICE.doorMaxX])leaves.push(V(x-.092,x+.092,8.91,9.81,0,3.02));
- if(elevatorClosed)leaves.push(V(LIFT.minX,LIFT.maxX,-10.22,-9.98,.02,3.12));
+ if(elevatorClosed)leaves.push(V(LIFT.minX,LIFT.maxX,portalZ-.22,portalZ+.02,.02,3.12));
  context.walls=[...baseWalls,...leaves];context.wallVolumes=[...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...leaves,...headers];
  context.walkSolids=[...context.desks,...context.chairBacks,...context.walls,LECTERN,...OFFICE_SOLIDS,...(context.dynamicSolids||[])];context.routeGrids.clear();context.projectileColliderCache?.clear();return context;
 }
@@ -200,7 +219,11 @@ const ROUTE_CELL=.24,ROUTE_DIRECTIONS=[[1,0],[-1,0],[0,1],[0,-1]];
 function routeGrid(radius,context){
   const routeGrids=context.routeGrids;
   let grid=routeGrids.get(radius);if(grid)return grid;
-  const x0=ROOM.minX+radius,z0=ROOM.minZ+radius,cell=ROUTE_CELL;
+  // Keep the navigation lattice anchored in world space. Expanding a corridor
+  // must not shift every row and erase the narrow valid gap between a chair
+  // and its desktop. Bounds may add cells; they do not move existing cells.
+  const cell=ROUTE_CELL,anchorX=-7.20+radius,anchorZ=-13.00+radius;
+  const x0=anchorX+Math.floor((ROOM.minX+radius-anchorX)/cell)*cell,z0=anchorZ+Math.floor((ROOM.minZ+radius-anchorZ)/cell)*cell;
   const w=Math.floor((ROOM.maxX-radius-x0)/cell)+1,h=Math.floor((ROOM.maxZ-radius-z0)/cell)+1;
   if(w<1||h<1)return null;
   const points=Array.from({length:w*h},(_,i)=>({x:x0+i%w*cell,z:z0+Math.floor(i/w)*cell}));

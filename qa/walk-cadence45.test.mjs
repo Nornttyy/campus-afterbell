@@ -47,7 +47,7 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: no
   actor.setMood('resting');actor.setMotion({speed:AI_WALK_SPEEDS.student,seated:false,carrying});
   // A held object intentionally steadies the hand; count foot reversals only.
   const steps=sampleLimbs(actor,t=>actor.update(t),!carrying);
-  assert.ok(steps>=2.05&&steps<=2.3,`ordinary gait still takes ${steps.toFixed(2)} steps per second`);
+  assert.ok(steps>=1.90&&steps<=2.12,`ordinary gait still takes ${steps.toFixed(2)} steps per second`);
   t.diagnostic(`${variant} ${carrying?'carrying':'free'}: ${steps.toFixed(3)} steps/s at ${AI_WALK_SPEEDS.student} m/s`);
   if(carrying)assert.ok(actor.diagnostics().weights.WalkCarry>.99,'fixture did not enter carried-object walking');
   actor.dispose();
@@ -60,7 +60,7 @@ for(const [name,speed,limit]of [
 ])test(`teacher ${name}: normal movement no longer uses a rapid walking rhythm`,async t=>{
  const actor=createRiggedTeacher(await loadGeometry('teacher-v2.glb'));
  const steps=sampleLimbs(actor,t=>actor.update(t,{speed:speed(),phase:'patrol'}));
- assert.ok(steps>1.5&&steps<limit,`${name} still takes ${steps.toFixed(2)} steps per second`);
+ assert.ok(steps>1.4&&steps<limit,`${name} still takes ${steps.toFixed(2)} steps per second`);
  if(name!=='escort')assert.equal(speed(),2.2);t.diagnostic(`teacher ${name}: ${steps.toFixed(3)} steps/s at ${speed()} m/s`);
  actor.dispose();
 });

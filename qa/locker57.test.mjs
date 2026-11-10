@@ -2,6 +2,7 @@ import test from 'node:test';
 import {readFile} from 'node:fs/promises';
 import {campusScene} from './campus-geometry54-helpers.mjs';
 import assert from 'node:assert/strict';
+import {ROLE_LOCKER} from '../dist/classroom-layout.js';
 import {createSoloRound,switchSoloRole} from '../dist/solo-round.js';
 import {createSessionUI} from '../dist/session-ui.js';
 import {CampusRoom} from '../server/room-simulation.js';
@@ -81,6 +82,6 @@ test('the original physical cabinet remains the world target; no teacher/student
 });
 
 test('centre crosshair hits the real cabinet stile at the tested approach position',()=>{
- const f=campusScene();try{const locker=f.campus.getTargets().lockers[0].object;const direction=new T.Vector3(1,-Math.tan(.06),0).normalize();for(const z of[6.64,6.65,6.66]){const ray=new T.Raycaster(new T.Vector3(8.85,1.65,z),direction,0,2.5),hit=ray.intersectObject(locker,true)[0];assert.ok(hit,'centred crosshair must not pass through an empty door seam');assert.equal(hit.object.name,'locker-central-stile');assert.equal(hit.object.userData.campusTarget.type,'locker');const blocker=ray.intersectObject(f.scene,true).find(h=>!h.object.material.transparent);assert.equal(blocker.object,hit.object,'no invisible or through-wall target');}}
+ const f=campusScene();try{const locker=f.campus.getTargets().lockers[0].object;const direction=new T.Vector3(1,-Math.tan(.06),0).normalize();for(const z of[6.64,6.65,6.66]){const ray=new T.Raycaster(new T.Vector3(ROLE_LOCKER.x-1.79,1.65,z),direction,0,2.5),hit=ray.intersectObject(locker,true)[0];assert.ok(hit,'centred crosshair must not pass through an empty door seam');assert.equal(hit.object.name,'locker-central-stile');assert.equal(hit.object.userData.campusTarget.type,'locker');const blocker=ray.intersectObject(f.scene,true).find(h=>!h.object.material.transparent);assert.equal(blocker.object,hit.object,'no invisible or through-wall target');}}
  finally{f.dispose();}
 });

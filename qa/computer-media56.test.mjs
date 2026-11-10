@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {sampleComputerPlayback} from '../dist/computer-playback56.js?v=campus-63';
-import {createComputerScreenContent} from '../dist/computer-screen55.js?v=campus-63';
+import {sampleComputerPlayback} from '../dist/computer-playback56.js?v=campus-64';
+import {createComputerScreenContent} from '../dist/computer-screen55.js?v=campus-64';
 const live=()=>({currentTime:0,duration:40,readyState:4,paused:false,ended:false,error:null,seeking:false,loop:true});
 function advancing(){const video=live();let sample=sampleComputerPlayback(null,video,0,true);video.currentTime=.25;sample=sampleComputerPlayback(sample,video,250,true);assert.equal(sample.playing,true);return{video,sample};}
 test('only real advancing media earns a playing state, with a bounded stall timeout',()=>{const v=live();let s=sampleComputerPlayback(null,v,0,true);assert.equal(s.playing,false);s=sampleComputerPlayback(s,v,250,true);assert.equal(s.playing,false);v.currentTime=.25;s=sampleComputerPlayback(s,v,500,true);assert.equal(s.playing,true);s=sampleComputerPlayback(s,v,1001,true);assert.equal(s.playing,false);});

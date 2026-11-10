@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {campusScene} from './campus-geometry54-helpers.mjs';
-import {DOORS} from '../dist/classroom-layout.js';
+import {DOORS,CLASSROOM,CORRIDOR} from '../dist/classroom-layout.js';
 
 function visible(o){for(;o;o=o.parent)if(!o.visible)return false;return true;}
 function physicalMeshes(scene){const result=[];scene.traverse(o=>{if(o.isMesh&&visible(o)&&['BoxGeometry','ExtrudeGeometry'].includes(o.geometry.type))result.push({object:o,bounds:new T.Box3().setFromObject(o,true)});});return result;}
@@ -22,10 +22,10 @@ test('all intermediate classroom window piers close both halves of each reserved
 test('dense visible-triangle sweep finds no unplanned openings in side walls, exterior glazing or raised walls',()=>{
  const f=campusScene();try{for(const map of ['classroom','tiered']){
   f.campus.setMap(map);f.scene.updateMatrixWorld(true);const meshes=physicalMeshes(f.scene);
-  for(const [label,x,dx,wallX]of [['exterior',-7,-1,-7.30],['partition',7,1,7.30],['corridor',10.8,1,11.10]]){
+  for(const [label,x,dx,wallX]of [['exterior',CLASSROOM.minX+.20,-1,CLASSROOM.minX-.10],['partition',7,1,7.30],['corridor',CORRIDOR.maxX-.20,1,CORRIDOR.maxX+.10]]){
    const walls=meshes.filter(m=>m.bounds.min.x<wallX+.15&&m.bounds.max.x>wallX-.15).map(m=>m.object),heights=[.16,.60,1.02,1.15,1.73,2.55,3.08,3.24,3.84,4.05,4.40];
    if(map==='tiered'&&label!=='corridor')heights.push(4.65,5.30);
-   for(const y of heights)for(let z=-9.99;z<8.79;z+=.037){
+   for(const y of heights)for(let z=(label==='corridor'?CORRIDOR.minZ:CLASSROOM.minZ)+.01;z<8.79;z+=.037){
     if(label==='partition'&&y<3.10&&DOORS.some(d=>z>d.minZ&&z<d.maxZ))continue;
     assert.ok(hit(walls,x,y,z,dx).length,`${map}/${label}: open triangle seam at y=${y}, z=${z.toFixed(4)}`);
    }

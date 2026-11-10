@@ -3,7 +3,7 @@
 <nav><select id="pose"><option value="watching">待机</option><option value="patrol">走路</option><option value="board">板书</option><option value="card">举牌</option><option value="throw">投粉笔</option></select><select id="angle"><option value="0">正面</option><option value="0.785398">斜侧</option><option value="1.570796">侧面</option><option value="3.141593">背面</option></select><button id="pause">暂停</button></nav><div id="status">正在加载实际 GLB…</div>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadTeacherModel} from '../dist/imported-actors.js?v=campus-63';
+import {loadTeacherModel} from '../dist/imported-actors.js?v=campus-64';
 const r=new T.WebGLRenderer({antialias:true});document.body.append(r.domElement);r.setPixelRatio(Math.min(devicePixelRatio,1.5));r.toneMapping=T.NeutralToneMapping;r.toneMappingExposure=1.12;
 const s=new T.Scene();s.background=new T.Color('#dfe8ec');s.add(new T.HemisphereLight('#fff5e9','#9aa8ae',2.1));
 for(const [p,power]of [[[2,4,3],2.5],[[-3,2,-2],1]]){const l=new T.DirectionalLight('#ffffff',power);l.position.set(...p);s.add(l);}

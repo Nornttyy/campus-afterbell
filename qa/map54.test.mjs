@@ -5,14 +5,14 @@ import {loadGeometry} from './gltf-geometry.mjs';
 import {buildReferenceCampus} from '../dist/reference-campus.js';
 import {createSoloRound} from '../dist/solo-round.js';
 import {ClassroomRound} from '../dist/classroom-rules.js';
-import {CAMPUS_MAPS,LAYOUT_PATTERNS,LIFT,BOARD,OFFICE,TEACHER_SPAWN,createSeatLayout,createLayoutContext,mapKind,floorHeight,floorTiles,blocked,chairExit,walkRoute,moveInRoom} from '../dist/classroom-layout.js';
+import {CAMPUS_MAPS,LAYOUT_PATTERNS,LIFT,CLASSROOM,CORRIDOR,BOARD,OFFICE,TEACHER_SPAWN,createSeatLayout,createLayoutContext,mapKind,floorHeight,floorTiles,blocked,chairExit,walkRoute,moveInRoom} from '../dist/classroom-layout.js';
 
 function campusScene(){
  const scene=new T.Scene(),room=new T.Group();scene.add(room);const assets=new Set(),materials=new Set();
  const mat=(color,o={})=>{const m=new T.MeshStandardMaterial({color,...o});materials.add(m);return m;};
  const mesh=(g,m,p,s=[1,1,1],r=null,parent=room)=>{const o=new T.Mesh(g,m);o.position.set(...p);o.scale.set(...s);if(r)o.rotation.set(...r);parent.add(o);return o;};
  const box=(m,p,s,r=null,parent=room)=>mesh(new T.BoxGeometry(...s),m,p,[1,1,1],r,parent),rounded=(m,p,s,rad,r=null,parent=room)=>box(m,p,s,r,parent),cylinder=(m,p,s,r=null,parent=room)=>mesh(new T.CylinderGeometry(s[0],s[2],s[1],8),m,p,[1,1,1],r,parent),texture=()=>new T.Texture(),base=mat('#fff'),M=new Proxy({},{get:()=>base});
- const artwork={teacherTutorial:new T.Texture(),studentTutorial:new T.Texture(),classroomNotice:new T.Texture()},campus=buildReferenceCampus({scene,room,M,mat,mesh,box,rounded,cylinder,texture,assets,materials,floorMat:base,artwork});campus.enclosure.visible=true;campus.attachUpperArchitecture();scene.updateMatrixWorld(true);
+ const artwork={teacherTutorial:new T.Texture(),studentTutorial:new T.Texture(),classroomNotice:new T.Texture(),graffitiSnack:new T.Texture(),graffitiHomework:new T.Texture()},campus=buildReferenceCampus({scene,room,M,mat,mesh,box,rounded,cylinder,texture,assets,materials,floorMat:base,artwork});campus.enclosure.visible=true;campus.attachUpperArchitecture();scene.updateMatrixWorld(true);
  return{scene,campus,artwork,dispose(){scene.traverse(o=>o.geometry?.dispose());for(const m of materials)m.dispose();for(const a of assets)a.dispose?.();}};
 }
 
@@ -48,9 +48,9 @@ test('tier floor rendered surfaces are non-overlapping and exactly match walking
 
 test('corridor has glazing only at lift end, while other outer wall spans are actual solid geometry',()=>{
  const {scene,dispose}=campusScene();try{
-  const panes=scene.getObjectsByProperty('name','clear-exterior-pane').filter(o=>{const p=o.getWorldPosition(new T.Vector3());return p.x>10.99&&p.x<11.20;});assert.equal(panes.length,4);
-  for(const pane of panes){const p=pane.getWorldPosition(new T.Vector3());assert.ok(p.z>=-7.45&&p.z<=-4.27);assert.ok(pane.material.opacity<.10);}
-  for(const z of[-9.0,-3.8,0,3.8,7.9]){const hit=new T.Raycaster(new T.Vector3(10.5,2,z),new T.Vector3(1,0,0),0,1).intersectObject(scene,true).find(h=>h.object.name==='corridor-solid-outer-wall');assert.ok(hit,`hole at z=${z}`);assert.ok(Math.abs(hit.point.x-11)<1e-6);assert.equal(hit.object.material.transparent,false);}
+  const panes=scene.getObjectsByProperty('name','clear-exterior-pane').filter(o=>{const p=o.getWorldPosition(new T.Vector3());return p.x>CORRIDOR.maxX-.01&&p.x<CORRIDOR.maxX+.20;});assert.equal(panes.length,4);
+  for(const pane of panes){const p=pane.getWorldPosition(new T.Vector3());assert.ok(p.z>=CORRIDOR.minZ+2.55&&p.z<=CORRIDOR.minZ+5.73);assert.ok(pane.material.opacity<.10);}
+  for(const z of[-9.0,-3.8,0,3.8,7.9]){const hit=new T.Raycaster(new T.Vector3(CORRIDOR.maxX-.5,2,z),new T.Vector3(1,0,0),0,1).intersectObject(scene,true).find(h=>h.object.name==='corridor-solid-outer-wall');assert.ok(hit,`hole at z=${z}`);assert.ok(Math.abs(hit.point.x-CORRIDOR.maxX)<1e-6);assert.equal(hit.object.material.transparent,false);}
   const inner=scene.getObjectsByProperty('name','pale-blue-interior-pane');assert.ok(inner.length>10);assert.ok(inner.every(p=>p.material.opacity>=.58&&p.material.opacity<=.70));
  }finally{dispose();}
 });
@@ -65,13 +65,25 @@ test('teacher and student tutorials use independent 2:1 image planes without can
 });
 
 test('round and one-use lift reconstruct terrain-compatible seats while preserving seed, pattern and cabin pose',()=>{
- for(const role of ['student','teacher']){const r=createSoloRound({role,seed:402,map:'classroom'});r.start({gathering:true});Object.assign(r.player,{x:LIFT.x,z:LIFT.z});assert.equal(r.travelFloor('tiered8'),true);r.step(3);assert.equal(r.map,'tiered8');assert.equal(r.seed,402);assert.equal(r.seats[0].pattern,createSeatLayout(402)[0].pattern);assert.deepEqual(r.seats,createSeatLayout(402,null,'tiered8'));assert.deepEqual({x:r.player.x,z:r.player.z},{x:LIFT.x,z:LIFT.z});assert.equal(r.travelFloor('night'),false);}
+ for(const role of ['student','teacher']){const r=createSoloRound({role,seed:402,map:'classroom'});r.start({gathering:true});Object.assign(r.player,{x:LIFT.x,z:LIFT.z});assert.equal(r.travelFloor('tiered8'),true);r.step(r.elevator.remaining);assert.equal(r.map,'tiered8');assert.equal(r.seed,402);assert.equal(r.seats[0].pattern,createSeatLayout(402)[0].pattern);assert.deepEqual(r.seats,createSeatLayout(402,null,'tiered8'));assert.deepEqual({x:r.player.x,z:r.player.z},{x:LIFT.x,z:LIFT.z});assert.equal(r.travelFloor('night'),false);}
  for(const map of CAMPUS_MAPS){const r=new ClassroomRound({map,seed:73});assert.deepEqual(r.seats,createSeatLayout(73,null,map));assert.equal(r.layout.map,mapKind(map));}
 });
 
 test('pre-class exterior boundaries stay closed while class and office door rules remain independent',()=>{
  const r=new ClassroomRound({seed:3});r.start({gathering:true});
- for(const [p,dx,dz]of [[{x:10.7,z:0},3,0],[{x:-6.8,z:0},-3,0],[{x:0,z:-9.6},0,-3],[{x:6,z:OFFICE.maxZ-.4},0,3],[{x:LIFT.x,z:-12.7},0,-3]]){const q=moveInRoom(p,dx,dz,.18,r.layout);assert.equal(blocked(q.x,q.z,.18,r.layout),false);assert.ok(Math.hypot(q.x-p.x,q.z-p.z)<.5);}
+ for(const [p,dx,dz]of [[{x:CORRIDOR.maxX-.3,z:0},3,0],[{x:CLASSROOM.minX+.4,z:0},-3,0],[{x:0,z:-9.6},0,-3],[{x:6,z:OFFICE.maxZ-.4},0,3],[{x:LIFT.x,z:LIFT.minZ+.3},0,-3]]){const q=moveInRoom(p,dx,dz,.18,r.layout);assert.equal(blocked(q.x,q.z,.18,r.layout),false);assert.ok(Math.hypot(q.x-p.x,q.z-p.z)<.5);}
  assert.equal(r.layout.officeLocked,false);r.startBell();assert.equal(r.layout.officeLocked,true);assert.ok(walkRoute(LIFT,{x:6.8,z:7},.18,r.layout).length);assert.deepEqual(walkRoute(LIFT,TEACHER_SPAWN,.18,r.layout),[]);
  assert.equal(floorHeight(BOARD.x,BOARD.z,'tiered'),.16);
+});
+
+
+test('both classroom chalk decals sit above every floor and below the window sill without a backing panel',()=>{
+ const {scene,campus,artwork,dispose}=campusScene();try{
+  for(const [name,key,ratio] of [['classroom-graffiti-snack','graffitiSnack',1],['classroom-graffiti-homework','graffitiHomework',1295/1214]]){
+   const decal=scene.getObjectByName(name);assert.ok(decal);assert.equal(decal.material.map,artwork[key]);assert.equal(decal.material.transparent,true);assert.equal(decal.material.depthWrite,false);assert.equal(decal.children.length,0);
+   assert.ok(Math.abs(decal.geometry.parameters.width/decal.geometry.parameters.height-ratio)<1e-9);
+   const box=new T.Box3().setFromObject(decal),point=decal.getWorldPosition(new T.Vector3());assert.ok(box.min.y>floorHeight(point.x,point.z,'tiered'));assert.ok(box.max.y<1.03,'graffiti intersects window sill');assert.ok(Math.abs(point.x-(CLASSROOM.minX+.015))<1e-6);
+   campus.setMap('tiered');assert.ok(decal.visible);
+  }
+ }finally{dispose();}
 });

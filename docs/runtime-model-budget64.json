@@ -1,0 +1,482 @@
+{
+  "maxTriangles": 8000,
+  "assets": [
+    {
+      "file": "student-boy-v4.glb",
+      "beforeTriangles": 30000,
+      "afterTriangles": 7898,
+      "sourceSha256": "8d7cd598b23f27edb26366679671082205c2cfe21627b99a14701c5a12b07de4",
+      "outputSha256": "5eee11ebfd72229bc6ca1ad70a7116fee11b51328552b5c3b3847b8dcf795907",
+      "unchanged": false,
+      "parts": [
+        {
+          "before": 30000,
+          "after": 7898,
+          "locked": 1970,
+          "handsLocked": 1622,
+          "faceLocked": 348,
+          "vertices": 5150
+        }
+      ]
+    },
+    {
+      "file": "student-girl-v4.glb",
+      "beforeTriangles": 28266,
+      "afterTriangles": 7900,
+      "sourceSha256": "5e3e026d68f9ac67cbb6c51b9136f07a2b76b5d730e6a2ddf75a13bcf9e39ac7",
+      "outputSha256": "3ed20945f0445e72c7b394fa6c4b9920c280dfcaeb55e411633b69d3a3373666",
+      "unchanged": false,
+      "parts": [
+        {
+          "before": 28266,
+          "after": 7900,
+          "locked": 697,
+          "handsLocked": 424,
+          "faceLocked": 273,
+          "vertices": 5977
+        }
+      ]
+    },
+    {
+      "file": "student-glasses-v2.glb",
+      "beforeTriangles": 17792,
+      "afterTriangles": 7900,
+      "sourceSha256": "9ec7ada12a9221b475d11ef83af8ec6d31cd84430a2580a94fbc1279d2926c25",
+      "outputSha256": "7fffad6c864282209970e5844f8eefa63bacb1264f20dbb695cd65a651f7c6bb",
+      "unchanged": false,
+      "parts": [
+        {
+          "before": 17792,
+          "after": 7900,
+          "locked": 1207,
+          "handsLocked": 565,
+          "faceLocked": 642,
+          "vertices": 9612
+        }
+      ]
+    },
+    {
+      "file": "student-ponytail-v1.glb",
+      "beforeTriangles": 19507,
+      "afterTriangles": 7899,
+      "sourceSha256": "0a74f7b7a68474ae4528756cad04ebe6de43d078c6408e990be1dae844125fea",
+      "outputSha256": "e8db216b2e6aeda609b35d19a319dc3a0b614e9bc28eace17ae6e048e3b4e988",
+      "unchanged": false,
+      "parts": [
+        {
+          "before": 19507,
+          "after": 7899,
+          "locked": 494,
+          "handsLocked": 264,
+          "faceLocked": 230,
+          "vertices": 5437
+        }
+      ]
+    },
+    {
+      "file": "teacher-v2.glb",
+      "beforeTriangles": 28466,
+      "afterTriangles": 7898,
+      "sourceSha256": "643c7a44d4fb78d979c058bd27f4939d13dcf763b94355380de71c3dac31bea4",
+      "outputSha256": "13deaab872b19de9cfe31b542100a55f982be91098e71d0c522c679e822f5cb1",
+      "unchanged": false,
+      "parts": [
+        {
+          "before": 28466,
+          "after": 7898,
+          "locked": 361,
+          "handsLocked": 361,
+          "faceLocked": 0,
+          "vertices": 5503
+        }
+      ]
+    },
+    {
+      "file": "hand-left-v3.glb",
+      "beforeTriangles": 6484,
+      "afterTriangles": 6484,
+      "sourceSha256": "d70913be5824daaefa8cb505ff370b032371885bcc7aadf5f773177a7abf2af5",
+      "outputSha256": "d70913be5824daaefa8cb505ff370b032371885bcc7aadf5f773177a7abf2af5",
+      "unchanged": true,
+      "parts": []
+    },
+    {
+      "file": "hand-right-v3.glb",
+      "beforeTriangles": 6436,
+      "afterTriangles": 6436,
+      "sourceSha256": "548f020320ff068effae8fc7f60a1e21a6adbf30033389e222df9a732e47f4a7",
+      "outputSha256": "548f020320ff068effae8fc7f60a1e21a6adbf30033389e222df9a732e47f4a7",
+      "unchanged": true,
+      "parts": []
+    },
+    {
+      "file": "teacher-hand-left-v1.glb",
+      "beforeTriangles": 1714,
+      "afterTriangles": 1714,
+      "sourceSha256": "ea667286102c0d3de64c9bb9fc3b857318f13be6e8d6fc008303a2db6e601091",
+      "outputSha256": "ea667286102c0d3de64c9bb9fc3b857318f13be6e8d6fc008303a2db6e601091",
+      "unchanged": true,
+      "parts": []
+    },
+    {
+      "file": "teacher-hand-right-v1.glb",
+      "beforeTriangles": 1656,
+      "afterTriangles": 1656,
+      "sourceSha256": "f65c7f6e2e81c0d5d772160622c9af7394bc0121ac0e972270e7c25d93beb1c9",
+      "outputSha256": "f65c7f6e2e81c0d5d772160622c9af7394bc0121ac0e972270e7c25d93beb1c9",
+      "unchanged": true,
+      "parts": []
+    },
+    {
+      "file": "snack-v1.glb",
+      "beforeTriangles": 6500,
+      "afterTriangles": 6500,
+      "sourceSha256": "15918acacbaed68b72f65202a09a256d3168815fbc05458f4bab52eb6c57cd13",
+      "outputSha256": "15918acacbaed68b72f65202a09a256d3168815fbc05458f4bab52eb6c57cd13",
+      "unchanged": true,
+      "parts": []
+    },
+    {
+      "file": "drink-v1.glb",
+      "beforeTriangles": 5000,
+      "afterTriangles": 5000,
+      "sourceSha256": "0474b777614d289823225b00e4158bc52b511e71184104b6b5c923d36ac01f30",
+      "outputSha256": "0474b777614d289823225b00e4158bc52b511e71184104b6b5c923d36ac01f30",
+      "unchanged": true,
+      "parts": []
+    },
+    {
+      "file": "burger-v1.glb",
+      "beforeTriangles": 13994,
+      "afterTriangles": 7898,
+      "sourceSha256": "595f16764f2a3a12745a264702caac2c31da588c254a63f2113e4e15fa514232",
+      "outputSha256": "1e94b7d5458d557bfe565b7925d1b1ee3bb8829602fcdbf8c5a108c81f342820",
+      "unchanged": false,
+      "parts": [
+        {
+          "before": 13994,
+          "after": 7898,
+          "locked": 0,
+          "handsLocked": 0,
+          "faceLocked": 0,
+          "vertices": 8532
+        }
+      ]
+    },
+    {
+      "file": "ink-v1.glb",
+      "beforeTriangles": 9000,
+      "afterTriangles": 7900,
+      "sourceSha256": "dc40b8708640d52c8282a45ea8a31c92843b5b5e9c8054d337ed35f75d943f7b",
+      "outputSha256": "16593ea4febf957ff2661b20b548a82e9cf9ebc1183453b46df9bbe557d0af07",
+      "unchanged": false,
+      "parts": [
+        {
+          "before": 9000,
+          "after": 7900,
+          "locked": 0,
+          "handsLocked": 0,
+          "faceLocked": 0,
+          "vertices": 5024
+        }
+      ]
+    },
+    {
+      "file": "banana-v1.glb",
+      "beforeTriangles": 6000,
+      "afterTriangles": 6000,
+      "sourceSha256": "8bf8d544a120d761b7ff76e2e7950f3f9a8b146119fe8ab463a16b4260962ae7",
+      "outputSha256": "8bf8d544a120d761b7ff76e2e7950f3f9a8b146119fe8ab463a16b4260962ae7",
+      "unchanged": true,
+      "parts": []
+    },
+    {
+      "file": "garlic-v1.glb",
+      "beforeTriangles": 3499,
+      "afterTriangles": 3499,
+      "sourceSha256": "11a5ef629fa9a98fb4fa77a20310dc622006d6ab09176d1600bfbe462ee4ab9d",
+      "outputSha256": "11a5ef629fa9a98fb4fa77a20310dc622006d6ab09176d1600bfbe462ee4ab9d",
+      "unchanged": true,
+      "parts": []
+    },
+    {
+      "file": "desk-v2.glb",
+      "beforeTriangles": 14963,
+      "afterTriangles": 7878,
+      "sourceSha256": "3b57c15ec1732268bcb6470ab916dbaee476ef496bcd6af1305fcd2421b366b2",
+      "outputSha256": "f5bcb8d55106575e66fb7b83974e78a3a37326ac9b227f267eacef4c0ec088c3",
+      "unchanged": false,
+      "parts": [
+        {
+          "before": 12688,
+          "after": 6695,
+          "locked": 0,
+          "handsLocked": 0,
+          "faceLocked": 0,
+          "vertices": 4386
+        },
+        {
+          "before": 376,
+          "after": 198,
+          "locked": 0,
+          "handsLocked": 0,
+          "faceLocked": 0,
+          "vertices": 133
+        },
+        {
+          "before": 571,
+          "after": 301,
+          "locked": 0,
+          "handsLocked": 0,
+          "faceLocked": 0,
+          "vertices": 219
+        },
+        {
+          "before": 752,
+          "after": 380,
+          "locked": 0,
+          "handsLocked": 0,
+          "faceLocked": 0,
+          "vertices": 255
+        },
+        {
+          "before": 576,
+          "after": 304,
+          "locked": 0,
+          "handsLocked": 0,
+          "faceLocked": 0,
+          "vertices": 182
+        }
+      ]
+    },
+    {
+      "file": "chair-v2.glb",
+      "beforeTriangles": 9000,
+      "afterTriangles": 7900,
+      "sourceSha256": "a6d7e38b1754f8f5054ec00fce8a8a4042d47c4ec7d17f3b6a89d11b62fb088c",
+      "outputSha256": "012ddc2d2af8663f820f72b56aeda4115170069f15e956ee5b3a0cfe0186f1a9",
+      "unchanged": false,
+      "parts": [
+        {
+          "before": 9000,
+          "after": 7900,
+          "locked": 0,
+          "handsLocked": 0,
+          "faceLocked": 0,
+          "vertices": 5147
+        }
+      ]
+    }
+  ],
+  "proceduralItems": [
+    {
+      "kind": "snack",
+      "beforeTriangles": 4844,
+      "afterTriangles": 4844,
+      "boundsBefore": [
+        0.17210517823696136,
+        0.20900000631809235,
+        0.05599999986588955
+      ],
+      "boundsAfter": [
+        0.17210517823696136,
+        0.20900000631809235,
+        0.05599999986588955
+      ]
+    },
+    {
+      "kind": "drink",
+      "beforeTriangles": 3400,
+      "afterTriangles": 3400,
+      "boundsBefore": [
+        0.08799999952316284,
+        0.1755894124507904,
+        0.09039992839097977
+      ],
+      "boundsAfter": [
+        0.08799999952316284,
+        0.1755894124507904,
+        0.09039992839097977
+      ]
+    },
+    {
+      "kind": "burger",
+      "beforeTriangles": 28060,
+      "afterTriangles": 4588,
+      "boundsBefore": [
+        0.21593855321407318,
+        0.14091693237423897,
+        0.21290890127420425
+      ],
+      "boundsAfter": [
+        0.21593855321407318,
+        0.1409134902060032,
+        0.21290890127420425
+      ]
+    },
+    {
+      "kind": "banana",
+      "beforeTriangles": 2320,
+      "afterTriangles": 2320,
+      "boundsBefore": [
+        0.1233036145567894,
+        0.24496252834796906,
+        0.0547134205698967
+      ],
+      "boundsAfter": [
+        0.1233036145567894,
+        0.24496252834796906,
+        0.0547134205698967
+      ]
+    },
+    {
+      "kind": "garlic",
+      "beforeTriangles": 2000,
+      "afterTriangles": 2000,
+      "boundsBefore": [
+        0.07599999755620956,
+        0.12299999967217445,
+        0.058677803725004196
+      ],
+      "boundsAfter": [
+        0.07599999755620956,
+        0.12299999967217445,
+        0.058677803725004196
+      ]
+    },
+    {
+      "kind": "gum",
+      "beforeTriangles": 4348,
+      "afterTriangles": 4348,
+      "boundsBefore": [
+        0.12815824151039124,
+        0.061000000685453415,
+        0.03199999965727329
+      ],
+      "boundsAfter": [
+        0.12815824151039124,
+        0.061000000685453415,
+        0.03199999965727329
+      ]
+    },
+    {
+      "kind": "lunch",
+      "beforeTriangles": 39356,
+      "afterTriangles": 6756,
+      "boundsBefore": [
+        0.22100000083446503,
+        0.0859999991953373,
+        0.14600000530481339
+      ],
+      "boundsAfter": [
+        0.22100000083446503,
+        0.0859999991953373,
+        0.14600000530481339
+      ]
+    },
+    {
+      "kind": "pen",
+      "beforeTriangles": 1220,
+      "afterTriangles": 1220,
+      "boundsBefore": [
+        0.02240000012330711,
+        0.1690000000782311,
+        0.021800000220537186
+      ],
+      "boundsAfter": [
+        0.02240000012330711,
+        0.1690000000782311,
+        0.021800000220537186
+      ]
+    },
+    {
+      "kind": "phone",
+      "beforeTriangles": 10564,
+      "afterTriangles": 6652,
+      "boundsBefore": [
+        0.12099999934434891,
+        0.21400000154972076,
+        0.02599999960511923
+      ],
+      "boundsAfter": [
+        0.12099999934434891,
+        0.21400000154972076,
+        0.02599999960511923
+      ]
+    },
+    {
+      "kind": "smoke",
+      "beforeTriangles": 1020,
+      "afterTriangles": 1020,
+      "boundsBefore": [
+        0.091253113001585,
+        0.20076217502355576,
+        0.08799999952316284
+      ],
+      "boundsAfter": [
+        0.091253113001585,
+        0.20076217502355576,
+        0.08799999952316284
+      ]
+    },
+    {
+      "kind": "flash",
+      "beforeTriangles": 3696,
+      "afterTriangles": 3696,
+      "boundsBefore": [
+        0.10464246198534966,
+        0.21139999479055405,
+        0.09399999678134918
+      ],
+      "boundsAfter": [
+        0.10464246198534966,
+        0.21139999479055405,
+        0.09399999678134918
+      ]
+    },
+    {
+      "kind": "ink",
+      "beforeTriangles": 3252,
+      "afterTriangles": 3252,
+      "boundsBefore": [
+        0.09399999678134918,
+        0.1574999988079071,
+        0.09750000014901161
+      ],
+      "boundsAfter": [
+        0.09399999678134918,
+        0.1574999988079071,
+        0.09750000014901161
+      ]
+    },
+    {
+      "kind": "bananaPeel",
+      "beforeTriangles": 2736,
+      "afterTriangles": 2736,
+      "boundsBefore": [
+        0.15304645150899887,
+        0.11550400406122208,
+        0.1454482637345791
+      ],
+      "boundsAfter": [
+        0.15304645150899887,
+        0.11550400406122208,
+        0.1454482637345791
+      ]
+    }
+  ],
+  "excludedLegacyCharacters": {
+    "reason": "Not imported by production entry. Classroom boot requires rigged GLB teacher and students; these old builders are only diagnostic references.",
+    "teacherTriangles": 75592,
+    "studentTriangles": 27488
+  },
+  "proceduralFixtures": {
+    "office-openable-lunch-desk": 3142,
+    "office-sittable-chair": 3336,
+    "office-mobile-board": 884,
+    "role-changing-locker": 1868,
+    "teacher-lecture-laptop": 1842,
+    "computer-station": 4686,
+    "computer-drawer": 1008
+  }
+}

@@ -30,7 +30,8 @@ function fixture(saved={},options={}){
     if(spec.includes('classroom-game'))return{createClassroomGame:({onExit})=>{calls.controllers++;game={active:false,setRound(r){this.round=r;},start(options){calls.starts.push(options);this.active=true;doc.body.classList.add('playing');},exit(){this.active=false;doc.body.classList.remove('playing');onExit();},dispose(){this.exit();}};return game;}};
     return{createClassroom:(canvas,options)=>{calls.creates.push(options);return new Promise((resolve,reject)=>pending.push({resolve:()=>resolve(scene),reject}));}};
   };
-  const context={connectCampusRoom:async args=>{calls.connectionOptions=args;calls.connections++;await options.connection;return{snapshot:()=>({map:'classroom'}),leave(){calls.leaves++;}};},defaultCampusEndpoint:()=>options.endpoint??'http://localhost:8931',playCampusFoley:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
+  let randomIndex=0;const math=Object.create(Math);math.random=()=>options.randomValues?.[randomIndex++]??.25;
+  const context={Math:math,setupControlSettings:()=>null,connectCampusRoom:async args=>{calls.connectionOptions=args;calls.connections++;await options.connection;return{snapshot:()=>({map:'classroom'}),leave(){calls.leaves++;}};},defaultCampusEndpoint:()=>options.endpoint??'http://localhost:8931',playCampusFoley:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
   // Substitute only dynamic imports, leaving the production lifecycle and DOM
   // event handlers intact. This is an event-only test, not a browser renderer.
   vm.runInNewContext(source.replace(/^import .*;\n/gm,'').replace(/\bimport\(/g,'loadModule('),context,{filename:'app.js'});
@@ -94,23 +95,18 @@ test('a world finishing after page disposal is disposed without binding a contro
   assert.equal(f.calls.disposed,1);assert.equal(f.calls.controllers,0);assert.equal(f.calls.starts.length,0);
 });
 
-test('all four menu skins are saved and forwarded unchanged to the real scene entry',async()=>{
-  const f=fixture();
+test('menu has no student selection and every new entry gets a random student, stable through rendering',async()=>{
+  assert.doesNotMatch(html,/id="choose-character"|id="character-dialog"|data-character=/);
+  const f=fixture({character:'girl'},{randomValues:[0,.3,.6,.9]});
   for(const variant of ['boy','girl','glasses','ponytail']){
-    f.chooseCharacter(variant);f.click('#confirm-character');
-    assert.equal(f.calls.saved.at(-1).character,variant);
     f.click('#enter-classroom');await flush();
+    assert.equal(f.el('#room-character').textContent,'入场随机');
     if(!f.game){f.pending[0].resolve();await flush();}
-    f.click('#room-enter');await flush();assert.equal(f.calls.characters.at(-1),variant);f.game.exit();
+    f.click('#room-enter');await flush();
+    assert.equal(f.calls.connectionOptions.character,variant);assert.equal(f.calls.characters.at(-1),variant);
+    const count=f.calls.characters.length;f.click('#sound-toggle');assert.equal(f.calls.characters.length,count,'settings rerolled the skin');f.game.exit();
   }
   assert.equal(f.calls.controllers,1);assert.equal(f.calls.creates.length,1);
-});
-
-test('a saved ponytail skin survives reload, while unconfirmed choices do not replace it',async()=>{
-  const f=fixture({character:'ponytail'});f.chooseCharacter('girl');
-  f.click('#enter-classroom');await flush();
-  assert.equal(f.el('#room-character').textContent,'马尾同学');
-  f.pending[0].resolve();await flush();f.click('#room-enter');await flush();assert.equal(f.calls.characters.at(-1),'ponytail');
 });
 
 test('static hosting explains missing room service and offers working solo without any request',async()=>{
