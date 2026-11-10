@@ -44,6 +44,9 @@ function readEvent(data,type,room){
  return message;
 }
 export function defaultCampusEndpoint(){
+ // A deployed site may supply its room backend once for every visitor.
+ const configured=typeof document!=='undefined'?document.querySelector('meta[name="campus-room-server"]')?.content?.trim():'';
+ if(configured){try{const url=new URL(configured);if(['http:','https:'].includes(url.protocol)&&!url.username&&!url.password)return url.href.replace(/\/+$/,'');}catch{}}
  if(typeof location==='undefined')return 'http://127.0.0.1:8931';
  if(location.hostname==='github.io'||location.hostname.endsWith('.github.io'))return '';
  return ['localhost','127.0.0.1'].includes(location.hostname)&&location.port!=='8931'?`${location.protocol}//${location.hostname}:8931`:location.origin;

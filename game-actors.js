@@ -1,11 +1,12 @@
-import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-58';
-import {createHandSupport} from './hand-support55.js?v=campus-58';
+import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-59c';
+import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-59c';
+import {createHandSupport} from './hand-support55.js?v=campus-59c';
 import * as THREE from './vendor/three.module.js';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-58';
-import {clonePropAsset,propContact} from './prop-assets.js?v=campus-58';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-58';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-58';
-export {loadPropAssets} from './prop-assets.js?v=campus-58';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-59c';
+import {clonePropAsset,propContact} from './prop-assets.js?v=campus-59c';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-59c';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-59c';
+export {loadPropAssets} from './prop-assets.js?v=campus-59c';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
 // First-person hands use camera coordinates: the scene is in front at -Z.
@@ -501,7 +502,24 @@ export function createDeskHands({createHand}={}){
   let penWriteBlend=0,penAge=0,bookBlend=0,drawerBlend=0,lowCarry=0,previousHandPositions=null,previousFood=null;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
-  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,bookAmount=0,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43}={}){
+  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,bookAmount=0,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,animationPose=null}={}){
+    const authored=isHandAnimationPose(animationPose)&&!seated&&!carrying&&!holding&&!caught&&!computer&&!typing&&!bookAmount;
+    function applyAuthored(weight){
+      group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
+      for(let i=0;i<2;i++){
+        const pose=animationPose[i?'right':'left'],hand=arms[i].hand,target=v(...pose.position).applyMatrix4(inv),rotation=new THREE.Quaternion().setFromEuler(new THREE.Euler(...pose.rotation,'XYZ'));
+        hand.group.position.lerp(target,weight);hand.group.quaternion.slerp(invQ.clone().multiply(rotation),weight);articulation[i].applyAuthoredFingers(pose,weight);
+      }
+      group.updateMatrixWorld(true);
+    }
+    if(authored&&animationPose.source!=='runtime'){
+      // The editor takes the exact production path but does not run gameplay
+      // clocks or damping. Seeking 0→end→middle is identical to a fresh seek.
+      group.position.set(0,0,0);group.quaternion.identity();for(const prop of Object.values(props))prop.visible=false;
+      applyAuthored(1);previousHandPositions=null;previousFood=null;lastTime=Number.isFinite(time)?time:null;
+      group.userData.authoredAnimation=true;return;
+    }
+    group.userData.authoredAnimation=false;
     articulation.forEach(rig=>rig.restore());
     if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=using=throwCharge=releaseCharge=foodAge=foodAmount=foodPhase=penWriteBlend=penAge=bookBlend=drawerBlend=lowCarry=0,previousHandPositions=null,previousFood=null;wasReleasing=foodWasUsing=false;for(const key of Object.keys(foodPose))foodPose[key]=0;}
     const dt=lastTime===null?1/60:clamp(time-lastTime,0,.08);lastTime=time;
@@ -807,10 +825,11 @@ export function createDeskHands({createHand}={}){
       previousFood={kind:active,position:prop.getWorldPosition(v())};
     }else previousFood=null;
     previousHandPositions=arms.map(arm=>arm.hand.group.position.clone());
+    if(authored&&extension<.001){applyAuthored(clamp(Number(animationPose.weight)||0,0,1));group.userData.authoredAnimation=true;}
   }
   update(0);return{group,update,getHand:side=>arms[side==='left'?0:1].hand,getFocus(){return focus;},getDebug(){
     const camera=group.userData.viewCamera||(group.parent?.isCamera?group.parent:null),prop=props[active];
     const position=prop.getWorldPosition(v(0,0,0));if(camera)position.project(camera);
-    return{palmsOnly:!arms[0].hand.group.userData.shortForearm,idleHandsVisible:extension<.001,focus:Number(focus.toFixed(3)),extension:Number(extension.toFixed(3)),active,visible:prop.visible,propNDC:position.toArray().map(n=>Number(n.toFixed(3))),groupPitch:Number(group.rotation.x.toFixed(3)),foodPhase:Number(foodPhase.toFixed(3)),foodAmount:Number(foodAmount.toFixed(3)),penWriteBlend,penAge,bookBlend,drawerBlend,articulation:articulation.map(rig=>rig.diagnostics())};
+    return{palmsOnly:!arms[0].hand.group.userData.shortForearm,idleHandsVisible:extension<.001,focus:Number(focus.toFixed(3)),extension:Number(extension.toFixed(3)),active,visible:prop.visible,propNDC:position.toArray().map(n=>Number(n.toFixed(3))),groupPitch:Number(group.rotation.x.toFixed(3)),foodPhase:Number(foodPhase.toFixed(3)),foodAmount:Number(foodAmount.toFixed(3)),penWriteBlend,penAge,bookBlend,drawerBlend,authoredAnimation:Boolean(group.userData.authoredAnimation),articulation:articulation.map(rig=>rig.diagnostics())};
   }};
 }

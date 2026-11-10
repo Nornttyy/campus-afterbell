@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {smoothFatigue} from './view-tuning55.js?v=campus-58';
+import {smoothFatigue} from './view-tuning55.js?v=campus-59c';
 
 // Copy the completed world frame, including hands, on the GPU. DOM HUD/text
 // remain sharp. No second world render, screen capture or per-frame image read.

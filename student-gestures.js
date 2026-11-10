@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=campus-58';
-import {STUDY_BOOK_POSE} from './study-book58.js?v=campus-58';
-import {createPenFingerContact} from './pen-motion.js?v=campus-58';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-59c';
+import {STUDY_BOOK_POSE} from './study-book58.js?v=campus-59c';
+import {createPenFingerContact} from './pen-motion.js?v=campus-59c';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const armName=/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/;
 
