@@ -1,5 +1,5 @@
-import {ROOM,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=campus-62';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-62';
+import {ROOM,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=campus-63';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-63';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));

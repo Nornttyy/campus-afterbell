@@ -60,13 +60,12 @@ test('crawl move to idle to move crossfades from the visible pose, and idle cont
  assert.equal(r.sample({...idle,seated:true},1.25),null);r.dispose();
 });
 
-test('without an authored crawl idle the current published release and older local files retain procedural prone rest',()=>{
- for(const oldLocal of [false,true]){
-  const s=memory();if(oldLocal){const old=createHandAnimationDocument();delete old.clips['student-crawl-idle'];saveHandAnimations(old,s);}
-  const r=createHandAnimationRuntime({storage:s,eventTarget:null,fallbackDocument:PUBLISHED_HAND_ANIMATIONS});
-  assert.equal(settle(r,{crouched:true,movement:0}),null);r.dispose();
- }
- assert.deepEqual(Object.keys(PUBLISHED_HAND_ANIMATIONS.clips),['student-idle']);
+test('older local files retain procedural prone rest instead of silently merging published crawl idle',()=>{
+ const s=memory(),old=createHandAnimationDocument();delete old.clips['student-crawl-idle'];saveHandAnimations(old,s);
+ const r=createHandAnimationRuntime({storage:s,eventTarget:null,fallbackDocument:PUBLISHED_HAND_ANIMATIONS});
+ assert.equal(settle(r,{crouched:true,movement:0}),null);r.dispose();
+ const fresh=createHandAnimationRuntime({storage:memory(),eventTarget:null,fallbackDocument:PUBLISHED_HAND_ANIMATIONS});
+ assert.equal(settle(fresh,{crouched:true,movement:0}).clipId,'student-crawl-idle');fresh.dispose();
 });
 
 test('editor exposes both crawl states, shares the low viewpoint and stays paused without changing draft keys',async()=>{

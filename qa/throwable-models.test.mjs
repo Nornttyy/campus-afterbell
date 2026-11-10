@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskItem,createDeskHands,THROWABLE_ITEM_KINDS} from '../dist/game-actors.js?v=campus-62';
+import {createDeskItem,createDeskHands,THROWABLE_ITEM_KINDS} from '../dist/game-actors.js?v=campus-63';
 import {createRiggedPalm,createRiggedStudent} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
