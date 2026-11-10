@@ -1,10 +1,10 @@
-import {teacherViewHeight} from './camera-height58.js?v=campus-63';
-import {clearWallSegment,floorHeight,TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-63';
+import {teacherViewHeight} from './camera-height58.js?v=campus-64';
+import {clearWallSegment,floorHeight,CLASSROOM} from './classroom-layout.js?v=campus-64';
 
 export const SURVEILLANCE_RULES=Object.freeze({unlockElapsed:120,cooldown:115,limit:2});
 export const SURVEILLANCE_MOUNTS=Object.freeze([
- Object.freeze({id:'front',x:-6.85,y:3.18,z:8.58,target:Object.freeze({x:.5,y:1.3,z:-4.5})}),
- Object.freeze({id:'back',x:6.85,y:3.18,z:-9.78,target:Object.freeze({x:-.5,y:1.3,z:3})})
+ Object.freeze({id:'front',x:CLASSROOM.minX+.35,y:3.18,z:CLASSROOM.maxZ-.22,target:Object.freeze({x:.5,y:1.3,z:-4.5})}),
+ Object.freeze({id:'back',x:CLASSROOM.maxX-.35,y:3.18,z:CLASSROOM.minZ+.22,target:Object.freeze({x:-.5,y:1.3,z:3})})
 ]);
 export function createSurveillance(){return{devices:[],nextDeployAt:0,viewing:null};}
 export function surveillanceSnapshot(round,teacher=round.player?.id===-1){

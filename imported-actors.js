@@ -1,23 +1,27 @@
-import {createCapturePose} from './capture-poses.js?v=campus-63';
+import {createFacialEffects} from './facial-effects64.js?v=campus-64';
+import {requireModelBudget} from './model-budget64.js';
+import {createCapturePose} from './capture-poses.js?v=campus-64';
 import * as THREE from './vendor/three.module.js';
-import {normalWalkCycleRate} from './movement55.js?v=campus-63';
-import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-63';
+import {normalWalkCycleRate} from './movement55.js?v=campus-64';
+import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-64';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-63';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-63';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-63';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-63';
+import {createCrawlPose} from './crawl-pose.js?v=campus-64';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-64';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-64';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-64';
 
 export async function loadTeacherModel(){
-  const url=new URL('./assets/models/teacher-v2.glb?v=arms-49b',import.meta.url);
+  const url=new URL('./assets/models/teacher-v2.glb?v=mesh-64',import.meta.url);
   const source=await new GLTFLoader().loadAsync(url.href);
+  requireModelBudget(source,'teacher-v2');
   const create=()=>createRiggedTeacher({...source,scene:cloneSkin(source.scene)});
   const actor=create();actor.createClone=create;return actor;
 }
 
 export async function loadDeskModel(){
   const loader=new GLTFLoader();
-  const [gltf,chairAsset]=await Promise.all(['desk-v2','chair-v2'].map(name=>loader.loadAsync(new URL(`./assets/models/${name}.glb?v=mouth-36`,import.meta.url).href)));
+  const [gltf,chairAsset]=await Promise.all(['desk-v2','chair-v2'].map(name=>loader.loadAsync(new URL(`./assets/models/${name}.glb?v=mesh-64`,import.meta.url).href)));
+  requireModelBudget(gltf,'desk-v2');requireModelBudget(chairAsset,'chair-v2');
   const body=gltf.scene.getObjectByName('DeskBody'),drawer=gltf.scene.getObjectByName('DeskDrawer');
   const chair=chairAsset.scene.getObjectByName('ChairBody');
   if(!body||!drawer||!chair)throw new Error('Furniture must have separate body, drawer and chair');
@@ -49,6 +53,7 @@ export function createRiggedTeacher(gltf){
   group.userData.asset=metric?'teacher-v2':'teacher-v1';group.userData.fingersPerHand=4;
   model.traverse(o=>{if(o.isMesh){o.castShadow=true;if(o.isSkinnedMesh)o.frustumCulled=false;}});
   useCharacterBaseColor(model);
+  const faceEffects=createFacialEffects(model,{variant:'teacher'});
   const bones={};model.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig[:_]?/,'')]=o;});
   for(const name of ['Head','LeftHand','RightHand'])if(!bones[name])throw new Error(`Teacher rig missing ${name}`);
   const mixer=new THREE.AnimationMixer(model),actions={};
@@ -149,7 +154,7 @@ export function createRiggedTeacher(gltf){
     }
     group.updateMatrixWorld(true);
   }
-  function update(time,{walking=0,speed=null,look=0,lookYaw=null,lookPitch=0,phase='board',crawling=false,seated=false}={}){
+  function update(time,{inkLeft=0,walking=0,speed=null,look=0,lookYaw=null,lookPitch=0,phase='board',crawling=false,seated=false}={}){
     const reset=lastTime===null||time<lastTime;
     // Match the game's 250 ms foreground bound; dropping time here alone
     // makes the teacher move farther than its feet animate on slow frames.
@@ -193,11 +198,12 @@ export function createRiggedTeacher(gltf){
       const save=bone=>{if(!groundPose.has(bone))groundPose.set(bone,bone.quaternion.clone());};
       for(const [side,sign]of [['Left',1],['Right',-1]]){const foot=bones[side+'Foot'],base=support[side];if(!base)continue;const goal=group.worldToLocal(foot.getWorldPosition(new THREE.Vector3()));goal.y=Math.max(goal.y,base.height);chairLimb(bones[side+'UpLeg'],bones[side+'Leg'],foot,group.localToWorld(goal),group.localToWorld(new THREE.Vector3(sign*.28,.42,.58)),save);foot.quaternion.copy(foot.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(base.rotation));group.updateMatrixWorld(true);}
     }
+    faceEffects.update({stunned:phase==='stunned',inkLeft},dt,reset);
     chalk.visible=phase!=='stunned'&&!crawling&&weights.Write>.35;
     syncAnchors();
   }
   update(0,{phase:'watching'});
   return{group,bones,update,getHand:side=>anchors[side],castChalk:progress=>{gesture.cast=THREE.MathUtils.clamp(Number(progress)||0,0,1);},gripNeck,setGesture:value=>{gesture={card:false,cast:0,...value};},
-    dispose(){mixer.stopAllAction();mixer.uncacheRoot(model);},
-    diagnostics:()=>({asset:group.userData.asset,clips:Object.keys(actions),weights:{...weights},height:2.08,animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),headLook:{yaw:lookValue,pitch:lookPitchValue},seatedWeight:seatWeight,capture:capturePose.state(),crawl:crawlPose.state()})};
+    dispose(){faceEffects.dispose();mixer.stopAllAction();mixer.uncacheRoot(model);},
+    diagnostics:()=>({asset:group.userData.asset,clips:Object.keys(actions),weights:{...weights},height:2.08,face:faceEffects.diagnostics(),animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),headLook:{yaw:lookValue,pitch:lookPitchValue},seatedWeight:seatWeight,capture:capturePose.state(),crawl:crawlPose.state()})};
 }

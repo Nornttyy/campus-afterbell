@@ -21,7 +21,7 @@ export function normalWalkCycleRate(role,speed,sourceSpeed){
  const slowGamePace=role==='teacher'?Math.min(normal*BACKWARD_SPEED_RATIO,NORMAL_WALK_SPEEDS.teacherCarrying):normal*BACKWARD_SPEED_RATIO;
  const transitionEnd=Math.max(authoredSpeed+.1,slowGamePace);
  const phase=Math.max(0,Math.min(1,(travelSpeed-authoredSpeed)/(transitionEnd-authoredSpeed)));
- const blend=phase*phase*(3-2*phase),gameRate=.70*pace/authoredSpeed;
+ const blend=phase*phase*(3-2*phase),gameRate=.645*pace/authoredSpeed;
  return 1+(gameRate-1)*blend;
 }
 export function isBackward(actor,dx,dz){

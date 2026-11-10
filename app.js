@@ -1,15 +1,16 @@
-import {playCampusFoley} from './foley-audio54.js?v=campus-63';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-63';
+import {setupControlSettings} from './control-settings64.js?v=campus-64';
+import {playCampusFoley} from './foley-audio54.js?v=campus-64';
+import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-64';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
 const characterNames={boy:'男同学',girl:'女同学',glasses:'眼镜同学',ponytail:'马尾同学'};
-const defaults = { sfx:55, muted:false, quality:'high', motion:!matchMedia('(prefers-reduced-motion: reduce)').matches, character:'boy',soundCues:true };
+const defaults = { sfx:55, muted:false, quality:'high', motion:!matchMedia('(prefers-reduced-motion: reduce)').matches, soundCues:true };
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch {}
 const volume = (value, fallback) => Number.isFinite(+value) ? Math.min(100,Math.max(0,+value)) : fallback;
-const settings = { ...defaults,soundCues:saved.soundCues!==false, sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:saved.quality==='low'?'low':'high', motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion, character:Object.hasOwn(characterNames,saved.character)?saved.character:'boy' };
-let scene, game, sceneReady=false, worldPromise=null, disposed=false, openingButton=null, draftCharacter=settings.character,entryMode='online',entryRequest=0,roomConnecting=null;
+const settings = { ...defaults,soundCues:saved.soundCues!==false, sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:saved.quality==='low'?'low':'high', motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion };
+let scene, game, sceneReady=false, worldPromise=null, disposed=false, openingButton=null, entryCharacter='boy',entryMode='online',entryRequest=0,roomConnecting=null;
 let roundOptions={duration:Number.isInteger(saved.duration)&&saved.duration>=300&&saved.duration<=1200?saved.duration:600,target:Number.isInteger(saved.target)&&saved.target>=30&&saved.target<=120?saved.target:120,role:'student',map:'classroom'};
 Object.assign(settings,{duration:roundOptions.duration,target:roundOptions.target});
 function syncRoundOptions(){
@@ -47,63 +48,19 @@ function applySettings(){
   $$('[data-quality]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.quality===settings.quality)));
   document.body.classList.toggle('reduce-motion',!settings.motion);scene?.setQuality(settings.quality);scene?.setMotion(settings.motion);scene?.setSoundCues?.(settings.soundCues);$('#sound-cues-toggle').checked=settings.soundCues;syncSound();
 }
-let characterPreview=null,characterPreviewPromise=null;
-function renderCharacter(){
-  $$('[data-character]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.character===draftCharacter)));
-  characterPreview?.select(draftCharacter);
-}
-function ensureCharacterPreview(){
-  if(characterPreview){characterPreview.select(draftCharacter);characterPreview.start();return Promise.resolve(characterPreview);}
-  if(characterPreviewPromise)return characterPreviewPromise;
-  const canvas=$('#character-preview'),status=$('#character-preview-status');
-  status.hidden=false;status.textContent='正在加载同学…';
-  characterPreviewPromise=(async()=>{
-    let renderer=null,observer=null;
-    try{
-      const [T,{loadStudentAssets}]=await Promise.all([import('./vendor/three.module.js'),import('./student-assets.js?v=campus-63')]);
-      const assets=await loadStudentAssets();if(disposed)return null;
-      renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
-      renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.08;
-      const world=new T.Scene();world.background=new T.Color('#e8eff0');
-      world.add(new T.HemisphereLight('#edf5ff','#dce3e3',2.5));
-      const sun=new T.DirectionalLight('#fff8ed',4);sun.position.set(-4,6,4);world.add(sun);
-      const fill=new T.DirectionalLight('#e5eef4',.85);fill.position.set(4,3,3);world.add(fill);
-      const camera=new T.PerspectiveCamera(31,1,.01,30);camera.position.set(0,1.04,4.3);camera.lookAt(0,.96,0);
-      const actors=new Map();let selected=null,frame=null,last=0,time=0,drag=null,yaw=0;
-      function select(variant){
-        if(!Object.hasOwn(characterNames,variant))variant='boy';
-        if(!actors.has(variant)){const actor=assets.createStudent({variant,seated:false,seed:0});actor.setMood('resting');actor.setMotion({seated:false,speed:0});actor.update(0);actors.set(variant,actor);world.add(actor.group);}
-        for(const [key,actor]of actors)actor.group.visible=key===variant;
-        selected=actors.get(variant);selected.group.rotation.y=yaw;
-        canvas.dataset.character=variant;canvas.dataset.asset=selected.group.userData.asset||variant;canvas.setAttribute('aria-label',characterNames[variant]+'模型预览');
-      }
-      function resize(){const {width,height}=canvas.getBoundingClientRect();if(width>0&&height>0){renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();}}
-      function tick(now){frame=null;if(disposed||!$('#character-dialog').open)return;const dt=last?Math.min((now-last)/1000,.05):0;last=now;if(settings.motion)time+=dt;selected?.update(time);renderer.render(world,camera);frame=requestAnimationFrame(tick);}
-      function start(){resize();last=0;if(frame===null&&$('#character-dialog').open)frame=requestAnimationFrame(tick);}
-      function stop(){if(frame!==null)cancelAnimationFrame(frame);frame=null;last=0;drag=null;}
-      const down=e=>{drag={id:e.pointerId,x:e.clientX,yaw};canvas.setPointerCapture?.(e.pointerId);};
-      const move=e=>{if(!drag||drag.id!==e.pointerId)return;yaw=drag.yaw+(e.clientX-drag.x)*.012;if(selected)selected.group.rotation.y=yaw;};
-      const up=()=>{drag=null;};canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
-      observer=new ResizeObserver(resize);observer.observe(canvas);
-      characterPreview={select,start,stop,dispose(){stop();observer.disconnect();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);for(const actor of actors.values())actor.dispose?.();renderer.dispose();}};
-      select(draftCharacter);status.hidden=true;start();return characterPreview;
-    }catch(error){observer?.disconnect();renderer?.dispose();characterPreviewPromise=null;if(!disposed){status.hidden=false;status.textContent='模型加载失败，重新打开重试';console.error('Character preview unavailable:',error);}return null;}
-  })();return characterPreviewPromise;
-}
+function randomStudent(){const names=Object.keys(characterNames);return names[Math.floor(Math.random()*names.length)];}
+const controlSettings=setupControlSettings();
 function openSheet(id,button){
   if(game?.active)return;for(const open of $$('dialog[open]'))open.close();openingButton=button;const dialog=$(id);
-  if(id==='#character-dialog'){draftCharacter=settings.character;renderCharacter();}
-  dialog.showModal();if(id==='#character-dialog')ensureCharacterPreview();audio.click('open');
+  dialog.showModal();audio.click('open');
 }
-for(const [button,id] of [['#choose-character','#character-dialog'],['#open-settings','#settings-dialog']])$(button).addEventListener('click',()=>openSheet(id,$(button)));
-for(const dialog of $$('#character-dialog, #settings-dialog, #room-dialog')){
+for(const [button,id] of [['#open-settings','#settings-dialog']])$(button).addEventListener('click',()=>openSheet(id,$(button)));
+for(const dialog of $$('#settings-dialog, #room-dialog')){
   dialog.querySelectorAll('.close').forEach(button=>button.addEventListener('click',()=>{audio.click('back');dialog.close();}));
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
-  dialog.addEventListener('close',()=>{if(dialog.id==='character-dialog')characterPreview?.stop();if(!game?.active)openingButton?.focus({preventScroll:true});});
+  dialog.addEventListener('close',()=>{if(!game?.active)openingButton?.focus({preventScroll:true});});
 }
 syncRoundOptions();
-$$('[data-character]').forEach(button=>button.addEventListener('click',()=>{draftCharacter=button.dataset.character;renderCharacter();}));
-$('#confirm-character').addEventListener('click',()=>{settings.character=draftCharacter;persist();$('#character-dialog').close();});
 $$('[data-quality]').forEach(button=>button.addEventListener('click',()=>{settings.quality=button.dataset.quality;applySettings();persist();}));
 for(const type of ['sfx'])$('#'+type+'-volume').addEventListener('input',e=>{settings[type]=Number(e.target.value);$('#'+type+'-output').textContent=settings[type]+'%';audio.apply();persist();});
 $('#sound-cues-toggle').addEventListener('change',e=>{settings.soundCues=e.target.checked;applySettings();persist();});
@@ -120,7 +77,7 @@ document.addEventListener('fullscreenchange',()=>{$('#fullscreen').setAttribute(
 function prepareEntry(mode,button){
   if(disposed||game?.active)return;
   entryMode=mode;entryRequest++;
-  syncRoundOptions();syncRoomCreation();$('#room-character').textContent=characterNames[settings.character];
+  syncRoundOptions();syncRoomCreation();$('#room-character').textContent='入场随机';
   $('.room-connect').hidden=mode==='solo';$('#room-title').textContent=mode==='solo'?'单人游戏':'多人教室';
   $('#room-error').hidden=true;$('#room-solo').hidden=mode==='solo';syncServerNotice();
   $('#room-enter').textContent=sceneReady?(mode==='solo'?'进入教室':'创建 / 加入房间'):'准备中…';
@@ -137,7 +94,7 @@ async function startSolo(){
   await ensureWorld();
   if(disposed||request!==entryRequest||entryMode!=='solo'||!$('#room-dialog').open||!sceneReady||!game)return;
   game.setRound(null);$('#room-dialog').close();$('#classroom').hidden=false;
-  scene.setMap(roundOptions.map);scene.setCharacter(settings.character);scene.setActive(true);game.start({...roundOptions,solo:true});
+  entryCharacter=randomStudent();scene.setMap(roundOptions.map);scene.setCharacter(entryCharacter);scene.setActive(true);game.start({...roundOptions,character:entryCharacter,solo:true});
 }
 $('#enter-classroom').addEventListener('click',startGame);
 $('#enter-solo').addEventListener('click',startSolo);
@@ -173,9 +130,10 @@ $('#room-enter').addEventListener('click',async()=>{
   if(!$('#room-code').value.trim())commitRoomSettings();
   const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;roomConnecting=request;button.disabled=true;button.textContent='连接中…';error.hidden=true;
   try{
-    const online=await connectCampusRoom({endpoint,code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:settings.character,rolePreference:roundOptions.role,map:roundOptions.map,settings:{duration:roundOptions.duration,target:roundOptions.target},onError:e=>toast(typeof e==='string'?e:e.message)});
+    entryCharacter=randomStudent();
+    const online=await connectCampusRoom({endpoint,code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,settings:{duration:roundOptions.duration,target:roundOptions.target},onError:e=>toast(typeof e==='string'?e:e.message)});
     if(disposed||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
-    scene.setMap(online.snapshot().map);scene.setCharacter(settings.character);scene.setActive(true);game.start({...roundOptions});
+    scene.setMap(online.snapshot().map);scene.setCharacter(online.player?.character||entryCharacter);scene.setActive(true);game.start({...roundOptions});
   }catch(e){if(request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接不到服务器，请确认服务器已启动。':e.message;}}
   finally{if(roomConnecting===request)roomConnecting=null;if(request===entryRequest&&entryMode==='online')syncServerNotice();}
 });
@@ -199,7 +157,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-63'),import('./classroom-game.js?v=campus-63')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-64'),import('./classroom-game.js?v=campus-64')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}
@@ -218,4 +176,4 @@ function ensureWorld(){
   return worldPromise;
 }
 document.body.classList.add('menu-ready');
-window.addEventListener('pagehide',e=>{if(!e.persisted){disposed=true;characterPreview?.dispose();game?.dispose();scene?.dispose();audio.dispose();}});
+window.addEventListener('pagehide',e=>{if(!e.persisted){disposed=true;controlSettings?.dispose();game?.dispose();scene?.dispose();audio.dispose();}});

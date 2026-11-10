@@ -11,7 +11,9 @@ export function visionEffectState(snapshot){
   const strength=Number.isFinite(p.flashStrength)?clamp(p.flashStrength):1;
   const bubbleLeft=Number.isFinite(p.bubbleLeft)?Math.max(0,p.bubbleLeft):0,bubbleSize=Number.isFinite(p.bubbleSize)?clamp(p.bubbleSize):0;
   return{
-    flashAlpha:flashLeft>0&&strength>0?1:0,
+    // Impact stays fully white, then smoothly reveals the scene. The timer is
+    // still authoritative, so pausing cannot advance the recovery locally.
+    flashAlpha:flashLeft>0&&strength>0?smooth(flashLeft/Math.min(1.35,flashDuration*.4)):0,
     inkAlpha:inkLeft>0?smooth(inkLeft/Math.min(2,inkDuration)):0,
     inkAge:inkLeft>0?Math.max(0,inkDuration-inkLeft):0,
     gumAlpha:bubbleLeft>0?smooth(bubbleLeft/1.2):0,
@@ -37,15 +39,16 @@ function closeCurve(c,points){
   points.forEach((p,i)=>{const next=points[(i+1)%points.length];c.quadraticCurveTo(p[0],p[1],(p[0]+next[0])/2,(p[1]+next[1])/2);});c.closePath();
 }
 function inInkSpace(c,w,h){c.translate(w*.50,h*.45);c.scale(w*.36,h*.33);}
-function paintInk(c,w,h){
+function paintInk(c,w,h,kind='ink'){
   c.clearRect(0,0,w,h);c.save();inInkSpace(c,w,h);
   // The silhouette and satellite drops are authored once, not random particles
   // regenerated each frame. The outer 10%+ of the screen remains unobscured.
   const wet=c.createRadialGradient(-.22,-.28,.04,0,0,1.08);
-  wet.addColorStop(0,'#172027');wet.addColorStop(.36,'#05080b');wet.addColorStop(.82,'#020405');wet.addColorStop(1,'#11191e');
+  const palette=kind==='pink'?['#ffc3de','#ef8ab7','#dc6fa4','#f6a5cc']:kind==='orange'?['#ffda98','#f2a543','#dc8324','#f9c178']:['#172027','#05080b','#020405','#11191e'];
+  [0,.36,.82,1].forEach((stop,i)=>wet.addColorStop(stop,palette[i]));
   c.fillStyle=wet;closeCurve(c,CONTOUR);c.fill();
-  c.strokeStyle='rgba(59,76,86,.52)';c.lineWidth=.009;c.stroke();
-  c.fillStyle='#060a0d';
+  c.strokeStyle=kind==='ink'?'rgba(59,76,86,.52)':'rgba(255,232,242,.65)';c.lineWidth=.009;c.stroke();
+  c.fillStyle=palette[1];
   // Broad, connected tongues give the impact a direction rather than a star.
   for(const [x,y,sx,sy,rotation]of SPLASHES){c.beginPath();c.ellipse(x,y,sx,sy,rotation,0,Math.PI*2);c.fill();}
   c.beginPath();c.moveTo(-.56,-.38);c.bezierCurveTo(-.73,-.42,-.89,-.65,-.99,-.71);c.bezierCurveTo(-.86,-.70,-.67,-.54,-.50,-.53);c.closePath();c.fill();
@@ -70,31 +73,20 @@ function paintDrips(c,w,h,age){
   c.restore();
 }
 
-function paintGum(c,w,h,size,alpha,kind='pink'){
-  c.save();c.globalAlpha=alpha;c.translate(w*.5,h*.48);
-  const radius=Math.min(w,h)*.63;c.scale(radius*1.18,radius);
-  const body=c.createRadialGradient(-.28,-.35,.06,0,0,1.12);
-  const colours=kind==='orange'?['rgba(255,221,141,.88)','rgba(255,173,64,.96)','rgba(241,139,35,.99)','rgba(255,211,123,.84)']:['rgba(255,201,227,.88)','rgba(246,140,190,.96)','rgba(235,110,171,.99)','rgba(255,183,216,.84)'];[0,.48,.82,1].forEach((stop,i)=>body.addColorStop(stop,colours[i]));
-  c.fillStyle=body;c.beginPath();c.ellipse(0,0,1,1,0,0,Math.PI*2);c.fill();
-  c.strokeStyle='rgba(255,218,238,.95)';c.lineWidth=.018;c.stroke();
-  c.fillStyle='rgba(255,244,251,.7)';c.beginPath();c.ellipse(-.36,-.48,.14,.26,-.6,0,Math.PI*2);c.fill();
-  c.fillStyle='rgba(255,238,248,.5)';c.beginPath();c.ellipse(-.55,-.12,.045,.08,-.2,0,Math.PI*2);c.fill();c.restore();
-}
-
 export function createVisionEffects(host){
   const doc=host.ownerDocument||document,win=doc.defaultView||globalThis.window;
-  const canvas=doc.createElement('canvas'),ink=doc.createElement('canvas'),c=canvas.getContext('2d'),inkContext=ink.getContext('2d');
+  const canvas=doc.createElement('canvas'),ink=doc.createElement('canvas'),gum=doc.createElement('canvas'),c=canvas.getContext('2d'),inkContext=ink.getContext('2d'),gumContext=gum.getContext('2d');
   canvas.className='vision-effects';canvas.setAttribute('aria-hidden','true');canvas.tabIndex=-1;canvas.hidden=true;
   Object.assign(canvas.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none',userSelect:'none',zIndex:'7'});
   host.appendChild(canvas);
-  let alive=true,width=0,height=0,ratio=1,lastKey='',state=visionEffectState(null);
+  let alive=true,width=0,height=0,ratio=1,lastKey='',lastGumKind='',state=visionEffectState(null);
   function resize(){
     if(!alive||!c||!inkContext)return false;
     const rect=host.getBoundingClientRect(),w=Math.max(1,Math.round(rect.width)),h=Math.max(1,Math.round(rect.height));
     const r=Math.min(1.5,positive(win?.devicePixelRatio,1),1600/Math.max(w,h));
     if(w===width&&h===height&&r===ratio)return false;
-    width=w;height=h;ratio=r;canvas.width=ink.width=Math.max(1,Math.round(w*r));canvas.height=ink.height=Math.max(1,Math.round(h*r));
-    c.setTransform(r,0,0,r,0,0);inkContext.setTransform(r,0,0,r,0,0);paintInk(inkContext,w,h);lastKey='';return true;
+    width=w;height=h;ratio=r;canvas.width=ink.width=gum.width=Math.max(1,Math.round(w*r));canvas.height=ink.height=gum.height=Math.max(1,Math.round(h*r));
+    c.setTransform(r,0,0,r,0,0);inkContext.setTransform(r,0,0,r,0,0);paintInk(inkContext,w,h);gumContext.setTransform(r,0,0,r,0,0);lastGumKind='';lastKey='';return true;
   }
   function draw(){
     if(!alive||!c||!inkContext)return;
@@ -106,7 +98,7 @@ export function createVisionEffects(host){
     canvas.style.zIndex=state.flashAlpha>0?'2147483646':'7';
     if(canvas.hidden)return;
     if(state.inkAlpha>0){c.globalAlpha=state.inkAlpha;c.drawImage(ink,0,0,width,height);paintDrips(c,width,height,dripAge);}
-    if(state.gumAlpha>0){paintGum(c,width,height,state.gumSize,state.gumAlpha,state.gumKind);}
+    if(state.gumAlpha>0){if(lastGumKind!==state.gumKind){paintInk(gumContext,width,height,state.gumKind);lastGumKind=state.gumKind;}c.globalAlpha=state.gumAlpha;c.drawImage(gum,0,0,width,height);}
     if(state.flashAlpha>0){c.globalAlpha=state.flashAlpha;c.fillStyle='#ffffff';c.fillRect(0,0,width,height);}
     c.globalAlpha=1;
   }
@@ -116,6 +108,6 @@ export function createVisionEffects(host){
   resize();
   return{
     update(snapshot){if(!alive)return;state=visionEffectState(snapshot);resize();draw();},
-    dispose(){if(!alive)return;alive=false;observer?.disconnect();if(!observer)win?.removeEventListener('resize',onResize);canvas.remove();canvas.width=canvas.height=ink.width=ink.height=1;},
+    dispose(){if(!alive)return;alive=false;observer?.disconnect();if(!observer)win?.removeEventListener('resize',onResize);canvas.remove();canvas.width=canvas.height=ink.width=ink.height=gum.width=gum.height=1;},
   };
 }

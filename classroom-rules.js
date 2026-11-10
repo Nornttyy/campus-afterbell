@@ -1,14 +1,14 @@
-import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-63';
-import {ordinaryStudyState} from './npc-study58.js?v=campus-63';
-import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-63';
-import {reachesRearDoor,rearDoorSweepBlocked} from './door-interaction54.js?v=campus-63';
-import {ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-63';
-import {validRoundSettings} from './round-settings55.js?v=campus-63';
-import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-63';
-import {smokeEnvelope} from './smoke-physics.js?v=campus-63';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-63';
-import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-63';
-import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, CAMPUS_MAPS, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight } from './classroom-layout.js?v=campus-63';
+import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-64';
+import {ordinaryStudyState} from './npc-study58.js?v=campus-64';
+import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-64';
+import {reachesRearDoor,rearDoorSweepBlocked} from './door-interaction54.js?v=campus-64';
+import {ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-64';
+import {validRoundSettings} from './round-settings55.js?v=campus-64';
+import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-64';
+import {smokeEnvelope} from './smoke-physics.js?v=campus-64';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-64';
+import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-64';
+import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, CAMPUS_MAPS, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight } from './classroom-layout.js?v=campus-64';
 
 /** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:NORMAL_WALK_SPEEDS.student, teacherWalkSpeed:NORMAL_WALK_SPEEDS.teacher, crouchSpeed:CRAWL_TUNING.speed, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
@@ -167,7 +167,7 @@ export class ClassroomRound{
     const p=this.player;Object.assign(p,{x:8.60,z:3.50,yaw:Math.atan2(START_BELL.x-8.60,START_BELL.z-3.50),pitch:0,seated:false,seatId:null,crouched:false,holding:false,_drawerOpen:false,_drawnSlot:null,visible:true});
     // Hidden queue positions avoid putting twenty-nine meshes inside one another.
     // On the bell, the longest journeys depart first at normal walking pace.
-    for(const actor of this.students)if(!actor.isPlayer&&!actor.networkHuman)Object.assign(actor,{x:LIFT.x,z:LIFT.z,yaw:0,seated:false,seatId:null,holding:false,mood:'standing',_drawerOpen:false,_drawnSlot:null,visible:false});
+    for(const actor of this.students)if(!actor.isPlayer&&!actor.networkHuman)Object.assign(actor,{x:STUDENT_ENTRY.x,z:STUDENT_ENTRY.z,yaw:0,seated:false,seatId:null,holding:false,mood:'standing',_drawerOpen:false,_drawnSlot:null,visible:false});
     Object.assign(this.teacher,TEACHER_SPAWN,{phase:'watching',intent:'wait'});
     updateLayoutDoors(this.layout,{officeLocked:false,rearDoorClosed:false});
     this._events.push({type:'stage-changed',stage:this.stage});

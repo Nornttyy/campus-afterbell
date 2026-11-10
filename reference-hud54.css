@@ -56,3 +56,19 @@
 #room-settings{margin:12px 0 20px;padding:12px 14px;border:1px solid #b7b5a1;border-radius:6px;gap:12px;font-size:16px}#room-settings[hidden]{display:none}#room-settings legend{padding:0 6px}#room-settings input{width:68px;min-height:36px}
 
 #locker-dialog{width:min(520px,90vw);padding:20px}#locker-dialog .locker-choices{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}#locker-dialog .locker-choices button{display:grid;grid-template-rows:230px auto;gap:7px;padding:8px 8px 14px;background:#fff9e9;border:2px solid #635b4d;border-radius:5px;font-size:22px;font-weight:850}#locker-dialog .locker-choices button[aria-pressed=true]{border-color:#d98a24;box-shadow:0 0 0 2px #efb95e}#locker-dialog img{width:100%;height:230px;object-fit:contain;pointer-events:none}#session-settings .round-values{margin:24px 0;display:grid;gap:20px}#session-settings .round-values input{pointer-events:auto}#session-settings-open[hidden]{display:none}#session-settings-close{width:100%;margin-top:12px}@media(max-height:520px){#locker-dialog .locker-choices button{grid-template-rows:150px auto}#locker-dialog img{height:150px}}
+
+/* Thumb-sized controls keep their own touch capture while the right side aims. */
+#touch-controls{--touch-size:74px;--touch-gap:14px;--touch-edge:22px;--touch-bottom:24px}
+#session-ui #touch-look{left:34%;top:82px;bottom:0;right:0;z-index:0}
+#session-ui #touch-stick{left:calc(env(safe-area-inset-left,0px) + var(--touch-edge));bottom:calc(env(safe-area-inset-bottom,0px) + var(--touch-bottom));width:calc(var(--touch-size)*1.65);height:calc(var(--touch-size)*1.65);z-index:2}
+#session-ui .touch-actions{right:calc(env(safe-area-inset-right,0px) + var(--touch-edge));bottom:calc(env(safe-area-inset-bottom,0px) + var(--touch-bottom));grid-template-columns:repeat(2,var(--touch-size));gap:var(--touch-gap);z-index:2}
+#session-ui .touch-actions button{width:var(--touch-size);height:var(--touch-size);font-size:18px;touch-action:none;user-select:none;-webkit-user-select:none}
+#session-ui .touch-actions #touch-use{border:2px solid #7d875f;background:#fffce9!important;box-shadow:0 3px 0 #69775488}
+#session-ui .touch-actions button:active,#session-ui .touch-actions button[aria-pressed=true]{background:#d6e7ba!important;box-shadow:0 1px 0 #69775488}
+#session-ui [data-left-handed=true] #touch-stick{left:auto;right:calc(env(safe-area-inset-right,0px) + var(--touch-edge))}
+#session-ui [data-left-handed=true] .touch-actions{right:auto;left:calc(env(safe-area-inset-left,0px) + var(--touch-edge))}
+#session-ui [data-left-handed=true] #touch-look{left:0;right:34%}
+
+/* Preparation uses the unused score corner, leaving the physical bell and
+   its wall lettering unobstructed at the initial centre-facing camera. */
+#play-ui[data-stage="gathering"] .round-clock{left:1.8%;right:auto;transform:none}

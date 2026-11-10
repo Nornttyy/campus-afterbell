@@ -1,9 +1,10 @@
+import {requireModelBudget} from './model-budget64.js';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 
 const names=Object.freeze({snack:'snack-packet',drink:'red-drink-can',burger:'layered-burger',ink:'ink-glass-bottle',banana:'curved-banana',bananaPeel:'banana-peel',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox',pen:'red-school-pen'});
 const templates=new Map();
-export const CLASSROOM_PROP_SOURCES=Object.freeze(Object.fromEntries(['snack','drink','burger','ink','banana','garlic'].map(kind=>[kind,`./assets/models/${kind}-v1.glb?v=mouth-36`])));
+export const CLASSROOM_PROP_SOURCES=Object.freeze(Object.fromEntries(['snack','drink','burger','ink','banana','garlic'].map(kind=>[kind,`./assets/models/${kind}-v1.glb?v=mesh-64`])));
 const referenceSizes={snack:[.1721,.209,.056],drink:[.088,.1756,.0904],burger:[.2159,.1409,.2129],ink:[.094,.1575,.0975],banana:[.13,.25,.06],bananaPeel:[.20,.14,.20],garlic:[.09,.12,.06],gum:[.13,.06,.03],lunch:[.22,.07,.15],pen:[.023,.175,.023]};
 
 // Move the contact point, not the imported mesh: wider/shorter source props keep
@@ -20,6 +21,7 @@ export function restDeskItem(prop,floorY=.659){
 }
 
 function makeTemplate(kind,gltf,url){
+  requireModelBudget(gltf,kind);
   if(!gltf.scene?.isObject3D)throw new Error('Prop asset has no scene');
   if(gltf.animations?.length)throw new Error('Prop assets must be static');
   const model=gltf.scene.clone(true);let meshCount=0;
