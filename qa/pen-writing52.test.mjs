@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-58';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-59c';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {CampusRoom} from '../server/room-simulation.js';
@@ -24,8 +24,9 @@ test('multiplayer peers see writing and cannot farm score with the desktop pen',
  const room=new CampusRoom({code:'521111',seed:50}),teacher=room.join({rolePreference:'teacher'}),student=room.join({rolePreference:'student'});room.begin(teacher);
  for(let i=0;i<301;i++)room.tick(.1);
  room.sim._seatingRoutes.clear();for(const s of room.sim.students)if(!s.networkHuman){s._decisionAt=Infinity;s._restUntil=Infinity;s.holding=false;}
- const actor=student.context.player;Object.assign(actor,{seated:true,seatId:2,seatYaw:0});
- assert.equal(room.command(student,'takePen'),true);const score=room.sim.score;
+ const actor=student.context.player,seat=room.sim.seats.find(seat=>!room.sim.students.some(s=>s.seated&&!s.caught&&s.seatId===seat.id));assert.ok(seat,'fixture needs a free physical seat');
+ Object.assign(actor,{x:seat.x,z:seat.z});assert.equal(room.command(student,'interact',[seat.id]),'seated');
+ assert.equal(room.command(student,'takePen'),true);assert.equal(room.snapshot(student).drawer.source.seatId,seat.id);const score=room.sim.score;
  assert.equal(room.snapshot(student).player.penTwirling,true);assert.equal(room.snapshot(student).player.penWriting,false);
  assert.equal(room.command(student,'togglePenMode'),true);
  for(let i=0;i<150;i++){if(i%30===0)room.command(student,'hold',[true]);room.tick(.1);}

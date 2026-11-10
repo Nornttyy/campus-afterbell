@@ -82,7 +82,7 @@ export class CampusRoom{
   // classmates are visible decoys, not falsely advertised network players.
   this._initializeStudents();
  }
- _initializeStudents(){this.sim._team=new Set();for(const actor of this.sim.students){actor.isPlayer=false;actor.isTeammate=false;actor.networkHuman=false;actor._profile=null;actor._slots=[];}this._decoyTemplates=this.sim.students.map(actor=>structuredClone(actor));}
+ _initializeStudents(){this.sim.classSlotsBySeat.clear();this.sim._team=new Set();for(const actor of this.sim.students){actor.isPlayer=false;actor.isTeammate=false;actor.networkHuman=false;actor._profile=null;actor._slots=[];}this._decoyTemplates=this.sim.students.map(actor=>structuredClone(actor));}
  _restoreDecoy(actor){const template=this._decoyTemplates[actor.id];for(const key of Object.keys(actor))delete actor[key];Object.assign(actor,structuredClone(template));}
  withMember(member,fn){
   const sim=this.sim,prior=Object.fromEntries(CONTEXT.map(k=>[k,sim[k]]));

@@ -192,3 +192,5 @@ body.playing .menu-paper{display:none}
 /* Single player remains the direct, primary entry; online rooms stay available. */
 .online-entry{justify-content:center;min-height:44px;width:100%;display:flex;align-items:center;gap:10px}
 @media(max-height:650px){.menu-controls{gap:8px}.online-entry{min-height:38px;padding:7px 14px}}
+
+#room-player-fields:not([hidden]){display:grid;gap:12px}

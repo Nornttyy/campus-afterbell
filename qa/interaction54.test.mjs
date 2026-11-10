@@ -4,7 +4,7 @@ import {createClassroomGame} from '../dist/classroom-game.js';
 import {ClassroomRound,CLASSROOM_ACTIONS} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
 import {CampusRoom} from '../server/room-simulation.js';
-import {DOORS} from '../dist/classroom-layout.js';
+import {DOORS,OFFICE_CHAIR} from '../dist/classroom-layout.js';
 import {interactionIntent} from '../dist/interaction-intent54.js';
 import {hud54Model} from '../dist/reference-hud54.js';
 import {readFileSync} from 'node:fs';
@@ -35,8 +35,8 @@ function fixture({map='classroom',teacher=false}={}){
 test('Q returns a pen over the drawer without opening it or standing; E can open only on the next action',()=>{
  const f=fixture();try{f.target({kind:'pen'});f.key('KeyE');f.target({kind:'desk'});assert.equal(f.round.player._drawerOpen,false);f.key('KeyQ');assert.equal(f.round.player._drawerOpen,false);assert.equal(f.round.player._drawnSlot,null);assert.equal(f.round.player.seated,true);f.key('KeyE');assert.equal(f.round.player._drawerOpen,true);}finally{f.close();}
 });
-test('E never returns food or closes drawers; separate Q presses return, close and stand in order',()=>{
- const f=fixture();try{f.take('burger');f.round.books[f.round.player.seatId].raised=false;f.target({kind:'desk'});f.key('KeyE');assert.equal(f.round.player._drawnSlot,0);f.key('KeyQ');assert.equal(f.round.player._drawnSlot,null);assert.equal(f.round.player._drawerOpen,true);assert.equal(f.round.player.seated,true);f.key('KeyE');assert.equal(f.round.player._drawerOpen,true);f.key('KeyQ');assert.equal(f.round.player._drawerOpen,false);assert.equal(f.round.player.seated,true);f.target({kind:'chair',id:f.round.player.seatId});f.key('KeyE');assert.equal(f.round.player.seated,true);f.key('KeyQ');assert.equal(f.round.player.seated,false);}finally{f.close();}
+test('E carries food out of the chair; Q returns at the original desk without forcing a seat',()=>{
+ const f=fixture();try{f.take('burger');const origin=f.round.player.seatId;f.round.books[origin].raised=false;f.target({kind:'desk'});f.key('KeyE');assert.equal(f.round.player._drawnSlot,0);assert.equal(f.round.player.seated,false);assert.equal(f.round.player._drawerOpen,false);f.key('KeyQ');assert.equal(f.round.player._drawnSlot,null);assert.equal(f.round.player._drawerOpen,false);assert.equal(f.round.player.seated,false);f.target({kind:'chair',id:origin});f.key('KeyE');assert.equal(f.round.player.seated,true);f.target({kind:'desk'});f.key('KeyE');assert.equal(f.round.player._drawerOpen,true);f.key('KeyQ');assert.equal(f.round.player._drawerOpen,false);assert.equal(f.round.player.seated,true);f.target({kind:'chair',id:origin});f.key('KeyQ');assert.equal(f.round.player.seated,false);}finally{f.close();}
 });
 test('book E/Q are explicit, and holding a pen makes E change only pen mode',()=>{
  const f=fixture();try{f.target({kind:'book'});f.key('KeyE');assert.equal(f.round.snapshot().player.bookRaised,true);f.key('KeyE');assert.equal(f.round.snapshot().player.bookRaised,true);f.key('KeyQ');assert.equal(f.round.snapshot().player.bookRaised,false);f.target({kind:'pen'});f.key('KeyE');assert.equal(f.round.snapshot().player.penTwirling,true);f.target({kind:'book'});f.key('KeyE');assert.equal(f.round.snapshot().player.penWriting,true);assert.equal(f.round.snapshot().player.bookRaised,false);f.key('KeyE');assert.equal(f.round.snapshot().player.penTwirling,true);assert.equal(f.round.score,0);}finally{f.close();}
@@ -106,4 +106,19 @@ test('formal E opens the locker selected by a centre ray at the real approach po
  const f=fixture(),world=campusScene();try{f.round.stage='gathering';Object.assign(f.round.player,{x:8.85,z:6.65,seated:false,yaw:Math.PI/2,pitch:.06});
  const locker=world.campus.getTargets().lockers[0],ray=new T.Raycaster(new T.Vector3(8.85,1.65,6.65),new T.Vector3(1,-Math.tan(.06),0).normalize(),0,2.5),hit=ray.intersectObject(locker.object,true)[0];assert.ok(hit);f.target({kind:hit.object.userData.campusTarget.type,id:locker.id});f.key('KeyE');assert.equal(f.lockerOpens,1);f.round.stage='class';f.key('KeyE');assert.equal(f.lockerOpens,1,'role changes remain pre-class only');
  }finally{world.dispose();f.close();}
+});
+
+
+test('pen E still changes mode, while targeting its own chair uses the same E action to stand carrying it',()=>{
+ const f=fixture();try{f.target({kind:'pen'});f.key('KeyE');f.key('KeyE');assert.equal(f.round.snapshot().player.penWriting,true);f.target({kind:'chair',id:f.round.player.seatId});f.key('KeyE');assert.equal(f.round.player.seated,false);assert.equal(f.round.snapshot().player.penTwirling,true);assert.equal(f.round.snapshot().player.penWriting,false);f.key('KeyQ');assert.equal(f.round.player._drawnSlot,null);}finally{f.close();}
+});
+
+
+test('carrying a pen into the office cannot trap a pupil in the chair or write on a missing book',()=>{
+ const f=fixture();try{
+  const p=f.round.player,source=p.seatId;f.target({kind:'pen'});f.key('KeyE');f.target({kind:'chair',id:source});f.key('KeyE');assert.equal(p.seated,false);
+  Object.assign(p,{x:OFFICE_CHAIR.x,z:OFFICE_CHAIR.z});f.target({kind:'office-chair',id:OFFICE_CHAIR.id});f.key('KeyE');assert.equal(p.seated,true);assert.equal(p._officeChair,true);assert.equal(f.round.snapshot().drawer.canReturn,false);
+  assert.equal(f.round.togglePenMode(),false,'there is no classroom book at the office chair');assert.equal(f.round.snapshot().player.penTwirling,true);
+  f.target({kind:'office-desk',id:p._officeDeskId});f.key('KeyE');assert.equal(p.seated,false,'E must offer a way out while Q cannot reach the original desk');assert.equal(p._penTaken,true);assert.equal(p._penSeatId,source);assert.equal(f.round.score,0);
+ }finally{f.close();}
 });

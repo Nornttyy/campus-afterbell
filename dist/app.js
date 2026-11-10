@@ -1,5 +1,5 @@
-import {playCampusFoley} from './foley-audio54.js?v=campus-58';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-58';
+import {playCampusFoley} from './foley-audio54.js?v=campus-59c';
+import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-59c';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -9,7 +9,7 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch {}
 const volume = (value, fallback) => Number.isFinite(+value) ? Math.min(100,Math.max(0,+value)) : fallback;
 const settings = { ...defaults,soundCues:saved.soundCues!==false, sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:saved.quality==='low'?'low':'high', motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion, character:Object.hasOwn(characterNames,saved.character)?saved.character:'boy' };
-let scene, game, sceneReady=false, worldPromise=null, disposed=false, openingButton=null, draftCharacter=settings.character,entryMode='online',entryRequest=0;
+let scene, game, sceneReady=false, worldPromise=null, disposed=false, openingButton=null, draftCharacter=settings.character,entryMode='online',entryRequest=0,roomConnecting=null;
 let roundOptions={duration:Number.isInteger(saved.duration)&&saved.duration>=300&&saved.duration<=1200?saved.duration:600,target:Number.isInteger(saved.target)&&saved.target>=30&&saved.target<=120?saved.target:120,role:'student',map:'classroom'};
 Object.assign(settings,{duration:roundOptions.duration,target:roundOptions.target});
 function syncRoundOptions(){
@@ -60,7 +60,7 @@ function ensureCharacterPreview(){
   characterPreviewPromise=(async()=>{
     let renderer=null,observer=null;
     try{
-      const [T,{loadStudentAssets}]=await Promise.all([import('./vendor/three.module.js'),import('./student-assets.js?v=campus-58')]);
+      const [T,{loadStudentAssets}]=await Promise.all([import('./vendor/three.module.js'),import('./student-assets.js?v=campus-59c')]);
       const assets=await loadStudentAssets();if(disposed)return null;
       renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
       renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.08;
@@ -124,7 +124,7 @@ function prepareEntry(mode,button){
   $('.room-connect').hidden=mode==='solo';$('#room-title').textContent=mode==='solo'?'单人游戏':'多人教室';
   $('#room-error').hidden=true;$('#room-solo').hidden=mode==='solo';syncServerNotice();
   $('#room-enter').textContent=sceneReady?(mode==='solo'?'进入教室':'创建 / 加入房间'):'准备中…';
-  $('#room-enter').disabled=!sceneReady;
+  $('#room-enter').disabled=!sceneReady;syncServerNotice();
   openSheet('#room-dialog',button);
 }
 function startGame(){
@@ -143,7 +143,7 @@ $('#enter-classroom').addEventListener('click',startGame);
 $('#enter-solo').addEventListener('click',startSolo);
 function syncRoomCreation(){
   const joining=entryMode==='online'&&!!$('#room-code').value.trim();
-  $('#room-settings').hidden=entryMode!=='online'||joining;
+  $('#room-settings').hidden=entryMode!=='online'||joining||(!$('#room-server').value.trim()&&!defaultCampusEndpoint());
   for(const id of ['#round-minutes','#round-goal'])$(id).disabled=joining;
 }
 $('#room-code').addEventListener('input',syncRoomCreation);
@@ -151,25 +151,33 @@ $('#room-server').value=defaultCampusEndpoint();
 function syncServerNotice(){
   const missing=!$('#room-server').value.trim()&&!defaultCampusEndpoint();
   $('#room-server-note').hidden=entryMode==='solo'||!missing;
-  if(missing)$('#room-server-options').open=true;
+  $('#room-player-fields').hidden=missing;syncRoomCreation();
+  if(entryMode==='online'){
+    const button=$('#room-enter');
+    if(missing){button.disabled=true;button.textContent='联机暂未配置';}
+    else if(roomConnecting===entryRequest){button.disabled=true;button.textContent='连接中…';}
+    else if(sceneReady){button.disabled=false;button.textContent='创建 / 加入房间';}
+    else if($('#room-load').dataset.state==='error'){button.disabled=false;button.textContent='重新准备';}
+    else{button.disabled=true;button.textContent='准备中…';}
+  }
 }
 $('#room-server').addEventListener('input',syncServerNotice);
 $('#room-solo').addEventListener('click',startSolo);
 $('#room-enter').addEventListener('click',async()=>{
   if(entryMode==='solo'){startSolo();return;}
   const endpoint=$('#room-server').value.trim()||defaultCampusEndpoint();
-  if(!endpoint){syncServerNotice();$('#room-server-options').open=true;$('#room-server').focus();return;}
+  if(!endpoint||roomConnecting===entryRequest){syncServerNotice();return;}
   if(!sceneReady||!game){ensureWorld();return;}
   // Read the final visible values at submission, including an input that has
   // not blurred yet. Joining an existing room never changes its host settings.
   if(!$('#room-code').value.trim())commitRoomSettings();
-  const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;button.disabled=true;button.textContent='连接中…';error.hidden=true;
+  const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;roomConnecting=request;button.disabled=true;button.textContent='连接中…';error.hidden=true;
   try{
     const online=await connectCampusRoom({endpoint,code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:settings.character,rolePreference:roundOptions.role,map:roundOptions.map,settings:{duration:roundOptions.duration,target:roundOptions.target},onError:e=>toast(typeof e==='string'?e:e.message)});
     if(disposed||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
     scene.setMap(online.snapshot().map);scene.setCharacter(settings.character);scene.setActive(true);game.start({...roundOptions});
   }catch(e){if(request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接不到服务器，请确认服务器已启动。':e.message;}}
-  finally{if(request===entryRequest&&entryMode==='online'){button.disabled=false;button.textContent='创建 / 加入房间';}}
+  finally{if(roomConnecting===request)roomConnecting=null;if(request===entryRequest&&entryMode==='online')syncServerNotice();}
 });
 document.addEventListener('keydown',e=>{if(e.repeat)return;if(e.key==='Enter'&&!$('dialog[open]')&&!game?.active&&!["BUTTON","INPUT","SELECT"].includes(document.activeElement?.tagName)){e.preventDefault();startSolo();}});
 document.addEventListener('pointerdown',()=>audio.start(),{passive:true});
@@ -191,20 +199,20 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-58'),import('./classroom-game.js?v=campus-58')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-59c'),import('./classroom-game.js?v=campus-59c')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}
       scene=prepared;scene.setActive(false);
       game=controller.createClassroomGame({scene,audio,settings,onExit:showMenu});
       applySettings();sceneReady=true;document.body.classList.add('scene-ready');
-      loadStep(100,'准备好了');$('#room-load').dataset.state='ready';$('#room-enter').disabled=false;$('#room-enter').textContent=entryMode==='solo'?'进入教室':'创建 / 加入房间';
+      loadStep(100,'准备好了');$('#room-load').dataset.state='ready';$('#room-enter').disabled=false;$('#room-enter').textContent=entryMode==='solo'?'进入教室':'创建 / 加入房间';syncServerNotice();
       return scene;
     }catch(error){
       prepared?.dispose();scene=null;game=null;sceneReady=false;worldPromise=null;
       if(disposed)return null;
       console.error('Classroom unavailable:',error);$('#classroom').hidden=true;
-      $('#room-load').dataset.state='error';loadStep(0,'教室加载失败，请重试');$('#room-enter').disabled=false;$('#room-enter').textContent='重新准备';return null;
+      $('#room-load').dataset.state='error';loadStep(0,'教室加载失败，请重试');$('#room-enter').disabled=false;$('#room-enter').textContent='重新准备';syncServerNotice();return null;
     }
   })();
   return worldPromise;

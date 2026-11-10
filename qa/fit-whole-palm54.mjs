@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {createDeskItem} from '../dist/game-actors.js';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-58';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-59c';
 import * as T from '../dist/vendor/three.module.js';
 import {propSurface,handSamplingRig} from './whole-palm-geometry54.mjs';
 const V=(...a)=>new T.Vector3(...a),Q=()=>new T.Quaternion(),fingers=['Index','Middle','Pinky','Thumb'];

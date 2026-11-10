@@ -1,12 +1,12 @@
-import {createReferenceHUD} from './reference-hud54.js?v=campus-58';
-import {interactionIntent} from './interaction-intent54.js?v=campus-58';
-import {createSessionUI} from './session-ui.js?v=campus-58';
-import {bindHeldUseInput} from './held-use-input.js?v=campus-58';
-import {createVisionEffects} from './vision-effects.js?v=campus-58';
+import {createReferenceHUD} from './reference-hud54.js?v=campus-59c';
+import {interactionIntent} from './interaction-intent54.js?v=campus-59c';
+import {createSessionUI} from './session-ui.js?v=campus-59c';
+import {bindHeldUseInput} from './held-use-input.js?v=campus-59c';
+import {createVisionEffects} from './vision-effects.js?v=campus-59c';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-58';
-import {PUBLIC_SOUND_RADIUS} from './sound-cue55.js?v=campus-58';
-import {referenceNotice} from './reference-notices55.js?v=campus-58';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-59c';
+import {PUBLIC_SOUND_RADIUS} from './sound-cue55.js?v=campus-59c';
+import {referenceNotice} from './reference-notices55.js?v=campus-59c';
 
 // Input/UI only. Perception, movement and team results live in rules.
 export function createClassroomGame({scene,audio,onExit,round:providedRound=null,sessionFactory=createSessionUI}){
@@ -126,7 +126,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     $('#round-clock').textContent=beforeClass?(s.stage==='seating'?'入座 '+formatTime(s.stageTimeLeft):'课前集合'):'已抓捕 '+s.caughtCount+' / '+s.teamSize;
     if(s.elevator?.phase==='travel')$('#round-clock').textContent='电梯运行 · '+Math.ceil(s.elevator.remaining)+'秒';
     const lessonTime=$('#lesson-time');if(lessonTime){lessonTime.hidden=beforeClass;lessonTime.textContent='距离下课 '+formatTime(s.timeLeft||0);}
-    const stamina=$('#teacher-stamina');if(stamina){stamina.hidden=!teacher;stamina.dataset.low=String(s.teacher.stamina<25);$('#stamina-number').textContent=Math.ceil(s.teacher.stamina??100)+'%';$('#stamina-fill').style.height=(s.teacher.stamina??100)+'%';stamina.dataset.writing=String(Boolean(s.teacher.writing));}
+    const staminaTeacher=(s.stage==='gathering'?(s.lobbyRole||s.role):s.role)==='teacher';
+    const stamina=$('#teacher-stamina');if(stamina){stamina.hidden=!staminaTeacher;stamina.dataset.low=String(s.teacher.stamina<25);$('#stamina-number').textContent=Math.ceil(s.teacher.stamina??100)+'%';$('#stamina-fill').style.height=(s.teacher.stamina??100)+'%';stamina.dataset.writing=String(Boolean(s.teacher.writing));}
     ui.dataset.stamina=String(s.teacher.stamina??'');ui.dataset.writing=String(Boolean(s.teacher.writing));$('#round-score').textContent=Math.floor(s.score);$('#round-target').textContent='/ '+s.target;
     $('#score-fill').style.width=clamp(s.score/s.target*100,0,100)+'%';
     ui.dataset.role=s.role;ui.dataset.map=s.map;
@@ -143,6 +144,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     else if(p.captivity==='stunned'||p.stunLeft>0)actionText='';
     else if(openIntent)actionText=(openIntent.hold?'按住 ':'')+'E '+openIntent.label+(target?.kind==='item'?' '+(labels[drawer.slots[target.slot]?.action]||''):'');
     else if(closeIntent)actionText=(closeIntent.hold?'按住 ':'')+'Q '+closeIntent.label;
+    else if(drawer.drawnSlot!=null&&drawer.canReturn===false)actionText='回到原抽屉附近 · Q 放回';
     else if(p.burpReadyLeft>0)actionText='左键 打嗝 · '+Math.ceil(p.burpReadyLeft);
     else if(teacher)actionText='左键 扔粉笔';
     if(session.touch)actionText=actionText.replace(/按住 E/g,'按住拿取').replace(/\bE /g,'拿取 · ').replace(/按住 Q/g,'按住返回').replace(/\bQ /g,'返回 · ').replace(/左键/g,'使用');

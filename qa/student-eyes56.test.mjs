@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
-import {createStudentEyes,STUDENT_EYE_REGIONS,studentEyeGaze} from '../dist/student-eyes56.js?v=campus-58';
-import {useCharacterBaseColor,setCharacterNight} from '../dist/character-materials.js?v=campus-58';
-import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-58';
+import {createStudentEyes,STUDENT_EYE_REGIONS,studentEyeGaze} from '../dist/student-eyes56.js?v=campus-59c';
+import {useCharacterBaseColor,setCharacterNight} from '../dist/character-materials.js?v=campus-59c';
+import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-59c';
 const files=Object.fromEntries(Object.entries(STUDENT_ASSETS).map(([key,data])=>[key,data.file+'.glb']));
 function meshes(model){const out=[];model.traverse(mesh=>{if(mesh.isSkinnedMesh)out.push(mesh);});return out;}
 function shaderOf(material){const shader={uniforms:{},vertexShader:T.ShaderLib[material.isMeshLambertMaterial?'lambert':'basic'].vertexShader,fragmentShader:T.ShaderLib[material.isMeshLambertMaterial?'lambert':'basic'].fragmentShader};material.onBeforeCompile(shader);return shader;}

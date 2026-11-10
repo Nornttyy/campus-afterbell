@@ -116,8 +116,8 @@ test('a saved ponytail skin survives reload, while unconfirmed choices do not re
 test('static hosting explains missing room service and offers working solo without any request',async()=>{
   const f=fixture({}, {endpoint:''});f.click('#enter-classroom');await flush();
   assert.equal(f.el('#room-server').value,'');assert.equal(f.el('#room-server-note').hidden,false);
-  assert.equal(f.el('#room-server-options').open,true);assert.equal(f.el('#room-solo').hidden,false);
-  f.pending[0].resolve();await flush();f.click('#room-enter');await flush();
+  assert.equal(f.el('#room-server-options').open,false);assert.equal(f.el('#room-solo').hidden,false);assert.equal(f.el('#room-player-fields').hidden,true);assert.equal(f.el('#room-settings').hidden,true);
+  f.pending[0].resolve();await flush();assert.equal(f.el('#room-enter').disabled,true);assert.equal(f.el('#room-enter').textContent,'联机暂未配置');f.click('#room-enter');await flush();
   assert.equal(f.calls.connections,0);assert.equal(f.el('#room-dialog').open,true);
   f.click('#room-solo');await flush();assert.equal(f.calls.starts.length,1);assert.equal(f.calls.starts[0].solo,true);
   assert.equal(f.calls.connections,0);assert.equal(f.el('#room-dialog').open,false);
@@ -162,4 +162,12 @@ test('changing audio after reloading retains the saved room duration and target'
  assert.equal(f.calls.saved.at(-1).duration,900);assert.equal(f.calls.saved.at(-1).target,80);
  const reloaded=fixture(f.calls.saved.at(-1));
  assert.equal(Number(reloaded.el('#round-minutes').value),15);assert.equal(Number(reloaded.el('#round-goal').value),80);
+});
+
+
+test('changing advanced server input during a pending connection cannot submit a second room',async()=>{
+ let resolve;const connection=new Promise(r=>resolve=r),f=fixture({}, {connection});
+ f.click('#enter-classroom');await flush();f.pending[0].resolve();await flush();f.click('#room-enter');await flush();
+ f.el('#room-server').value='https://other.example';f.el('#room-server').dispatchEvent(new Event('input'));f.click('#room-enter');await flush();
+ assert.equal(f.el('#room-enter').disabled,true);assert.equal(f.calls.connections,1);resolve();await flush();assert.equal(f.calls.starts.length,1);
 });

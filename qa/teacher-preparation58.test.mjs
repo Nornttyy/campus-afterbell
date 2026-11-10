@@ -35,8 +35,8 @@ for(const backward of [false,true])test(`carrying a pupil keeps normal ${backwar
  const free=run(false),held=run(true);assert.ok(Math.abs(free.player.z-held.player.z)<1e-8);assert.ok(Math.abs(Math.abs(held.player.z)-NORMAL_WALK_SPEEDS.teacher*(backward?BACKWARD_SPEED_RATIO:1)*.4)<1e-8);assert.equal(held.students[0].captivity,'carried');
 });
 
-test('teacher standing camera is 65 percent above student and ignores invalid crawl state',()=>{
- assert.equal(TEACHER_VIEW_HEIGHT,STUDENT_VIEW_HEIGHT*1.65);
+test('teacher standing camera is 20 percent above student and ignores invalid crawl state',()=>{
+ assert.equal(TEACHER_VIEW_HEIGHT,STUDENT_VIEW_HEIGHT*1.20);
  assert.equal(firstPersonEyeHeight({seated:false,crouched:true},'teacher'),TEACHER_VIEW_HEIGHT);
  assert.equal(firstPersonEyeHeight({seated:false},'student'),STUDENT_VIEW_HEIGHT);
 });

@@ -83,15 +83,15 @@ test('heard noise can be remembered without visual evidence or a red card',()=>{
   assert.equal(r.drainEvents().some(e=>e.type==='caught'),false);
 });
 
-test('movement collides with desks, can use an aisle, and standing actions earn no points',()=>{
+test('movement collides with desks, can use an aisle, and carrying without using earns no points',()=>{
   // This case measures a fixed static aisle route. Independently scheduled AI
   // drawers are covered by drawer-collision58 rather than changing its distance.
   const r=quietFixture();r.player._slots[0].action='snack';r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
-  takeAndUse(r);r.setMovement(0,1);r.step(2);
+  r.hold(false);r.setMovement(0,1);r.step(2);
   let s=r.snapshot();const desk=DESKS[PLAYER_SEAT];assert.ok(s.player.z<=desk.minZ-.18+1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
   r.setMovement(-1,0);r.step((r.player.x-AISLES[0])/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,1);r.step(2);
   s=r.snapshot();assert.ok(s.player.z>SEATS[PLAYER_SEAT].z+1);assert.equal(blocked(s.player.x,s.player.z),false);
-  assert.equal(s.completed.snack,0);assert.equal(s.holding,true);
+  assert.equal(s.completed.snack,0);assert.equal(s.holding,false);
   const other=new ClassroomRound();other.start();assert.equal(other.interact(),'stood');assert.equal(other.interact(),'seated');assert.equal(other.snapshot().player.seatId,PLAYER_SEAT);
 });
 
@@ -295,8 +295,8 @@ test('E takes without using, left release retains the item, Q returns without du
  assert.deepEqual(r.snapshot().drawer.slots,original);assert.equal(r.returnItem(),false);assert.equal(r.hold(true),false);
  assert.equal(r.takeSlot(1),true);assert.equal(r.snapshot().actionProgress,progress);
  r.pause();const paused=r.snapshot();assert.equal(r.returnItem(),false);assert.deepEqual(r.snapshot(),paused);r.pause(false);
- r.interact();assert.equal(r.returnItem(),false,'Cannot put an item back from another place in the room');
- r.interact();assert.equal(r.returnItem(),true);
+ r.interact();const beside={x:r.player.x,z:r.player.z};Object.assign(r.player,{x:8.8,z:2});assert.equal(r.returnItem(),false,'Cannot put an item back from another place in the room');
+ Object.assign(r.player,beside);assert.equal(r.returnItem(),true,'Standing beside the original drawer can return the item');
 });
 
 // Measure the public interaction clock, including an interrupted hold.

@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {FIRST_PERSON_PEN_FITS} from './first-person-pen-fit58.js?v=campus-58';
-import {createPenFingerContact} from './pen-motion.js?v=campus-58';
+import {FIRST_PERSON_PEN_FITS} from './first-person-pen-fit58.js?v=campus-59c';
+import {createPenFingerContact} from './pen-motion.js?v=campus-59c';
 
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const ease=(t,a,b)=>T.MathUtils.smootherstep(t,a,b);
@@ -49,6 +49,16 @@ export function createFirstPersonHandMotion(hand,side){
    }
   },
   restore(){for(const j of joints)j.bone.quaternion.copy(j.rest);},
+  applyAuthoredFingers(pose,weight=1){
+   // Scrubbing starts from the source joint frames, never from the preceding
+   // preview frame. Keep every bone position/scale and the original skin intact.
+   for(const j of joints)j.bone.quaternion.slerp(j.rest,weight);
+   const oldCurl=hand.diagnostics?.().curl??.18,curl=oldCurl+(pose.curl-oldCurl)*weight;
+   hand.setCurl(curl);
+   if(pose.fingers&&hand.setFingerCurl){for(const finger of ['Thumb','Index','Middle','Pinky']){const value=pose.fingers[finger]??pose.curl;hand.setFingerCurl(finger,oldCurl+(value-oldCurl)*weight);}
+    const middle=pose.fingers.Middle??pose.curl,pinky=pose.fingers.Pinky??pose.curl;hand.setFingerCurl('Ring',oldCurl+((middle+pinky)/2-oldCurl)*weight);
+   }
+  },
   aimThumb(target,amount=1){
    if(!thumbTip){hand.aimThumb(target,amount);return;}
    root.updateWorldMatrix(true,true);const origin=thumb.getWorldPosition(V()),from=thumbTip().sub(origin).normalize(),to=root.localToWorld(target.clone()).sub(origin).normalize();

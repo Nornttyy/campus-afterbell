@@ -1,10 +1,10 @@
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-58';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-58';
-import {teacherViewHeight} from './camera-height58.js?v=campus-58';
-import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-58';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-59c';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-59c';
+import {teacherViewHeight} from './camera-height58.js?v=campus-59c';
+import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-59c';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-58';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-59c';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
@@ -19,6 +19,7 @@ export class TeacherRound extends ClassroomRound{
       s._slots=s.isTeammate?Array.from({length:mapKind(this.map)==='computer'?1:3},(_,id)=>({id,action:this._drawItem(),readyAt:0,progress:0})):[];
       s._decisionAt=this._range(1,6);s._chalkUntil=0;
     }
+    this.classSlotsBySeat=new Map(this.students.filter(a=>a._slots.length).map(a=>[a.seatId,a._slots]));
     this.player={id:-1,...TEACHER_SPAWN,seated:false,crouched:false,caught:false,captivity:'free',seatId:null,holding:false,
       _slots:[],_selectedSlot:0,_drawnSlot:null,_drawerOpen:false};
     this.selected='chalk';this.chalks=[];this._chalkId=0;this._nextThrow=0;this._lastThrow=-100;this.wrongGrabs=0;this._writing=false;this._writeTime=0;

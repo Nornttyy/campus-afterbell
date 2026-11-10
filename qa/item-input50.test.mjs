@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createClassroomGame} from '../dist/classroom-game.js';
 import {ClassroomRound} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
+import {CampusRoom} from '../server/room-simulation.js';
 import {DETENTION} from '../dist/classroom-layout.js';
 
 // Keep the production mouse/keyboard handlers, frame loop, HUD and simulation.
@@ -140,5 +141,19 @@ test('teleporting to another place does not count as a long walking stride',()=>
  const f=fixture();try{
   const p=f.round.player,t=f.round.teacher;Object.assign(t,{x:p.x+2,z:p.z,seated:false});f.advance(.1);f.sounds.length=0;
   t.z+=3;f.advance(.1);assert.equal(f.sounds.filter(([kind])=>kind==='step').length,0);
+ }finally{f.close();}
+});
+
+
+test('actual multiplayer lobby preference shows teacher stamina before seating and clears it for student preference',()=>{
+ const f=fixture(),room=new CampusRoom({code:'590099',seed:59}),member=room.join({rolePreference:'teacher'});room.join({name:'另一位'});
+ try{
+  // Rendering receives real authenticated room snapshots; movement simulation
+  // remains the fixture's local round because this case isolates the HUD.
+  const snapshot=f.round.snapshot;f.round.snapshot=()=>room.snapshot(member);f.advance(.1);
+  assert.equal(f.rendered.role,'student');assert.equal(f.rendered.lobbyRole,'teacher');assert.equal(f.element('#teacher-stamina').hidden,false);assert.equal(f.element('#stamina-number').textContent,'100%');
+  room.preference(member,{rolePreference:'student'});f.advance(.1);assert.equal(f.element('#teacher-stamina').hidden,true);
+  room.preference(member,{rolePreference:'teacher'});room.begin(member);f.advance(.1);assert.equal(f.rendered.stage,'seating');assert.equal(f.rendered.role,'teacher');assert.equal(f.element('#teacher-stamina').hidden,false);assert.equal(f.element('#stamina-number').textContent,'100%');
+  f.round.snapshot=snapshot;
  }finally{f.close();}
 });

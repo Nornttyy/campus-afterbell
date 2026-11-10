@@ -112,3 +112,14 @@ test('a malformed event inside a valid coalesced batch is still rejected',async 
  try{await wait(()=>round.snapshot().connection==='failed');assert.equal(f.errors.length,1);assert.equal(round._retry,null);}
  finally{await round.leave();}
 });
+
+
+test('a configured website supplies the room server automatically, rejecting invalid or credential-bearing configuration',t=>{
+ const descriptors=new Map(['document','location'].map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));let content='https://rooms.example.test/';
+ try{
+  Object.defineProperty(globalThis,'location',{configurable:true,value:{hostname:'nornttyy.github.io',origin:'https://nornttyy.github.io',protocol:'https:',port:''}});
+  Object.defineProperty(globalThis,'document',{configurable:true,value:{querySelector:selector=>{assert.equal(selector,'meta[name="campus-room-server"]');return {content};}}});
+  assert.equal(defaultCampusEndpoint(),'https://rooms.example.test');
+  for(content of ['','not a URL','javascript:alert(1)','https://user:pass@rooms.example'])assert.equal(defaultCampusEndpoint(),'');
+ }finally{for(const[k,d]of descriptors)if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}
+});
