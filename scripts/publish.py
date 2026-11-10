@@ -74,7 +74,7 @@ def publish_branch(branch,entries):
  if old and old['tree']['sha']==tree['sha']:
   print(branch+' is already up to date',flush=True)
   return parents[0]
- commit=api('git/commits',{'message':'Fix shared item ownership, touch controls, window joins and held food contact','tree':tree['sha'],'parents':parents})
+ commit=api('git/commits',{'message':'Publish the user-authored student idle as the game default','tree':tree['sha'],'parents':parents})
  if current:
   assert api('git/ref/heads/'+branch)['object']['sha']==parents[0],'Remote changed during upload'
   api('git/refs/heads/'+branch,{'sha':commit['sha'],'force':False},method='PATCH')

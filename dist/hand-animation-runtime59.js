@@ -1,4 +1,4 @@
-import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-60';
+import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-61';
 export const HAND_ANIMATION_STORAGE_KEY='campus.handAnimations.v1';
 export const HAND_ANIMATION_CHANGE_EVENT='campus:hand-animations-changed';
 function defaultStorage(){try{return globalThis.localStorage||null;}catch{return null;}}
@@ -22,12 +22,16 @@ export function selectHandAnimationClip(state={}){
  if(!moving)return state.crawlBlend>.01?null:teacher?'teacher-idle':'student-idle';
  return teacher?'teacher-walk':'student-walk';
 }
-export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget=defaultEvents(),fadeDuration=.14}={}){
- let document=loadHandAnimations(storage),activeId=null,activeClip=null,clipTime=0,lastTime=null,weight=0,disposed=false,lastPose=null,transitionPose=null,transitionAge=0;
+export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget=defaultEvents(),fadeDuration=.14,fallbackDocument=null}={}){
+ // Published clips are a read-only game default. An explicitly saved local
+ // document still owns its entire clip selection; never overwrite drafts.
+ const checkedFallback=validateHandAnimationDocument(fallbackDocument),fallback=checkedFallback.ok?checkedFallback.value:null;
+ const readDocument=()=>loadHandAnimations(storage)||fallback;
+ let document=readDocument(),activeId=null,activeClip=null,clipTime=0,lastTime=null,weight=0,disposed=false,lastPose=null,transitionPose=null,transitionAge=0;
  const reset=()=>{activeId=activeClip=null;clipTime=weight=0;lastTime=null;lastPose=transitionPose=null;transitionAge=0;};
  // A saved edit transitions from the pose actually on screen. Clearing or
- // rejecting a corrupt file fades the previous clip out to the original path.
- const reload=()=>{document=loadHandAnimations(storage);return document;};
+ // rejecting a corrupt file restores the published default, if present.
+ const reload=()=>{document=readDocument();return document;};
  const onStorage=e=>{if(!e||e.key==null||e.key===HAND_ANIMATION_STORAGE_KEY)reload();};eventTarget?.addEventListener?.('storage',onStorage);eventTarget?.addEventListener?.(HAND_ANIMATION_CHANGE_EVENT,reload);
  return{
   reload,getDocument:()=>document?JSON.parse(JSON.stringify(document)):null,

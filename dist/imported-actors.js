@@ -1,12 +1,12 @@
-import {createCapturePose} from './capture-poses.js?v=campus-60';
+import {createCapturePose} from './capture-poses.js?v=campus-61';
 import * as THREE from './vendor/three.module.js';
-import {normalWalkCycleRate} from './movement55.js?v=campus-60';
-import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-60';
+import {normalWalkCycleRate} from './movement55.js?v=campus-61';
+import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-61';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-60';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-60';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-60';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-60';
+import {createCrawlPose} from './crawl-pose.js?v=campus-61';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-61';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-61';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-61';
 
 export async function loadTeacherModel(){
   const url=new URL('./assets/models/teacher-v2.glb?v=arms-49b',import.meta.url);

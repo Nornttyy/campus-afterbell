@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-60';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-60';
+import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-61';
+import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-61';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,screenContent=null,officeScreens=new Map()}){
  const group=new T.Group(),screens=new Map(),stations=new Map(),drawers=new Map();group.name='computer-lab-workstations';scene.add(group);group.visible=false;

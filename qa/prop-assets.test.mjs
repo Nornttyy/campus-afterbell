@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
-import {CLASSROOM_PROP_SOURCES,loadPropAssets,clonePropAsset,propContact,restDeskItem} from '../dist/prop-assets.js?v=campus-60';
-import {createDeskItem,createDeskHands,DESK_ITEM_KINDS} from '../dist/game-actors.js?v=campus-60';
+import {CLASSROOM_PROP_SOURCES,loadPropAssets,clonePropAsset,propContact,restDeskItem} from '../dist/prop-assets.js?v=campus-61';
+import {createDeskItem,createDeskHands,DESK_ITEM_KINDS} from '../dist/game-actors.js?v=campus-61';
 import {createRiggedPalm} from '../dist/student-assets.js';
 
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
