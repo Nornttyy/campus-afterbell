@@ -1,14 +1,14 @@
-import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-59c';
-import {ordinaryStudyState} from './npc-study58.js?v=campus-59c';
-import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-59c';
-import {reachesRearDoor,rearDoorSweepBlocked} from './door-interaction54.js?v=campus-59c';
-import {ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-59c';
-import {validRoundSettings} from './round-settings55.js?v=campus-59c';
-import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-59c';
-import {smokeEnvelope} from './smoke-physics.js?v=campus-59c';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-59c';
-import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-59c';
-import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, CAMPUS_MAPS, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight } from './classroom-layout.js?v=campus-59c';
+import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-60';
+import {ordinaryStudyState} from './npc-study58.js?v=campus-60';
+import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-60';
+import {reachesRearDoor,rearDoorSweepBlocked} from './door-interaction54.js?v=campus-60';
+import {ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-60';
+import {validRoundSettings} from './round-settings55.js?v=campus-60';
+import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-60';
+import {smokeEnvelope} from './smoke-physics.js?v=campus-60';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-60';
+import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-60';
+import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, CAMPUS_MAPS, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight } from './classroom-layout.js?v=campus-60';
 
 /** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:NORMAL_WALK_SPEEDS.student, teacherWalkSpeed:NORMAL_WALK_SPEEDS.teacher, crouchSpeed:CRAWL_TUNING.speed, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
@@ -349,7 +349,7 @@ export class ClassroomRound{
       p._bubbleHolding=true;this.holding=true;return true;
     }
     if(value&&this._inputAllowed()&&this._restrained(p)){p._struggleAt=this.elapsed;return false;}
-    if(!value){this.holding=false;p.holding=false;p._eating=false;const slot=p._slots[p._selectedSlot];if(CLASSROOM_ACTIONS[slot?.action]?.releaseToUse||FOOD_ACTIONS.includes(slot?.action)){slot.progress=0;p.progress=0;p._useElapsed=0;p._nextUseSound=0;}return false;}
+    if(!value){this.holding=false;p.holding=false;p._eating=false;const slot=p._slots[p._selectedSlot];if(p._drawnSlot===p._selectedSlot&&(slot?.heldBy===undefined||slot.heldBy===p.id)&&(CLASSROOM_ACTIONS[slot?.action]?.releaseToUse||FOOD_ACTIONS.includes(slot?.action))){slot.progress=0;p.progress=0;p._useElapsed=0;p._nextUseSound=0;}return false;}
     if(this._inputAllowed()&&!this._restrained(p)&&p.seated&&p._computerActive){this.selected=p.action='computer';this.holding=p.holding=true;return true;}
     const slot=p._slots[p._selectedSlot];
     if(!this._inputAllowed()||this._restrained(p)||!slot?.action||p._drawnSlot!==p._selectedSlot)return false;
@@ -402,10 +402,11 @@ export class ClassroomRound{
   snapshot(){
     for(const actor of new Set([...this.students,this.player]))this._sanitizeActorItems(actor);
     for(const key of Object.keys(this.completed))if(!Object.hasOwn(CLASSROOM_ACTIONS,key))delete this.completed[key];
-    const p=this.player,t=this.teacher,m=this._memory.get(p.id);
+    const p=this.player,t=this.teacher,m=this._memory.get(p.id),selectedSlot=p._slots[p._selectedSlot];
+    const actionProgress=p._computerActive?p._computerProgress:selectedSlot?.heldBy!==undefined&&selectedSlot.heldBy!==p.id?0:selectedSlot?.progress||0;
     const capture=s=>({...this._visionSnapshot(s.id===-1?t:s),penTaken:Boolean(s._penTaken),penSeatId:s._penSeatId??null,penWriting:this._penWriting(s),penTwirling:this._penTwirling(s),eating:Boolean(s._eating&&s.holding),itemThrowAge:valid(s._lastItemThrowAt)?clean(Math.max(0,this.elapsed-s._lastItemThrowAt)):999,captivity:s.captivity||'free',postId:s.postId??null,stunLeft:clean(Math.max(0,(s._chalkUntil||0)-this.elapsed)),struggleAge:this.elapsed-(s._struggleAt??-100),bubble:this._bubbleSnapshot(s)});
     return {role:'student',seats:this.seats.map(s=>({...s})),layoutPattern:this.seats[0]?.pattern,officeDrawers:OFFICE_DESKS.map(d=>({id:d.id,open:[...this.students,this.player].some(a=>a._officeDeskId===d.id&&a._drawerOpen&&a.seated)})),officeDeskOpen:this.students.some(s=>s._usingOfficeStock&&s._drawerOpen)||Boolean(this.player._usingOfficeStock&&this.player._drawerOpen),officeLocked:this.layout.officeLocked,rearDoorClosed:this.layout.rearDoorClosed,map:this.map,status:this.status,paused:this.paused,seed:this.seed,stage:this.stage,stageElapsed:clean(this._stageElapsed),sceneElapsed:clean(this._sessionElapsed),stageTimeLeft:clean(this._preparationLeft),startBell:{...START_BELL},startBellAvailable:this.canStartBell(),elapsed:clean(this.elapsed),timeLeft:Number.isFinite(this.duration)?clean(Math.max(0,this.duration-this.elapsed)):0,timed:Number.isFinite(this.duration),score:this.score,target:this.target,strikes:this.strikes,resultReason:this.resultReason,
-      interaction:{kind:this._doorUse?'rear-door':null,progress:this._doorProgress||0},leaderboard:this.students.filter(s=>this._team.has(s.id)).map(s=>({id:s.id,name:s.name,points:s._earnedPoints||0,caught:Boolean(s.caught),isSelf:s===p})).sort((a,b)=>b.points-a.points||a.id-b.id),suspicion:clean(m?.evidence||0),holding:this.holding,selected:this.selected,actionProgress:clean(p._computerActive?p._computerProgress:p._slots[p._selectedSlot]?.progress||0),completed:{...this.completed},drawer:this._drawerSnapshot(p),caughtCount:this.students.filter(s=>this._team.has(s.id)&&s.caught).length,teamSize:this._team.size,settings:{duration:this._defaultDuration,target:this.target},computerGamingCount:this.students.filter(s=>s.seated&&s._computerActive&&COMPUTER_GAMES.includes(s._computerApp)&&!this._restrained(s)).length,
+      interaction:{kind:this._doorUse?'rear-door':null,progress:this._doorProgress||0},leaderboard:this.students.filter(s=>this._team.has(s.id)).map(s=>({id:s.id,name:s.name,points:s._earnedPoints||0,caught:Boolean(s.caught),isSelf:s===p})).sort((a,b)=>b.points-a.points||a.id-b.id),suspicion:clean(m?.evidence||0),holding:this.holding,selected:this.selected,actionProgress:clean(actionProgress),completed:{...this.completed},drawer:this._drawerSnapshot(p),caughtCount:this.students.filter(s=>this._team.has(s.id)&&s.caught).length,teamSize:this._team.size,settings:{duration:this._defaultDuration,target:this.target},computerGamingCount:this.students.filter(s=>s.seated&&s._computerActive&&COMPUTER_GAMES.includes(s._computerApp)&&!this._restrained(s)).length,
       posts:DETENTION.map(post=>({...post,studentId:this.students.find(s=>s.captivity==='bound'&&s.postId===post.id)?.id??null})),rescue:{id:this._rescueId,progress:this._rescueProgress},rescueAim:this.rescueTarget()?.id??null,
       books:this.books.map(b=>({...b,amount:clean(b.amount)})),
       player:{...capture(p),officeChair:Boolean(p._officeChair),officeDeskId:p._officeDeskId||null,penTaken:Boolean(p._penTaken),computerActive:Boolean(p._computerActive),computer:this._computerSnapshot(p),burpReadyLeft:clean(Math.max(0,(p._burpUntil||0)-this.elapsed)),bookRaised:p.seated?Boolean(this.books[p.seatId]?.raised):false,id:p.id,x:clean(p.x),z:clean(p.z),yaw:clean(p.yaw),pitch:clean(p.pitch),seated:p.seated,crouched:p.crouched,caught:p.caught,seatId:p.seatId,seatYaw:p.seatYaw||0},
@@ -561,7 +562,7 @@ export class ClassroomRound{
     if(actor===this.player)this.selected=actor.action;return true;
   }
   sitOfficeChair(id=OFFICE_CHAIR.id){
-    const chair=OFFICE_CHAIRS.find(c=>c.id===id),p=this.player;if(!chair||!this._inputAllowed()||this._restrained(p)||distance(p,chair)>1.25||!this._clearWallSegment(p,chair))return false;
+    const chair=OFFICE_CHAIRS.find(c=>c.id===id),p=this.player;if(!chair||!this._inputAllowed()||this._restrained(p)||(p.id===-1&&this.teacher.carriedId!==null)||distance(p,chair)>1.25||!this._clearWallSegment(p,chair))return false;
     if([...this.students,...(this.player.id===-1?[this.player]:[])].some(s=>s!==p&&s.seated&&s._officeChair&&s._officeChairId===id))return false;
     const deskId=chair.deskId||(id===OFFICE_CHAIR.id?OFFICE_DESK.id:id.replace(/-chair$/,''));if(!this._switchDeskStock(p,true,deskId))return false;
     Object.assign(p,{x:chair.x,z:chair.z,yaw:chair.yaw||0,seatYaw:chair.yaw||0,seated:true,seatId:-1,_officeChair:true,_officeChairId:id,_officeDeskId:deskId,crouched:false,_drawerOpen:false});this._movement={x:0,z:0};return 'seated';

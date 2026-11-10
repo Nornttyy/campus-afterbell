@@ -14,9 +14,9 @@
 <main><canvas id="canvas" tabindex="0" aria-label="正式电梯模型与单人规则"></canvas><div id="aim"></div><output id="state">加载中</output><div id="loading">正在加载正式场景…</div></main>
 <div id="message" role="status">点击“走到电梯”使用真实移动与碰撞；看按钮后也可按 E 选择准星指向的楼层。</div>
 <script type="module">
-import {createClassroom} from '../dist/classroom.js?v=campus-59c';
-import {createSoloRound} from '../dist/solo-round.js?v=campus-59c';
-import {CAMPUS_MAPS} from '../dist/classroom-layout.js?v=campus-59c';
+import {createClassroom} from '../dist/classroom.js?v=campus-60';
+import {createSoloRound} from '../dist/solo-round.js?v=campus-60';
+import {CAMPUS_MAPS} from '../dist/classroom-layout.js?v=campus-60';
 const $=id=>document.getElementById(id),canvas=$('canvas');
 let scene,round,last=0,raf=0,route=[],view='walk',freezeAt=null,disposed=false,history=[];
 const say=text=>$('message').textContent=text;

@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands,FOOD_ITEM_KINDS} from '../dist/game-actors.js?v=campus-59c';
-import {createRiggedPalm,createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-59c';
-import {createRiggedTeacher} from '../dist/imported-actors.js?v=campus-59c';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-59c';
-import {WHOLE_PALM_PROFILES} from '../dist/whole-palm-profiles54.js?v=campus-59c';
-import {createRoomVariants} from '../dist/room-variants.js?v=campus-59c';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-59c';
-import {TeacherRound} from '../dist/teacher-rules.js?v=campus-59c';
-import {OFFICE_CHAIRS} from '../dist/classroom-layout.js?v=campus-59c';
+import {createDeskHands,FOOD_ITEM_KINDS} from '../dist/game-actors.js?v=campus-60';
+import {createRiggedPalm,createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-60';
+import {createRiggedTeacher} from '../dist/imported-actors.js?v=campus-60';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-60';
+import {WHOLE_PALM_PROFILES} from '../dist/whole-palm-profiles54.js?v=campus-60';
+import {createRoomVariants} from '../dist/room-variants.js?v=campus-60';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-60';
+import {TeacherRound} from '../dist/teacher-rules.js?v=campus-60';
+import {OFFICE_CHAIRS} from '../dist/classroom-layout.js?v=campus-60';
 import {campusScene} from './campus-geometry54-helpers.mjs';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {propSurface,handSamplingRig} from './whole-palm-geometry54.mjs';
@@ -26,9 +26,9 @@ for(const [kind,fit]of Object.entries(WHOLE_PALM_PROFILES))test(`${kind}: every 
  const relaxed=['Index','Middle','Pinky'].map(f=>sampling.bones['LeftHand'+f+'2'].quaternion.clone());let time=0;for(let i=0;i<120;i++)actor.update(time+=DT,{action:kind,carrying:true,freeLook:true});
  const poses=FOOD_ITEM_KINDS.includes(kind)?[0,.5,1]:[0];
  for(const progress of poses){for(let f=0;f<60;f++)actor.update(time+=DT,{action:kind,carrying:true,holding:true,eating:true,progress,freeLook:true});actor.group.updateMatrixWorld(true);const inverse=prop.matrixWorld.clone().invert();
-  for(const finger of ['Index','Middle','Pinky','Thumb','Palm']){let gap=Infinity,depth=0;const points=sampling.points(finger);assert.ok(points.length>100,`${finger} skin sampling missing`);for(const p of points){p.applyMatrix4(hand.group.matrixWorld).applyMatrix4(inverse);const r=surface.query(p),distance=r.distance;gap=Math.min(gap,distance);if(surface.bounds.containsPoint(p)){const votes=[V(.719,.403,.566).normalize(),V(-.431,.811,.395).normalize(),V(.301,-.527,.795).normalize()].filter(d=>surface.inside(p,d)).length;if(votes>=2)depth=Math.max(depth,distance);}}
+  for(const finger of ['Index','Middle','Pinky','Thumb','Palm','Ring']){let gap=Infinity,depth=0;const points=sampling.points(finger);assert.ok(points.length>100,`${finger} skin sampling missing`);for(const p of points){p.applyMatrix4(hand.group.matrixWorld).applyMatrix4(inverse);const r=surface.query(p),distance=r.distance;gap=Math.min(gap,distance);if(surface.bounds.containsPoint(p)){const votes=[V(.719,.403,.566).normalize(),V(-.431,.811,.395).normalize(),V(.301,-.527,.795).normalize()].filter(d=>surface.inside(p,d)).length;if(votes>=2)depth=Math.max(depth,distance);}}
    assert.ok(depth<.002,`${kind}/${finger}: real skin penetrates ${(depth*1000).toFixed(2)}mm at ${progress}`);
-   if(finger!=='Palm')assert.ok(gap<.0055,`${kind}/${finger}: no wrapping contact (${(gap*1000).toFixed(2)}mm)`);
+   if(!['Palm','Ring'].includes(finger))assert.ok(gap<.0055,`${kind}/${finger}: no wrapping contact (${(gap*1000).toFixed(2)}mm)`);
   }
  }
  for(const [i,finger]of ['Index','Middle','Pinky'].entries()){assert.ok(sampling.bones['LeftHand'+finger+'2'].quaternion.angleTo(relaxed[i])>.12,'actual source finger never closes');assert.ok(fit.profile[finger].slice(0,3).filter(a=>a>.30).length>=2,'only a rigid fingertip points at the object');assert.ok(fit.profile[finger].slice(0,3).reduce((a,b)=>a+b,0)>1.6,'the finger never wraps');}
@@ -47,7 +47,7 @@ test('effective eating pauses when looking up, release returns to carry and a ne
 test('student and teacher palms support on table and keyboard; typing bends separate source finger joints',()=>{
  for(const teacher of [false,true])for(const computer of [false,true]){const h=make(teacher),anchor=new T.Group();anchor.add(h.group);let time=0;for(let i=0;i<120;i++)h.update(time+=DT,{seated:true,computer,typing:computer,freeLook:true});
   const hand=h.getHand('left'),rig=handSamplingRig(hand,{samples:100000}),rotations=[];
-  for(let frame=0;frame<60;frame++){h.update(time+=DT,{seated:true,computer,typing:computer,freeLook:true});anchor.updateMatrixWorld(true);if(frame%10===0){let min=Infinity;for(const part of ['Index','Middle','Pinky','Thumb','Palm'])for(const p of rig.points(part))min=Math.min(min,p.applyMatrix4(hand.group.matrixWorld).y);const surface=(computer?.901:.87496)-1.43;assert.ok(min>=surface-.0003&&min<surface+.006,`${teacher?'teacher':'student'} ${computer?'keys':'table'}: skin at ${min}, expected ${surface}`);}rotations.push(rig.bones.LeftHandMiddle2.quaternion.clone());}
+  for(let frame=0;frame<60;frame++){h.update(time+=DT,{seated:true,computer,typing:computer,freeLook:true});anchor.updateMatrixWorld(true);if(frame%10===0){let min=Infinity;for(const part of ['Index','Middle','Pinky','Thumb','Palm','Ring'])for(const p of rig.points(part))min=Math.min(min,p.applyMatrix4(hand.group.matrixWorld).y);const surface=(computer?.901:.87496)-1.43;assert.ok(min>=surface-.0003&&min<surface+.006,`${teacher?'teacher':'student'} ${computer?'keys':'table'}: skin at ${min}, expected ${surface}`);}rotations.push(rig.bones.LeftHandMiddle2.quaternion.clone());}
   if(computer)assert.ok(rotations.some(q=>q.angleTo(rotations[0])>.03),'typing only moves the whole hand');
  }
 });
@@ -74,13 +74,13 @@ test('formal classroom typing alternates real finger contacts without entering k
  lab.stations.get(p.seatId).traverse(o=>{const g=o.geometry?.parameters;if(g?.width===.035&&g?.height===.008)keyBoxes.push(new T.Box3().setFromObject(o,true));});assert.equal(keyBoxes.length,33);
  const gaps=rigs.map(()=>({Index:Infinity,Middle:Infinity,Pinky:Infinity}));
  for(let frame=0;frame<240;frame++){const snapshot=round.snapshot();actor.update(frame*DT,{seated:true,computer:snapshot.player.computerActive,typing:snapshot.holding,freeLook:true});if(frame<120||frame%6)continue;scene.updateMatrixWorld(true);
-  rigs.forEach(({hand,rig},i)=>{for(const finger of ['Index','Middle','Pinky','Thumb','Palm'])for(const v of rig.points(finger)){const pad=v.pad;v.applyMatrix4(hand.group.matrixWorld);for(const b of keyBoxes){if(b.containsPoint(v))assert.ok(Math.min(v.x-b.min.x,b.max.x-v.x,v.y-b.min.y,b.max.y-v.y,v.z-b.min.z,b.max.z-v.z)<.0003,`hand ${i}/${finger} enters actual keycap`);if(!pad||!Object.hasOwn(gaps[i],finger))continue;const d=Math.hypot(Math.max(0,b.min.x-v.x,v.x-b.max.x),v.y-b.max.y,Math.max(0,b.min.z-v.z,v.z-b.max.z));gaps[i][finger]=Math.min(gaps[i][finger],d);}}});
+  rigs.forEach(({hand,rig},i)=>{for(const finger of ['Index','Middle','Pinky','Thumb','Palm','Ring'])for(const v of rig.points(finger)){const pad=v.pad;v.applyMatrix4(hand.group.matrixWorld);for(const b of keyBoxes){if(b.containsPoint(v))assert.ok(Math.min(v.x-b.min.x,b.max.x-v.x,v.y-b.min.y,b.max.y-v.y,v.z-b.min.z,b.max.z-v.z)<.0003,`hand ${i}/${finger} enters actual keycap`);if(!pad||!Object.hasOwn(gaps[i],finger))continue;const d=Math.hypot(Math.max(0,b.min.x-v.x,v.x-b.max.x),v.y-b.max.y,Math.max(0,b.min.z-v.z,v.z-b.max.z));gaps[i][finger]=Math.min(gaps[i][finger],d);}}});
  }
  for(const [i,parts]of gaps.entries()){for(const [finger,gap]of Object.entries(parts))assert.ok(gap<.010,`hand ${i}/${finger} leaves the key region by ${(gap*1000).toFixed(2)}mm`);assert.ok(Object.values(parts).filter(gap=>gap<.006).length>=2,`hand ${i} has no alternating key contacts`);}
  lab.dispose();scene.traverse(o=>o.geometry?.dispose());materials.forEach(m=>m.dispose());
  const campus=campusScene(),teacher=new TeacherRound({seed:3});teacher.start();try{for(const chair of OFFICE_CHAIRS){Object.assign(teacher.player,{x:chair.x,z:chair.z-.2,seated:false});assert.equal(teacher.sitOfficeChair(chair.id),'seated');const snapshot=teacher.snapshot(),hands=make(true),rig=handSamplingRig(hands.getHand('left'),{samples:100000}),anchor=new T.Group();anchor.position.set(snapshot.player.x,1.43,snapshot.player.z);anchor.rotation.y=Math.PI+snapshot.player.seatYaw;anchor.add(hands.group);
   for(let f=0;f<120;f++)hands.update(f*DT,{seated:snapshot.player.seated,office:snapshot.player.officeChair,freeLook:true});anchor.updateMatrixWorld(true);let nearest=Infinity;
-  for(const part of ['Index','Middle','Pinky','Thumb','Palm'])for(const v of rig.points(part)){v.applyMatrix4(hands.getHand('left').group.matrixWorld);const hit=new T.Raycaster(v.clone().add(V(0,.01,0)),V(0,-1,0),0,.03).intersectObject(campus.scene,true).find(h=>!h.object.material.transparent);if(hit){const distance=v.y-hit.point.y;assert.ok(distance>-.0003,'teacher skin enters the actual office table');nearest=Math.min(nearest,distance);}}
+  for(const part of ['Index','Middle','Pinky','Thumb','Palm','Ring'])for(const v of rig.points(part)){v.applyMatrix4(hands.getHand('left').group.matrixWorld);const hit=new T.Raycaster(v.clone().add(V(0,.01,0)),V(0,-1,0),0,.03).intersectObject(campus.scene,true).find(h=>!h.object.material.transparent);if(hit){const distance=v.y-hit.point.y;assert.ok(distance>-.0003,'teacher skin enters the actual office table');nearest=Math.min(nearest,distance);}}
   assert.ok(nearest<.007,'teacher palm floats above its actual office desk');}
  }finally{campus.dispose();}
 });

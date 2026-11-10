@@ -17,10 +17,10 @@ export function propSurface(prop){
 
 export function handSamplingRig(hand,{side='Left',samples=70}={}){
  hand.setCurl(0);const group=hand.group,bones={};group.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig[:_]?/,'')]=o;});group.updateMatrixWorld(true);
- const rig=createFingerRig(group,bones,side),frame=handFrame(bones,side),groups={Index:[],Middle:[],Pinky:[],Thumb:[],Palm:[]},meshes=[],inverse=group.matrixWorld.clone().invert();
+ const rig=createFingerRig(group,bones,side),frame=handFrame(bones,side),groups={Index:[],Middle:[],Pinky:[],Thumb:[],Palm:[],Ring:[]},meshes=[],inverse=group.matrixWorld.clone().invert();
  group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;meshes.push(mesh);const ix=mesh.geometry.attributes.skinIndex,wt=mesh.geometry.attributes.skinWeight;mesh.skeleton.update();
   for(let i=0;i<ix.count;i++){let strongest=0,key='';for(let k=0;k<4;k++)if(wt.getComponent(i,k)>strongest){strongest=wt.getComponent(i,k);key=mesh.skeleton.bones[ix.getComponent(i,k)].name.replace(/^mixamorig[:_]?/,'');}if(strongest<=0)continue;const finger=['Index','Middle','Pinky','Thumb'].find(f=>key.startsWith(side+'Hand'+f));
-   if(finger)groups[finger].push({mesh,i,pad:key.endsWith('3'),segment:Number(key.slice(-1))});else if(key===side+'Hand'||key.startsWith(side+'HandRing'))groups.Palm.push({mesh,i,pad:true});
+   if(finger)groups[finger].push({mesh,i,pad:key.endsWith('3'),segment:Number(key.slice(-1))});else if(key===side+'Hand')groups.Palm.push({mesh,i,pad:true});else if(key.startsWith(side+'HandRing'))groups.Ring.push({mesh,i,pad:key.endsWith('3'),segment:Number(key.slice(-1))});
   }
  });
  const allGroups={...groups};function resample(count){for(const key of Object.keys(groups)){const all=allGroups[key];groups[key]=Array.from({length:Math.min(count,all.length)},(_,i)=>all[Math.floor(i*all.length/Math.min(count,all.length))]);}}resample(samples);

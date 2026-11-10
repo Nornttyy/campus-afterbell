@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-59c';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-59c';
-import {surfaceHeight,drawBoardSurface,setWallSurfaceUV} from './surface-materials.js?v=campus-59c';
-import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-59c';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-60';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-60';
+import {surfaceHeight,drawBoardSurface,setWallSurfaceUV} from './surface-materials.js?v=campus-60';
+import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-60';
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
 export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces=null,artwork={},bakeStatic=()=>{}}){
  const enclosure=new T.Group();enclosure.name='classroom-cutaway-walls';scene.add(enclosure);
@@ -111,7 +111,13 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   if(p.minZ<3.15&&p.maxZ>3.15){spans=[[p.minZ,2.70],[3.60,p.maxZ]];B(cream,[7.30,wallY,3.15],[.20,wallHeight,.90],enclosure);}
   for(const [a,b]of spans){const count=Math.max(1,Math.ceil((b-a)/3.2)),width=(b-a)/count;
    if(width<1.4){B(cream,[7.30,wallY,(a+b)/2],[.20,wallHeight,b-a],enclosure);continue;}
-   for(let i=0;i<count;i++){window(1,a+(i+.5)*width,width-.16);B(cream,[7.30,wallY,a+i*width+.04],[.20,wallHeight,.08],enclosure);}B(cream,[7.30,wallY,b-.04],[.20,wallHeight,.08],enclosure);
+   for(let i=0;i<count;i++)window(1,a+(i+.5)*width,width-.16);
+   // Each window leaves 8cm at either end: intermediate piers must fill
+   // both halves of the joint, while the outer piers stop at the span edge.
+   for(let i=0;i<=count;i++){
+    const joint=a+i*width,lo=Math.max(a,joint-.08),hi=Math.min(b,joint+.08);
+    B(cream,[7.30,wallY,(lo+hi)/2],[.20,wallHeight,hi-lo],enclosure).name='interior-window-join-pier';
+   }
   }
   // A real surface lip, not a second face exactly on the plaster plane.
   B(skirting,[7.30,.065,(p.minZ+p.maxZ)/2],[.224,.13,p.maxZ-p.minZ],enclosure).name='partition-base-trim';

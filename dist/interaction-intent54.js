@@ -24,13 +24,13 @@ export function interactionIntent(s,target,key){
  if(carrying&&p.seated&&target?.kind==='chair'&&target.id===p.seatId)return intent('interact',[],'拿着起身');
  if(carrying&&s.selected==='pen'&&p.seated)return p.officeChair?intent('interact',[],'拿着起身'):intent('togglePenMode',[],p.penWriting?'转笔':'写字');
  if(target?.kind==='rear-door')return s.rearDoorClosed?intent('setDoorUse',[true,false],'开门',true):null;
- if(target?.kind==='office-chair')return !p.seated?intent('interact',[target.id||'office-chair'],'坐下'):null;
+ if(target?.kind==='office-chair')return !p.seated&&(!teacher||s.teacher.carriedId==null)?intent('interact',[target.id||'office-chair'],'坐下'):null;
  if(target?.kind==='chair')return !p.seated?intent('interact',[target.id],'坐下'):null;
  if(teacher&&s.stage==='class'){
   if(s.teacher.carriedId!=null)return s.bindPost!=null?intent('bindStudent',[],'绑到木桩'):null;
   if(target?.kind==='release')return intent('releaseBoundStudent',[],'释放同学');
   if(target?.kind==='blackboard')return intent('setWriting',[true],'写板书',true);
-  if(target?.grabReady)return intent('grabStudent',[],'抓住同学');
+  if(target?.grabReady&&!p.seated)return intent('grabStudent',[],'抓住同学');
  }
  if(target?.kind==='rescue')return intent('setRescue',[target.id],'解救同学',true);
  if(carrying)return p.seated?intent('interact',[],'拿着起身'):null;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-59c';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-60';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));

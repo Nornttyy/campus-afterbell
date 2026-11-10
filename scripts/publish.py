@@ -43,16 +43,38 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
   state['blobs'][name]=sha;statepath.write_text(json.dumps(state))
   entries.append({'path':name,'mode':file_modes[name],'type':'blob','sha':sha})
   print('Uploaded',name,flush=True)
+def incremental_tree(entries,base_sha=None):
+ desired={e['path']:e for e in entries}
+ assert len(desired)==len(entries),'Duplicate publish paths'
+ previous={}
+ if base_sha:
+  previous_tree=api('git/trees/'+base_sha+'?recursive=1')
+  assert not previous_tree.get('truncated'),'Cannot safely diff a truncated remote tree'
+  previous={e['path']:e for e in previous_tree['tree'] if e['type']!='tree'}
+ fields=('mode','type','sha')
+ delta=[e for path,e in desired.items() if path not in previous or any(e[k]!=previous[path][k] for k in fields)]
+ delta += [{'path':path,'mode':e['mode'],'type':e['type'],'sha':None} for path,e in previous.items() if path not in desired]
+ if not delta:return {'sha':base_sha}
+ tree={'sha':base_sha}
+ for start in range(0,len(delta),48):
+  body={'tree':delta[start:start+48]}
+  if tree['sha']:body['base_tree']=tree['sha']
+  tree=api('git/trees',body)
+ actual=api('git/trees/'+tree['sha']+'?recursive=1')
+ assert not actual.get('truncated'),'Cannot verify a truncated publication tree'
+ actual={e['path']:{k:e[k] for k in fields} for e in actual['tree'] if e['type']!='tree'}
+ expected={path:{k:e[k] for k in fields} for path,e in desired.items()}
+ assert actual==expected,'Published tree differs from the checked local file snapshot'
+ return tree
 def publish_branch(branch,entries):
  current=api('git/ref/heads/'+branch,allow404=True)
  parents=[current['object']['sha']] if current else []
- tree=api('git/trees',{'tree':entries})
- if current:
-  old=api('git/commits/'+parents[0])
-  if old['tree']['sha']==tree['sha']:
-   print(branch+' is already up to date',flush=True)
-   return parents[0]
- commit=api('git/commits',{'message':'Add hand animation editor, carry-away items and repair classroom and elevator seams','tree':tree['sha'],'parents':parents})
+ old=api('git/commits/'+parents[0]) if current else None
+ tree=incremental_tree(entries,old['tree']['sha'] if old else None)
+ if old and old['tree']['sha']==tree['sha']:
+  print(branch+' is already up to date',flush=True)
+  return parents[0]
+ commit=api('git/commits',{'message':'Fix shared item ownership, touch controls, window joins and held food contact','tree':tree['sha'],'parents':parents})
  if current:
   assert api('git/ref/heads/'+branch)['object']['sha']==parents[0],'Remote changed during upload'
   api('git/refs/heads/'+branch,{'sha':commit['sha'],'force':False},method='PATCH')

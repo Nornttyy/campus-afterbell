@@ -1,10 +1,10 @@
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-59c';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-59c';
-import {teacherViewHeight} from './camera-height58.js?v=campus-59c';
-import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-59c';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-60';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-60';
+import {teacherViewHeight} from './camera-height58.js?v=campus-60';
+import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-60';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-59c';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-60';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
@@ -29,7 +29,7 @@ export class TeacherRound extends ClassroomRound{
   snapshot(){
     const s=super.snapshot();s.surveillance=surveillanceSnapshot(this);
     if(this.player.id!==-1)return s; // Base reset calls snapshot before teacher initialization.
-    s.role='teacher';const aim=this.aimedStudent();s.teacherAim=aim?{id:aim.id,grabReady:Math.hypot(aim.x-this.player.x,aim.z-this.player.z)<1.55&&aim.captivity==='stunned'}:null;s.bindPost=this.bindTarget()?.id??null;s.chalks=this.chalks.map(c=>({...c}));s.throwAge=this._sessionElapsed-this._lastThrow;
+    s.role='teacher';const aim=this.aimedStudent();s.teacherAim=aim?{id:aim.id,grabReady:!this.player.seated&&Math.hypot(aim.x-this.player.x,aim.z-this.player.z)<1.55&&aim.captivity==='stunned'}:null;s.bindPost=this.bindTarget()?.id??null;s.chalks=this.chalks.map(c=>({...c}));s.throwAge=this._sessionElapsed-this._lastThrow;
     s.wrongGrabs=this.wrongGrabs;s.writeBoardAvailable=this.canWriteBoard();s.releaseStudent=this.releaseTarget()?.id??null;
     s.students=s.students.map(p=>({...p,chalked:this.elapsed<(this.students[p.id]._chalkUntil||0)}));
     return s;
@@ -70,7 +70,7 @@ export class TeacherRound extends ClassroomRound{
     const p=this.player;return DETENTION.find(post=>Math.hypot(p.x-post.x,p.z-post.z)<1.55&&clearWallSegment(p,post,this.layout)&&Math.abs(Math.atan2(Math.sin(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw),Math.cos(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw)))<.85&&!this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))||null;
   }
   grabStudent(){
-    if(!this._classInputAllowed()||this._writing||this.teacher.carriedId!==null)return false;
+    if(!this._classInputAllowed()||this.player.seated||this._restrained(this.player)||this._writing||this.teacher.carriedId!==null)return false;
     const s=this.aimedStudent(1.55);if(!s||s.captivity!=='stunned')return false;
     Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw});const grabbed=this._grab(s);if(grabbed)this.player.crouched=false;return grabbed;
   }
