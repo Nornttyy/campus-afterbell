@@ -1,21 +1,21 @@
-import {WRITING_PROPS} from './writing-props58.js?v=campus-60';
-import {WRITING_GRIPS} from './writing-grips58.js?v=campus-60';
-import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-60';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-60';
-import {createCapturePose} from './capture-poses.js?v=campus-60';
+import {WRITING_PROPS} from './writing-props58.js?v=campus-61';
+import {WRITING_GRIPS} from './writing-grips58.js?v=campus-61';
+import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-61';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-61';
+import {createCapturePose} from './capture-poses.js?v=campus-61';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-60';
-import {propContact} from './prop-assets.js?v=campus-60';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-61';
+import {propContact} from './prop-assets.js?v=campus-61';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-60';
-import {createCrawlPose} from './crawl-pose.js?v=campus-60';
-import {createStudentGestures} from './student-gestures.js?v=campus-60';
-import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-60';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-60';
-import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-60';
-import {createStudentEyes} from './student-eyes56.js?v=campus-60';
-import {createStudyBook} from './study-book58.js?v=campus-60';
-import {normalWalkCycleRate} from './movement55.js?v=campus-60';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-61';
+import {createCrawlPose} from './crawl-pose.js?v=campus-61';
+import {createStudentGestures} from './student-gestures.js?v=campus-61';
+import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-61';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-61';
+import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-61';
+import {createStudentEyes} from './student-eyes56.js?v=campus-61';
+import {createStudyBook} from './study-book58.js?v=campus-61';
+import {normalWalkCycleRate} from './movement55.js?v=campus-61';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 export const STUDENT_ASSETS=Object.freeze({
  boy:Object.freeze({file:'student-boy-v4',contact:'boy'}),

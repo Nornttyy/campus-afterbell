@@ -1,14 +1,14 @@
 import * as T from './vendor/three.module.js';
 import {OrbitControls} from './vendor/addons/controls/OrbitControls.js';
 import {TransformControls} from './vendor/addons/controls/TransformControls.js';
-import {createRiggedPalm} from './student-assets.js?v=campus-60';
+import {createRiggedPalm} from './student-assets.js?v=campus-61';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createDeskHands} from './game-actors.js?v=campus-60';
-import {HAND_CLIP_IDS,createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-60';
-import {loadHandAnimations,saveHandAnimations,clearHandAnimations} from './hand-animation-runtime59.js?v=campus-60';
-import {createAnimationHistory,putAnimationFrame,moveAnimationFrame,retimeAnimationClip,mirrorAnimationHand,completeAnimationDocument} from './animation-editor-state59.js?v=campus-60';
+import {createDeskHands} from './game-actors.js?v=campus-61';
+import {HAND_CLIP_IDS,createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-61';
+import {loadHandAnimations,saveHandAnimations,clearHandAnimations} from './hand-animation-runtime59.js?v=campus-61';
+import {createAnimationHistory,putAnimationFrame,moveAnimationFrame,retimeAnimationClip,mirrorAnimationHand,completeAnimationDocument} from './animation-editor-state59.js?v=campus-61';
 
-import {prepareAnimationEditorDocument} from './animation-editor-start59.js?v=campus-60';
+import {prepareAnimationEditorDocument} from './animation-editor-start59.js?v=campus-61';
 
 const $=id=>document.getElementById(id),clone=v=>JSON.parse(JSON.stringify(v)),DRAFT='campus.handAnimationDraft.v2',LEGACY_DRAFT='campus.handAnimationDraft.v1',RAD=Math.PI/180;
 let doc=createHandAnimationDocument(),draftError='',draftNotice='';
@@ -63,7 +63,7 @@ $('mirror').onclick=()=>edit(()=>{const p=pose();p[side==='left'?'right':'left']
 function recover(next){doc=next;time=Math.min(time,clip().duration);playing=false;changed({commit:false});}
 $('undo').onclick=()=>recover(history.undo());$('redo').onclick=()=>recover(history.redo());$('restore').onclick=()=>edit(()=>{doc.clips[clipId]={...clip(),keyframes:createHandAnimationDocument().clips[clipId].keyframes};time=0;notice('已清空为一个静止姿势；可以撤销。');});
 $('apply').onclick=()=>{try{const checked=validateHandAnimationDocument(doc);if(!checked.ok)throw Error(checked.errors.join('；'));doc=saveHandAnimations(checked.value);applied=true;persist();status('已保存到游戏');notice('已应用。回到同一浏览器的游戏，起身移动即可预览。');}catch(e){notice(`保存失败：${e.message}`,true);}};
-$('disable-custom').onclick=()=>{try{clearHandAnimations();applied=false;clearTimeout(saveTimer);notice('游戏已恢复原动作，编辑器草稿仍保留。');status('游戏使用原动作');}catch(e){notice(e.message,true);}};
+$('disable-custom').onclick=()=>{try{clearHandAnimations();applied=false;clearTimeout(saveTimer);notice('游戏已恢复已发布的默认动作，编辑器草稿仍保留。');status('游戏使用已发布动作');}catch(e){notice(e.message,true);}};
 $('export').onclick=()=>{const checked=validateHandAnimationDocument(doc);if(!checked.ok)return notice(checked.errors.join('；'),true);const blob=new Blob([JSON.stringify(checked.value,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='校园手部动作.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notice('已导出动作文件。');};
 $('import').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>1024*1024)throw Error('文件不能超过 1 MB');const result=validateHandAnimationDocument(JSON.parse(await file.text()));if(!result.ok)throw Error(result.errors.join('；'));edit(()=>{doc=completeAnimationDocument(result.value,createHandAnimationDocument());time=0;});notice('已导入。预览满意后，点击保存到游戏。');}catch(error){notice(`没有导入：${error.message}`,true);}finally{e.target.value='';}};
 $('speed').onchange=()=>speed=+$('speed').value;$('grid').onchange=()=>{if(grid)grid.visible=$('grid').checked;};$('show-path').onchange=()=>needPaths=true;$('show-gizmo').onchange=()=>{};$('look-pitch').oninput=()=>{if(view==='first')setView('first');};$('view-reset').onclick=()=>{$('look-pitch').value=0;setView(view);};

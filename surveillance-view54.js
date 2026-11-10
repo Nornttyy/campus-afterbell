@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.js';
-import {SURVEILLANCE_MOUNTS} from './surveillance54.js?v=campus-60';
-import {floorHeight} from './classroom-layout.js?v=campus-60';
-import {createSmokeEffects} from './smoke-effects.js?v=campus-60';
+import {SURVEILLANCE_MOUNTS} from './surveillance54.js?v=campus-61';
+import {floorHeight} from './classroom-layout.js?v=campus-61';
+import {createSmokeEffects} from './smoke-effects.js?v=campus-61';
 
 export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
  const root=new THREE.Group();root.name='classroom-surveillance';scene.add(root);
