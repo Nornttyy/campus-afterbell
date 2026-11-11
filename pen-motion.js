@@ -1,7 +1,9 @@
 import * as T from './vendor/three.module.js';
+import {clonePropAsset} from './prop-assets.js?v=campus-67';
 const V=()=>new T.Vector3();
 export const SCHOOL_PEN=Object.freeze({length:.175,tipY:-.0875,gripY:-.030,radius:.010,gripRadius:.0105});
 export function createSchoolPen(){
+ const supplied=clonePropAsset('pen');if(supplied){supplied.userData.pen={...SCHOOL_PEN};return supplied;}
  const group=new T.Group();group.name='red-school-pen';
  const body=new T.MeshStandardMaterial({color:'#c8302d',roughness:.40}),rubber=new T.MeshStandardMaterial({color:'#282c30',roughness:.86}),metal=new T.MeshStandardMaterial({color:'#bfc7ca',roughness:.28,metalness:.72}),dark=new T.MeshStandardMaterial({color:'#12191c',roughness:.55});
  const part=(name,geometry,material,y=0)=>{const m=new T.Mesh(geometry,material);m.name=name;m.position.y=y;group.add(m);return m;};

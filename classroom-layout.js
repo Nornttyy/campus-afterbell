@@ -1,4 +1,4 @@
-import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-65';
+import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-67';
 // Elevator operation is enabled; boarding and per-round limits are authoritative.
 export const ELEVATOR_ENABLED=true;
 export const TEACHER_EYE_HEIGHT=1.95;
@@ -12,9 +12,9 @@ export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:COR
 export const ROOM=Object.freeze({minX:CLASSROOM.minX,maxX:CORRIDOR.maxX,minZ:LIFT.minZ,maxZ:OFFICE.maxZ});
 export const CEILING_HEIGHT=4.51,TIERED_CEILING_HEIGHT=5.55;
 export const TEACHER_SPAWN=Object.freeze({x:9.20,z:12.00,yaw:Math.PI,pitch:.025});
-export const OFFICE_DESK=Object.freeze({id:'office-lunch',x:4.80,z:13.10,width:2.20,depth:1.02,yaw:0,drawerX:4.80,drawerZ:12.58});
+export const OFFICE_DESK=Object.freeze({id:'office-lunch',x:4.80,z:13.10,width:1.844,depth:.892,yaw:0,drawerX:4.80,drawerZ:12.58});
 export const OFFICE_CHAIR=Object.freeze({id:'office-chair',deskId:OFFICE_DESK.id,x:4.80,z:11.96,yaw:0});
-export const OFFICE_DESKS=Object.freeze([OFFICE_DESK,...[[2.1,16.1],[6.1,16.1],[2.1,18.9],[6.1,18.9]].map(([x,z],i)=>Object.freeze({id:'office-work-'+i,x,z,width:2.20,depth:1.02,yaw:0,drawerX:x,drawerZ:z-.52}))]);
+export const OFFICE_DESKS=Object.freeze([OFFICE_DESK,...[[2.1,16.1],[6.1,16.1],[2.1,18.9],[6.1,18.9]].map(([x,z],i)=>Object.freeze({id:'office-work-'+i,x,z,width:1.844,depth:.892,yaw:0,drawerX:x,drawerZ:z-.52}))]);
 export const OFFICE_CHAIRS=Object.freeze([OFFICE_CHAIR,...OFFICE_DESKS.slice(1).map(d=>Object.freeze({id:d.id+'-chair',deskId:d.id,x:d.x,z:d.z-1.14,yaw:0}))]);
 export const OFFICE_BOARD=Object.freeze({x:8,z:20.35});
 export const ROLE_LOCKER=Object.freeze({x:CORRIDOR.maxX-.36,z:6.65,yaw:-Math.PI/2});
@@ -69,7 +69,7 @@ export const BOARD=Object.freeze({x:1.25,z:7.45});
 export const DETENTION=Object.freeze([-5.85,-5.00,-4.15,4.60,5.45,6.30].map((x,id)=>Object.freeze({id,x,z:8.08})));
 export const DOORS=Object.freeze([-8.00,7.00].map((center,i)=>Object.freeze({id:i===0?'rear':'front',center,minZ:center-.80,maxZ:center+.80})));
 export const PARTITIONS=Object.freeze([{minX:7.20,maxX:7.40,minZ:-10.20,maxZ:DOORS[0].minZ},{minX:7.20,maxX:7.40,minZ:DOORS[0].maxZ,maxZ:DOORS[1].minZ},{minX:7.20,maxX:7.40,minZ:DOORS[1].maxZ,maxZ:9.02}]);
-export const LECTERN=Object.freeze({minX:-1.52,maxX:-.17,minZ:7.20,maxZ:8.02});
+export const LECTERN=Object.freeze({minX:-1.240,maxX:-.450,minZ:7.3215,maxZ:7.8985});
 const V=(minX,maxX,minZ,maxZ,minY=0,maxY=CEILING_HEIGHT)=>Object.freeze({minX,maxX,minZ,maxZ,minY,maxY});
 export const DOOR_LEAVES=Object.freeze(DOORS.map(d=>V(7.30,8.88,d.maxZ-.07,d.maxZ+.07,.04,3.02)));
 // Continuous shell: classroom proportions are independent of the longer corridor.
@@ -104,7 +104,7 @@ export const OFFICE_SOLIDS=Object.freeze([
  ...OFFICE_DESKS.map(d=>V(d.x-d.width/2,d.x+d.width/2,d.z-d.depth/2,d.z+d.depth/2,0,.985)),
  // Monitor shells and books sit above each physical desk, so thrown items
  // cannot pass straight through their visible screens.
- ...OFFICE_DESKS.map(d=>V(d.x-.79,d.x-.05,d.z+.12,d.z+.24,.985,1.58)),
+ ...OFFICE_DESKS.map(d=>V(d.x-.75,d.x-.09,d.z+.15,d.z+.23,1.105,1.482)),
  V(OFFICE.maxX-.68,OFFICE.maxX-.02,11.075,14.925,0,1.065),V(ROLE_LOCKER.x-.37,ROLE_LOCKER.x+.35,5.75,7.55,0,2.28),V(OFFICE_BOARD.x-1.35,OFFICE_BOARD.x+1.35,OFFICE_BOARD.z-.37,OFFICE_BOARD.z+.37,0,2.48),V(CORRIDOR.maxX-.75,CORRIDOR.maxX-.02,CORRIDOR.minZ+.25,CORRIDOR.minZ+1.08,0,1.72)
 ]);
 export function floorHeight(x,z,map='classroom'){

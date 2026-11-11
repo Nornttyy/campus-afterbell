@@ -1,3 +1,4 @@
+import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js';
 import * as T from './vendor/three.module.js';
 
 // A single compartment fits beside the existing tower without changing the
@@ -22,11 +23,14 @@ export function buildDesktop55({parent,box,rounded,mat,x=0,y=0,z=0,id='computer'
  const root=new T.Group();root.name=id;root.position.set(x,y,z);parent.add(root);
  const hardware=new T.Group();root.add(hardware);
  const casing=mat('#48515b',{roughness:.53}),metal=mat('#8a969c',{metalness:.3,roughness:.45}),key=mat('#c7cecf',{roughness:.71}),black=mat('#1e2c35',{roughness:.83});
+ const imported=hasComputer67();
+ if(imported){placeFurniture67(hardware,'monitor',0,0,.19);placeFurniture67(hardware,'keyboard',-.04,0,-.22);placeFurniture67(hardware,'mouse',-.43,0,-.20);}else{
  rounded(casing,[0,.38,.19],[.74,.43,.075],.014,null,hardware);box(metal,[0,.14,.20],[.065,.23,.075],null,hardware);rounded(metal,[0,.025,.15],[.30,.025,.20],.008,null,hardware);
  rounded(casing,[0,.026,-.22],[.63,.030,.19],.007,null,hardware);
  for(let row=0;row<3;row++)for(let col=0;col<12;col++)box(key,[-.275+col*.05,.045,-.276+row*.053],[.039,.008,.037],null,hardware);
  rounded(casing,[.43,.03,-.20],[.09,.043,.13],.015,null,hardware);box(black,[.43,.05,-.218],[.004,.004,.03],null,hardware);
- const screen=new T.Mesh(new T.PlaneGeometry(.666,.366),new T.MeshBasicMaterial({color:'#71959d',toneMapped:false}));screen.position.set(0,.38,.151);screen.rotation.y=Math.PI;screen.name=id+'-screen';screen.userData.animated=true;root.add(screen);
+ }
+ const screen=new T.Mesh(new T.PlaneGeometry(imported?MONITOR67.width:.666,imported?MONITOR67.height:.366),new T.MeshBasicMaterial({color:'#71959d',toneMapped:false}));screen.position.set(0,imported?MONITOR67.y:.38,imported?.19+MONITOR67.z:.151);screen.rotation.y=Math.PI;screen.name=id+'-screen';screen.userData.animated=true;root.add(screen);
  bakeStatic(hardware);return{root,screen};
 }
 
