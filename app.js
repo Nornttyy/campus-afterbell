@@ -1,7 +1,7 @@
-import {setupControlSettings} from './control-settings64.js?v=campus-67';
-import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-67';
-import {playCampusFoley} from './foley-audio54.js?v=campus-67';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-67';
+import {setupControlSettings} from './control-settings64.js?v=campus-68b';
+import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-68b';
+import {playCampusFoley} from './foley-audio54.js?v=campus-68b';
+import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-68b';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -159,7 +159,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-67'),import('./classroom-game.js?v=campus-67')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-68b'),import('./classroom-game.js?v=campus-68b')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}

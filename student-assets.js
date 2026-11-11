@@ -1,24 +1,24 @@
-import {createFacialEffects} from './facial-effects64.js?v=campus-67';
+import {createFacialEffects} from './facial-effects64.js?v=campus-68b';
 import {requireModelBudget} from './model-budget64.js';
-import {WRITING_PROPS} from './writing-props58.js?v=campus-67';
-import {WRITING_GRIPS} from './writing-grips58.js?v=campus-67';
-import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-67';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-67';
-import {createCapturePose} from './capture-poses.js?v=campus-67';
+import {WRITING_PROPS} from './writing-props58.js?v=campus-68b';
+import {WRITING_GRIPS} from './writing-grips58.js?v=campus-68b';
+import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-68b';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-68b';
+import {createCapturePose} from './capture-poses.js?v=campus-68b';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-67';
-import {propContact} from './prop-assets.js?v=campus-67';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-68b';
+import {propContact} from './prop-assets.js?v=campus-68b';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-67';
-import {createCrawlPose} from './crawl-pose.js?v=campus-67';
-import {createStudentGestures} from './student-gestures.js?v=campus-67';
-import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-67';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-67';
-import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-67';
-import {createStudentEyes} from './student-eyes56.js?v=campus-67';
-import {createStudyBook} from './study-book58.js?v=campus-67';
-import {normalWalkCycleRate} from './movement55.js?v=campus-67';
-import {writingStroke,thirdPersonPenTime} from './study-motion64.js?v=campus-67';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-68b';
+import {createCrawlPose} from './crawl-pose.js?v=campus-68b';
+import {createStudentGestures} from './student-gestures.js?v=campus-68b';
+import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-68b';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-68b';
+import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-68b';
+import {createStudentEyes} from './student-eyes56.js?v=campus-68b';
+import {createStudyBook} from './study-book58.js?v=campus-68b';
+import {normalWalkCycleRate} from './movement55.js?v=campus-68b';
+import {writingStroke,thirdPersonPenTime} from './study-motion64.js?v=campus-68b';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 export const STUDENT_ASSETS=Object.freeze({
  boy:Object.freeze({file:'student-boy-v4',contact:'boy'}),
@@ -96,7 +96,7 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
  const model=gltf.scene;model.scale.setScalar(metric?1:1.80);group.add(model);
  const bones={};model.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig[:_]?/,'')]=o;if(o.isMesh){o.castShadow=true;o.frustumCulled=false;}});
  useCharacterBaseColor(model);
- const eyes=createStudentEyes(model,{variant,seed,enabled:metric});
+ const eyes=createStudentEyes(model,{variant,seed,enabled:metric});let eyeLook=null;
  const faceEffects=createFacialEffects(model,{variant});let faceInkLeft=0;
 
  for(const name of ['Head','Hips','LeftArm','LeftForeArm','LeftHand','RightArm','RightForeArm','RightHand'])if(!bones[name])throw new Error(`${group.userData.asset}: missing ${name} bone`);
@@ -266,9 +266,9 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glass
   }
   pencil.visible=captivity==='free'&&(heldPen||mood==='writing')&&(weights.Write||0)>.6;
   if(captivity==='free'&&isSeated)studyBook.update(mood==='reading',dt,reset,t);else studyBook.clear();
-  poseHeadLook(dt,reset);eyes.update(t);faceEffects.update({stunned:captivity==='stunned',inkLeft:faceInkLeft},dt,reset);
+  poseHeadLook(dt,reset);eyes.update(t,eyeLook);faceEffects.update({stunned:captivity==='stunned',inkLeft:faceInkLeft},dt,reset);
  }
- update(0);return{group,head,bones,update,seated,setStudyBook:source=>studyBook.setSource(source),studyBookVisible:()=>studyBook.visible(),setMood:m=>{mood=m;if(THROWABLE_ITEM_KINDS.includes(m))lastThrowable=m;},setMotion:({inkLeft=0,crawling:prone=false,seated=isSeated,speed=moving,carrying=held,heldAction:heldKind=null,using:isUsing=null,penWriting:writing=false,penTwirling:twirling=false,lookYaw:headYaw=null,lookPitch:headPitch=0,restraint='free',restraintStartedAt:startedAt=null,throwProgress:progress=0,throwAge:age=Infinity}={})=>{faceInkLeft=inkLeft;crawling=Boolean(prone);captivity=restraint;restraintStartedAt=Number.isFinite(startedAt)?startedAt:null;isSeated=seated;moving=Math.max(0,speed);held=carrying;heldAction=heldKind;using=isUsing;penWriting=Boolean(writing);penTwirling=Boolean(twirling);headTarget.yaw=Number.isFinite(headYaw)?headYaw:null;headTarget.pitch=Number(headPitch)||0;if(THROWABLE_ITEM_KINDS.includes(heldAction))lastThrowable=heldAction;throwProgress=T.MathUtils.clamp(Number(progress)||0,0,1);throwAge=Number.isFinite(age)?age:Infinity;},getHand:s=>grips[s],dispose(){studyBook.dispose();faceEffects.dispose();eyes.dispose();mixer.stopAllAction();mixer.uncacheRoot(model);},diagnostics:()=>({clips:Object.keys(actions),weights:{...weights},asset:group.userData.asset,glasses,heldAction,using,headLook:{...headLook},eyes:eyes.diagnostics(),face:faceEffects.diagnostics(),pen:{writing:penWriting,twirling:penTwirling,blend:penTwirlBlend,time:penTwirlAge},studyBook:studyBook.diagnostics(),animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),crawl:crawlPose.state(),gestures:gestureMotion?.diagnostics(),clearance:seatedClearance?.diagnostics(),capture:capturePose.state(),throwing:{kind:lastThrowable,blend:throwBlend,progress:throwProgress,age:throwAge}})};
+ update(0);return{group,head,bones,update,seated,setEyeLook:look=>{eyeLook=look;},setStudyBook:source=>studyBook.setSource(source),studyBookVisible:()=>studyBook.visible(),setMood:m=>{mood=m;if(THROWABLE_ITEM_KINDS.includes(m))lastThrowable=m;},setMotion:({inkLeft=0,crawling:prone=false,seated=isSeated,speed=moving,carrying=held,heldAction:heldKind=null,using:isUsing=null,penWriting:writing=false,penTwirling:twirling=false,lookYaw:headYaw=null,lookPitch:headPitch=0,restraint='free',restraintStartedAt:startedAt=null,throwProgress:progress=0,throwAge:age=Infinity}={})=>{faceInkLeft=inkLeft;crawling=Boolean(prone);captivity=restraint;restraintStartedAt=Number.isFinite(startedAt)?startedAt:null;isSeated=seated;moving=Math.max(0,speed);held=carrying;heldAction=heldKind;using=isUsing;penWriting=Boolean(writing);penTwirling=Boolean(twirling);headTarget.yaw=Number.isFinite(headYaw)?headYaw:null;headTarget.pitch=Number(headPitch)||0;if(THROWABLE_ITEM_KINDS.includes(heldAction))lastThrowable=heldAction;throwProgress=T.MathUtils.clamp(Number(progress)||0,0,1);throwAge=Number.isFinite(age)?age:Infinity;},getHand:s=>grips[s],dispose(){studyBook.dispose();faceEffects.dispose();eyes.dispose();mixer.stopAllAction();mixer.uncacheRoot(model);},diagnostics:()=>({clips:Object.keys(actions),weights:{...weights},asset:group.userData.asset,glasses,heldAction,using,headLook:{...headLook},eyes:eyes.diagnostics(),face:faceEffects.diagnostics(),pen:{writing:penWriting,twirling:penTwirling,blend:penTwirlBlend,time:penTwirlAge},studyBook:studyBook.diagnostics(),animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),crawl:crawlPose.state(),gestures:gestureMotion?.diagnostics(),clearance:seatedClearance?.diagnostics(),capture:capturePose.state(),throwing:{kind:lastThrowable,blend:throwBlend,progress:throwProgress,age:throwAge}})};
 }
 export function createRiggedPalm(gltf,side,scale=1){
  const group=new T.Group();group.name=side<0?'left-desk-hand':'right-desk-hand';group.userData.asset='tripo-palm-only';group.userData.fingersPerHand=4;

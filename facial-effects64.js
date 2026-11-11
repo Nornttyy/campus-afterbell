@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-67';
+import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-68b';
 
 // Masks use the original model's metre-space rest pose, before skinning. They
 // therefore follow the head through sitting, struggling and floor stuns without
@@ -38,7 +38,7 @@ vec2 lidMask(vec4 eye){
  return vec2(disc,slit);
 }
 `+shader.fragmentShader;
-    shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+    shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
  vec2 lids=max(lidMask(faceEyeL),lidMask(faceEyeR));
  float front=smoothstep(.07,.16,faceRestPosition.z);
  diffuseColor.rgb=mix(diffuseColor.rgb,mix(faceSkin,vec3(.035,.022,.014),lids.y),lids.x*front*faceClosed);

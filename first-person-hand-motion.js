@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {FIRST_PERSON_PEN_FITS} from './first-person-pen-fit58.js?v=campus-67';
-import {createPenFingerContact} from './pen-motion.js?v=campus-67';
+import {FIRST_PERSON_PEN_FITS} from './first-person-pen-fit58.js?v=campus-68b';
+import {createPenFingerContact} from './pen-motion.js?v=campus-68b';
 
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const ease=(t,a,b)=>T.MathUtils.smootherstep(t,a,b);
