@@ -3,8 +3,8 @@
 <nav><select id="variant"><option value="boy">男同学</option><option value="girl">女同学</option><option value="ponytail">长发女同学</option><option value="glasses">眼镜同学（原镜片不透明）</option></select><button id="toggle">暂停</button><button id="night">白天 / 停电</button><input id="time" type="range" min="0" max="20" value="0" step=".02"><span id="clock">0.00s</span></nav><output id="details">加载真实 GLB…</output>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=campus-65';
-import {setCharacterNight} from '../dist/character-materials.js?v=campus-65';
+import {loadStudentAssets} from '../dist/student-assets.js?v=campus-67';
+import {setCharacterNight} from '../dist/character-materials.js?v=campus-67';
 const renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=T.SRGBColorSpace;document.body.append(renderer.domElement);
 const scene=new T.Scene();scene.background=new T.Color('#c8d2d5');const camera=new T.PerspectiveCamera(35,innerWidth/innerHeight,.01,20);camera.position.set(0,1.47,1.04);camera.lookAt(0,1.43,0);
 scene.add(new T.AmbientLight(0xffffff,.20));const key=new T.DirectionalLight(0xcbd8fa,.7);key.position.set(-1,2,3);scene.add(key);

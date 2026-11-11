@@ -1,13 +1,13 @@
 import {requireModelBudget} from './model-budget64.js';
-import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-65';
-import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-65';
-import {createHandSupport} from './hand-support55.js?v=campus-65';
+import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-67';
+import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-67';
+import {createHandSupport} from './hand-support55.js?v=campus-67';
 import * as THREE from './vendor/three.module.js';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-65';
-import {clonePropAsset,propContact} from './prop-assets.js?v=campus-65';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-65';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-65';
-export {loadPropAssets} from './prop-assets.js?v=campus-65';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-67';
+import {clonePropAsset,propContact} from './prop-assets.js?v=campus-67';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-67';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-67';
+export {loadPropAssets} from './prop-assets.js?v=campus-67';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
 // First-person hands use camera coordinates: the scene is in front at -Z.
@@ -465,7 +465,7 @@ export function createDeskItem(action){
   if(!Object.hasOwn(deskItemFactories,action))throw new RangeError(`Unknown desk item: ${action}`);
   const factory=deskItemFactories[action];
   // The same gate applies to normal GLBs and every offline/error fallback.
-  return requireModelBudget(clonePropAsset(action)||factory(),`道具 ${action}`);
+  return requireModelBudget(action==='pen'?factory():clonePropAsset(action)||factory(),`道具 ${action}`);
 }
 
 export function createDeskHands({createHand}={}){

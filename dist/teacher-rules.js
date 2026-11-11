@@ -1,10 +1,10 @@
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-65';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-65';
-import {teacherViewHeight} from './camera-height58.js?v=campus-65';
-import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-65';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-67';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-67';
+import {teacherViewHeight} from './camera-height58.js?v=campus-67';
+import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-67';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-65';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-67';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){

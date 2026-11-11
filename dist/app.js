@@ -1,15 +1,17 @@
-import {setupControlSettings} from './control-settings64.js?v=campus-65';
-import {playCampusFoley} from './foley-audio54.js?v=campus-65';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-65';
+import {setupControlSettings} from './control-settings64.js?v=campus-67';
+import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-67';
+import {playCampusFoley} from './foley-audio54.js?v=campus-67';
+import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-67';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
 const characterNames={boy:'男同学',girl:'女同学',glasses:'眼镜同学',ponytail:'马尾同学'};
-const defaults = { sfx:55, muted:false, quality:'high', motion:!matchMedia('(prefers-reduced-motion: reduce)').matches, soundCues:true };
+const mobileRendering=prefersMobileRendering({coarse:matchMedia('(pointer: coarse)').matches,hover:matchMedia('(hover: hover)').matches,touchPoints:navigator.maxTouchPoints});
+const defaults = { sfx:55, muted:false, quality:initialQuality(null,mobileRendering), motion:!matchMedia('(prefers-reduced-motion: reduce)').matches, soundCues:true };
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch {}
 const volume = (value, fallback) => Number.isFinite(+value) ? Math.min(100,Math.max(0,+value)) : fallback;
-const settings = { ...defaults,soundCues:saved.soundCues!==false, sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:saved.quality==='low'?'low':'high', motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion };
+const settings = { ...defaults,soundCues:saved.soundCues!==false, sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:initialQuality(saved.quality,mobileRendering), motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion };
 let scene, game, sceneReady=false, worldPromise=null, disposed=false, openingButton=null, entryCharacter='boy',entryMode='online',entryRequest=0,roomConnecting=null;
 let roundOptions={duration:Number.isInteger(saved.duration)&&saved.duration>=300&&saved.duration<=1200?saved.duration:600,target:Number.isInteger(saved.target)&&saved.target>=30&&saved.target<=120?saved.target:120,role:'student',map:'classroom'};
 Object.assign(settings,{duration:roundOptions.duration,target:roundOptions.target});
@@ -157,7 +159,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-65'),import('./classroom-game.js?v=campus-65')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-67'),import('./classroom-game.js?v=campus-67')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}

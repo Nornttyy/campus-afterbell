@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+import {prefersMobileRendering,initialQuality} from '../dist/render-budget67.js';
 
 const source=await readFile(new URL('../dist/app.js',import.meta.url),'utf8');
 const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');
@@ -31,7 +32,7 @@ function fixture(saved={},options={}){
     return{createClassroom:(canvas,options)=>{calls.creates.push(options);return new Promise((resolve,reject)=>pending.push({resolve:()=>resolve(scene),reject}));}};
   };
   let randomIndex=0;const math=Object.create(Math);math.random=()=>options.randomValues?.[randomIndex++]??.25;
-  const context={Math:math,setupControlSettings:()=>null,connectCampusRoom:async args=>{calls.connectionOptions=args;calls.connections++;await options.connection;return{snapshot:()=>({map:'classroom'}),leave(){calls.leaves++;}};},defaultCampusEndpoint:()=>options.endpoint??'http://localhost:8931',playCampusFoley:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
+  const context={Math:math,prefersMobileRendering,initialQuality,navigator:{maxTouchPoints:0},setupControlSettings:()=>null,connectCampusRoom:async args=>{calls.connectionOptions=args;calls.connections++;await options.connection;return{snapshot:()=>({map:'classroom'}),leave(){calls.leaves++;}};},defaultCampusEndpoint:()=>options.endpoint??'http://localhost:8931',playCampusFoley:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
   // Substitute only dynamic imports, leaving the production lifecycle and DOM
   // event handlers intact. This is an event-only test, not a browser renderer.
   vm.runInNewContext(source.replace(/^import .*;\n/gm,'').replace(/\bimport\(/g,'loadModule('),context,{filename:'app.js'});

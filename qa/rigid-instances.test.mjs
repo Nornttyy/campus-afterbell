@@ -18,3 +18,12 @@ test('repeated drawers batch while opening and elevated floors retain independen
 test('different geometry or material never shares the wrong prop shape',()=>{
  const scene=new T.Scene(),a=new T.Group(),b=new T.Group(),m=new T.MeshBasicMaterial();scene.add(a,b);a.add(new T.Mesh(new T.BoxGeometry(1,1,1),m));b.add(new T.Mesh(new T.BoxGeometry(2,1,1),m));const batch=instanceRigidProps([a,b],scene);assert.equal(batch.batchCount,2);batch.dispose();
 });
+test('hidden groups submit no batches and moving a visible group refreshes culling bounds',()=>{
+ const scene=new T.Scene(),root=new T.Group(),group=new T.Group();scene.add(root);root.position.set(4,2,7);root.add(group);
+ const mesh=new T.Mesh(new T.BoxGeometry(),new T.MeshBasicMaterial());group.add(mesh);
+ const batch=instanceRigidProps([group],root),instance=root.children.find(o=>o.isInstancedMesh);
+ assert.equal(instance.frustumCulled,true);assert.ok(instance.boundingSphere.center.length()<1e-6,'world transform applied twice');
+ group.visible=false;batch.sync();assert.equal(instance.visible,false);
+ group.visible=true;group.position.x=40;batch.sync();assert.equal(instance.visible,true);assert.ok(Math.abs(instance.boundingSphere.center.x-40)<1e-6);
+ const m=new T.Matrix4();instance.getMatrixAt(0,m);assert.equal(m.elements[12],40);batch.dispose();
+});

@@ -21,19 +21,22 @@ export function instanceRigidProps(groups,parent){
   bucket.sources.push(source);sources.push(source);source.userData.rigidInstanceSource=true;source.visible=false;
  });
  for(const b of buckets.values()){
-  b.object=new T.InstancedMesh(b.geometry,b.material,b.sources.length);b.object.name='instanced-classroom-props';b.object.castShadow=b.cast;b.object.receiveShadow=b.receive;b.object.frustumCulled=false;b.object.instanceMatrix.setUsage(T.DynamicDrawUsage);parent.add(b.object);
+  b.object=new T.InstancedMesh(b.geometry,b.material,b.sources.length);b.object.name='instanced-classroom-props';b.object.castShadow=b.cast;b.object.receiveShadow=b.receive;b.object.frustumCulled=true;b.object.instanceMatrix.setUsage(T.DynamicDrawUsage);parent.add(b.object);
  }
- const previous=new T.Matrix4();
+ const previous=new T.Matrix4(),local=new T.Matrix4(),inverseParent=new T.Matrix4();
  function sync(){
+  parent.updateWorldMatrix(true,false);inverseParent.copy(parent.matrixWorld).invert();
   for(const group of groups)group.updateWorldMatrix(true,true);
   for(const b of buckets.values()){
-   let dirty=false;
+   let dirty=!b.object.boundingSphere,visibleCount=0;
    b.sources.forEach((source,index)=>{
     let visible=true;for(let p=source.parent;p;p=p.parent)if(!p.visible){visible=false;break;}
-    const matrix=visible?source.matrixWorld:hidden;b.object.getMatrixAt(index,previous);
+    if(visible)visibleCount++;
+    const matrix=visible?local.multiplyMatrices(inverseParent,source.matrixWorld):hidden;b.object.getMatrixAt(index,previous);
     if(!previous.equals(matrix)){b.object.setMatrixAt(index,matrix);dirty=true;}
    });
-   if(dirty)b.object.instanceMatrix.needsUpdate=true;
+   b.object.visible=visibleCount>0;
+   if(dirty){b.object.instanceMatrix.needsUpdate=true;b.object.computeBoundingSphere();}
   }
  }
  sync();

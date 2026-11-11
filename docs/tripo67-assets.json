@@ -1,0 +1,349 @@
+{
+  "date": "2026-11-11",
+  "provenance": "User-created Tripo exports; original GLBs retained locally. No original-game model extraction.",
+  "status": "integrated and render-checked; awaiting user visual approval",
+  "maxTriangles": 8000,
+  "assets": [
+    {
+      "name": "phone",
+      "source": "art-source/tripo67/originals/phone.glb",
+      "sourceSHA256": "1e342f45c3644bed7aaf1e35398e43a9739c15824e718d20ec29e63bef56d604",
+      "output": "dist/assets/models/phone-v67.glb",
+      "sourceTriangles": 16173,
+      "triangles": 7799,
+      "gameMin": [
+        -0.056125037372112274,
+        -0.10399254411458969,
+        -0.00968744046986103
+      ],
+      "gameMax": [
+        0.056125037372112274,
+        0.10399999469518661,
+        0.009675362147390842
+      ],
+      "dimensions": [
+        0.11225007474422455,
+        0.2079925388097763,
+        0.019362802617251873
+      ],
+      "textureLimit": 1024,
+      "orientation": "upright",
+      "pivot": "center",
+      "uniformScale": 0.21219626400996264,
+      "bytes": 1148192,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/66e2a55b-360e-4561-ace4-5c2d664cb02f",
+      "outputSHA256": "4b0e60f84cabdbeb707ca77153611ed737cfa1e2f5f66ae2c7c2fec44001733d",
+      "role": "phone"
+    },
+    {
+      "name": "mouse",
+      "source": "art-source/tripo67/originals/mouse.glb",
+      "sourceSHA256": "01e84ffa14a87b138acfffc656e5604a8334d92b1abd1209f1fe5bea3d0f36a5",
+      "output": "dist/assets/models/mouse-v67.glb",
+      "sourceTriangles": 18780,
+      "triangles": 7800,
+      "gameMin": [
+        -0.03291092813014984,
+        0.0,
+        -0.0724770724773407
+      ],
+      "gameMax": [
+        0.03291250392794609,
+        0.035829417407512665,
+        0.07250241935253143
+      ],
+      "dimensions": [
+        0.06582343205809593,
+        0.035829417407512665,
+        0.14497949182987213
+      ],
+      "textureLimit": 512,
+      "orientation": "table",
+      "pivot": "floor",
+      "uniformScale": 0.14791606998318907,
+      "bytes": 551292,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/2bf71562-17f6-450c-b5b6-f9ac920fb75f",
+      "outputSHA256": "7da08cfd86e7bc7bc004f1d429c874d2677024408622ffbf2d1159220a7a4bf5",
+      "role": "mouse"
+    },
+    {
+      "name": "computer-tower",
+      "source": "art-source/tripo67/originals/computer-tower.glb",
+      "sourceSHA256": "737b915f61bcd85a904ad8aebbd1a98530d62b4acb6da86b7d685fa4833d5047",
+      "output": "dist/assets/models/computer-tower-v67.glb",
+      "sourceTriangles": 16530,
+      "triangles": 7799,
+      "gameMin": [
+        -0.1331348419189453,
+        0.0,
+        -0.24824857711791992
+      ],
+      "gameMax": [
+        0.13317793607711792,
+        0.4996691346168518,
+        0.24801665544509888
+      ],
+      "dimensions": [
+        0.26631277799606323,
+        0.4996691346168518,
+        0.4962652325630188
+      ],
+      "textureLimit": 512,
+      "orientation": "upright",
+      "pivot": "floor",
+      "uniformScale": 0.5170411512244383,
+      "bytes": 721648,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/b72b170b-b19f-4f5e-8de1-e46c3d372738",
+      "outputSHA256": "3ca5c63b2ce48d1e8f249570b42016492110bcf11a5b3a3ab0738fc78a54a870",
+      "role": "computer-tower"
+    },
+    {
+      "name": "keyboard",
+      "source": "art-source/tripo67/originals/keyboard.glb",
+      "sourceSHA256": "02c8a2e55211d9208b5d939cc7b0e0af6af20e487ead6e02867ef01155836a77",
+      "output": "dist/assets/models/keyboard-v67.glb",
+      "sourceTriangles": 17872,
+      "triangles": 7800,
+      "gameMin": [
+        -0.2898572087287903,
+        0.0,
+        -0.10010624676942825
+      ],
+      "gameMax": [
+        0.28994616866111755,
+        0.032779280096292496,
+        0.10003926604986191
+      ],
+      "dimensions": [
+        0.5798033773899078,
+        0.032779280096292496,
+        0.20014551281929016
+      ],
+      "textureLimit": 1024,
+      "orientation": "table",
+      "pivot": "floor",
+      "uniformScale": 0.5922911270993139,
+      "bytes": 1294800,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/927efb03-7eb0-4a43-9877-c1674b8a6546",
+      "outputSHA256": "e003a282bfd7489499808d27fd1d68361602bd618bae1edf08d01c7d36361c49",
+      "role": "keyboard"
+    },
+    {
+      "name": "gum",
+      "source": "art-source/tripo67/originals/gum.glb",
+      "sourceSHA256": "8a3827191c8edd355b9aa96259cb61cae9f6f80fd0c1df65187583fe1c0dc1cc",
+      "output": "dist/assets/models/gum-v67.glb",
+      "sourceTriangles": 4700,
+      "triangles": 4700,
+      "gameMin": [
+        -0.0650000050663948,
+        -0.028618887066841125,
+        -0.014373795129358768
+      ],
+      "gameMax": [
+        0.0650000050663948,
+        0.028618887066841125,
+        0.014373795129358768
+      ],
+      "dimensions": [
+        0.1300000101327896,
+        0.05723777413368225,
+        0.028747590258717537
+      ],
+      "textureLimit": 512,
+      "orientation": "upright",
+      "pivot": "center",
+      "uniformScale": 0.13282113622996497,
+      "bytes": 1064872,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/a83560c6-373b-4c78-b859-6b8505beb8fd",
+      "outputSHA256": "c3bf468dd2942b9aeaebb0541f0d21a7b8c28523e0bc2f8bfff51d809ab923eb",
+      "role": "gum"
+    },
+    {
+      "name": "cabinet",
+      "source": "art-source/tripo67/originals/cabinet.glb",
+      "sourceSHA256": "536dcb0eecdbd73280fe90c1b9ed24f19231c11695ab29bd99ec3d2bb8e3e141",
+      "output": "dist/assets/models/cabinet-v67.glb",
+      "sourceTriangles": 13461,
+      "triangles": 7799,
+      "gameMin": [
+        -0.39487895369529724,
+        0.0,
+        -0.28836798667907715
+      ],
+      "gameMax": [
+        0.39487895369529724,
+        1.147499918937683,
+        0.28836798667907715
+      ],
+      "dimensions": [
+        0.7897579073905945,
+        1.147499918937683,
+        0.5767359733581543
+      ],
+      "textureLimit": 1024,
+      "orientation": "upright",
+      "pivot": "floor",
+      "uniformScale": 1.1717809841378666,
+      "bytes": 1345024,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/b470d21f-fa4a-4406-ad46-e1132985ff81",
+      "outputSHA256": "14f8af1d9787518e802180a3a3987c8598b3f73edb8b8190564e4e98cb223a85",
+      "role": "lectern"
+    },
+    {
+      "name": "lunch",
+      "source": "art-source/tripo67/originals/lunch.glb",
+      "sourceSHA256": "ee4cf1d0949b9a8b3a8ab3e95fbcc23e36fd21d57bf04786245e9fe90d3a114a",
+      "output": "dist/assets/models/lunch-v67.glb",
+      "sourceTriangles": 4326,
+      "triangles": 4326,
+      "gameMin": [
+        -0.10999999940395355,
+        -0.026907701045274734,
+        -0.07986297458410263
+      ],
+      "gameMax": [
+        0.10999999940395355,
+        0.026907701045274734,
+        0.07986297458410263
+      ],
+      "dimensions": [
+        0.2199999988079071,
+        0.05381540209054947,
+        0.15972594916820526
+      ],
+      "textureLimit": 512,
+      "orientation": "lid",
+      "pivot": "center",
+      "uniformScale": 0.22502684479960045,
+      "bytes": 666360,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/fe2c4987-c630-45b5-8de4-ec583cf47a9d",
+      "outputSHA256": "2ebaf8f0b54326b1498fb6091d20367f4d891ade8edffb4f5bed2ab427e776e9",
+      "role": "lunch"
+    },
+    {
+      "name": "pen",
+      "source": "art-source/tripo67/originals/pen.glb",
+      "sourceSHA256": "b31d52bef6cbb727b2931aba9fed9fded3c28159fbaf982eb92e947330020ca8",
+      "output": "dist/assets/models/pen-v67.glb",
+      "sourceTriangles": 4258,
+      "triangles": 4258,
+      "gameMin": [
+        -0.010102255269885063,
+        -0.08749999850988388,
+        -0.012157696299254894
+      ],
+      "gameMax": [
+        0.010102255269885063,
+        0.08749999850988388,
+        0.012157696299254894
+      ],
+      "dimensions": [
+        0.020204510539770126,
+        0.17499999701976776,
+        0.02431539259850979
+      ],
+      "textureLimit": 512,
+      "orientation": "upright",
+      "pivot": "center",
+      "uniformScale": 0.17844717597634976,
+      "bytes": 622360,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/2b9800a4-cd85-45c3-bb38-f67829089879",
+      "outputSHA256": "bb87765a139fd64bf01753e2a6209c2759f4047fbe81e02d049fb628fe782835",
+      "role": "pen"
+    },
+    {
+      "name": "office-desk",
+      "source": "art-source/tripo67/originals/office-desk.glb",
+      "sourceSHA256": "590a19f58cb259bfbb1f55f6e5eb56986edce4dd4e8544c9f1d917500d034781",
+      "output": "dist/assets/models/office-desk-v67.glb",
+      "sourceTriangles": 4672,
+      "triangles": 4672,
+      "gameMin": [
+        -0.9218347668647766,
+        0.0,
+        -0.44557276368141174
+      ],
+      "gameMax": [
+        0.9218347668647766,
+        0.98499995470047,
+        0.44557276368141174
+      ],
+      "dimensions": [
+        1.8436695337295532,
+        0.98499995470047,
+        0.8911455273628235
+      ],
+      "textureLimit": 1024,
+      "orientation": "back",
+      "pivot": "floor",
+      "uniformScale": 1.8885074015563748,
+      "bytes": 1758604,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/9a9fbf78-92f2-4726-b8fb-abf690f2627c",
+      "outputSHA256": "ddb4450a04c2e5361c751842e1dcc2443c797e5a3dd8be2d7fc2b495db4f93e2",
+      "role": "office-desk"
+    },
+    {
+      "name": "office-chair",
+      "source": "art-source/tripo67/originals/office-chair.glb",
+      "sourceSHA256": "90528f00ae9dbd61dc47faf0478d1f73d3cf447dac129916315e3943d238766a",
+      "output": "dist/assets/models/office-chair-v67.glb",
+      "sourceTriangles": 4495,
+      "triangles": 4495,
+      "gameMin": [
+        -0.457520455121994,
+        0.0,
+        -0.3871522545814514
+      ],
+      "gameMax": [
+        0.457520455121994,
+        1.090000033378601,
+        0.3871522545814514
+      ],
+      "dimensions": [
+        0.915040910243988,
+        1.090000033378601,
+        0.7743045091629028
+      ],
+      "textureLimit": 1024,
+      "orientation": "upright",
+      "pivot": "floor",
+      "uniformScale": 1.1147317499453826,
+      "bytes": 1911236,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/39248f8a-4e64-4670-a97f-73282dbeb147",
+      "outputSHA256": "7f216be1a0fb7614affd3928844e29fe0461fd85eec3a365d5d090fbe2c775ed",
+      "role": "office-chair"
+    },
+    {
+      "name": "monitor",
+      "source": "art-source/tripo67/originals/monitor.glb",
+      "sourceSHA256": "035c9d71630eda58f10c2830ef61ad94503a31438e6a2c35904870b3505c87c7",
+      "output": "dist/assets/models/monitor-v67.glb",
+      "sourceTriangles": 4999,
+      "triangles": 4999,
+      "gameMin": [
+        -0.32999998331069946,
+        0.0,
+        -0.10741210728883743
+      ],
+      "gameMax": [
+        0.32999998331069946,
+        0.4964026212692261,
+        0.10741210728883743
+      ],
+      "dimensions": [
+        0.6599999666213989,
+        0.4964026212692261,
+        0.21482421457767487
+      ],
+      "textureLimit": 1024,
+      "orientation": "back",
+      "pivot": "floor",
+      "uniformScale": 0.6734617559645631,
+      "bytes": 858564,
+      "sourceURL": "https://studio.tripo3d.ai/workspace/texture/f31023fd-7f4c-4aee-819a-eb9ce8787041",
+      "outputSHA256": "0044f5550b965685b76be8ee96b176ce7dc2df40d8b3e62728cf4afd04248b8e",
+      "role": "monitor"
+    }
+  ]
+}

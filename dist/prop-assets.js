@@ -2,16 +2,20 @@ import {requireModelBudget} from './model-budget64.js';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 
-const names=Object.freeze({snack:'snack-packet',drink:'red-drink-can',burger:'layered-burger',ink:'ink-glass-bottle',banana:'curved-banana',bananaPeel:'banana-peel',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox',pen:'red-school-pen'});
+const names=Object.freeze({snack:'snack-packet',drink:'red-drink-can',burger:'layered-burger',ink:'ink-glass-bottle',banana:'curved-banana',bananaPeel:'banana-peel',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox',pen:'red-school-pen',phone:'handheld-phone'});
 const templates=new Map();
-export const CLASSROOM_PROP_SOURCES=Object.freeze(Object.fromEntries(['snack','drink','burger','ink','banana','garlic'].map(kind=>[kind,`./assets/models/${kind}-v1.glb?v=mesh-64`])));
-const referenceSizes={snack:[.1721,.209,.056],drink:[.088,.1756,.0904],burger:[.2159,.1409,.2129],ink:[.094,.1575,.0975],banana:[.13,.25,.06],bananaPeel:[.20,.14,.20],garlic:[.09,.12,.06],gum:[.13,.06,.03],lunch:[.22,.07,.15],pen:[.023,.175,.023]};
+export const CLASSROOM_PROP_SOURCES=Object.freeze({...Object.fromEntries(['snack','drink','burger','ink','banana','garlic'].map(kind=>[kind,`./assets/models/${kind}-v1.glb?v=mesh-64`])),...Object.fromEntries(['phone','gum','lunch','pen'].map(kind=>[kind,`./assets/models/${kind}-v67.glb?v=tripo67`]))});
+const referenceSizes={snack:[.1721,.209,.056],drink:[.088,.1756,.0904],burger:[.2159,.1409,.2129],ink:[.094,.1575,.0975],banana:[.13,.25,.06],bananaPeel:[.20,.14,.20],garlic:[.09,.12,.06],gum:[.13,.06,.03],lunch:[.22,.07,.15],pen:[.023,.175,.023],phone:[.115,.208,.013]};
 
 // Move the contact point, not the imported mesh: wider/shorter source props keep
 // their authored proportions while the thumb and index meet the actual surface.
 export function propContact(prop,point){
   const fit=prop.userData.contactFit;
-  return fit?point.clone().multiply(new THREE.Vector3(...fit.scale)).add(new THREE.Vector3(...fit.center)):point.clone();
+  if(!fit)return point.clone();
+  const mapped=point.clone().multiply(new THREE.Vector3(...fit.scale)).add(new THREE.Vector3(...fit.center));
+  // Old contacts can lie outside a thinner supplied phone or pen. Bring the
+  // contact back onto its bounds; never stretch the model to meet the fingers.
+  return fit.min&&fit.max?mapped.clamp(new THREE.Vector3(...fit.min),new THREE.Vector3(...fit.max)):mapped;
 }
 
 export function restDeskItem(prop,floorY=.659){
@@ -37,7 +41,7 @@ function makeTemplate(kind,gltf,url){
   // pivot. Keep all authored transforms and UVs beneath an identity wrapper.
   const template=new THREE.Group();template.name=names[kind];template.add(model);
   template.userData.propAsset=url;
-  template.userData.contactFit={scale:bounds.getSize(new THREE.Vector3()).toArray().map((v,i)=>v/referenceSizes[kind][i]),center:bounds.getCenter(new THREE.Vector3()).toArray()};
+  template.userData.contactFit={scale:bounds.getSize(new THREE.Vector3()).toArray().map((v,i)=>v/referenceSizes[kind][i]),center:bounds.getCenter(new THREE.Vector3()).toArray(),min:bounds.min.toArray(),max:bounds.max.toArray()};
   if(kind==='ink')template.userData.throwableKind='ink';
   return template;
 }

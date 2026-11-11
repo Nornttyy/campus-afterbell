@@ -5,8 +5,8 @@
 <footer>同一模型、姿势、原始贴图。前三栏曝光 1.08、半球光 2.5、太阳光 4、补光 0.85；第三栏额外环境填光 0.75。只隔离人物自身受光，不代表完整教室。没有改动游戏或素材。</footer>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=campus-65';
-import {loadTeacherModel} from '../dist/imported-actors.js?v=campus-65';
+import {loadStudentAssets} from '../dist/student-assets.js?v=campus-67';
+import {loadTeacherModel} from '../dist/imported-actors.js?v=campus-67';
 const ui=Object.fromEntries(['role','angle','roof','normal','status'].map(k=>[k,document.getElementById(k)]));
 const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.4));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.setScissorTest(true);document.body.append(renderer.domElement);
 function cloneRig(source){const root=source.clone(true),map=new Map();function pair(a,b){map.set(a,b);a.children.forEach((child,i)=>pair(child,b.children[i]));}pair(source,root);source.traverse(o=>{if(o.isSkinnedMesh){const n=map.get(o);n.skeleton=o.skeleton.clone();n.skeleton.bones=o.skeleton.bones.map(b=>map.get(b));n.bindMatrix.copy(o.bindMatrix);n.bind(n.skeleton,n.bindMatrix);n.frustumCulled=false;}});return root;}

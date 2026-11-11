@@ -1,9 +1,10 @@
-import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-65';
+import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js';
+import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-67';
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-65';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-65';
-import {surfaceHeight,drawBoardSurface,setWallSurfaceUV} from './surface-materials.js?v=campus-65';
-import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-65';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-67';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-67';
+import {surfaceHeight,drawBoardSurface,setWallSurfaceUV} from './surface-materials.js?v=campus-67';
+import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-67';
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
 export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces=null,artwork={},bakeStatic=()=>{}}){
  const classWidth=CLASSROOM.maxX-CLASSROOM.minX,classMidX=(CLASSROOM.minX+CLASSROOM.maxX)/2,westWallX=CLASSROOM.minX-.10,corridorWidth=CORRIDOR.maxX-CORRIDOR.minX,corridorLength=CORRIDOR.maxZ-CORRIDOR.minZ,corridorMidX=(CORRIDOR.minX+CORRIDOR.maxX)/2,corridorMidZ=(CORRIDOR.minZ+CORRIDOR.maxZ)/2,liftOffset=CORRIDOR.minZ-CLASSROOM.minZ;
@@ -190,7 +191,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  const officePlanks=texture(1024,1024,(c,w,h)=>{c.fillStyle='#c1a47c';c.fillRect(0,0,w,h);for(let row=0;row<8;row++){const y=row*128;c.fillStyle=['#c8ac84','#cbb18b','#bfa27c','#d0b58f'][row%4];c.fillRect(0,y,w,127);for(let line=0;line<27;line++){c.strokeStyle=line%3?'rgba(83,53,24,.045)':'rgba(255,240,198,.12)';c.lineWidth=1;c.beginPath();for(let x=0;x<=w;x+=16){const yy=y+3+line*4.55+Math.sin(x*.013+line+row)*1.4;x?c.lineTo(x,yy):c.moveTo(x,yy);}c.stroke();}c.fillStyle='rgba(65,48,28,.25)';c.fillRect(0,y,w,1.2);for(let cut=0;cut<2;cut++){const x=(row%2?256:0)+cut*512;c.fillRect(x,y,1.4,128);}}});officePlanks.wrapS=officePlanks.wrapT=T.RepeatWrapping;
  const officeWood=mat('#a56847',{map:woodGrain,roughness:.62}),darkWood=mat('#73503b',{map:woodGrain,roughness:.72}),cabinetPaint=mat('#b6cbc4',{roughness:.58}),cabinetBack=mat('#687b75',{roughness:.82}),boards=mat('#d5a66a',{map:woodGrain,roughness:.66}),officeFloor=mat('#ffffff',{map:officePlanks,roughness:.75});
  B(boards,[0,.08,7.65],[6.30,.16,2.30],enclosure);
- const lx=(LECTERN.minX+LECTERN.maxX)/2,lz=(LECTERN.minZ+LECTERN.maxZ)/2;rounded(M.wood,[lx,1.11,lz],[1.35,.075,.82],.022,null,enclosure);rounded(cream,[lx,.65,lz+.07],[1.22,.87,.60],.016,null,enclosure);B(edge,[lx,.23,lz+.05],[1.24,.055,.63],enclosure);
+ const lx=(LECTERN.minX+LECTERN.maxX)/2,lz=(LECTERN.minZ+LECTERN.maxZ)/2;if(!placeFurniture67(enclosure,'cabinet',lx,0,lz)){rounded(M.wood,[lx,1.11,lz],[1.35,.075,.82],.022,null,enclosure);rounded(cream,[lx,.65,lz+.07],[1.22,.87,.60],.016,null,enclosure);B(edge,[lx,.23,lz+.05],[1.24,.055,.63],enclosure);}
  // Only the section beside the lift is glazed. The remaining wall is solid,
  // as in the supplied walkthrough; its physical outer boundary never opens.
  const corridorWallX=CORRIDOR.maxX+.10;
@@ -240,9 +241,23 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  // The lunch drawer slides out as a whole tray; target meshes survive static
  // geometry baking so interaction follows the visible drawer, not a hidden box.
  const desk=new T.Group();desk.name='office-openable-lunch-desk';desk.position.set(OFFICE_DESK.x,0,OFFICE_DESK.z);office.add(desk);
- rounded(officeWood,[0,.94,0],[2.20,.09,1.02],.018,null,desk);for(const x of [-.89,.89]){B(darkWood,[x,.46,.06],[.30,.86,.87],desk);B(seal,[x,.04,.06],[.29,.08,.84],desk);}B(darkWood,[0,.58,.44],[1.55,.60,.04],desk);
+ function addOfficeBody(table){
+  const imported=cloneFurniture67('office-desk');
+  if(imported){table.add(imported);const front=imported.getObjectByName('office-desk-drawer-front');front?.removeFromParent();return front;}
+  rounded(officeWood,[0,.94,0],[2.20,.09,1.02],.018,null,table);for(const x of[-.89,.89]){B(darkWood,[x,.46,.06],[.30,.86,.87],table);B(seal,[x,.04,.06],[.29,.08,.84],table);}B(darkWood,[0,.58,.44],[1.55,.60,.04],table);return null;
+ }
+ const importedFront=addOfficeBody(desk);
  const officeDrawer=new T.Group();officeDrawer.name='teacher-lunch-drawer';officeDrawer.position.set(0,.67,-.08);desk.add(officeDrawer);
- B(darkWood,[0,-.12,0],[1.44,.04,.76],officeDrawer);for(const x of [-.72,.72])B(officeWood,[x,.01,0],[.035,.25,.76],officeDrawer);B(officeWood,[0,.01,.37],[1.45,.25,.035],officeDrawer);rounded(officeWood,[0,.01,-.39],[1.52,.28,.055],.006,null,officeDrawer);rounded(edge,[0,.04,-.43],[.24,.025,.035],.006,null,officeDrawer);
+ if(importedFront){
+  officeDrawer.add(importedFront);importedFront.position.sub(officeDrawer.position);
+  B(darkWood,[-.255,.055,0],[1.065,.022,.70],officeDrawer);
+  for(const x of[-.79,.28])B(officeWood,[x,.135,0],[.018,.14,.70],officeDrawer);
+  B(officeWood,[-.255,.135,.34],[1.065,.14,.018],officeDrawer);
+  officeDrawer.userData.itemFloor=.737;officeDrawer.userData.itemX=-.255;
+  officeDrawer.userData.handTarget={floor:.744,lip:.905,width:1.04,depth:.68,x:-.255};
+ }else{
+  B(darkWood,[0,-.12,0],[1.44,.04,.76],officeDrawer);for(const x of[-.72,.72])B(officeWood,[x,.01,0],[.035,.25,.76],officeDrawer);B(officeWood,[0,.01,.37],[1.45,.25,.035],officeDrawer);rounded(officeWood,[0,.01,-.39],[1.52,.28,.055],.006,null,officeDrawer);rounded(edge,[0,.04,-.43],[.24,.025,.035],.006,null,officeDrawer);
+ }
  markDynamic(desk);desk.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'officeDesk',id:OFFICE_DESK.id};});
  targets.officeDesks.push({id:OFFICE_DESK.id,object:desk,drawer:officeDrawer,itemParent:officeDrawer,point:new T.Vector3(OFFICE_DESK.x,.98,OFFICE_DESK.z-.45)});
  const officeDrawers=new Map([[OFFICE_DESK.id,officeDrawer]]);
@@ -253,7 +268,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  const officeScreens=new Map();
  for(const d of OFFICE_DESKS){
   let table=desk;
-  if(d!==OFFICE_DESK){table=new T.Group();table.name=d.id;table.position.set(d.x,0,d.z);office.add(table);rounded(officeWood,[0,.94,0],[2.20,.09,1.02],.018,null,table);for(const x of[-.89,.89]){B(darkWood,[x,.46,.06],[.30,.86,.87],table);B(seal,[x,.04,.06],[.29,.08,.84],table);}B(darkWood,[0,.58,.44],[1.55,.60,.04],table);rounded(M.paper,[.55,1.005,.08],[.37,.035,.29],.005,[0,.12,0],table);cylinder(blue,[.22,1.004,-.06],[.006,.18,.006],[0,0,Math.PI/2],table);
+  if(d!==OFFICE_DESK){table=new T.Group();table.name=d.id;table.position.set(d.x,0,d.z);office.add(table);addOfficeBody(table);rounded(M.paper,[.55,1.005,.08],[.37,.035,.29],.005,[0,.12,0],table);cylinder(blue,[.22,1.004,-.06],[.006,.18,.006],[0,0,Math.PI/2],table);
    const drawer=officeDrawer.clone(true);drawer.name=d.id+'-drawer';table.add(drawer);officeDrawers.set(d.id,drawer);markDynamic(table);table.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'officeDesk',id:d.id};});targets.officeDesks.push({id:d.id,object:table,drawer,itemParent:drawer,point:new T.Vector3(d.x,.98,d.z-.45)});
   }
   const computer=buildDesktop55({parent:table,box,rounded,mat,x:-.42,y:.985,z:0,id:d.id+'-computer',bakeStatic});assets.add(computer.screen.geometry);materials.add(computer.screen.material);officeScreens.set(d.id,computer.screen);
@@ -261,8 +276,10 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  function tube(points,radius,material,parent){const g=new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p)),false,'centripetal'),points.length*5,radius,8,false);assets.add(g);return mesh(g,material,[0,0,0],[1,1,1],null,parent);}
  const upholstery=mat('#363e3e',{roughness:.87}),chairMetal=mat('#8d9898',{metalness:.65,roughness:.34});
  for(const c of OFFICE_CHAIRS){const chair=new T.Group();chair.name=c===OFFICE_CHAIR?'office-sittable-chair':c.id;chair.position.set(c.x,0,c.z);office.add(chair);
+ if(!placeFurniture67(chair,'office-chair')){
  rounded(upholstery,[0,.485,0],[.70,.075,.55],.025,null,chair);rounded(upholstery,[0,.89,-.29],[.65,.45,.08],.022,[-.08,0,0],chair);
  for(const x of [-.29,.29]){tube([[x,.04,.34],[x,.04,-.30],[x,.10,-.34],[x,.48,-.28],[x,1.08,-.32]],.018,chairMetal,chair);tube([[x,.46,-.25],[x,.46,.24],[x,.39,.27],[x,.04,.34]],.018,chairMetal,chair);for(const z of [-.30,.34])rounded(seal,[x,.02,z],[.065,.04,.066],.010,null,chair);}
+ }
  markDynamic(chair);chair.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'officeChair',id:c.id};});targets.officeChairs.push({id:c.id,object:chair,point:new T.Vector3(c.x,.6,c.z)});}
  // Physical pre-match changing lockers; each door is an independent target.
  const locker=new T.Group();locker.name='role-changing-locker';locker.position.set(ROLE_LOCKER.x,0,ROLE_LOCKER.z);enclosure.add(locker);
