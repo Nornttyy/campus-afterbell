@@ -15,6 +15,7 @@ export function createStudyBook(group){
  return {
   setSource(next){if(!next||next===source)return;source=next;if(copy)holder.remove(copy);copy=next.clone(true);copy.name='held-original-desk-book';copy.position.set(0,0,0);copy.quaternion.identity();copy.scale.set(1,1,1);copy.matrixAutoUpdate=true;copy.visible=true;copy.traverse(o=>{if(o.userData.rigidInstanceSource){o.visible=true;delete o.userData.rigidInstanceSource;}});holder.add(copy);},
   update(enabled,dt,reset=false,time=0){
+   if(!enabled&&(reset||blend===0)){blend=0;holder.visible=false;return;}
    const pose=studyBookPose(time);raised.fromArray(pose.position);upright.setFromEuler(new T.Euler(...pose.rotation));
    blend=reset?Number(enabled):T.MathUtils.damp(blend,Number(enabled),6,dt);
    if(source&&source.parent){source.updateWorldMatrix(true,false);group.updateWorldMatrix(true,false);rest.copy(group.worldToLocal(source.getWorldPosition(new T.Vector3())));flat.copy(group.getWorldQuaternion(new T.Quaternion()).invert().multiply(source.getWorldQuaternion(new T.Quaternion())));}

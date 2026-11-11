@@ -1,7 +1,7 @@
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js';
 import * as T from './vendor/three.module.js';
-import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-67';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-67';
+import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-68b';
+import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-68b';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,screenContent=null,officeScreens=new Map()}){
  const group=new T.Group(),screens=new Map(),stations=new Map(),drawers=new Map(),hardwareRoots=[];group.name='computer-lab-workstations';scene.add(group);group.visible=false;
@@ -14,7 +14,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,scr
   // over books. School desks keep their designed physical dimensions.
   rounded(top,[0,.83,0],[1.22,.065,.80],.018,null,hardware);box(trim,[0,.789,0],[1.18,.025,.77],null,hardware);
   for(const x of[-.53,.53]){rounded(base,[x,.41,.15],[.045,.78,.46],.008,null,hardware);rounded(shadow,[x,.024,.15],[.08,.045,.47],.008,null,hardware);}box(base,[0,.22,.33],[1.05,.04,.045],null,hardware);
-  if(imported){placeFurniture67(hardware,'computer-tower',.425,.18,.15);placeFurniture67(hardware,'monitor',0,.8625,.17);placeFurniture67(hardware,'keyboard',-.08,.8625,-.19);placeFurniture67(hardware,'mouse',-.46,.8625,-.18);}else{
+  if(imported){placeFurniture67(hardware,'computer-tower',.35,.002,0);placeFurniture67(hardware,'monitor',0,.8625,.17);placeFurniture67(hardware,'keyboard',-.08,.8625,-.19);placeFurniture67(hardware,'mouse',-.46,.8625,-.18);}else{
   rounded(shell,[.40,.43,.15],[.22,.50,.43],.013,null,hardware);box(shadow,[.40,.43,-.071],[.17,.43,.009],null,hardware);for(let k=0;k<5;k++)box(base,[.40,.32+k*.035,-.077],[.13,.009,.006],null,hardware);box(keys,[.40,.59,-.078],[.025,.025,.008],null,hardware);
   rounded(shell,[0,1.22,.17],[.66,.40,.092],.018,null,hardware);box(base,[0,.966,.17],[.075,.19,.075],null,hardware);rounded(base,[0,.873,.17],[.32,.022,.20],.008,null,hardware);
   rounded(shell,[-.08,.88,-.19],[.58,.028,.16],.008,null,hardware);for(let r=0;r<3;r++)for(let k=0;k<11;k++)box(keys,[-.32+k*.046,.897,-.245+r*.045],[.035,.008,.029],null,hardware);rounded(shell,[.39,.886,-.18],[.08,.035,.12],.016,null,hardware);

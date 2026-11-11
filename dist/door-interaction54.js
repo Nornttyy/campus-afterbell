@@ -1,6 +1,6 @@
-import {DOORS} from './classroom-layout.js?v=campus-67';
-import {OFFICE} from './classroom-layout.js?v=campus-67';
-import {schoolDoorSegments,schoolDoorMotionBlocked,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-67';
+import {DOORS} from './classroom-layout.js?v=campus-68b';
+import {OFFICE} from './classroom-layout.js?v=campus-68b';
+import {schoolDoorSegments,schoolDoorMotionBlocked,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-68b';
 // Aim at the actual animated leaf, not an invisible doorway centre.
 export function reachesSchoolDoor(player,layout,id='rear'){
  if(!SCHOOL_DOOR_IDS.includes(id))return false;

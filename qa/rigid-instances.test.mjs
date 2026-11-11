@@ -27,3 +27,9 @@ test('hidden groups submit no batches and moving a visible group refreshes culli
  group.visible=true;group.position.x=40;batch.sync();assert.equal(instance.visible,true);assert.ok(Math.abs(instance.boundingSphere.center.x-40)<1e-6);
  const m=new T.Matrix4();instance.getMatrixAt(0,m);assert.equal(m.elements[12],40);batch.dispose();
 });
+test('stationary fractional transforms do not re-upload instance matrices or rebuild bounds',()=>{
+ const scene=new T.Scene(),g=new T.Group(),m=new T.Mesh(new T.BoxGeometry(),new T.MeshBasicMaterial());g.add(m);scene.add(g);g.position.set(.123456789,.8625,-.19);g.rotation.y=.73;
+ const batch=instanceRigidProps([g],scene),instance=scene.children.find(o=>o.isInstancedMesh);let bounds=0;const old=instance.computeBoundingSphere;instance.computeBoundingSphere=function(){bounds++;return old.call(this);};const version=instance.instanceMatrix.version;
+ for(let i=0;i<120;i++)batch.sync();assert.equal(instance.instanceMatrix.version,version);assert.equal(bounds,0);
+ g.position.z-=.24;batch.sync();assert.equal(instance.instanceMatrix.version,version+1);assert.equal(bounds,1);batch.dispose();
+});

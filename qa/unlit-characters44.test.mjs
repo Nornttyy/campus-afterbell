@@ -5,7 +5,7 @@ import * as T from '../dist/vendor/three.module.js';
 import {GLTFLoader} from '../dist/vendor/addons/loaders/GLTFLoader.js';
 import {createRiggedStudent,createRiggedPalm,STUDENT_ASSETS} from '../dist/student-assets.js';
 import {createRiggedTeacher} from '../dist/imported-actors.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-67';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-68b';
 import {useCharacterBaseColor,setCharacterNight} from '../dist/character-materials.js';
 
 // Parse the real skin, material factors, attributes and embedded image bytes.
@@ -35,13 +35,22 @@ function originals(root){
 function verifySurfaces(root,before){
  let surfaces=0,textured=0,caps=0;
  root.traverse(mesh=>{if(!mesh.isMesh)return;
-  // Eye animation adds a shader weight attribute on a geometry clone. The
-  // actual source mesh, all GLB attributes and its material must still match.
+  // Eye repair changes only the raised pupil cap on a clone. UVs, topology,
+  // skinning and every vertex outside the eye mask must still match the GLB.
   const sourceGeometry=before.has(mesh.geometry)?mesh.geometry:before.sourceMeshes.get(mesh);
   if(!sourceGeometry)return;
   if(sourceGeometry!==mesh.geometry){
    assert.deepEqual(mesh.geometry.index?.array,sourceGeometry.index?.array,'source triangles changed');
-   for(const [name,attribute]of Object.entries(sourceGeometry.attributes))assert.deepEqual(mesh.geometry.attributes[name]?.array,attribute.array,`source ${name} attribute changed`);
+   for(const [name,attribute]of Object.entries(sourceGeometry.attributes)){
+    const repaired=mesh.geometry.attributes[name],eyeMask=mesh.geometry.attributes.studentEyeWeights;
+    if(eyeMask&&(name==='position'||name==='normal')){
+     assert.equal(repaired.count,attribute.count);
+     for(let i=0;i<attribute.count;i++){
+      if(eyeMask.getX(i)+eyeMask.getY(i)>0)continue;
+      for(let k=0;k<attribute.itemSize;k++)assert.equal(repaired.getComponent(i,k),attribute.getComponent(i,k),`${name} changed outside eye repair`);
+     }
+    }else assert.deepEqual(repaired?.array,attribute.array,`source ${name} attribute changed`);
+   }
   }
   surfaces++;assert.equal(mesh.receiveShadow,false,`${mesh.name}: still receives scene shadows`);
   assert.equal(mesh.userData.characterSurface,true,`${mesh.name}: classroom shadow override cannot identify this surface`);

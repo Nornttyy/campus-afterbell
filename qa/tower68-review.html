@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>机箱与抽屉检查</title>
+<style>body{margin:0;background:#edf3f1;font:16px sans-serif}canvas{display:block}nav{position:fixed;top:18px;left:18px;display:flex;gap:10px}button{font:inherit;padding:10px 16px}#status{position:fixed;bottom:16px;left:18px;color:#263b36}</style>
+<nav><button id="front">正面</button><button id="side">斜侧</button><button id="open">拉开抽屉</button><button id="close">关闭抽屉</button></nav><div id="status">加载中</div>
+<script type="module">
+import * as T from '../dist/vendor/three.module.js';
+import {loadFurniture67} from '../dist/furniture-assets67.js';
+import {createRoomVariants} from '../dist/room-variants.js?v=campus-68b';
+await loadFurniture67();
+const renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(devicePixelRatio);renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;document.body.append(renderer.domElement);
+const scene=new T.Scene();scene.background=new T.Color('#edf3f1');scene.add(new T.HemisphereLight('#ffffff','#b5c3bc',2.5));const light=new T.DirectionalLight('#fff8e8',2.2);light.position.set(-2,4,-3);scene.add(light);
+const camera=new T.PerspectiveCamera(35,innerWidth/innerHeight,.02,100),target=new T.Vector3(0,.52,0);
+function view(side){camera.position.set(side?1.7:0,.76,side?-2.3:-2.8);camera.lookAt(target);}view(false);
+const material=(color,opts={})=>new T.MeshStandardMaterial({color,...opts});
+function add(geo,m,p,r,g){const o=new T.Mesh(geo,m);o.position.set(...p);if(r)o.rotation.set(...r);g.add(o);return o;}
+const roundedCache=new Map();
+function roundedGeometry(w,h,d,r=.015){const key=[w,h,d,r].join(',');if(roundedCache.has(key))return roundedCache.get(key);r=Math.min(r,h*.24,w*.24,d*.24);const a=w-2*r,b=h-2*r,q=Math.min(r,b*.35),x=-a/2,y=-b/2,shape=new T.Shape();shape.moveTo(x+q,y);shape.lineTo(x+a-q,y);shape.quadraticCurveTo(x+a,y,x+a,y+q);shape.lineTo(x+a,y+b-q);shape.quadraticCurveTo(x+a,y+b,x+a-q,y+b);shape.lineTo(x+q,y+b);shape.quadraticCurveTo(x,y+b,x,y+b-q);shape.lineTo(x,y+q);shape.quadraticCurveTo(x,y,x+q,y);const g=new T.ExtrudeGeometry(shape,{depth:d-2*r,bevelEnabled:true,bevelSize:r,bevelThickness:r,bevelSegments:3,steps:1,curveSegments:4});g.translate(0,0,-(d-2*r)/2);roundedCache.set(key,g);return g;}
+const box=(m,p,s,r,g)=>add(new T.BoxGeometry(...s),m,p,r,g),rounded=(m,p,s,rad,r,g)=>add(roundedGeometry(...s,rad),m,p,r,g);
+const variants=createRoomVariants({scene,box,rounded,mat:material,texture:()=>new T.Texture(),bakeStatic:()=>{}});variants.setSeats([{id:0,deskX:0,deskZ:0,yaw:0}]);variants.setMap('computer');variants.group.getObjectByName('teacher-lecture-laptop').visible=false;
+box(material('#dbe5df'),[0,-.03,0],[7,.06,7],null,scene);let open=false,last=0;
+document.querySelector('#front').onclick=()=>view(false);document.querySelector('#side').onclick=()=>view(true);document.querySelector('#open').onclick=()=>open=true;document.querySelector('#close').onclick=()=>open=false;
+document.querySelector('#status').textContent='机箱保持原尺寸 · 底部落地 · 抽屉可完全拉开';
+function frame(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;variants.updateDrawers({player:{id:0,seatId:0,seated:true},drawer:{open},students:[]},dt);renderer.render(scene,camera);requestAnimationFrame(frame);}requestAnimationFrame(frame);
+</script>

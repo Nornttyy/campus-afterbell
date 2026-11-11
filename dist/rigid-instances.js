@@ -2,6 +2,12 @@ import * as T from './vendor/three.module.js';
 
 // Repeated rigid props keep their original transforms and pickable geometry.
 // Only submission to the GPU is shared; animation and selection stay per prop.
+function sameGPUTransform(a,b){
+ // Instance attributes are Float32: comparing them to Float64 scene matrices
+ // otherwise marks almost every stationary prop dirty on every frame.
+ for(let i=0;i<16;i++)if(a.elements[i]!==Math.fround(b.elements[i]))return false;
+ return true;
+}
 function geometryKey(g){
  let h=2166136261;const mix=n=>{h=Math.imul(h^n,16777619);};
  for(const name of ['position','normal','uv','color']){
@@ -33,7 +39,7 @@ export function instanceRigidProps(groups,parent){
     let visible=true;for(let p=source.parent;p;p=p.parent)if(!p.visible){visible=false;break;}
     if(visible)visibleCount++;
     const matrix=visible?local.multiplyMatrices(inverseParent,source.matrixWorld):hidden;b.object.getMatrixAt(index,previous);
-    if(!previous.equals(matrix)){b.object.setMatrixAt(index,matrix);dirty=true;}
+    if(!sameGPUTransform(previous,matrix)){b.object.setMatrixAt(index,matrix);dirty=true;}
    });
    b.object.visible=visibleCount>0;
    if(dirty){b.object.instanceMatrix.needsUpdate=true;b.object.computeBoundingSphere();}

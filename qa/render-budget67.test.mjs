@@ -15,15 +15,6 @@ test('portrait, landscape and high-DPI displays stay within pixel budgets',()=>{
   assert.ok(ratio<=(quality==='low'?1:1.6));
  }
 });
-test('sustained load adapts gradually; brief stalls, background and fast desktops do not',()=>{
- const b=createRenderBudget({mobile:true});
- for(let i=0;i<200;i++)b.sample(16.67);
- b.sample(3000);assert.equal(b.scale,1);
- for(let i=0;i<50;i++)b.sample(50,{active:false});assert.equal(b.scale,1);
- for(let i=0;i<70;i++)b.sample(33.3);assert.equal(b.scale,.92);
- for(let i=0;i<2000;i++)b.sample(33.3);assert.equal(b.scale,.72);
- for(let i=0;i<100;i++)b.sample(16.67);assert.equal(b.scale,.72,'must not bounce resolution every second');
- for(let i=0;i<4000;i++)b.sample(16.67);assert.equal(b.scale,.96);
- for(let i=0;i<1000;i++)b.sample(16.67);assert.equal(b.scale,1);
- const desktop=createRenderBudget();for(let i=0;i<2000;i++)desktop.sample(50);assert.equal(desktop.scale,1);
+test('sustained load, background stalls and recovery never silently reduce resolution',()=>{
+ for(const mobile of [false,true]){const b=createRenderBudget({mobile});for(const frameMs of [16.67,33.3,50,3000])for(let i=0;i<2000;i++){assert.equal(b.sample(frameMs),false);assert.equal(b.scale,1);}b.reset();assert.equal(b.scale,1);}
 });

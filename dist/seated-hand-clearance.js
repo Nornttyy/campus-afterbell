@@ -1,3 +1,4 @@
+import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 // DeskBody's actual metre-space top is .87496; its rear edge is -.42436
@@ -17,13 +18,13 @@ export function createSeatedHandClearance(group,bones){
    const p=bone.worldToLocal(mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld));
    directions.forEach((d,k)=>{const score=p.dot(d);if(score>row.scores[k]){row.scores[k]=score;row.indices[k]=i;}});
   }
-  for(const row of byBone.values())for(const index of new Set(row.indices))samples[row.side].push({mesh,index});
+  for(const row of byBone.values())for(const index of new Set(row.indices))samples[row.side].push({mesh,index,sample:createSkinContact(mesh,index)});
  });
  const point=V(),inverse=new T.Matrix4();
  function measure(side,padding){
   let lift=0;
   for(const sample of samples[side]){
-   sample.mesh.getVertexPosition(sample.index,point).applyMatrix4(sample.mesh.matrixWorld).applyMatrix4(inverse);
+   sample.sample(point).applyMatrix4(inverse);
    if(Math.abs(point.x)>.604||point.z>1.21)continue;
    // During clip interpolation a 12mm allowance covers blended skin between
    // cached support vertices; settled authored writing contact stays exact.
@@ -49,7 +50,6 @@ export function createSeatedHandClearance(group,bones){
    // Most classroom actors stay there, so they incur no per-frame skin scan.
    group.updateMatrixWorld(true);inverse.copy(group.matrixWorld).invert();
    for(let pass=0;pass<3;pass++){
-    for(const mesh of meshes)mesh.skeleton.update();
     const padding=Math.min(.012,transition*.16),left=measure('Left',padding),right=measure('Right',padding);
     if(Math.max(left,right)<.00005)break;
     if(left>.00005)raise('Left',left+.0001);

@@ -1,36 +1,36 @@
 import {loadFurniture67} from './furniture-assets67.js';
-import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-67';
-import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-67';
-import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-67';
-import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-67';
-import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-67';
-import {gameplayFov} from './view-tuning55.js?v=campus-67';
-import {setCharacterNight} from './character-materials.js?v=campus-67';
-import {createStaminaVision} from './stamina-vision55.js?v=campus-67';
-import {createSoundCues} from './sound-cue55.js?v=campus-67';
-import {createChalkPowder} from './chalk-powder55.js?v=campus-67';
-import {createSurveillanceView} from './surveillance-view54.js?v=campus-67';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-67';
-import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-67';
-import {instanceRigidProps} from './rigid-instances.js?v=campus-67';
-import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-67';
-import {createItemEffects50} from './item-effects50.js?v=campus-67';
-import {createBubbleEffects} from './bubble-effects.js?v=campus-67';
-import {loadCampusArtwork} from './campus-artwork.js?v=campus-67';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-67';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-67';
-import {createRoomVariants} from './room-variants.js?v=campus-67';
-import {createComputerScreenContent} from './computer-screen55.js?v=campus-67';
+import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-68b';
+import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-68b';
+import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-68b';
+import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-68b';
+import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-68b';
+import {gameplayFov} from './view-tuning55.js?v=campus-68b';
+import {setCharacterNight} from './character-materials.js?v=campus-68b';
+import {createStaminaVision} from './stamina-vision55.js?v=campus-68b';
+import {createSoundCues} from './sound-cue55.js?v=campus-68b';
+import {createChalkPowder} from './chalk-powder55.js?v=campus-68b';
+import {createSurveillanceView} from './surveillance-view54.js?v=campus-68b';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-68b';
+import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-68b';
+import {instanceRigidProps} from './rigid-instances.js?v=campus-68b';
+import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-68b';
+import {createItemEffects50} from './item-effects50.js?v=campus-68b';
+import {createBubbleEffects} from './bubble-effects.js?v=campus-68b';
+import {loadCampusArtwork} from './campus-artwork.js?v=campus-68b';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-68b';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-68b';
+import {createRoomVariants} from './room-variants.js?v=campus-68b';
+import {createComputerScreenContent} from './computer-screen55.js?v=campus-68b';
 import * as THREE from './vendor/three.module.js';
-import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-67';
-import {createSmokeEffects} from './smoke-effects.js?v=campus-67';
-import {createItemOutline} from './item-outline.js?v=campus-67';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-67';
-import {loadStudentAssets} from './student-assets.js?v=campus-67';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-67';
-import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-67';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-67';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-67';
+import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-68b';
+import {createSmokeEffects} from './smoke-effects.js?v=campus-68b';
+import {createItemOutline} from './item-outline.js?v=campus-68b';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-68b';
+import {loadStudentAssets} from './student-assets.js?v=campus-68b';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-68b';
+import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-68b';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-68b';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-68b';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
 
@@ -101,7 +101,7 @@ export function syncDeskPenVisibility(records,deskPens){
 }
 
 // Editable classroom geometry with generated surfaces and imported game assets.
-export async function createClassroom(canvas, {onReady,active=true,snapEntry=false,renderDevice='auto'}={}) {
+export async function createClassroom(canvas, {onReady,active=true,snapEntry=false,renderDevice='auto',profile=false}={}) {
   const mobileRendering=renderDevice==='mobile'||prefersMobileRendering({coarse:matchMedia('(pointer: coarse)').matches,hover:matchMedia('(hover: hover)').matches,touchPoints:navigator.maxTouchPoints});
   const renderBudget=createRenderBudget({mobile:mobileRendering});
   const renderer=new THREE.WebGLRenderer({canvas,antialias:!mobileRendering,alpha:false,powerPreference:'high-performance'});
@@ -659,11 +659,11 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   function pickDrawerSlot(){
     if(!gameplay||gameplay.paused||gameplay.status!=='playing'||!gameplay.player.seated||gameplay.player.caught||!gameplay.drawer?.open||gameplay.drawer.drawnSlot!==null||drawerFocus<.9)return null;
 
-    scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);
+    camera.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);
     // Exact mesh hits first; a small local bounds margin makes a garlic clove
     // usable without enlarging the model or allowing a pick through furniture.
     const previousFar=itemRay.far;itemRay.far=Math.min(previousFar,2.5);
-    try{return pickDrawerItem(itemRay,drawerSlotProps.flatMap(slot=>slot.pickTargets),[room,...furnitureRows.values(),variants.group,drawerItems.parent]);}
+    try{const blockers=[room,...furnitureRows.values(),variants.group,drawerItems.parent];for(const root of blockers)root?.updateWorldMatrix(true,true);return pickDrawerItem(itemRay,drawerSlotProps.flatMap(slot=>slot.pickTargets),blockers);}
     finally{itemRay.far=previousFar;}
   }
   const campusTargets=campus.getTargets();
@@ -674,7 +674,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     const previousFar=itemRay.far;itemRay.far=Math.min(previousFar,2.5);
     try{
     const player=gameplay.player,preClass=gameplay.stage&&gameplay.stage!=='class';
-    camera.updateMatrixWorld(true);scene.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);
+    camera.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);
     const candidates=[];
     const add=(object,result,max=2.2)=>{if(!object||!isObjectVisible(object))return;object.updateWorldMatrix(true,true);const hit=itemRay.intersectObject(object,true).find(h=>h.distance<max);if(hit)candidates.push({object,result,hit});};
     if(gameplay.stage==='gathering'&&gameplay.startBellAvailable)add(startBellModel,{kind:'bell'});
@@ -704,7 +704,8 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     // No selection through walls or an intervening desktop. Repeated prop
     // source meshes stay raycastable even though GPU submission is instanced.
     if(candidates.length){
-      const blockers=itemRay.intersectObjects([room,teachingEnd,variants.group,...furnitureRows.values()],true).filter(h=>isObjectVisible(h.object)&&!h.object.material?.transparent);
+      const blockerRoots=[room,teachingEnd,variants.group,...furnitureRows.values()];for(const root of blockerRoots)root.updateWorldMatrix(true,true);
+      const blockers=itemRay.intersectObjects(blockerRoots,true).filter(h=>isObjectVisible(h.object)&&!h.object.material?.transparent);
       for(const c of candidates){const barrier=blockers.find(h=>h.distance<c.hit.distance-.035);if(!barrier)return c.result;let ancestor=barrier.object;while(ancestor&&ancestor!==c.object)ancestor=ancestor.parent;if(ancestor===c.object)return c.result;}
     }
     if(preClass)return null;
@@ -751,9 +752,11 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     teacher.update(gameTime,{walking:walk?1:teacher.group.position.distanceTo(teacherTarget)>.1?.5:0,look:headLook,phase,alert:Math.max((state.suspicion||0)/100,feedbackKind==='caught'?feedbackTime/.55:0)});
     lastTeacherPhase=phase;
   }
+  const stageTimes={};let stageStart=0;
+  const markStage=name=>{if(!profile)return;const now=performance.now();stageTimes[name]=(stageTimes[name]??(now-stageStart))*.92+(now-stageStart)*.08;stageStart=now;};
   let last=performance.now(),time=0,frame=0,lastDebugTime=0,lastHandsDebug=0,frameAverage=16.7,renderAverage=0,updateAverage=0,sceneDrawCalls=0,sceneTriangles=0;
   function render(now){const cpuStart=performance.now();if(!alive||!renderActive){frame=0;return;}frame=requestAnimationFrame(render);if(document.hidden){last=now;return;}const frameMs=now-last,dt=Math.min(frameMs/1000,.08);last=now;
-    const frozen=Boolean(gameplay&&(gameplay.paused||gameplay.status!=='playing'));
+    stageStart=performance.now();const frozen=Boolean(gameplay&&(gameplay.paused||gameplay.status!=='playing'));
     surveillanceView.prepare(gameplay,now);
     if(!gameplay){
       if(motion)time+=dt;
@@ -776,7 +779,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       const currentDrawerAmount=THREE.MathUtils.damp(previousDrawerAmount,drawerTarget,officeTray?14:drawerTarget>previousDrawerAmount?12:18,activeDt);
       firstPersonDrawer=drawerHandTarget({player,drawer:gameplay.drawer,seats:currentSeats,map:mapVariant,amount:currentDrawerAmount,geometry:officeTray?.userData.handTarget});
       hands.update(gameTime,{animationPose:viewRole()==='teacher'?null:customHandAnimation.sample({role:'student',freeLook:true,seated,crouched,carrying:gameplay.drawer?.drawnSlot!=null,holding:Boolean(gameplay.holding),eating:Boolean(player.eating),penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),drawerOpen:Boolean(gameplay.drawer?.open),captivity:player.captivity,caught,computer:player.computerActive,bookAmount:gameplay.books?.find(b=>b.id===player.seatId)?.amount||0,movement:firstPersonMotion.amount,crawlBlend:firstPersonMotion.crawlBlend},gameTime),drawer:firstPersonDrawer,eyeHeight:firstPersonEyeHeight(player,'student'),action:gameplay.selected,penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),holding:Boolean(gameplay.holding&&!caught),eating:Boolean(player.eating&&!caught),carrying:gameplay.drawer?.drawnSlot!=null&&!caught,progress:gameplay.actionProgress,alert:feedbackKind==='caught'?feedbackTime/.55:(gameplay.suspicion||0)/150,seated,crouched,caught,freeLook:true,viewPitch:basePitch+drawerPitch,computer:gameplay.player.computerActive,typing:Boolean(player.computerActive),bookAmount:!player.officeChair&&mapKind(mapVariant)!=='computer'?(gameplay.books?.find(b=>b.id===player.seatId)?.amount||0):0,office:Boolean(player.officeChair),throwAge:player.itemThrowAge??Infinity,movement:firstPersonMotion.amount,walkPhase:firstPersonMotion.phase,crawlBlend:firstPersonMotion.crawlBlend});
-      const focus=THREE.MathUtils.clamp(hands.getFocus?.()||0,0,1),handState=hands.getDebug?.();canvas.dataset.itemReady=String(focus>.92&&gameplay.holding&&(handState?.extension??1)>=.99&&entryTime>=.7);
+      markStage('hands');const focus=THREE.MathUtils.clamp(hands.getFocus?.()||0,0,1),handState=hands.getDebug?.();canvas.dataset.itemReady=String(focus>.92&&gameplay.holding&&(handState?.extension??1)>=.99&&entryTime>=.7);
       const viewFocus=0,extraDrop=0;
       const yaw=Number.isFinite(player.yaw)?player.yaw:0,pitch=THREE.MathUtils.clamp(basePitch,-1.40,1.40);
       // Match the hands' existing inverse camera transform without changing their pose.
@@ -796,14 +799,14 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       if(!gameplay.paused)feedbackTime=Math.max(0,feedbackTime-dt);
       flash.visible=feedbackTime>0;flashMat.opacity=feedbackKind==='caught'?.045*Math.sin(Math.min(1,feedbackTime/.55)*Math.PI):.018*Math.sin(Math.min(1,feedbackTime/.4)*Math.PI);
       startBellCap.position.x=gameplay.stage==='seating'?6.075:6.10;
-      updateDrawers(gameplay,activeDt,handState);updateTeacher(gameplay,activeDt);updatePupils(gameplay,gameTime,activeDt);itemEffects50.update(gameplay);updateSmoke(gameplay);bubbleEffects.update(gameplay);updateTeacherFeedback(gameplay,activeDt);
+      updateDrawers(gameplay,activeDt,handState);updateTeacher(gameplay,activeDt);markStage('teacherDrawers');updatePupils(gameplay,gameTime,activeDt);markStage('pupils');itemEffects50.update(gameplay);updateSmoke(gameplay);bubbleEffects.update(gameplay);updateTeacherFeedback(gameplay,activeDt);
     }
     if(motion&&!frozen){const ambientTime=gameplay?gameTime:time;fans.forEach((f,i)=>f.rotation.y=ambientTime*(1.7+i*.08));curtains.forEach((c,i)=>{c.rotation.z=curtainRests[i].z+Math.sin(ambientTime*.65+i)*.012;c.position.x=curtainRests[i].x+Math.sin(ambientTime*.8+i)*.025;});}
-    chalkPowder.update(frozen?0:dt);soundCues.update(gameplay,dt);surveillanceView.update(gameplay);campus.update(gameplay,frozen?0:dt);updateLayoutDoors(renderLayout,{doorMotion:campus.getDoorMotion()});variants.update(gameplay);updateTeacherTools(gameplay,frozen?0:dt);updateItemHover();rigidProps.sync();const renderStart=performance.now();updateAverage+=(renderStart-cpuStart-updateAverage)*.08;renderer.info.reset();smokeEffects.render(scene,camera,quality);sceneDrawCalls=renderer.info.render.calls;sceneTriangles=renderer.info.render.triangles;itemOutline.render(camera);if(gameplay)firstPersonView.render();staminaVision.render(gameplay,dt);surveillanceView.render(now);
+    chalkPowder.update(frozen?0:dt);soundCues.update(gameplay,dt);surveillanceView.update(gameplay);campus.update(gameplay,frozen?0:dt);updateLayoutDoors(renderLayout,{doorMotion:campus.getDoorMotion()});variants.update(gameplay);updateTeacherTools(gameplay,frozen?0:dt);markStage('environment');updateItemHover();markStage('picking');rigidProps.sync();markStage('instances');const renderStart=performance.now();updateAverage+=(renderStart-cpuStart-updateAverage)*.08;renderer.info.reset();smokeEffects.render(scene,camera,quality);sceneDrawCalls=renderer.info.render.calls;sceneTriangles=renderer.info.render.triangles;itemOutline.render(camera);if(gameplay)firstPersonView.render();staminaVision.render(gameplay,dt);surveillanceView.render(now);
     if(gameplay&&now-lastHandsDebug>200){lastHandsDebug=now;const handDebug=(viewRole()==='teacher'?teacherHands:hands).getDebug?.();canvas.dataset.handsDebug=JSON.stringify({...handDebug,gameTime,cameraPitch:playerEuler.x*-1,entryTime,bodyLocked:firstPersonMotion?.locked,bodyYaw:firstPersonMotion?.bodyYaw,crawlBlend:firstPersonMotion?.crawlBlend,walkAmount:firstPersonMotion?.amount});}
     frameAverage+=(dt*1000-frameAverage)*.08;renderAverage+=(performance.now()-renderStart-renderAverage)*.08;
-    if(renderBudget.sample(frameMs,{active:!document.hidden&&!frozen})){resize();}
-    if(now-lastDebugTime>1000){lastDebugTime=now;const stats={frameMs:Number(frameAverage.toFixed(2)),renderMs:Number(renderAverage.toFixed(2)),updateMs:Number(updateAverage.toFixed(2)),visibleStudents:pupilRecords.filter(r=>r.group.visible).length,rigidBatches:rigidProps.batchCount,rigidSources:rigidProps.sourceCount,drawCalls:sceneDrawCalls,triangles:sceneTriangles,totalDrawCalls:renderer.info.render.calls,totalTriangles:renderer.info.render.triangles,pixelRatio:renderer.getPixelRatio(),renderWidth:canvas.width,renderHeight:canvas.height,mobile:mobileRendering,renderScale:renderBudget.scale,quality,fov:camera.fov,fatigue:staminaVision.diagnostics().intensity,soundCues:soundCues.diagnostics(),gameplay:Boolean(gameplay),teacherPhase:gameplay?lastTeacherPhase:null,seats:currentSeats.length,player:gameplay?{x:camera.position.x,z:camera.position.z,y:camera.position.y}:null};canvas.dataset.sceneDebug=JSON.stringify(stats);canvas.dataset.frameMs=String(stats.frameMs);canvas.dataset.drawCalls=String(stats.drawCalls);}
+    // Performance work must not silently lower the selected image quality.
+    if(now-lastDebugTime>1000){lastDebugTime=now;const stats={stages:profile?stageTimes:undefined,frameMs:Number(frameAverage.toFixed(2)),renderMs:Number(renderAverage.toFixed(2)),updateMs:Number(updateAverage.toFixed(2)),visibleStudents:pupilRecords.filter(r=>r.group.visible).length,rigidBatches:rigidProps.batchCount,rigidSources:rigidProps.sourceCount,drawCalls:sceneDrawCalls,triangles:sceneTriangles,totalDrawCalls:renderer.info.render.calls,totalTriangles:renderer.info.render.triangles,pixelRatio:renderer.getPixelRatio(),renderWidth:canvas.width,renderHeight:canvas.height,mobile:mobileRendering,renderScale:renderBudget.scale,quality,fov:camera.fov,fatigue:staminaVision.diagnostics().intensity,soundCues:soundCues.diagnostics(),gameplay:Boolean(gameplay),teacherPhase:gameplay?lastTeacherPhase:null,seats:currentSeats.length,player:gameplay?{x:camera.position.x,z:camera.position.z,y:camera.position.y}:null};canvas.dataset.sceneDebug=JSON.stringify(stats);canvas.dataset.frameMs=String(stats.frameMs);canvas.dataset.drawCalls=String(stats.drawCalls);}
   }
   function setActive(value){
     const next=Boolean(value)&&alive;if(next===renderActive)return;

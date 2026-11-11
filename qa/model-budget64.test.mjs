@@ -42,7 +42,7 @@ for(const kind of DESK_ITEM_KINDS)test(`${kind}: procedural fallback stays below
  model.traverse(node=>{if(node.isMesh){assert.ok(node.geometry.attributes.normal);for(const material of Array.isArray(node.material)?node.material:[node.material])assert.ok(material?.isMaterial);}});
 });
 test('an over-budget optional GLB is rejected and its usable procedural fallback still respects the budget',async()=>{
- const {loadPropAssets}=await import('../dist/prop-assets.js?v=campus-67');
+ const {loadPropAssets}=await import('../dist/prop-assets.js?v=campus-68b');
  const scene=new T.Group(),geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(24003*3),3));scene.add(new T.Mesh(geometry,new T.MeshStandardMaterial()));
  const result=await loadPropAssets({burger:'./invalid-oversized-test.glb'},{loader:{loadAsync:async()=>({scene,animations:[]})}});
  assert.deepEqual(result.loaded,[]);assert.equal(result.failed.length,1);assert.match(result.failed[0].error.message,/8001/);

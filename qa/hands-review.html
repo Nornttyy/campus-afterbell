@@ -9,14 +9,14 @@
 <section id="recording-preview" hidden style="position:fixed;right:12px;bottom:65px;width:360px;max-width:80vw;background:white;padding:10px;z-index:3"><button id="close-recording">关闭回放</button><video id="recorded-video" controls playsinline loop style="display:block;width:100%"></video><a id="download-recording">下载视频</a></section>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=campus-67';
-import {loadDeskModel} from '../dist/imported-actors.js?v=campus-67';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-67';
-import {createDeskHands,THROWABLE_ITEM_KINDS} from '../dist/game-actors.js?v=campus-67';
-import {ClassroomRound,CLASSROOM_ACTIONS} from '../dist/classroom-rules.js?v=campus-67';
-import {createFirstPersonView,sampleFirstPersonMotion} from '../dist/first-person-view.js?v=campus-67';
-import {CRAWL_TUNING} from '../dist/crawl-profile.js?v=campus-67';
-import {SEATS,PLAYER_SEAT} from '../dist/classroom-layout.js?v=campus-67';
+import {loadStudentAssets} from '../dist/student-assets.js?v=campus-68b';
+import {loadDeskModel} from '../dist/imported-actors.js?v=campus-68b';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-68b';
+import {createDeskHands,THROWABLE_ITEM_KINDS} from '../dist/game-actors.js?v=campus-68b';
+import {ClassroomRound,CLASSROOM_ACTIONS} from '../dist/classroom-rules.js?v=campus-68b';
+import {createFirstPersonView,sampleFirstPersonMotion} from '../dist/first-person-view.js?v=campus-68b';
+import {CRAWL_TUNING} from '../dist/crawl-profile.js?v=campus-68b';
+import {SEATS,PLAYER_SEAT} from '../dist/classroom-layout.js?v=campus-68b';
 const ui=Object.fromEntries(['item','hold','use','throw','progress','progress-label','pause','step','stand','walk','crawl','pitch','yaw','reset-view','record','recording-preview','recorded-video','download-recording','close-recording','state','error'].map(id=>[id,document.getElementById(id)]));
 const canvas=document.querySelector('canvas'),renderer=new T.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;

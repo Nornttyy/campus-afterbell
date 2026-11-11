@@ -1,7 +1,8 @@
+import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=campus-67';
-import {studyBookPose} from './study-book58.js?v=campus-67';
-import {createPenFingerContact} from './pen-motion.js?v=campus-67';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-68b';
+import {studyBookPose} from './study-book58.js?v=campus-68b';
+import {createPenFingerContact} from './pen-motion.js?v=campus-68b';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const armName=/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/;
 
@@ -19,22 +20,22 @@ export function createStudentGestures(group,bones,clips,attachments){
  const typingRigs={Left:createFingerRig(group,bones,'Left'),Right:fingerRig},typingTips={Left:[],Right:[]};
  const readingTips=Object.fromEntries(['Left','Right'].map(side=>[side,createPenFingerContact(group,bones,{side,finger:'Middle'})]));
  const readingPads={Left:{Middle:[],Thumb:[]},Right:{Middle:[],Thumb:[]}};
- group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const {skinIndex,skinWeight}=mesh.geometry.attributes;for(let i=0;i<skinIndex.count;i++){let max=0,name='';for(let k=0;k<4;k++)if(skinWeight.getComponent(i,k)>max){max=skinWeight.getComponent(i,k);name=mesh.skeleton.bones[skinIndex.getComponent(i,k)].name;}for(const side of ['Left','Right'])if(name.includes(side+'Hand')){if(/Thumb3$/.test(name))readingPads[side].Thumb.push({mesh,index:i});else if(/(?:Index|Middle|Ring|Pinky)3$/.test(name))readingPads[side].Middle.push({mesh,index:i});}}});
- function readingPad(side,finger,normal,origin=null,orientation=null){let chosen=null,score=finger==='Thumb'?-Infinity:Infinity;const updated=new Set(),inverse=orientation?.clone().invert(),sign=side==='Left'?1:-1;for(const {mesh,index}of readingPads[side][finger]){if(!updated.has(mesh.skeleton)){mesh.skeleton.update();updated.add(mesh.skeleton);}const p=mesh.getVertexPosition(index,V()).applyMatrix4(mesh.matrixWorld);if(origin&&inverse){const local=p.clone().sub(origin).applyQuaternion(inverse);if(sign*local.x<0||sign*local.x>.335||local.y<0||local.y>.45)continue;}const value=p.dot(normal);if(finger==='Thumb'?value>score:value<score){score=value;chosen=p;}}return chosen||readingTips[side]();}
+ group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const {skinIndex,skinWeight}=mesh.geometry.attributes;for(let i=0;i<skinIndex.count;i++){let max=0,name='';for(let k=0;k<4;k++)if(skinWeight.getComponent(i,k)>max){max=skinWeight.getComponent(i,k);name=mesh.skeleton.bones[skinIndex.getComponent(i,k)].name;}for(const side of ['Left','Right'])if(name.includes(side+'Hand')){if(/Thumb3$/.test(name))readingPads[side].Thumb.push({sample:createSkinContact(mesh,i)});else if(/(?:Index|Middle|Ring|Pinky)3$/.test(name))readingPads[side].Middle.push({sample:createSkinContact(mesh,i)});}}});
+ function readingPad(side,finger,normal,origin=null,orientation=null){let chosen=null,score=finger==='Thumb'?-Infinity:Infinity;const inverse=orientation?.clone().invert(),sign=side==='Left'?1:-1;for(const {sample}of readingPads[side][finger]){const p=sample(V());if(origin&&inverse){const local=p.clone().sub(origin).applyQuaternion(inverse);if(sign*local.x<0||sign*local.x>.335||local.y<0||local.y>.45)continue;}const value=p.dot(normal);if(finger==='Thumb'?value>score:value<score){score=value;chosen=p;}}return chosen||readingTips[side]();}
  let tipSample=null,best=-Infinity;
  group.updateMatrixWorld(true);const tipBone=bones.RightHandIndex3,tipOrigin=tipBone.getWorldPosition(V()),tipAxis=tipOrigin.clone().sub(tipBone.parent.getWorldPosition(V())).normalize();
  group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const joint=mesh.skeleton.bones.indexOf(tipBone),{skinIndex,skinWeight}=mesh.geometry.attributes;if(joint<0)return;
-  for(let i=0;i<skinIndex.count;i++){let w=0;for(let k=0;k<4;k++)if(skinIndex.getComponent(i,k)===joint)w+=skinWeight.getComponent(i,k);if(w<.55)continue;const p=mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld),distance=p.clone().sub(tipOrigin).dot(tipAxis);if(distance>best){best=distance;tipSample={mesh,index:i};}}
+  for(let i=0;i<skinIndex.count;i++){let w=0;for(let k=0;k<4;k++)if(skinIndex.getComponent(i,k)===joint)w+=skinWeight.getComponent(i,k);if(w<.55)continue;const p=mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld),distance=p.clone().sub(tipOrigin).dot(tipAxis);if(distance>best){best=distance;tipSample={mesh,index:i,sample:createSkinContact(mesh,i)};}}
   for(const side of ['Left','Right']){
    const tip=bones[side+'HandIndex3'],joint=mesh.skeleton.bones.indexOf(tip),origin=tip.getWorldPosition(V()),axis=origin.clone().sub(tip.parent.getWorldPosition(V())).normalize(),candidates=[];let furthest=-Infinity;
-   for(let i=0;i<skinIndex.count;i++){let weight=0;for(let k=0;k<4;k++)if(skinIndex.getComponent(i,k)===joint)weight+=skinWeight.getComponent(i,k);if(weight<.35)continue;const d=mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld).sub(origin).dot(axis);furthest=Math.max(furthest,d);candidates.push({mesh,index:i,d});}
+   for(let i=0;i<skinIndex.count;i++){let weight=0;for(let k=0;k<4;k++)if(skinIndex.getComponent(i,k)===joint)weight+=skinWeight.getComponent(i,k);if(weight<.35)continue;const d=mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld).sub(origin).dot(axis);furthest=Math.max(furthest,d);candidates.push({mesh,index:i,d,sample:createSkinContact(mesh,i)});}
    // Cache only the real index tip skin. Choosing the underside after posing
    // makes contact independent of each imported rig's local finger axes.
    typingTips[side].push(...candidates.filter(p=>p.d>furthest-.018));
   }
  });
- function point(){group.updateMatrixWorld(true);tipSample.mesh.skeleton.update();return tipSample.mesh.getVertexPosition(tipSample.index,V()).applyMatrix4(tipSample.mesh.matrixWorld);}
- function aim(bone,child,target){const origin=bone.getWorldPosition(V()),from=child.getWorldPosition(V()).sub(origin).normalize(),to=target.clone().sub(origin).normalize(),parent=bone.parent.getWorldQuaternion(Q()),delta=Q().setFromUnitVectors(from,to);bone.quaternion.premultiply(parent.clone().invert().multiply(delta).multiply(parent));group.updateMatrixWorld(true);}
+ function point(){group.updateMatrixWorld(true);return tipSample.sample(V());}
+ function aim(bone,child,target){const origin=bone.getWorldPosition(V()),from=child.getWorldPosition(V()).sub(origin).normalize(),to=target.clone().sub(origin).normalize(),parent=bone.parent.getWorldQuaternion(Q()),delta=Q().setFromUnitVectors(from,to);bone.quaternion.premultiply(parent.clone().invert().multiply(delta).multiply(parent));bone.updateWorldMatrix(false,true);}
  function arm(side,target,poleHint=null){
   const shoulder=bones[side+'Arm'],elbow=bones[side+'ForeArm'],wrist=bones[side+'Hand'],root=shoulder.getWorldPosition(V()),middle=elbow.getWorldPosition(V()),end=wrist.getWorldPosition(V());
   const upper=root.distanceTo(middle),lower=middle.distanceTo(end),direction=target.clone().sub(root),d=T.MathUtils.clamp(direction.length(),Math.abs(upper-lower)+.005,upper+lower-.005);direction.normalize();target=root.clone().addScaledVector(direction,d);
@@ -47,7 +48,7 @@ export function createStudentGestures(group,bones,clips,attachments){
  function orient(side,along,dorsal){
   group.updateMatrixWorld(true);const frame=handFrame(bones,side),current=Q().setFromRotationMatrix(new T.Matrix4().makeBasis(frame.across,frame.along,frame.normal));
   const y=along.clone().normalize(),z=dorsal.clone().addScaledVector(y,-dorsal.dot(y)).normalize(),x=V().crossVectors(y,z).normalize(),target=Q().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z)),wrist=bones[side+'Hand'],parent=wrist.parent.getWorldQuaternion(Q());
-  wrist.quaternion.premultiply(parent.clone().invert().multiply(target.multiply(current.invert())).multiply(parent));group.updateMatrixWorld(true);
+  wrist.quaternion.premultiply(parent.clone().invert().multiply(target.multiply(current.invert())).multiply(parent));wrist.updateWorldMatrix(false,true);
  }
  function freeHand(side,seated,moving,walkTime){for(const s of samplers[seated?'Sit':moving>.03?'Walk':'Idle'])if(s.name.startsWith(side))s.bone.quaternion.fromArray(s.sample.evaluate(seated?0:walkTime));group.updateMatrixWorld(true);}
  function hold(side,{seated,mood,time,nearCenter=false}){
@@ -75,8 +76,8 @@ export function createStudentGestures(group,bones,clips,attachments){
   for(let i=0;i<3;i++){const tip=point(),origin=bones.RightHand.getWorldPosition(V()),target=origin.add(contact.clone().sub(tip)),rotation=bones.RightHand.getWorldQuaternion(Q());arm('Right',target,V(-1,-.2,0));bones.RightHand.quaternion.copy(bones.RightHand.parent.getWorldQuaternion(Q()).invert().multiply(rotation));group.updateMatrixWorld(true);}
  }
  function typingPoint(side,worldReady=false){
-  if(!worldReady)group.updateMatrixWorld(true);let low=Infinity,point=null;const updated=new Set(),inverse=group.matrixWorld.clone().invert();
-  for(const sample of typingTips[side]){if(!updated.has(sample.mesh.skeleton)){sample.mesh.skeleton.update();updated.add(sample.mesh.skeleton);}const p=sample.mesh.getVertexPosition(sample.index,V()).applyMatrix4(sample.mesh.matrixWorld).applyMatrix4(inverse);if(p.y<low){low=p.y;point=p;}}
+  if(!worldReady)group.updateMatrixWorld(true);let low=Infinity,point=null;const inverse=group.matrixWorld.clone().invert();
+  for(const sample of typingTips[side]){const p=sample.sample(V()).applyMatrix4(inverse);if(p.y<low){low=p.y;point=p;}}
   return point?group.localToWorld(point):bones[side+'HandIndex3'].getWorldPosition(V());
  }
  function computerLean(weight){
@@ -85,10 +86,10 @@ export function createStudentGestures(group,bones,clips,attachments){
   // A modest torso lean brings short source arms to the existing hardware;
   // neither the chair, keyboard, arms nor character are resized.
   const character=group.getWorldQuaternion(Q());
-  for(const [name,angle]of [['Spine',.22],['Spine1',.18]]){const bone=bones[name];if(!bone)continue;saved.set(bone,bone.quaternion.clone());const parent=bone.parent.getWorldQuaternion(Q()),turn=Q().setFromAxisAngle(V(1,0,0).applyQuaternion(character),angle*weight);bone.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));group.updateMatrixWorld(true);}
+  for(const [name,angle]of [['Spine',.22],['Spine1',.18]]){const bone=bones[name];if(!bone)continue;saved.set(bone,bone.quaternion.clone());const parent=bone.parent.getWorldQuaternion(Q()),turn=Q().setFromAxisAngle(V(1,0,0).applyQuaternion(character),angle*weight);bone.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));bone.updateWorldMatrix(false,true);}
   // Cancel only this torso lean at the neck/head. The actor's subsequent
   // lookYaw/lookPitch layer remains additive, including a human looking down.
-  for(const [name,angle]of [['Neck',-.16],['Head',-.24]]){const bone=bones[name];if(!bone)continue;saved.set(bone,bone.quaternion.clone());const parent=bone.parent.getWorldQuaternion(Q()),turn=Q().setFromAxisAngle(V(1,0,0).applyQuaternion(character),angle*weight);bone.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));group.updateMatrixWorld(true);}
+  for(const [name,angle]of [['Neck',-.16],['Head',-.24]]){const bone=bones[name];if(!bone)continue;saved.set(bone,bone.quaternion.clone());const parent=bone.parent.getWorldQuaternion(Q()),turn=Q().setFromAxisAngle(V(1,0,0).applyQuaternion(character),angle*weight);bone.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));bone.updateWorldMatrix(false,true);}
  }
  function keyboard(time){
   const character=group.getWorldQuaternion(Q());

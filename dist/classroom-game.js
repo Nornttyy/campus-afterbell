@@ -1,13 +1,13 @@
-import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-67';
-import {createReferenceHUD} from './reference-hud54.js?v=campus-67';
-import {interactionIntent} from './interaction-intent54.js?v=campus-67';
-import {createSessionUI} from './session-ui.js?v=campus-67';
-import {bindHeldUseInput} from './held-use-input.js?v=campus-67';
-import {createVisionEffects} from './vision-effects.js?v=campus-67';
+import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-68b';
+import {createReferenceHUD} from './reference-hud54.js?v=campus-68b';
+import {interactionIntent} from './interaction-intent54.js?v=campus-68b';
+import {createSessionUI} from './session-ui.js?v=campus-68b';
+import {bindHeldUseInput} from './held-use-input.js?v=campus-68b';
+import {createVisionEffects} from './vision-effects.js?v=campus-68b';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-67';
-import {PUBLIC_SOUND_RADIUS} from './sound-cue55.js?v=campus-67';
-import {referenceNotice} from './reference-notices55.js?v=campus-67';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-68b';
+import {PUBLIC_SOUND_RADIUS} from './sound-cue55.js?v=campus-68b';
+import {referenceNotice} from './reference-notices55.js?v=campus-68b';
 
 // Input/UI only. Perception, movement and team results live in rules.
 export function createClassroomGame({scene,audio,onExit,round:providedRound=null,sessionFactory=createSessionUI}){

@@ -1,5 +1,6 @@
+import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
-import {clonePropAsset} from './prop-assets.js?v=campus-67';
+import {clonePropAsset} from './prop-assets.js?v=campus-68b';
 const V=()=>new T.Vector3();
 export const SCHOOL_PEN=Object.freeze({length:.175,tipY:-.0875,gripY:-.030,radius:.010,gripRadius:.0105});
 export function createSchoolPen(){
@@ -31,10 +32,10 @@ export function createPenFingerContact(group,bones,{side='Right',finger='Index'}
    let w=0;for(let j=0;j<4;j++)if(indices.getComponent(i,j)===bi)w+=weights.getComponent(i,j);
    if(w<.3)continue;
    const score=mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld).sub(origin).dot(axis);
-   if(score>best){best=score;chosen={mesh,i};}
+   if(score>best){best=score;chosen={mesh,i,sample:createSkinContact(mesh,i)};}
   }
  });
- return ()=>{if(!chosen)return bone.getWorldPosition(V());chosen.mesh.skeleton.update();return chosen.mesh.getVertexPosition(chosen.i,V()).applyMatrix4(chosen.mesh.matrixWorld);};
+ return ()=>{if(!chosen)return bone.getWorldPosition(V());return chosen.sample(V());};
 }
 
 // The shaft lies on the desk plane, rotating about the vertical axis. Callers
