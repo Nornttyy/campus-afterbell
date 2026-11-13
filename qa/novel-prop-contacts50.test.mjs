@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {STUDENT_ASSETS,createRiggedStudent} from '../dist/student-assets.js';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-75';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-76';
 import {fingerPadSurfaceDistance} from './prop-contact-helpers.mjs';
 await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry(new URL(url).pathname.split('/').pop())}});
 // The pen now uses the right-hand Write contact, covered by seated-hand-clearance.test.mjs.

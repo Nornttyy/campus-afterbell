@@ -29,7 +29,7 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS)){
   edit.dispose();edit.dispose();for(const [mesh,s]of originals)assert.equal(mesh.geometry,s.geometry,'dispose did not restore original');
  });
  test(`${variant}: face revision cannot change the authored bone motion or palm contact`,async()=>{
-  const old=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,referenceShape:false,seed:3}),next=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seed:3});
+  const old=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,referenceShape:false,seed:3}),next=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,referenceShape:true,seed:3});
   let time=0;
   for(const pose of ['resting','writing','reading','computer','snack','crawling']){
    for(const a of [old,next]){a.setMood(pose==='crawling'?'resting':pose);a.setMotion({seated:!['resting','crawling'].includes(pose),crawling:pose==='crawling',speed:0,lookYaw:.25,lookPitch:.13});}

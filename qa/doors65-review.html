@@ -3,10 +3,10 @@
 <fieldset id="controls" disabled><button data-door="front">前门</button><button data-door="rear">后门</button><button data-door="office">办公室门</button><button id="open">开门 · E 3秒</button><button id="close">关门 · Q 3秒</button><button id="cancel">取消交互</button><button id="walk">尝试走过门</button><button id="pause">暂停</button><button id="step">前进0.1秒</button><button data-stage="gathering">课间</button><button data-stage="seating">倒计时</button><button data-stage="class">课堂</button></fieldset>
 <main><canvas id="canvas" tabindex="0" aria-label="正式教室门及碰撞检查"></canvas><i id="aim"></i><output id="state">加载真实模型…</output><div id="loading">正在加载正式场景…</div></main><footer id="message">按钮调用正式门交互；可按住 E 开、Q 关，WASD 使用真实移动和碰撞。</footer>
 <script type="module">
-import {createClassroom} from '../dist/classroom.js?v=campus-75';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-75';
-import {DOORS,OFFICE,START_BELL_POSITION,moveInRoom,clearWallSegment} from '../dist/classroom-layout.js?v=campus-75';
-import {reachesSchoolDoor} from '../dist/door-interaction54.js?v=campus-75';
+import {createClassroom} from '../dist/classroom.js?v=campus-76';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-76';
+import {DOORS,OFFICE,START_BELL_POSITION,moveInRoom,clearWallSegment} from '../dist/classroom-layout.js?v=campus-76';
+import {reachesSchoolDoor} from '../dist/door-interaction54.js?v=campus-76';
 const $=id=>document.getElementById(id),canvas=$('canvas'),keys=new Set();let scene,round,current='front',last=0,walkTo=null,disposed=false,frameId=0;
 const say=text=>$('message').textContent=text;
 function doorPosition(amount=round.layout.doorMotion[current].amount){const a=amount*Math.PI/2;if(current==='office')return{x:OFFICE.doorMinX+.45*Math.cos(a),z:8.91+.45*Math.sin(a)};const d=DOORS.find(d=>d.id===current);return{x:7.30+.8*Math.sin(a),z:d.maxZ-.8*Math.cos(a)};}

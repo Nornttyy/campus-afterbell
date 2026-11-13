@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-75';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-75';
-import {THIRD_PALM_PROFILES} from '../dist/third-palm-profiles55.js?v=campus-75';
+import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-76';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-76';
+import {THIRD_PALM_PROFILES} from '../dist/third-palm-profiles55.js?v=campus-76';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {propSurface} from './whole-palm-geometry54.mjs';
 const parts=['Palm','Thumb','Index','Middle','Pinky'],names={drink:'red-drink-can',banana:'curved-banana',burger:'layered-burger'};
