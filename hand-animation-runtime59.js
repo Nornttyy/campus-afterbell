@@ -1,4 +1,4 @@
-import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-77';
+import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-78';
 export const HAND_ANIMATION_STORAGE_KEY='campus.handAnimations.v1';
 export const HAND_ANIMATION_CHANGE_EVENT='campus:hand-animations-changed';
 function defaultStorage(){try{return globalThis.localStorage||null;}catch{return null;}}

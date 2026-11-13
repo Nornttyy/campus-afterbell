@@ -80,3 +80,10 @@ teacher-hand-left-v1.glb, teacher-hand-right-v1.glb.
 Derived from the user's 2026-11-08 rigged teacher export, not student hands.
 Original embedded UV textures and finger skin weights retained. Cropped forearms have capped wrists.
 Source: art-source/tripo-exports-20261108/老师.glb. Preparation: scripts/models/prepare_teacher_hands55.py.
+
+User-selected toilet (2026-11-13, campus-78):
+toilet-v78.glb
+Source: https://studio.tripo3d.ai/3d-model/生成一个白色的简化的马桶厚厚圆圆的结构-结构简单-马桶盖打开的状态-马桶盖子与水箱中间没有缝隙紧挨在一起-没有多余结构-f2842f08-a1c5-4762-bd8c-666cfd112948
+Downloaded from the user's connected Tripo account at the user's request. This is not an original-game asset or a CC0 declaration.
+Preparation: uniform size and ground/front alignment; 23370 source triangles reduced to 7800; original embedded 2K PBR images retained.
+Immutable original kept locally in art-source/toilet78/originals/toilet.glb. Checksums and dimensions: docs/toilet-model78.json.

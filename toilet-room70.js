@@ -1,6 +1,7 @@
 import * as T from './vendor/three.module.js';
-import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-77';
-export * from './toilet-layout70.js?v=campus-77';
+import {placeFurniture67} from './furniture-assets67.js?v=campus-78';
+import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-78';
+export * from './toilet-layout70.js?v=campus-78';
 
 function ellipseRing(outerX,outerZ,innerX,innerZ,height){
  const shape=new T.Shape();shape.absellipse(0,0,outerX,outerZ,0,Math.PI*2,false);const hole=new T.Path();hole.absellipse(0,0,innerX,innerZ,0,Math.PI*2,true);shape.holes.push(hole);
@@ -25,7 +26,7 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic}){
  const bowlGeo=own(new T.LatheGeometry([[.10,.09],[.20,.13],[.25,.20],[.31,.33],[.325,.41],[.32,.45],[.27,.455],[.253,.39],[.21,.30],[.135,.25],[0,.24]].map(([r,y])=>new T.Vector2(r,y)),32));bowlGeo.scale(1,1,1.28);
  const pedestalGeo=own(new T.LatheGeometry([[0,0],[.18,0],[.20,.035],[.14,.11],[.12,.22],[.18,.29],[0,.29]].map(([r,y])=>new T.Vector2(r,y)),24));pedestalGeo.scale(1,1,1.18);
  const ringGeo=own(ellipseRing(.334,.425,.245,.323,.024));const lidGeo=own(new T.ExtrudeGeometry(new T.Shape().absellipse(0,0,.325,.415,0,Math.PI*2,false),{depth:.018,steps:1,curveSegments:24,bevelEnabled:true,bevelThickness:.004,bevelSize:.005,bevelSegments:1}));lidGeo.translate(0,0,-.009);
- const waterGeo=own(new T.CircleGeometry(.145,32));waterGeo.scale(1,1.20,1);const knobGeo=own(new T.SphereGeometry(.033,12,8)),hingeGeo=own(new T.CylinderGeometry(.018,.018,.10,10));
+ const waterGeo=own(new T.CircleGeometry(.145,32));waterGeo.scale(1,1.20,1);const knobGeo=own(new T.SphereGeometry(.055,12,8)),hingeGeo=own(new T.CylinderGeometry(.018,.018,.10,10));
  const signMaps=[false,true].map(occupied=>{const map=texture(256,80,(c,w,h)=>{c.fillStyle='#f1efe0';c.fillRect(0,0,w,h);c.strokeStyle='#adad9d';c.lineWidth=5;c.strokeRect(3,3,w-6,h-6);c.fillStyle=occupied?'#c84231':'#51a54c';c.fillRect(8,8,95,h-16);c.fillStyle='#fffce6';c.font='bold 27px sans-serif';c.textAlign='center';c.fillText(occupied?'有人':'无人',55,49);c.fillStyle='#343b35';c.font='23px sans-serif';c.fillText('洗手间',178,35);c.font='16px sans-serif';c.fillText('Toilet',178,58);});textures.add(map);return material('#fff',{map,roughness:.75,side:T.DoubleSide});});
  const signGeo=own(new T.PlaneGeometry(.43,.134));
  const posterMap=texture(256,384,(c,w,h)=>{c.fillStyle='#ececdf';c.fillRect(0,0,w,h);c.strokeStyle='#343b36';c.lineWidth=5;c.strokeRect(8,8,w-16,h-16);c.beginPath();c.ellipse(130,130,58,33,0,0,Math.PI*2);c.stroke();c.strokeRect(146,45,42,65);c.beginPath();c.moveTo(92,145);c.lineTo(100,207);c.lineTo(150,207);c.lineTo(163,148);c.stroke();c.strokeStyle='#b73325';c.lineWidth=12;c.beginPath();c.arc(128,125,88,0,Math.PI*2);c.moveTo(66,62);c.lineTo(189,188);c.stroke();c.fillStyle='#252e29';c.font='bold 27px sans-serif';c.textAlign='center';for(const[t,y]of[['请勿往马桶里',278],['丢垃圾',320]])c.fillText(t,w/2,y);});textures.add(posterMap);const posterMat=material('#fff',{map:posterMap,roughness:.85,side:T.DoubleSide}),posterGeo=own(new T.PlaneGeometry(.39,.585));
@@ -36,17 +37,20 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic}){
   box(panel,[0,1.04,-1.19],[2.10,1.72,.045],null,stall);box(edge,[0,1.92,-1.19],[2.15,.045,.055],null,stall);
   for(const x of[-.99,.99])box(panel,[x,1.035,1.19],[.12,1.71,.045],null,stall);
   const fixture=new T.Group();fixture.name='toilet-fixture-'+s.id;fixture.position.set(-.18,0,-.48);stall.add(fixture);
+  const supplied=placeFurniture67(fixture,'toilet');
+  if(!supplied){
   render(pedestalGeo,porcelain,[0,0,0],fixture);render(bowlGeo,porcelain,[0,0,0],fixture);render(ringGeo,seatMat,[0,.46,0],fixture);
   const surface=render(waterGeo,water,[0,.252,-.015],fixture,[-Math.PI/2,0,0]);surface.castShadow=false;
   rounded(porcelain,[0,.66,-.47],[.61,.42,.28],.045,null,fixture);rounded(seatMat,[0,.875,-.47],[.64,.035,.31],.012,null,fixture);
   render(lidGeo,seatMat,[0,.90,-.295],fixture);
   for(const x of[-.13,.13])box(steel,[x,.485,-.30],[.055,.025,.08],null,fixture);
-  rounded(steel,[.23,.84,-.31],[.07,.026,.04],.006,null,fixture);
+  rounded(steel,[.23,.84,-.31],[.07,.026,.04],.006,null,fixture);fixture.scale.setScalar(.76);
+  }
   // Non-rendered anchors survive baking; callers raycast/seat against these
   // specific fixture targets rather than an ordinary chair or desktop.
-  const seatTarget=new T.Object3D();seatTarget.name='toilet-seat-target-'+s.id;seatTarget.position.set(s.x-.18,.48,s.z-.48);group.add(seatTarget);
+  const seatTarget=new T.Object3D();seatTarget.name='toilet-seat-target-'+s.id;seatTarget.position.set(s.x-.18,.36,s.z-.48);group.add(seatTarget);
   const exitTarget=new T.Object3D();exitTarget.position.set(s.x-.18,0,s.z+1.68);group.add(exitTarget);
-  const pick=render(own(new T.CylinderGeometry(.33,.33,.08,12)),new T.MeshBasicMaterial({visible:false}),[s.x-.18,.48,s.z-.48],group);materials.add(pick.material);pick.name='toilet-seat-pick-'+s.id;pick.userData={animated:true,seatId:s.id,interaction:'sit',kind:'toilet'};
+  const pick=render(own(new T.CylinderGeometry(.235,.235,.08,12)),new T.MeshBasicMaterial({visible:false}),[s.x-.18,.36,s.z-.48],group);materials.add(pick.material);pick.name='toilet-seat-pick-'+s.id;pick.userData={animated:true,seatId:s.id,interaction:'sit',kind:'toilet'};
   seats.set(s.id,{group:stall,toilet:pick,target:pick,fixture,seatTarget,exitTarget,...TOILET_SEATS[s.id]});
   const hinge=new T.Group();hinge.name='toilet-door-hinge-'+s.id;hinge.position.set(s.x+TOILET_DOOR.hingeX,0,s.z+TOILET_DOOR.hingeZ);group.add(hinge);
   const door=box(panel,[TOILET_DOOR.width/2,TOILET_DOOR.bottom+TOILET_DOOR.height/2,0],[TOILET_DOOR.width,TOILET_DOOR.height,TOILET_DOOR.depth],null,hinge);door.name='toilet-door-'+s.id;door.userData={animated:true,seatId:s.id,doorId:s.id,interaction:'cubicle-door'};

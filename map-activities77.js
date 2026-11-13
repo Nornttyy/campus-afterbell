@@ -1,5 +1,5 @@
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-77';
-import {TOILET_STALLS} from './toilet-layout70.js?v=campus-77';
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-78';
+import {TOILET_STALLS} from './toilet-layout70.js?v=campus-78';
 // The clips establish hanging and plunging, but not timing/score. Three seconds
 // of plunging and food wrappers clogging a used bowl are explicit local tuning.
 export const PLUNGE_SECONDS=3;
