@@ -1,11 +1,10 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-68b';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-68b';
-import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,floorHeight,TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-68b';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-74';
+import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,actorFloorHeight,actorEyeHeight,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-74';
 
 // Local reconstruction parameters, not measured single-projectile durations.
 export const PROJECTILE_EFFECT_TUNING=Object.freeze({flashFuse:1.2,flashRange:8,flashWhite:4.5,flashFade:2.5,inkRange:2.2,inkDuration:7});
 const clamp=n=>Math.max(0,Math.min(1,n)),occluders=new Map();
-function boxesFor(map,layout=null){if(layout)return [...enclosureVolumes(map,layout),...OFFICE_SOLIDS,...floorTiles(map).map(t=>({...t,minY:0,maxY:t.height}))];if(!occluders.has(map))occluders.set(map,[...enclosureVolumes(map),...OFFICE_SOLIDS,...floorTiles(map).map(t=>({...t,minY:0,maxY:t.height}))]);return occluders.get(map);}
+function boxesFor(map,layout=null){if(layout)return [...enclosureVolumes(map,layout),...OFFICE_SOLIDS,...(mapKind(map)==='playground'?[]:floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})))];if(!occluders.has(map))occluders.set(map,[...enclosureVolumes(map),...OFFICE_SOLIDS,...(mapKind(map)==='playground'?[]:floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})))]);return occluders.get(map);}
 function segmentTime(a,b,box){
  let lo=0,hi=1;
  for(const axis of ['x','y','z']){
@@ -16,8 +15,7 @@ function segmentTime(a,b,box){
  return lo;
 }
 export function effectEye(actor,map='classroom'){
- const teacher=(actor.id??-1)===-1,height=teacher?TEACHER_EYE_HEIGHT:actor.seated?1.43:1.65;
- return{x:actor.x,y:floorHeight(actor.x,actor.z,map)+(actor.crouched&&!actor.seated?CRAWL_TUNING.eyeHeight:height),z:actor.z};
+ return{x:actor.x,y:actorFloorHeight(actor,map)+actorEyeHeight(actor,map),z:actor.z};
 }
 export function clearEffectSight(a,b,map='classroom',layout=null){return !boxesFor(map,layout).some(box=>segmentTime(a,b,box)!==null);}
 export function flashExposure(origin,actor,map='classroom',layout=null){
@@ -36,8 +34,7 @@ function actorImpact(a,b,actors,ownerId,map){
  let nearest=null;
  for(const actor of actors){
   const id=actor.id??-1;if(id===ownerId)continue;
-  const floor=floorHeight(actor.x,actor.z,map),height=actor.crouched&&!actor.seated?CRAWL_TUNING.bodyMaxY:id===-1?2.14:actor.seated?1.64:1.88;
-  const t=segmentTime(a,b,{minX:actor.x-.32,maxX:actor.x+.32,minY:floor+.08,maxY:floor+height,minZ:actor.z-.29,maxZ:actor.z+.29});
+  const t=segmentTime(a,b,actorBodyVolume(actor,map));
   if(t!==null&&(!nearest||t<nearest.t))nearest={t,id};
  }
  return nearest;

@@ -3,7 +3,9 @@ const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
 
 // A deterministic, staggered classroom routine. It never owns an inventory,
 // presses an item button, or awards score; network peers receive the same mood.
-export function ordinaryStudyState(actor,teacher,elapsed,seed=0,computer=false){
+export function ordinaryStudyState(actor,teacher,elapsed,seed=0,map=false){
+ const computer=map===true||map==='computer';
+ if(['toilet','dorm','playground'].includes(map))return {mood:map==='dorm'?'resting':map==='toilet'?'sitting':'standing',holding:false,action:null,_computerActive:false,_computerApp:'desktop',yaw:actor.seatYaw||0,pitch:0,studyBookHeld:false};
  const offset=((Math.imul((actor.id+1)>>>0,2654435761)^seed)>>>0)%3700/100;
  const phase=((Math.max(0,elapsed)+offset)%37+37)%37;
  const mood=computer?(phase<23?'computer':'computer-idle'):phase<9?'listening':phase<20?'reading':'writing';

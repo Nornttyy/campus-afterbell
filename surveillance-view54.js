@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.js';
-import {SURVEILLANCE_MOUNTS} from './surveillance54.js?v=campus-68b';
-import {floorHeight} from './classroom-layout.js?v=campus-68b';
-import {createSmokeEffects} from './smoke-effects.js?v=campus-68b';
+import {SURVEILLANCE_MOUNTS} from './surveillance54.js?v=campus-74';
+import {floorHeight} from './classroom-layout.js?v=campus-74';
+import {createSmokeEffects} from './smoke-effects.js?v=campus-74';
 
 export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
  const root=new THREE.Group();root.name='classroom-surveillance';scene.add(root);
@@ -38,10 +38,13 @@ export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
  view.id='surveillance-feed';view.setAttribute('aria-label','监控画面');view.hidden=true;view.style.cssText='position:fixed;right:2vw;bottom:4vh;width:min(384px,40vw);z-index:12;background:#182629;border:3px solid #eef0df;border-radius:5px;box-shadow:0 5px 20px #0005;color:#fff9df;font:16px sans-serif;pointer-events:none';
  const picture=document.createElement('canvas');picture.width=384;picture.height=216;picture.style.cssText='width:100%;display:block';const label=document.createElement('div');label.style.cssText='padding:5px 9px';view.append(picture,label);document.body.append(view);
  const context=picture.getContext('2d'),image=context.createImageData(width,height);let state=null,last=-Infinity,lastMap=null,pending=null,disposed=false;
+ const cooldownLabel=document.createElement('div');cooldownLabel.id='surveillance-countdown';cooldownLabel.hidden=true;cooldownLabel.style.cssText='position:fixed;right:2vw;top:18vh;z-index:10;color:#fffce9;text-shadow:0 1px 3px #24353a;font:16px sans-serif;pointer-events:none';document.body.append(cooldownLabel);
  const update=s=>{
   state=s;const live=s?.status==='playing'&&s.stage==='class',info=s?.surveillance,ids=new Set(info?.devices?.map(m=>m.id)||[]);
   for(const record of records){record.device.visible=live&&ids.has(record.mount.id);record.panel.visible=live&&(s.role==='teacher'||ids.has(record.mount.id));if(s?.map!==lastMap){const y=floorHeight(record.mount.x,record.mount.z,s?.map);record.device.position.y=record.mount.y+y;record.panel.position.y=1.65+y;}}
   lastMap=s?.map;view.hidden=!(live&&!s.paused&&s.role==='teacher'&&info?.viewing&&ids.has(info.viewing));if(view.hidden)pending=null;
+  cooldownLabel.hidden=!(live&&!s.paused&&s.role==='teacher'&&ids.size>0&&info?.remaining>0);
+  cooldownLabel.textContent=info?.unlockIn>0?'下一个监控 · '+Math.ceil(info.unlockIn)+' 秒':'下一个监控可开启';
  };
  // Called before the main actor update, once per frame. Only the eight feed
  // frames each second extend the actor visibility set; no second pose update.
@@ -64,5 +67,5 @@ export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
    context.putImageData(image,0,0);label.textContent=(m.mount.id==='front'?'监控 1':'监控 2')+'   Q 关闭';
   }finally{cleanup?.();m.device.visible=was;renderer.setRenderTarget(old,face,mip);renderer.autoClear=oldAuto;renderer.xr.enabled=oldXR;}
  }
- return{update,prepare,render,intersectsSphere:sphere=>Boolean(pending&&frustum.intersectsSphere(sphere)),targets:()=>records.filter(r=>r.panel.visible).map(r=>({object:r.panel,id:r.mount.id,installed:Boolean(state?.surveillance?.devices.some(m=>m.id===r.mount.id)),ready:Boolean(state?.surveillance?.available)})),dispose(){if(disposed)return;disposed=true;pending=null;view.remove();root.removeFromParent();monitorSmoke.dispose();linear.dispose();target.dispose();outputQuad.geometry.dispose();outputMaterial.dispose();owned.forEach(g=>g.dispose());[cases,trim,lens,led].forEach(m=>m.dispose());}};
+ return{update,prepare,render,intersectsSphere:sphere=>Boolean(pending&&frustum.intersectsSphere(sphere)),targets:()=>records.filter(r=>r.panel.visible).map(r=>({object:r.panel,id:r.mount.id,installed:Boolean(state?.surveillance?.devices.some(m=>m.id===r.mount.id)),ready:Boolean(state?.surveillance?.available)})),dispose(){if(disposed)return;disposed=true;pending=null;view.remove();cooldownLabel.remove();root.removeFromParent();monitorSmoke.dispose();linear.dispose();target.dispose();outputQuad.geometry.dispose();outputMaterial.dispose();owned.forEach(g=>g.dispose());[cases,trim,lens,led].forEach(m=>m.dispose());}};
 }

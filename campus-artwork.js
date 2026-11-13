@@ -1,5 +1,7 @@
 import * as T from './vendor/three.module.js';
 export const CAMPUS_ARTWORK_SOURCES=Object.freeze({
+ classroomAward:'./assets/posters/classroom-award72.png',
+ chalkNewspaper:'./assets/posters/chalk-newspaper72-ref.png',
  teacherTutorial:'./assets/posters/teacher-tutorial64.png?v=black-brush64',
  studentTutorial:'./assets/posters/student-tutorial64.png?v=black-brush64',
  classroomNotice:'./assets/posters/classroom-notice54.png',

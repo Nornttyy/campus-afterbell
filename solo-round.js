@@ -1,7 +1,7 @@
-import {ClassroomRound} from './classroom-rules.js?v=campus-68b';
-import {TeacherRound} from './teacher-rules.js?v=campus-68b';
-import {updateLayoutDoors,CAMPUS_MAPS} from './classroom-layout.js?v=campus-68b';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-68b';
+import {ClassroomRound} from './classroom-rules.js?v=campus-74';
+import {TeacherRound} from './teacher-rules.js?v=campus-74';
+import {updateLayoutDoors,CAMPUS_MAPS,campusFloor} from './classroom-layout.js?v=campus-74';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-74';
 
 const elevatorRound=Base=>class extends Base{
  reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();return this.snapshot();}
@@ -23,7 +23,7 @@ const elevatorRound=Base=>class extends Base{
   if(!super._inputAllowed()||!Number.isFinite(yaw)||!Number.isFinite(pitch))return false;
   this.player.yaw=Math.atan2(Math.sin(yaw),Math.cos(yaw));this.player.pitch=Math.max(-1.3,Math.min(1.3,pitch));return true;
  }
- snapshot(){const s=super.snapshot();s.floor=CAMPUS_MAPS.indexOf(this.map)+1;s.elevator=elevatorSnapshot(this.elevator,[{player:this.player}],this);if(s.elevator.phase==='travel')s.startBellAvailable=false;return s;}
+ snapshot(){const s=super.snapshot();s.floor=campusFloor(this.map);s.elevator=elevatorSnapshot(this.elevator,[{player:this.player}],this);if(s.elevator.phase==='travel')s.startBellAvailable=false;return s;}
  travelFloor(map){
   const error=departureError(this.elevator,[{player:this.player}],{map,currentMap:this.map,stage:this.stage,status:this.status});
   if(error||this.paused){if(error)this._events.push({type:'elevator-denied',message:error});return false;}
@@ -56,7 +56,7 @@ export function createSoloRound(options={}){return new (options.role==='teacher'
 export function switchSoloRole(round,role){
  if(!['student','teacher'].includes(role)||round.network||round.status!=='playing'||round.stage!=='gathering'||round.elevator?.phase==='travel')return null;
  if(round.snapshot().role===role)return round;
- const next=createSoloRound({role,seed:round.seed,map:round.map,duration:round._defaultDuration,target:round.target});
+ const next=createSoloRound({role,seed:round.seed,map:round.map,duration:round._defaultDuration,target:round.target,chalkStamina:round.chalkStamina});
  next.start({gathering:true});
  const p=round.player;Object.assign(next.player,{x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,character:p.character,variant:p.variant});
  if(role==='teacher')Object.assign(next.teacher,{x:p.x,z:p.z,yaw:p.yaw});

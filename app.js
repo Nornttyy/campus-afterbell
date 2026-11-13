@@ -1,7 +1,7 @@
-import {setupControlSettings} from './control-settings64.js?v=campus-68b';
-import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-68b';
-import {playCampusFoley} from './foley-audio54.js?v=campus-68b';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-68b';
+import {setupControlSettings} from './control-settings64.js?v=campus-74';
+import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-74';
+import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-74';
+import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-74';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -13,10 +13,10 @@ try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch {}
 const volume = (value, fallback) => Number.isFinite(+value) ? Math.min(100,Math.max(0,+value)) : fallback;
 const settings = { ...defaults,soundCues:saved.soundCues!==false, sfx:volume(saved.sfx,55), muted:typeof saved.muted==='boolean'?saved.muted:false, quality:initialQuality(saved.quality,mobileRendering), motion:typeof saved.motion==='boolean'?saved.motion:defaults.motion };
 let scene, game, sceneReady=false, worldPromise=null, disposed=false, openingButton=null, entryCharacter='boy',entryMode='online',entryRequest=0,roomConnecting=null;
-let roundOptions={duration:Number.isInteger(saved.duration)&&saved.duration>=300&&saved.duration<=1200?saved.duration:600,target:Number.isInteger(saved.target)&&saved.target>=30&&saved.target<=120?saved.target:120,role:'student',map:'classroom'};
-Object.assign(settings,{duration:roundOptions.duration,target:roundOptions.target});
+let roundOptions={duration:Number.isInteger(saved.duration)&&saved.duration>=300&&saved.duration<=1200?saved.duration:600,target:Number.isInteger(saved.target)&&saved.target>=20&&saved.target<=160?saved.target:120,role:'student',map:'classroom',chalkStamina:saved.chalkStamina===true,maxPlayers:Number.isInteger(saved.maxPlayers)&&saved.maxPlayers>=2&&saved.maxPlayers<=8?saved.maxPlayers:8};
+Object.assign(settings,{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina,maxPlayers:roundOptions.maxPlayers});
 function syncRoundOptions(){
-  $('#round-minutes').value=roundOptions.duration/60;$('#round-goal').value=roundOptions.target;
+  $('#round-players').value=String(roundOptions.maxPlayers);$('#round-minutes').value=roundOptions.duration/60;$('#round-goal').value=roundOptions.target;$('#round-chalk-stamina').checked=roundOptions.chalkStamina;
 }
 let toastTimer=0;
 function toast(message){ clearTimeout(toastTimer); $('#toast').textContent=message; $('#toast').classList.add('show'); toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2600); }
@@ -34,7 +34,7 @@ class MenuAudio {
         this.fx.connect(this.cut);this.cut.connect(this.limiter);this.limiter.connect(this.context.destination);this.apply();
       }
       if(this.context.state==='suspended')await this.context.resume();
-      this.started=true;
+      this.started=true;if(typeof warmCampusFoley==='function')warmCampusFoley(this);
     }catch{}
   }
   apply(){if(!this.context)return;this.fx.gain.setTargetAtTime(settings.muted?0:settings.sfx/100*.55,this.context.currentTime,.025);}
@@ -67,11 +67,12 @@ $$('[data-quality]').forEach(button=>button.addEventListener('click',()=>{settin
 for(const type of ['sfx'])$('#'+type+'-volume').addEventListener('input',e=>{settings[type]=Number(e.target.value);$('#'+type+'-output').textContent=settings[type]+'%';audio.apply();persist();});
 $('#sound-cues-toggle').addEventListener('change',e=>{settings.soundCues=e.target.checked;applySettings();persist();});
 function commitRoomSettings(){
+  roundOptions.maxPlayers=Math.round(Math.max(2,Math.min(8,Number($('#round-players').value)||8)));settings.maxPlayers=roundOptions.maxPlayers;
   roundOptions.duration=Math.round(Math.max(5,Math.min(20,Number($('#round-minutes').value)||10)))*60;
-  roundOptions.target=Math.round(Math.max(30,Math.min(120,Number($('#round-goal').value)||120)));
-  settings.duration=roundOptions.duration;settings.target=roundOptions.target;syncRoundOptions();persist();
+  roundOptions.target=Math.round(Math.max(20,Math.min(160,Number($('#round-goal').value)||120)));
+  roundOptions.chalkStamina=$('#round-chalk-stamina').checked;settings.chalkStamina=roundOptions.chalkStamina;settings.duration=roundOptions.duration;settings.target=roundOptions.target;syncRoundOptions();persist();
 }
-for(const id of ['#round-minutes','#round-goal'])$(id).addEventListener('change',commitRoomSettings);
+for(const id of ['#round-minutes','#round-goal','#round-chalk-stamina','#round-players'])$(id).addEventListener('change',commitRoomSettings);
 $('#motion-toggle').addEventListener('change',e=>{settings.motion=e.target.checked;applySettings();persist();});
 $('#sound-toggle').addEventListener('click',()=>{settings.muted=!settings.muted;syncSound();persist();});
 $('#fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('当前浏览器暂不支持全屏');}catch{toast('当前窗口无法全屏，请在浏览器中打开');}});
@@ -103,7 +104,7 @@ $('#enter-solo').addEventListener('click',startSolo);
 function syncRoomCreation(){
   const joining=entryMode==='online'&&!!$('#room-code').value.trim();
   $('#room-settings').hidden=entryMode!=='online'||joining||(!$('#room-server').value.trim()&&!defaultCampusEndpoint());
-  for(const id of ['#round-minutes','#round-goal'])$(id).disabled=joining;
+  for(const id of ['#round-minutes','#round-goal','#round-chalk-stamina','#round-players'])$(id).disabled=joining;
 }
 $('#room-code').addEventListener('input',syncRoomCreation);
 $('#room-server').value=defaultCampusEndpoint();
@@ -133,7 +134,7 @@ $('#room-enter').addEventListener('click',async()=>{
   const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;roomConnecting=request;button.disabled=true;button.textContent='连接中…';error.hidden=true;
   try{
     entryCharacter=randomStudent();
-    const online=await connectCampusRoom({endpoint,code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,settings:{duration:roundOptions.duration,target:roundOptions.target},onError:e=>toast(typeof e==='string'?e:e.message)});
+    const online=await connectCampusRoom({endpoint,code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina},onError:e=>toast(typeof e==='string'?e:e.message)});
     if(disposed||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
     scene.setMap(online.snapshot().map);scene.setCharacter(online.player?.character||entryCharacter);scene.setActive(true);game.start({...roundOptions});
   }catch(e){if(request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接不到服务器，请确认服务器已启动。':e.message;}}
@@ -159,7 +160,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-68b'),import('./classroom-game.js?v=campus-68b')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-74'),import('./classroom-game.js?v=campus-74')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}

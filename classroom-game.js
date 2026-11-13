@@ -1,13 +1,13 @@
-import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-68b';
-import {createReferenceHUD} from './reference-hud54.js?v=campus-68b';
-import {interactionIntent} from './interaction-intent54.js?v=campus-68b';
-import {createSessionUI} from './session-ui.js?v=campus-68b';
-import {bindHeldUseInput} from './held-use-input.js?v=campus-68b';
-import {createVisionEffects} from './vision-effects.js?v=campus-68b';
+import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-74';
+import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-74';
+import {createReferenceHUD} from './reference-hud54.js?v=campus-74';
+import {interactionIntent} from './interaction-intent54.js?v=campus-74';
+import {createSessionUI} from './session-ui.js?v=campus-74';
+import {bindHeldUseInput} from './held-use-input.js?v=campus-74';
+import {createVisionEffects} from './vision-effects.js?v=campus-74';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-68b';
-import {PUBLIC_SOUND_RADIUS} from './sound-cue55.js?v=campus-68b';
-import {referenceNotice} from './reference-notices55.js?v=campus-68b';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-74';
+import {referenceNotice} from './reference-notices55.js?v=campus-74';
 
 // Input/UI only. Perception, movement and team results live in rules.
 export function createClassroomGame({scene,audio,onExit,round:providedRound=null,sessionFactory=createSessionUI}){
@@ -21,7 +21,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   const labels={snack:'零食',drink:'饮料',burger:'汉堡',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡糖',banana:'香蕉',bananaPeel:'香蕉皮',garlic:'大蒜',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set(),physicalKeys=new Map();
   const throwables=new Set(['smoke','flash','ink','bananaPeel']),vision=canvas.parentElement&&document.createElement?createVisionEffects(canvas.parentElement):null;
   let active=false,finished=false,raf=0,last=0,lastHud=0,lastEffect=0;
-  const footstepTravel=new Map();let footstepMap=null;
+  const teacherFootsteps=createTeacherFootsteps();
   let yaw=0,pitch=0,dragLook=false,dragX=0,dragY=0,feedbackTimer=0,lastFriends='',lastTeacher=null,lastInteractionState=null,lastComputerStick=0,computerStickDirection=null;
   let lastVideoReport=-Infinity,lastVideoPlaying=false;
   function stopVideoWatching(){round.setComputerPlayback?.({playing:false,visible:false,mediaTime:0});lastVideoPlaying=false;lastVideoReport=-Infinity;}
@@ -60,22 +60,17 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function processEvents(){const events=round.drainEvents();if(!events.length)return;const role=round.snapshot().role;for(const e of events){
     if(e.recipientId!=null&&e.recipientId!==round.player.id)continue;
     const notice=referenceNotice(e,role);if(notice)feedback(notice.text,notice.kind);
-    if(['food-complete','drink-complete','gum-pop','burp','chalk-hit'].includes(e.type))scene.playWorldEffect?.(e);
-    if(['use-crunch','use-gulp','gum-inflate','food-complete','drink-complete','gum-pop','burp'].includes(e.type)){
-      const distance=Number.isFinite(e.x)?Math.hypot(e.x-round.player.x,e.z-round.player.z):0;
-      if(distance<PUBLIC_SOUND_RADIUS)audio.effect?.(e.type,e.recipientId!=null?.42:Math.max(.1,1-distance/PUBLIC_SOUND_RADIUS));
-    }
+    if(['food-complete','drink-complete','gum-pop','phone-notification','burp','chalk-hit'].includes(e.type))scene.playWorldEffect?.(e);
+    const sound=soundForEvent(e,round.player);if(sound)audio.effect?.(sound.kind,sound.gain);
     if(e.type==='elevator-start'){release();audio.click();}
     if(e.type==='elevator-arrived'){options.map=e.map;audio.effect?.('bell',.35);}
     if(e.type==='school-bell')fx('bell');
     if(e.type==='flash-burst'||e.type==='ink-splash')audio.effect?.(e.type,.6);
-    if(e.type==='complete'&&e.actor==='player'&&e.points>0&&!throwables.has(e.action))fx('complete');
+    if(e.type==='complete'&&e.studentId===round.player.id&&e.points>0)scene.playFeedback?.('complete');
     if(['flash-throw','ink-throw'].includes(e.type))audio.effect?.('smoke-throw',.4);
     if(['smoke-throw','smoke-impact','smoke-bloom'].includes(e.type)){const p=round.player,dist=Math.hypot(e.x-p.x,e.z-p.z);if(dist<9)audio.effect?.(e.type,Math.max(.12,1-dist/10));}
-    if(e.type==='chalk'||e.type==='chalk-throw')fx('warning');
-    if(e.type==='chalk-hit')audio.effect?.('chalk-hit');
     if(e.type==='wrong-grab')audio.effect?.('warning');
-    if(['gum-score','snake-food'].includes(e.type)&&e.studentId===round.player.id&&e.points>0)audio.effect?.('gum-score',.5);
+    if(['gum-score'].includes(e.type)&&e.studentId===round.player.id&&e.points>0)audio.effect?.('gum-score',.5);
     if(['bubble-release','bubble-hit','bubble-attached','rear-door'].includes(e.type))audio.effect?.(e.type==='bubble-attached'?'bubble-hit':e.type,.6);
     if(e.type==='peel-slip')audio.effect?.('banana-slip',.65);if(e.type==='peel-thrown')audio.effect?.('bananaPeel-throw',.4);
     if(e.type==='stunned'&&e.studentId===round.player.id){release();stopMovement();}
@@ -91,34 +86,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     const kind=previous.pen!==next.pen?(next.pen?'pen-pickup':'pen-putdown'):previous.seated!==next.seated?'chair':previous.drawer!==next.drawer?(next.drawer?'drawer-open':'drawer-close'):previous.book!==next.book?(next.book?'book-open':'book-close'):next.pen&&previous.writing!==next.writing?(next.writing?'pen-write':'pen-twirl'):null;
     if(kind)audio.effect?.(kind,.6);
   }
-  function playFootsteps(s){
-    if(s.status!=='playing'||s.paused||footstepMap!==s.map){footstepTravel.clear();footstepMap=s.map;if(s.status!=='playing'||s.paused)return;}
-    const actors=new Map((s.students||[]).map(actor=>['student:'+actor.id,actor]));
-    if(s.teacher)actors.set('teacher',s.teacher);
-    const self=s.role==='teacher'?'teacher':'student:'+s.player.id;actors.set(self,s.player);
-    let loudest=0;
-    for(const[key,actor]of actors){
-      const previous=footstepTravel.get(key),walking=actor.visible!==false&&!actor.seated&&!actor.crouched&&!actor.caught&&!(actor.stunLeft>0)&&actor.phase!=='stunned'&&(!actor.captivity||actor.captivity==='free');
-      const current={x:actor.x,z:actor.z,walking,distance:0};footstepTravel.set(key,current);
-      if(!walking||!previous?.walking)continue;
-      const travelled=Math.hypot(actor.x-previous.x,actor.z-previous.z);
-      // Real travel drives contacts, so stationary clocks cannot make footsteps.
-      // The bound also rejects spawn/seat/elevator jumps while accommodating
-      // both 15 Hz authoritative snapshots and ordinary slow rendering frames.
-      if(!Number.isFinite(travelled)||travelled>.65)continue;
-      current.distance=previous.distance+travelled;
-      const stride=key==='teacher'?1.28:.82;
-      if(current.distance<stride)continue;current.distance%=stride;
-      const distance=Math.hypot(actor.x-s.player.x,actor.z-s.player.z),radius=9;
-      if(distance>=radius)continue;
-      const gain=key===self?.54:(key==='teacher'?.64:.48)*(1-distance/radius)**2;
-      loudest=Math.max(loudest,gain);
-    }
-    for(const key of footstepTravel.keys())if(!actors.has(key))footstepTravel.delete(key);
-    // Coincident contacts merge into the nearest audible footstep rather than
-    // letting a distant crowd consume the Foley bus before the player's step.
-    if(loudest>.002)audio.effect?.('step',loudest);
-  }
+  function playFootsteps(s){const gain=teacherFootsteps.sample(s);if(gain>.002)audio.effect?.('step',gain);}
   function render(s){
     playInteractionChanges(s);
     const p=s.player,teacher=s.role==='teacher',alive=s.teamSize-s.caughtCount;
@@ -196,7 +164,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     if(nextOptions?.role)options={role:nextOptions.role==='teacher'?'teacher':'student',map:nextOptions.map||'classroom',duration:nextOptions.duration||600,target:nextOptions.target||120,character:nextOptions.character||options.character};
     else if(active)options={...options,...round.snapshot().settings};
     if(!externalRound)round=createSoloRound(options);
-    cancelAnimationFrame(raf);if(pauseDialog.open)pauseDialog.close();if(resultDialog.open)resultDialog.close();release();keys.clear();session.reset();footstepTravel.clear();round.reset(Date.now()>>>0);if(!round.network&&options.character){round.player.character=options.character;round.player.variant=options.character;}round.start({gathering:!externalRound||nextOptions?.gathering===true});yaw=round.player.yaw||0;pitch=round.player.pitch||0;round.setLook(yaw,pitch);
+    cancelAnimationFrame(raf);if(pauseDialog.open)pauseDialog.close();if(resultDialog.open)resultDialog.close();release();keys.clear();session.reset();teacherFootsteps.reset();round.reset(Date.now()>>>0);if(!round.network&&options.character){round.player.character=options.character;round.player.variant=options.character;}round.start({gathering:!externalRound||nextOptions?.gathering===true});yaw=round.player.yaw||0;pitch=round.player.pitch||0;round.setLook(yaw,pitch);
     active=true;finished=false;lastFriends='';lastTeacher=null;lastInteractionState=null;document.body.classList.add('playing');ui.hidden=false;$('#menu').inert=true;$('#menu').setAttribute('aria-hidden','true');
     $('#speech').hidden=true;$('#round-feedback').classList.remove('pop');
     $('#student-controls').hidden=round.snapshot().role==='teacher';$('#teacher-controls').hidden=round.snapshot().role!=='teacher';

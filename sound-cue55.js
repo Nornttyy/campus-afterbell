@@ -1,6 +1,7 @@
-const PUBLIC_NOISES=new Set(['food-complete','drink-complete','gum-pop','burp']);
+import {GLOBAL_SOUND_EVENTS} from './audio-events69.js?v=campus-74';
+const PUBLIC_NOISES=new Set(['food-complete','drink-complete','gum-pop','phone-notification','burp']);
 export const PUBLIC_SOUND_RADIUS=14;
-export function audibleCue(event,listener=null){return Boolean(PUBLIC_NOISES.has(event?.type)&&event?.audience!=='self'&&event?.recipientId==null&&Number.isFinite(event.x)&&Number.isFinite(event.z)&&(!listener||(Number.isFinite(listener.x)&&Number.isFinite(listener.z)&&Math.hypot(event.x-listener.x,event.z-listener.z)<PUBLIC_SOUND_RADIUS)));}
+export function audibleCue(event,listener=null){return Boolean(PUBLIC_NOISES.has(event?.type)&&event?.audience!=='self'&&event?.recipientId==null&&Number.isFinite(event.x)&&Number.isFinite(event.z)&&(!listener||GLOBAL_SOUND_EVENTS.has(event.type)||(Number.isFinite(listener.x)&&Number.isFinite(listener.z)&&Math.hypot(event.x-listener.x,event.z-listener.z)<PUBLIC_SOUND_RADIUS)));}
 export function relativeSoundBearing(event,player){return Math.atan2(Math.sin(Math.atan2(event.x-player.x,event.z-player.z)-(player.yaw||0)),Math.cos(Math.atan2(event.x-player.x,event.z-player.z)-(player.yaw||0)));}
 export function createSoundCues(host){
  const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');canvas.className='teacher-sound-cues';canvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:8';host.append(canvas);const c=canvas.getContext('2d');let enabled=true,clock=0,events=[];

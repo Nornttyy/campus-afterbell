@@ -1,9 +1,17 @@
+import {createToiletRoom} from './toilet-room70.js?v=campus-74';
+import {createDormRoom} from './dorm-room70.js?v=campus-74';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-74';
+import {createHotpotRoom} from './hotpot-room70.js?v=campus-74';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js';
 import * as T from './vendor/three.module.js';
-import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-68b';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-68b';
+import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-74';
+import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-74';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,screenContent=null,officeScreens=new Map()}){
+ const hotpot=createHotpotRoom({parent:scene,box,rounded,mat,texture,bakeStatic});hotpot.group.visible=false;
+ const toilet=createToiletRoom({parent:scene,box,rounded,mat,texture,bakeStatic}),dorm=createDormRoom({parent:scene,box,rounded,mat,texture,bakeStatic}),playground=createPlaygroundRoom({parent:scene});
+ for(const variant of [toilet,dorm,playground])variant.group.visible=false;
+ const vendingTargets=playground.layout.vending.map((v,id)=>{const o=new T.Mesh(new T.BoxGeometry(v.width,v.height,v.depth),new T.MeshBasicMaterial({visible:false}));o.position.set(v.x,v.height/2,v.z);o.rotation.y=v.yaw;playground.group.add(o);return{id,object:o};});
  const group=new T.Group(),screens=new Map(),stations=new Map(),drawers=new Map(),hardwareRoots=[];group.name='computer-lab-workstations';scene.add(group);group.visible=false;
  const shell=mat('#424b59',{roughness:.48}),keys=mat('#d5d9df',{roughness:.72}),base=mat('#909ba9',{metalness:.35,roughness:.48}),top=mat('#d1d5cb',{roughness:.68}),trim=mat('#607d7b',{roughness:.62}),shadow=mat('#27353d',{roughness:.85});
  const imported=hasComputer67();
@@ -39,11 +47,15 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,scr
    drawer.group.position.z=-drawer.travel*drawer.open;
   }
  }
- return{group,screens,stations,drawers,hardwareRoots,teacherScreen,light,setSeats,updateDrawers,
-  setMap(map){currentMap=map;group.visible=mapKind(map)==='computer';light.visible=mapKind(map)==='night';setSeats(seats);},
-  update(state){
+ return{group,hotpot,toilet,dorm,playground,vendingTargets,specialRoots:[hotpot.group,toilet.group,dorm.group,playground.group],
+  cabinetFor(id){return mapKind(currentMap)==='toilet'?toilet.cabinets.get(id):mapKind(currentMap)==='dorm'?dorm.cabinets.get(id):null;},
+  seatTarget(id){return mapKind(currentMap)==='toilet'?toilet.seats.get(id)?.target:mapKind(currentMap)==='dorm'?dorm.beds.get(id)?.target:null;},screens,stations,drawers,hardwareRoots,teacherScreen,light,setSeats,updateDrawers,
+  setMap(map){currentMap=map;hotpot.group.visible=mapKind(map)==='hotpot';toilet.group.visible=mapKind(map)==='toilet';dorm.group.visible=mapKind(map)==='dorm';playground.group.visible=mapKind(map)==='playground';group.visible=mapKind(map)==='computer';light.visible=['night','dorm'].includes(mapKind(map));setSeats(seats);},
+  update(state,dt=0){
+   if(toilet.group.visible)toilet.update(state||{},dt);if(dorm.group.visible)dorm.update(state||{},dt);if(playground.group.visible)playground.update(state?.elapsed||0);
+   if(hotpot.group.visible)hotpot.update(state?.elapsed||0);
    screenContent?.update(state,group.visible?new Map([...screens].filter(([id])=>stations.get(id)?.visible)):new Map(),group.visible?teacherScreen:null,officeScreens);
    if(light.visible){const t=state?.teacher||{x:BOARD.x,z:BOARD.z,yaw:Math.PI},pitch=state?.role==='teacher'?state.player.pitch:.08,height=TEACHER_EYE_HEIGHT+floorHeight(t.x,t.z,state?.map);light.position.set(t.x,height,t.z);light.target.position.set(t.x+Math.sin(t.yaw)*6,height-Math.tan(pitch)*6,t.z+Math.cos(t.yaw)*6);}
-  },dispose(){screenContent?.dispose();screenGeo.dispose();laptop.screen.geometry.dispose();light.shadow.map?.dispose();}
+  },dispose(){hotpot.dispose();toilet.dispose();dorm.dispose();for(const {object:o}of vendingTargets){o.geometry.dispose();o.material.dispose();}playground.dispose();screenContent?.dispose();screenGeo.dispose();laptop.screen.geometry.dispose();light.shadow.map?.dispose();}
  };
 }

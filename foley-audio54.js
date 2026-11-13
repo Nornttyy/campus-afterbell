@@ -1,7 +1,7 @@
 // Original procedural Foley: short contact, scrape and air layers. These are
 // not recordings from the reference game. No music scheduler or musical UI notes.
 const DURATIONS=Object.freeze({tap:.075,open:.20,back:.12,step:.22,'drawer-open':.49,'drawer-close':.35,'rear-door':.50,'book-open':.34,'book-close':.24,'pen-pickup':.14,'pen-putdown':.16,'pen-write':.34,'pen-twirl':.30,pen:.30,chair:.39,phone:.10,snack:.42,burger:.38,banana:.35,garlic:.37,lunch:.39,drink:.46,blow:.54,bubble:.13,'gum-pop':.16,'gum-score':.13,'bubble-release':.24,'bubble-hit':.20,'bananaPeel-throw':.18,'banana-slip':.47,stunned:.34,burp:.53,'smoke-throw':.19,'smoke-impact':.20,'smoke-bloom':1.70,'flash-burst':.70,'ink-splash':.34,'chalk-hit':.16,caught:.25,warning:.19,complete:.23,bell:1.05});
-const ACTION_DURATIONS=Object.freeze({'use-crunch':.34,'use-gulp':.48,'food-complete':.24,'drink-complete':.24,'gum-inflate':.62});
+const ACTION_DURATIONS=Object.freeze({'use-crunch':.34,'use-gulp':.48,'food-complete':.24,'drink-complete':.24,'gum-inflate':.62,'chalk-throw':.18,'phone-notification':.55,'snake-food':.24,'snake-failed':.60,'game-kill-1':.45,'game-kill-2':.45,'game-kill-3':.45,'game-kill-4':.45,'game-kill-5':.60});
 export const FOLEY_KINDS=Object.freeze([...Object.keys(DURATIONS),...Object.keys(ACTION_DURATIONS)]);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 
@@ -13,6 +13,7 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
  const variation=.94+rand()*.12;
  const add=(i,value)=>{if(i>=0&&i<data.length)data[i]+=value;};
  function noise(at,dur,level,{lo=70,hi=5000,decay=3,attack=.003,pulse=0}={}){
+  hi=Math.min(hi,3800);pulse=0;
   const start=Math.round(at*rate),length=Math.ceil(dur*rate),al=1-Math.exp(-2*Math.PI*lo/rate),ah=1-Math.exp(-2*Math.PI*hi/rate);let low=0,high=0;
   for(let n=0;n<length;n++){const t=n/rate,x=t/dur,w=rand()*2-1;low+=al*(w-low);high+=ah*(w-high);const grains=pulse?.30+.70*Math.sin(t*pulse*Math.PI)**2:1,env=Math.min(1,t/attack)*Math.exp(-decay*x)*Math.min(1,(1-x)*16);add(start+n,(high-low)*env*level*grains);}
  }
@@ -36,7 +37,7 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
   case 'book-close':paper(0,.22);impact(.10,.12,.21,[103,197,332]);noise(.10,.05,.42,{lo:250,hi:4200,decay:5});break;
   case 'pen-pickup':latch(.01,.17);noise(0,.11,.16,{lo:800,hi:3400,decay:4});break;
   case 'pen-putdown':latch(.006,.23);latch(.041,.13);impact(.005,.09,.057,[410,1183,2207]);break;
-  case 'pen-write':for(let k=0;k<4;k++)noise(k*.072,.054,.24,{lo:1700,hi:6700,decay:1.6,pulse:92});break;
+  case 'pen-write':for(let k=0;k<4;k++){impact(k*.072,.048,.06,[173,367]);noise(k*.072,.024,.10,{lo:170,hi:1250,decay:4});}break;
   case 'pen-twirl':case 'pen':for(const at of [.01,.093,.22]){noise(at,.034,.19,{lo:1600,hi:6400,decay:4});impact(at,.042,.025,[829,1673]);}break;
   case 'chair':noise(.005,.24,.33,{lo:100,hi:2700,decay:1.5,pulse:31});impact(.27,.11,.22,[71,163,326]);break;
   case 'phone':latch(0,.12);noise(.01,.065,.12,{lo:150,hi:1100,decay:5});break;
@@ -52,7 +53,8 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
   case 'blow':noise(0,.50,.20,{lo:110,hi:1350,decay:.9,attack:.06,pulse:4});break;
   case 'gum-inflate':noise(.01,.57,.19,{lo:120,hi:1800,decay:.55,attack:.09,pulse:3});noise(.22,.30,.065,{lo:650,hi:2600,decay:1,attack:.04});break;
   case 'bubble':case 'gum-score':impact(0,.09,.16,[193,353]);noise(0,.026,.23,{lo:400,hi:2200,decay:6});break;
-  case 'gum-pop':noise(0,.04,.55,{lo:200,hi:6200,decay:6});impact(.002,.12,.24,[123,261,463]);break;
+  case 'gum-pop':
+   for(let i=0;i<data.length;i++){const t=i/rate;add(i,.58*Math.sin(2*Math.PI*(430*t-1150*t*t))*Math.exp(-t*44)*Math.min(1,t/.002));}break;
   case 'bubble-release':noise(0,.17,.24,{lo:150,hi:1300,decay:1.5,pulse:27});impact(.005,.11,.10,[137,283]);break;
   case 'bubble-hit':impact(0,.16,.26,[88,179,353]);noise(0,.08,.32,{lo:350,hi:2200,decay:4,pulse:53});break;
   case 'bananaPeel-throw':case 'smoke-throw':noise(0,.16,.25,{lo:300,hi:2600,decay:2,attack:.02});break;
@@ -62,10 +64,18 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
    const length=Math.min(data.length,Math.round(rate*.49));let low=0;for(let i=0;i<length;i++){const t=i/rate,x=t/.49;low+=.15*((rand()*2-1)-low);const cycle=t*(88-30*x),glottal=Math.max(0,Math.sin(2*Math.PI*cycle))**5;add(i,low*glottal*.9*Math.sin(Math.PI*x)**.7);}noise(.018,.42,.18,{lo:260,hi:690,decay:1.6,pulse:34});break;
   }
   case 'smoke-impact':impact(0,.16,.24,[172,463,1123]);noise(0,.045,.35,{lo:300,hi:5100,decay:7});break;
-  case 'smoke-bloom':noise(0,1.66,.30,{lo:85,hi:2100,decay:.7,attack:.16,pulse:7});break;
-  case 'flash-burst':noise(0,.13,.84,{lo:55,hi:8900,decay:7});impact(0,.21,.39,[43,79,137]);noise(.035,.59,.08,{lo:2800,hi:3600,decay:3,attack:.02});break;
+  case 'smoke-bloom':impact(0,.28,.10,[58,97,143]);noise(.012,.20,.12,{lo:80,hi:650,decay:3,attack:.03});break;
+  case 'flash-burst':noise(0,.13,.84,{lo:55,hi:8900,decay:7});impact(0,.21,.39,[43,79,137]);break;
   case 'ink-splash':noise(0,.12,.57,{lo:120,hi:3100,decay:3,pulse:42});for(let k=0;k<5;k++){const at=.055+k*.042;impact(at,.065,.066,[245+k*17,537+k*23]);noise(at,.03,.12,{lo:700,hi:3400,decay:4});}break;
-  case 'chalk-hit':noise(0,.045,.43,{lo:450,hi:6200,decay:6});impact(.004,.11,.15,[127,387,921]);break;
+  case 'chalk-throw':noise(.005,.15,.27,{lo:320,hi:2400,decay:2,attack:.035});break;
+  case 'chalk-hit':impact(0,.095,.38,[1120,1794,2810]);noise(0,.012,.14,{lo:700,hi:3000,decay:8});break;
+  // Original replacements pending the user's exact notification / kill recordings.
+  case 'phone-notification':for(const [at,hz] of [[0,1175],[.10,1568],[.20,2093]])impact(at,.30,.22,[hz,hz*2.01]);break;
+  case 'snake-food':impact(0,.12,.24,[523,1046]);impact(.10,.13,.25,[784,1568]);break;
+  case 'snake-failed':for(const [at,hz] of [[0,392],[.14,330],[.28,262]])impact(at,.28,.23,[hz,hz*2]);break;
+  case 'game-kill-1':case 'game-kill-2':case 'game-kill-3':case 'game-kill-4':case 'game-kill-5':{
+   const n=Number(kind.slice(-1)),hz=[440,523,659,784,1046][n-1];impact(0,.11,.18,[91,181]);impact(.025,.31,.25,[hz,hz*2.01,hz*3.03]);if(n===5)impact(.17,.38,.18,[1318,2093]);break;
+  }
   case 'caught':impact(0,.17,.35,[56,91,157]);scuff(.03,.31);break;
   case 'warning':impact(0,.13,.19,[89,163,297]);noise(.012,.11,.18,{lo:180,hi:1100,decay:3});break;
   case 'complete':paper(.01,.15);latch(.01,.13);impact(.045,.12,.08,[114,283]);break;
@@ -78,7 +88,17 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
  return data;
 }
 
-const contexts=new WeakMap();
+const contexts=new WeakMap(),recordings=new WeakMap();
+export function warmCampusFoley(audio){
+ const c=audio?.context;if(!c?.decodeAudioData)return Promise.resolve(false);
+ if(recordings.has(c))return recordings.get(c).ready;
+ const entry={buffers:[],ready:null};recordings.set(c,entry);
+ entry.ready=Promise.all(Array.from({length:6},async(_,i)=>{
+  try{const res=await fetch(new URL('./assets/audio/teacher-step-'+i+'.wav',import.meta.url));if(!res.ok)return;
+   entry.buffers[i]=await c.decodeAudioData(await res.arrayBuffer());}catch{}
+ })).then(()=>entry.buffers.filter(Boolean).length===6);return entry.ready;
+}
+
 export function playCampusFoley(audio,kind,intensity=1){
  if(!DURATIONS[kind]&&!ACTION_DURATIONS[kind])return false;
  const c=audio?.context,out=audio?.fx;if(!c||!out||c.state==='closed')return true;
@@ -87,7 +107,8 @@ export function playCampusFoley(audio,kind,intensity=1){
  const t=c.currentTime,minGap=kind==='step'?.09:kind.startsWith('pen-')?.05:.035;
  if(state.active>=20||t-(state.last.get(kind)??-100)<minGap)return true;
  state.last.set(kind,t);const count=state.counts.get(kind)||0,variant=count%6;state.counts.set(kind,count+1);
- const key=kind+':'+variant;let buffer=state.buffers.get(key);
+ const key=kind+':'+variant;let buffer=kind==='step'?recordings.get(c)?.buffers[variant]:state.buffers.get(key);
+ if(kind==='step'&&c.decodeAudioData&&!buffer){warmCampusFoley(audio);return true;}
  if(!buffer){const samples=createFoleySamples(kind,{sampleRate:c.sampleRate,variant});buffer=c.createBuffer(1,samples.length,c.sampleRate);buffer.getChannelData(0).set(samples);state.buffers.set(key,buffer);}
  const source=c.createBufferSource(),gain=c.createGain();source.buffer=buffer;gain.gain.value=volume;source.connect(gain);gain.connect(out);state.active++;source.start(t);
  // Every sound owns its source, so a new footstep or interaction does not cut
