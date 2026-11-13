@@ -13,16 +13,19 @@ function record(round,advance,callback){
   callback?.(frame*DT);advance(DT);let emerged=0;
   for(const s of ai){
    const old=poses.get(s.id),speed=dist(s,old)/DT;
-   // Includes the last movement into the chair, not just moving frames.
-   assert.ok(speed<=AI_WALK_SPEEDS.student+1e-6,`${round.map}/${round.seed} AI ${s.id} accelerated to ${speed} at ${(frame*DT).toFixed(2)}s`);peak=Math.max(peak,speed);
+   // Toilets and bunks mount their support from a real approach point.
+   // This transition is not a walking-speed sample; ordinary chairs still are.
+   const seat=round.seats[s._targetSeatId??s.id],mounted=s.seated&&!old.seated&&['bed','toilet'].includes(seat?.surface);
+   if(mounted)assert.ok(dist(old,round._seatApproach(seat))<=AI_WALK_SPEEDS.student*DT+.001,'mounted furniture before reaching its approach');
+   if(!mounted)assert.ok(speed<=AI_WALK_SPEEDS.student+1e-6,`${round.map}/${round.seed} AI ${s.id} accelerated to ${speed} at ${(frame*DT).toFixed(2)}s`);if(!mounted)peak=Math.max(peak,speed);
    if(s.visible!==false&&old.visible===false){emerged++;departures++;assert.ok((frame+1)*DT-lastExit>=.35-1e-8,`two pupils left the same lift queue too closely`);lastExit=(frame+1)*DT;}
    if(s.seated&&!old.seated)lastSeated=(frame+1)*DT;
-   if(s.visible!==false&&frame%12===0)assert.equal(blocked(s.x,s.z,.2,round.layout),false,`${s.id} left the real walkable path`);
+   if(s.visible!==false&&!s.seated&&frame%12===0)assert.equal(blocked(s.x,s.z,.2,round.layout),false,`${s.id} left the real walkable path`);
    poses.set(s.id,{x:s.x,z:s.z,seated:s.seated,visible:s.visible});
   }
   assert.ok(emerged<=1,'pupils appeared as a crowd rather than one at a time');
  }
- assert.equal(ai.filter(s=>!s.seated).length,0,`${round.map}/${round.seed}: AI did not finish by 30 seconds`);
+ assert.equal(ai.filter(s=>round._seatingRoutes.has(s.id)||(!s.seated&&!round.seats[s._targetSeatId??s.id]?.standing)).length,0,`${round.map}/${round.seed}: AI did not finish by 30 seconds`);
  assert.ok(lastSeated<30);assert.equal(departures,ai.length);assert.ok(peak>AI_WALK_SPEEDS.student-.001);
  const seats=round.students.filter(s=>s.seated);assert.equal(new Set(seats.map(s=>s.seatId)).size,seats.length,'two actors share a physical seat');
  return {lastSeated:+lastSeated.toFixed(3),peak:+peak.toFixed(6),count:ai.length};

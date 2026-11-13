@@ -6,7 +6,11 @@ state=json.loads(statepath.read_text()) if statepath.exists() else {'blobs':{}}
 def api(route,data=None,allow404=False,method='POST'):
  cmd=['gh','api',f'repos/{repo}/{route}']
  if data is not None:cmd+=['--method',method,'--input','-']
- p=subprocess.run(cmd,input=json.dumps(data) if data is not None else None,text=True,capture_output=True,timeout=90)
+ for attempt in range(4):
+  p=subprocess.run(cmd,input=json.dumps(data) if data is not None else None,text=True,capture_output=True,timeout=90)
+  transient=any(message in p.stderr for message in ('EOF','connection reset','TLS handshake timeout','HTTP 502','HTTP 503','HTTP 504'))
+  if not p.returncode or not transient or attempt==3:break
+  time.sleep(2**attempt)
  if p.returncode:
   if allow404 and ('404' in p.stderr or 'Git Repository is empty' in p.stderr):return None
   raise RuntimeError(f'{route}: {p.stderr[:500]}')
@@ -74,7 +78,7 @@ def publish_branch(branch,entries):
  if old and old['tree']['sha']==tree['sha']:
   print(branch+' is already up to date',flush=True)
   return parents[0]
- commit=api('git/commits',{'message':'Restore previous student face shapes and preserve animation fixes','tree':tree['sha'],'parents':parents})
+ commit=api('git/commits',{'message':'Rebuild dorm inspection layout and add playable map interactions','tree':tree['sha'],'parents':parents})
  if current:
   assert api('git/ref/heads/'+branch)['object']['sha']==parents[0],'Remote changed during upload'
   api('git/refs/heads/'+branch,{'sha':commit['sha'],'force':False},method='PATCH')

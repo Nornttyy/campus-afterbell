@@ -14,7 +14,7 @@ const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
 const projectile=(map,layout,values)=>Object.assign(createSmokeProjectile({id:9,x:6.5,z:6,yaw:0},90,0,map,layout),values);
 
 test('special maps keep genuine actor places without synthesizing ordinary desks or chairs',()=>{
- for(const [map,count] of [['hotpot',24],['toilet',12],['dorm',24],['playground',24]]){
+ for(const [map,count] of [['hotpot',24],['toilet',12],['dorm',12],['playground',24]]){
   const c=context(map);assert.equal(c.seats.length,count);assert.equal(c.desks.length,0);assert.ok(c.furnitureVolumes.length);
   if(map!=='hotpot')assert.equal(c.chairBacks.length,OFFICE_DESKS.length);
   if(map!=='hotpot')assert.ok(!c.walkSolids.includes(LECTERN));
@@ -103,10 +103,10 @@ test('projectiles see empty space under hotpot edges and inside open food cupboa
  assert.equal(under.firstImpact,null);assert.ok(under.z>t.z-1,'a narrow pedestal leaves real air below the tabletop');
  for(const map of['toilet','dorm']){
   const c=context(map),place=c.seats[0],front=map==='toilet'?place.cabinetZ+.187:place.cabinetZ+.307,y=map==='toilet'?.91:place.cabinetY+.6;
-  const a={x:place.cabinetX,y,z:front+.23},b={x:place.cabinetX,y,z:front-.16},key=map==='toilet'?'toiletCabinets':'dormCabinets';
+  const yaw=place.cabinetYaw||0,point=d=>({x:place.cabinetX+Math.sin(yaw)*d,y,z:place.cabinetZ+Math.cos(yaw)*d}),a=point(front-place.cabinetZ+.23),b=point(front-place.cabinetZ-.16),key=map==='toilet'?'toiletCabinets':'dormCabinets';
   assert.equal(clearEffectSight(a,b,map,c),false,'closed cabinet door occludes its interior');
   updateSpecialFurnitureCollisions(c,{[key]:{0:1}});assert.equal(clearEffectSight(a,b,map,c),true,'open cupboard interior is hollow');
-  const p=projectile(map,c,{...a,vx:0,vy:0,vz:-3});for(let i=0;i<15;i++)stepSmokeProjectile(p,.008,c);
-  assert.equal(p.firstImpact,null);assert.ok(p.z<front,'projectile enters the open shelf bay');
+  const p=projectile(map,c,{...a,vx:-3*Math.sin(yaw),vy:0,vz:-3*Math.cos(yaw)});for(let i=0;i<15;i++)stepSmokeProjectile(p,.008,c);
+  assert.equal(p.firstImpact,null);assert.ok((p.x-place.cabinetX)*Math.sin(yaw)+(p.z-place.cabinetZ)*Math.cos(yaw)<front-place.cabinetZ,'projectile enters the open shelf bay');
  }
 });

@@ -12,7 +12,7 @@ const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
 const cleanName=value=>String(value||'同学').replace(/[\u0000-\u001f<>]/g,'').slice(0,16)||'同学';
 const CONTEXT=['player','selected','holding','_movement','_rescueId','_rescueProgress','completed'];
-const studentCommands=new Set(['setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','toggleToiletDoor','toggleBedLie','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
+const studentCommands=new Set(['setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleBedLie','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
 const teacherCommands=new Set(['toggleToiletDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
 const scoringEvents=new Set(['complete','gum-score','bubble-score','snake-food','valorant-watch']);
 const teacherFeedbackEvents=new Set(['wrong-grab','correct-capture','stamina-low']);
@@ -30,7 +30,7 @@ class SharedRound extends TeacherRound{
   for(const member of this.room?.members.values()||[]){
    if(member.role==='teacher'||!member.connected)continue;
    this.room.withMember(member,()=>{
-    const p=this.player;if(p.seated||this._restrained(p))return;
+    const p=this.player;if(p.mapActivity?.kind==='plunge'&&Date.now()-member.lastInput>1000)this.releaseMapActivity();if(p.seated||p.mapActivity||this._restrained(p))return;
     if(Date.now()-member.lastInput>500)this._movement={x:0,z:0};
     const speed=(p.crouched?DEVELOPMENT_TUNING.crouchSpeed:DEVELOPMENT_TUNING.walkSpeed)*movementScale(p,this._movement);
     const next=Layout.moveInRoom(p,this._movement.x*speed*dt,this._movement.z*speed*dt,.18,this.layout);
@@ -157,6 +157,7 @@ export class CampusRoom{
   member.lastInput=Date.now();member.lastSeen=Date.now();
   // Focus/pause cleanup is intentionally role-agnostic in the controller.
   if(command==='toggleToiletDoor'&&(!Number.isInteger(args[0])||args[0]<0||args[0]>=this.sim.seats.length))throw new RoomError(400,'无效隔间');
+  if(command==='startMapActivity'&&(!['hang','plunge'].includes(args[0])||(args[0]==='hang'?typeof args[1]!=='string':!Number.isInteger(args[1]))))throw new RoomError(400,'无效场景互动');
   if(command==='takePlaygroundFood'&&args[0]!==undefined&&!['snack','drink','burger'].includes(args[0]))throw new RoomError(400,'无效食品');
   if(command==='setComputerPlayback'&&member.role==='teacher')return false;
   if(command==='setWriting'&&args[0]===false&&member.role!=='teacher')return false;
@@ -272,6 +273,6 @@ export class RoomError extends Error{constructor(status,message){super(message);
 
 // Base helpers call other public helpers through this; dispatch those too so
 // a student's hold/take flow does not hit TeacherRound's intentional no-ops.
-for(const name of ['hold','releaseUse','toggleDrawer','toggleBook','toggleToiletDoor','toggleBedLie','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer']){
+for(const name of ['hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleBedLie','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer']){
  SharedRound.prototype[name]=function(...args){const proto=this.player?.id===-1?TeacherRound.prototype:ClassroomRound.prototype;return proto[name]?.apply(this,args);};
 }

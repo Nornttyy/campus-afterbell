@@ -4,7 +4,7 @@
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
 import {loadFurniture67} from '../dist/furniture-assets67.js';
-import {createRoomVariants} from '../dist/room-variants.js?v=campus-76';
+import {createRoomVariants} from '../dist/room-variants.js?v=campus-77';
 await loadFurniture67();
 const renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(devicePixelRatio);renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;document.body.append(renderer.domElement);
 const scene=new T.Scene();scene.background=new T.Color('#edf3f1');scene.add(new T.HemisphereLight('#ffffff','#b5c3bc',2.5));const light=new T.DirectionalLight('#fff8e8',2.2);light.position.set(-2,4,-3);scene.add(light);

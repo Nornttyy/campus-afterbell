@@ -5,6 +5,7 @@ export function interactionIntent(s,target,key){
  const p=s.player,d=s.drawer||{},carrying=d.drawnSlot!=null,teacher=s.role==='teacher',doorId=target?.doorId||'rear',doorClosed=s[doorId==='office'?'officeDoorClosed':doorId+'DoorClosed'];
  if(s.paused||s.status!=='playing'||s.elevator?.phase==='travel')return null;
  if(key==='Q'){
+  if(p.mapActivity)return intent('releaseMapActivity',[],p.mapActivity.kind==='hang'?'松手':'放回搋子');
   if(s.surveillance?.viewing!=null)return intent('closeSurveillance',[],'关闭监控');
   if(p.computerActive)return intent('computerBack',[],p.computer?.app==='desktop'?'离开电脑':'返回桌面');
   if(p.caught||['stunned','carried','bound'].includes(p.captivity))return null;
@@ -21,6 +22,9 @@ export function interactionIntent(s,target,key){
   return null;
  }
  if(key!=='E'||p.computerActive||p.caught||['stunned','carried','bound'].includes(p.captivity))return null;
+ if(p.mapActivity)return null;
+ if(target?.kind==='sports-bar'&&!teacher&&!carrying)return intent('startMapActivity',['hang',target.id],'抓住单杠');
+ if(target?.kind==='plunger'&&!teacher&&!carrying)return intent('startMapActivity',['plunge',target.id],'疏通',true);
  if(target?.kind==='toilet-door')return !target.open?intent('toggleToiletDoor',[target.id],'开门'):null;
  if(target?.kind==='bed'&&!teacher)return p.onBed?intent('toggleBedLie',[],p.lying?'坐起':'躺下'):!p.seated?intent('interact',[target.id],'上床'):null;
  if(target?.kind==='vending'&&!teacher&&!carrying)return intent('takePlaygroundFood',['snack'],'拿取');

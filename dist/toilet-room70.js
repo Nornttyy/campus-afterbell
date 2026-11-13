@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-76';
-export * from './toilet-layout70.js?v=campus-76';
+import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-77';
+export * from './toilet-layout70.js?v=campus-77';
 
 function ellipseRing(outerX,outerZ,innerX,innerZ,height){
  const shape=new T.Shape();shape.absellipse(0,0,outerX,outerZ,0,Math.PI*2,false);const hole=new T.Path();hole.absellipse(0,0,innerX,innerZ,0,Math.PI*2,true);shape.holes.push(hole);
@@ -16,7 +16,7 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic}){
  const own=g=>(geometries.add(g),g),material=(c,o={})=>{const m=mat(c,o);materials.add(m);return m;};
  const render=(g,m,p,root=fixed,r=null)=>{const mesh=new T.Mesh(g,m);mesh.position.set(...p);if(r)mesh.rotation.set(...r);mesh.castShadow=mesh.receiveShadow=true;root.add(mesh);return mesh;};
  const panel=material('#e2e5df',{roughness:.52}),edge=material('#303a3a',{roughness:.58}),feet=material('#bd352e',{roughness:.56}),porcelain=material('#e7e7db',{roughness:.24}),seatMat=material('#f4f2e5',{roughness:.31}),inside=material('#afb5a7',{roughness:.36}),water=material('#8fa79a',{roughness:.18,metalness:.06}),steel=material('#a3aaa5',{metalness:.56,roughness:.31});
- const woodMap=texture(256,512,(c,w,h)=>{c.fillStyle='#bdb088';c.fillRect(0,0,w,h);for(let i=0;i<85;i++){const x=(i*43.271)%w;c.strokeStyle=i%3?'rgba(101,77,45,.08)':'rgba(255,241,196,.13)';c.lineWidth=.5+(i%3)*.35;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x+Math.sin(i)*3,h*.3,x+Math.cos(i)*3,h*.7,x,h);c.stroke();}});textures.add(woodMap);const wood=material('#fff',{map:woodMap,roughness:.66}),shelf=material('#786443',{roughness:.76});
+ const woodMap=texture(256,512,(c,w,h)=>{c.fillStyle='#bdb088';c.fillRect(0,0,w,h);for(let i=0;i<85;i++){const x=(i*43.271)%w;c.strokeStyle=i%3?'rgba(101,77,45,.08)':'rgba(255,241,196,.13)';c.lineWidth=.5+(i%3)*.35;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x+Math.sin(i)*3,h*.3,x+Math.cos(i)*3,h*.7,x,h);c.stroke();}});textures.add(woodMap);const wood=material('#fff',{map:woodMap,bumpMap:woodMap,bumpScale:.0014,roughness:.60}),shelf=material('#786443',{roughness:.76});
  const floorMap=texture(512,512,(c,w,h)=>{c.fillStyle='#b3c1c3';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=128)for(let x=0;x<w;x+=128){c.fillStyle=((x+y)/128)%2?'#adbdc1':'#b8c6c8';c.fillRect(x+1,y+1,126,126);c.strokeStyle='#9aaeb3';c.lineWidth=1.5;c.strokeRect(x+.5,y+.5,127,127);}});textures.add(floorMap);floorMap.wrapS=floorMap.wrapT=T.RepeatWrapping;floorMap.repeat.set(6.75,8);const floor=material('#fff',{map:floorMap,roughness:.65});
  const floorMesh=render(own(new T.PlaneGeometry(13.75,16.25)),floor,[.275,.007,-1.825],fixed,[-Math.PI/2,0,0]);floorMesh.name='toilet-tiled-floor';floorMesh.castShadow=false;
  const wallMap=texture(256,256,(c,w,h)=>{c.fillStyle='#e3e5de';c.fillRect(0,0,w,h);c.strokeStyle='#b8c1bb';c.lineWidth=1.2;for(let p=0;p<=256;p+=64){c.beginPath();c.moveTo(p,0);c.lineTo(p,h);c.moveTo(0,p);c.lineTo(w,p);c.stroke();}});textures.add(wallMap);wallMap.wrapS=wallMap.wrapT=T.RepeatWrapping;wallMap.repeat.set(3.6,.32);const wallTile=material('#fff',{map:wallMap,roughness:.58});

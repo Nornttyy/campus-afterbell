@@ -43,7 +43,7 @@ test('canisters bounce off floor, walls, ceiling and thin desk tops without tunn
   advance(desk,.04);assert.ok(desk.bounces>0);assert.ok(desk.y>=.97);assert.ok(desk.vy>0);
 });
 test('throws collide with every actual indoor roof and omit the outdoor playground ceiling',()=>{
- for(const map of CAMPUS_MAPS)for(const [x,z]of[[0,0],[9.2,0],[6.5,12]]){const roof=ceilingVolumes(map).find(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ);if(!roof){assert.equal(map,'playground');continue;}const height=roof.minY,p=createSmokeProjectile(actor,2,1,map);Object.assign(p,{x,z,y:height-.18,vx:0,vy:10,vz:0});advance(p,.05);assert.ok(p.bounces>0);assert.ok(p.vy<0);assert.ok(p.y<=height-.075);}
+ for(const map of CAMPUS_MAPS)for(const [x,z]of[[map==='dorm'?4.1:0,0],[9.2,0],[6.5,12]]){const roof=ceilingVolumes(map).find(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ);if(!roof){assert.equal(map,'playground');continue;}const height=roof.minY,p=createSmokeProjectile(actor,2,1,map);Object.assign(p,{x,z,y:height-.18,vx:0,vy:10,vz:0});advance(p,.05);assert.ok(p.bounces>0);assert.ok(p.vy<0);assert.ok(p.y<=height-.075);}
 });
 test('settled canisters stay at rest instead of jittering or sinking into a surface',()=>{
   const p=createSmokeProjectile(actor,1);advance(p,4);assert.equal(p.settled,true);const {x,y,z,spinX,spinZ}=p;

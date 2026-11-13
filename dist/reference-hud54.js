@@ -1,4 +1,4 @@
-import {readControls,keyLabel} from './control-settings64.js?v=campus-76';
+import {readControls,keyLabel} from './control-settings64.js?v=campus-77';
 // Presentation consumes authoritative scores; names and points are never
 // invented from an animation or inferred from the number of eaten objects.
 export function hud54Model(s){

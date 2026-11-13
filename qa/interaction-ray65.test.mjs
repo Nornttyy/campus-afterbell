@@ -20,7 +20,7 @@ function fixture(){
  const itemRay=new T.Raycaster(),chairTargets=new Map(),furnitureRows=new Map(),drawerSlotProps=[];
  const seenFar=[];let blockerCalls=0;const intersect=itemRay.intersectObjects.bind(itemRay);
  itemRay.intersectObjects=(...args)=>{blockerCalls++;seenFar.push(itemRay.far);return intersect(...args);};
- const scope={gameplay,scene,camera,itemRay,neutralPointer:new T.Vector2(),drawerFocus:1,drawerSlotProps,room,furnitureRows,drawerItems,
+ const scope={mapActivityView:{targets:()=>[]},gameplay,scene,camera,itemRay,neutralPointer:new T.Vector2(),drawerFocus:1,drawerSlotProps,room,furnitureRows,drawerItems,
   variants:{seatTarget:()=>null,specialRoots:[],group:variantGroup,screens:new Map(),stations:new Map(),drawers:new Map()},campusTargets:{lockers:[],doors:[],officeChairs:[],officeDesks:[]},
   startBellModel:null,campus:{},chairTargets,surveillanceView:{targets:()=>[]},deskTargets:new Map(),drawerRecords:new Map(),deskBooks:new Map(),deskPens:new Map(),mapVariant:'classroom',
   LIFT,mapKind,teachingEnd,pickDrawerItem,isObjectVisible:drawerObjectVisible};
