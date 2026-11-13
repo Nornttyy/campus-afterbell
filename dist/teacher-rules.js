@@ -1,10 +1,11 @@
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-68b';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-68b';
-import {teacherViewHeight} from './camera-height58.js?v=campus-68b';
-import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-68b';
+import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-74';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-74';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-74';
+import {teacherViewHeight} from './camera-height58.js?v=campus-74';
+import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-74';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-68b';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-74';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
@@ -16,7 +17,7 @@ export class TeacherRound extends ClassroomRound{
     for(const s of this.students){
       s.isPlayer=false;s.isTeammate=this._team.has(s.id);s.name='同学';
       s._profile=s.isTeammate?{caution:this._range(.3,.85),helpful:.5,distraction:this._range(0,.7)}:null;
-      s._slots=s.isTeammate?Array.from({length:mapKind(this.map)==='computer'?1:3},(_,id)=>({id,action:this._drawItem(),readyAt:0,progress:0})):[];
+      s._slots=s.isTeammate&&mapKind(this.map)!=='playground'?Array.from({length:mapKind(this.map)==='computer'?1:3},(_,id)=>({id,action:this._drawItem(),readyAt:0,progress:0})):[];
       s._decisionAt=this._range(1,6);s._chalkUntil=0;
     }
     this.classSlotsBySeat=new Map(this.students.filter(a=>a._slots.length).map(a=>[a.seatId,a._slots]));
@@ -47,10 +48,10 @@ export class TeacherRound extends ClassroomRound{
   throwChalk(){
     if(!this._inputAllowed()||!['gathering','seating','class'].includes(this.stage)||this._writing||this._sessionElapsed<this._nextThrow||this.teacher.carriedId!==null)return false;
     if(this._restrained(this.player))return false;
-    if(this.teacher.stamina<=0){this._events.push({type:'stamina-low'});return false;}
+    if(!canThrowWithStamina(this)){this._events.push({type:'stamina-low'});return false;}
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
     this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map)+teacherViewHeight(p),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
-    this._lastThrow=this._sessionElapsed;this._nextThrow=this._sessionElapsed+.72;this._events.push({type:'chalk-throw'});return true;
+    this.teacher.stamina=Math.max(0,this.teacher.stamina-chalkStaminaCost(this));this._lastThrow=this._sessionElapsed;this._nextThrow=this._sessionElapsed+.72;this._events.push({type:'chalk-throw',x:this.player.x,z:this.player.z});return true;
   }
   aimedStudent(range=9){
     if(this.stage!=='class')return null;
@@ -67,7 +68,7 @@ export class TeacherRound extends ClassroomRound{
   }
   bindTarget(){
     if(this.teacher.carriedId===null)return null;
-    const p=this.player;return DETENTION.find(post=>Math.hypot(p.x-post.x,p.z-post.z)<1.55&&clearWallSegment(p,post,this.layout)&&Math.abs(Math.atan2(Math.sin(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw),Math.cos(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw)))<.85&&!this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))||null;
+    const p=this.player;return this.posts.find(post=>Math.hypot(p.x-post.x,p.z-post.z)<1.55&&clearWallSegment(p,post,this.layout)&&Math.abs(Math.atan2(Math.sin(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw),Math.cos(Math.atan2(post.x-p.x,post.z-p.z)-p.yaw)))<.85&&!this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))||null;
   }
   grabStudent(){
     if(!this._classInputAllowed()||this.player.seated||this._restrained(this.player)||this._writing||this.teacher.carriedId!==null)return false;
@@ -85,7 +86,7 @@ export class TeacherRound extends ClassroomRound{
   releaseBoundStudent(){const s=this.releaseTarget();if(!this._classInputAllowed()||!s)return false;return this._release(s);}
   canWriteBoard(){
     const p=this.player,yaw=Math.atan2(Math.sin(p.yaw),Math.cos(p.yaw));
-    return this.stage==='class'&&!p.crouched&&this.teacher.carriedId===null&&Math.abs(p.x-BOARD.x)<3.5&&p.z>BOARD.z-1&&p.z<BOARD.z+.65&&Math.abs(yaw)<.85&&p.pitch<.45&&p.pitch>-.85;
+    return this.stage==='class'&&!p.crouched&&this.teacher.carriedId===null&&Math.abs(p.x-this.board.x)<3.5&&p.z>this.board.z-1&&p.z<this.board.z+.65&&Math.abs(yaw)<.85&&p.pitch<.45&&p.pitch>-.85;
   }
   setWriting(value){
     if(!value){this._writing=false;this.teacher.writing=false;this.teacher.writeProgress=0;return false;}

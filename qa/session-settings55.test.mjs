@@ -31,7 +31,7 @@ test('fill, Tab, delayed snapshots, fill, Tab, immediate Start preserves host 5m
  const f=fixture();try{
   f.type('#session-duration','5');f.tab('#session-duration');for(let i=0;i<8;i++)f.update();assert.equal(f.el('#session-duration').value,'5','unacknowledged input must survive the 80ms HUD refresh');
   f.type('#session-target','30');f.tab('#session-target');f.update();f.clickStart();
-  assert.deepEqual(f.queue.map(c=>c.args[0]),[{duration:300,target:120},{duration:300,target:30},{duration:300,target:30}]);
+  assert.deepEqual(f.queue.map(c=>{assert.equal(c.args[0].chalkStamina,false);const {chalkStamina,...rest}=c.args[0];return rest;}),[{duration:300,target:120},{duration:300,target:30},{duration:300,target:30}]);
   f.deliver();assert.equal(f.room.sim.stage,'seating');assert.equal(f.room.sim.duration,300);assert.equal(f.room.sim.target,30);
   for(let i=0;i<330;i++)f.room.tick(.1);
   for(const member of[f.host,f.peer]){const state=f.room.snapshot(member);assert.equal(state.target,30);assert.equal(state.settings.duration,300);assert.ok(state.timeLeft<=300&&state.timeLeft>=296);}
@@ -41,16 +41,16 @@ test('fill, Tab, delayed snapshots, fill, Tab, immediate Start preserves host 5m
 test('starting from an actively edited field carries the last value even before blur/change',()=>{
  const f=fixture();try{
   f.type('#session-duration','5');f.tab('#session-duration');f.type('#session-target','30');f.update();f.clickStart();
-  assert.deepEqual(f.queue.at(-1),{name:'startBell',args:[{duration:300,target:30}]});
+  assert.deepEqual(f.queue.at(-1),{name:'startBell',args:[{duration:300,target:30,chalkStamina:false}]});
   // Even if no separate settings update has reached the server, Start is atomic.
-  f.room.command(f.host,f.queue.at(-1).name,f.queue.at(-1).args);assert.deepEqual(f.room.settings,{duration:300,target:30});assert.equal(f.room.sim.stage,'seating');
+  f.room.command(f.host,f.queue.at(-1).name,f.queue.at(-1).args);assert.deepEqual(f.room.settings,{duration:300,target:30,chalkStamina:false});assert.equal(f.room.sim.stage,'seating');
  }finally{f.close();}
 });
 
 test('invalid intermediate input is kept for editing and cannot start or send bad settings',()=>{
  const f=fixture();try{
   for(const value of['','4','20.5','21']){f.type('#session-duration',value);f.tab('#session-duration');f.update();f.clickStart();assert.equal(f.el('#session-duration').value,value);assert.equal(f.queue.length,0);assert.equal(f.el('#session-duration').reported,true);}
-  f.type('#session-duration','20');f.tab('#session-duration');f.type('#session-target','29');f.tab('#session-target');const count=f.queue.length;f.clickStart();assert.equal(f.queue.length,count);assert.equal(f.el('#session-target').reported,true);
+  f.type('#session-duration','20');f.tab('#session-duration');f.type('#session-target','19');f.tab('#session-target');const count=f.queue.length;f.clickStart();assert.equal(f.queue.length,count);assert.equal(f.el('#session-target').reported,true);
  }finally{f.close();}
 });
 
@@ -64,7 +64,7 @@ test('non-host stays read-only, and leaving the lobby clears previous round draf
 test('atomic Start rejects guest and malformed settings without starting, and ignores duplicate started commands',()=>{
  const room=new CampusRoom({code:'553002',seed:73}),host=room.join({}),guest=room.join({});
  assert.throws(()=>room.command(guest,'startBell',[{duration:300,target:30}]),/房主/);
- for(const settings of[{duration:299,target:30},{duration:1201,target:30},{duration:600,target:121},{duration:'300',target:30},null])assert.throws(()=>room.command(host,'startBell',[settings]),/5–20/);
+ for(const settings of[{duration:299,target:30},{duration:1201,target:30},{duration:600,target:161},{duration:'300',target:30},null])assert.throws(()=>room.command(host,'startBell',[settings]),/5–20/);
  assert.equal(room.sim.stage,'gathering');assert.deepEqual(room.settings,{duration:600,target:120});
  assert.equal(room.command(host,'startBell',[{duration:300,target:30}]),true);assert.equal(room.command(host,'startBell',[{duration:1200,target:120}]),false);assert.deepEqual(room.settings,{duration:300,target:30});
 });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-68b';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-74';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {createRiggedTeacher} from '../dist/imported-actors.js';
 import {loadGeometry} from './gltf-geometry.mjs';

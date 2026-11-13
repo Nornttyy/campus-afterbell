@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {TEACHER_PROPORTIONS as PROPORTIONS} from '../dist/teacher-proportions73.js';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import * as T from '../dist/vendor/three.module.js';
@@ -29,7 +30,7 @@ test('imported teacher has five playable clips and grounded finite skinned geome
       a.group.traverse(o=>assert.ok(o.matrixWorld.elements.every(Number.isFinite)));
       const bounds=new T.Box3().setFromObject(a.group,true);
       assert.ok(bounds.min.y>-.07,`Feet below ground: ${bounds.min.y}`);
-      assert.ok(bounds.max.y<2.20,`Skin stretched above head: ${bounds.max.y}`);
+      assert.ok(bounds.max.y<PROPORTIONS.height+.12,`Skin stretched above head: ${bounds.max.y}`);
       assert.ok(bounds.getSize(new T.Vector3()).x<1.5,'Exploded skin');
     }
   }
@@ -41,7 +42,7 @@ test('clip changes remain continuous and move the actual hand to the board',asyn
   for(let i=60;i<180;i++){
     a.update(i/60,{phase:'board'});hand.getWorldPosition(p);maxStep=Math.max(maxStep,p.distanceTo(previous));previous.copy(p);
   }
-  assert.ok(maxStep<.14,`Hand snapped ${maxStep} m`);
+  assert.ok(maxStep/PROPORTIONS.height<.14/PROPORTIONS.sourceHeight,`Hand snapped ${maxStep} m`);
   assert.ok(p.y>start.y+.25,'Writing clip did not raise actual hand');
   assert.ok(p.z>start.z+.12,'Writing hand did not reach forward');
   const root=a.group.position.clone();a.setGesture({card:false,cast:.85});a.update(3,{phase:'watching'});

@@ -21,7 +21,7 @@ function fixture(){
  const seenFar=[];let blockerCalls=0;const intersect=itemRay.intersectObjects.bind(itemRay);
  itemRay.intersectObjects=(...args)=>{blockerCalls++;seenFar.push(itemRay.far);return intersect(...args);};
  const scope={gameplay,scene,camera,itemRay,neutralPointer:new T.Vector2(),drawerFocus:1,drawerSlotProps,room,furnitureRows,drawerItems,
-  variants:{group:variantGroup,screens:new Map(),stations:new Map(),drawers:new Map()},campusTargets:{lockers:[],doors:[],officeChairs:[],officeDesks:[]},
+  variants:{seatTarget:()=>null,specialRoots:[],group:variantGroup,screens:new Map(),stations:new Map(),drawers:new Map()},campusTargets:{lockers:[],doors:[],officeChairs:[],officeDesks:[]},
   startBellModel:null,campus:{},chairTargets,surveillanceView:{targets:()=>[]},deskTargets:new Map(),drawerRecords:new Map(),deskBooks:new Map(),deskPens:new Map(),mapVariant:'classroom',
   LIFT,mapKind,teachingEnd,pickDrawerItem,isObjectVisible:drawerObjectVisible};
  const api=new Function('scope',`const {${Object.keys(scope).join(',')}}=scope;\n${pickSource}\n${interactionSource}\nreturn {getInteraction,pickDrawerSlot};`)(scope);

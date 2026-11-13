@@ -1,12 +1,12 @@
-import {LIFT,CAMPUS_MAPS,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-68b';
+import {LIFT,CAMPUS_MAPS,isCampusMap,campusFloor,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-74';
 
-import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-68b';
+import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-74';
 
 // Two seconds for closing/settling, plus one second per floor crossed.
 export const ELEVATOR_SECONDS=3;
 export function elevatorDuration(fromMap,toMap){
- const from=CAMPUS_MAPS.indexOf(fromMap),to=CAMPUS_MAPS.indexOf(toMap);
- return from<0||to<0?ELEVATOR_SECONDS:2+Math.abs(to-from);
+ const from=campusFloor(fromMap),to=campusFloor(toMap);
+ return from===0||to===0?ELEVATOR_SECONDS:2+Math.abs(to-from);
 }
 // Cabin motion stays live during transit, but no passenger can walk through
 // the doors (including the brief visual closing/opening transition).
@@ -33,7 +33,7 @@ export function elevatorSnapshot(trip,people,{stage='gathering',status='playing'
 export function departureError(trip,people,{map,currentMap,stage,status,host=true}){
  if(!ELEVATOR_ENABLED)return '电梯已封闭';
  if(!host)return '只有房主可以选楼层';
- if(!CAMPUS_MAPS.includes(map))return '楼层不存在';
+ if(!isCampusMap(map))return '楼层不存在';
  if(trip.phase==='travel')return '电梯正在运行';
  if(trip.used)return '本局电梯已使用';
  if(stage!=='gathering'||status!=='playing')return '请在课前集合时选楼层';

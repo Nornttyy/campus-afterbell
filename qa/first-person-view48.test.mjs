@@ -1,8 +1,9 @@
 import test from 'node:test';
+import {STUDENT_PROPORTIONS} from '../dist/student-proportions73.js';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from '../dist/first-person-view.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-68b';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-74';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 
@@ -80,7 +81,7 @@ test('the hands stay aligned with the chosen facing seat, and stun lowers the ac
  const player={x:0,z:0,yaw:Math.PI,seated:true,seatYaw:Math.PI,captivity:'free'};
  let motion=sampleFirstPersonMotion(null,player,0);
  for(let i=1;i<=20;i++){player.yaw-=.04;motion=sampleFirstPersonMotion(motion,player,i/60);assert.equal(motion.bodyYaw,Math.PI);}
- assert.equal(firstPersonEyeHeight({seated:false},'student'),1.65);
+ assert.equal(firstPersonEyeHeight({seated:false},'student'),STUDENT_PROPORTIONS.eyeHeight);
  assert.equal(firstPersonEyeHeight({seated:false,stunLeft:2},'student'),1.05);
  assert.equal(firstPersonEyeHeight({seated:false,stunLeft:2},'teacher'),1.12);
  assert.equal(firstPersonEyeHeight({seated:false,captivity:'stunned'},'student'),1.05);

@@ -1,10 +1,10 @@
 <!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>学生原模型眼动检查</title>
 <style>body{margin:0;background:#bfcad0;font:14px system-ui}canvas{display:block;width:100vw;height:100vh}nav{position:fixed;top:10px;left:10px;background:#fffe;padding:10px;border-radius:8px;display:flex;gap:8px;align-items:center}button,select{font:inherit;padding:7px}output{position:fixed;bottom:10px;left:10px;padding:10px;background:#fffe;white-space:pre}</style>
-<nav><select id="variant"><option value="boy">男同学</option><option value="girl">女同学</option><option value="ponytail">长发女同学</option><option value="glasses">眼镜同学（原镜片不透明）</option></select><button id="toggle">暂停</button><button id="night">白天 / 停电</button><input id="time" type="range" min="0" max="20" value="0" step=".02"><span id="clock">0.00s</span><select id="look" aria-label="眼睛方向"><option value="auto">自然眼动</option><option value="0,0">正视</option><option value="-.48,0">看左</option><option value=".48,0">看右</option><option value="0,.30">看上</option><option value="0,-.30">看下</option><option value=".4,.24">右上</option></select><select id="angle" aria-label="视角"><option value="0">正面</option><option value=".65">斜侧</option><option value="1.2">侧面</option></select><select id="effect" aria-label="表情"><option value="none">正常</option><option value="stun">眩晕闭眼</option><option value="ink">墨水</option></select></nav><output id="details">加载真实 GLB…</output>
+<nav><select id="variant"><option value="boy">男同学</option><option value="girl">女同学</option><option value="ponytail">长发女同学</option><option value="glasses">眼镜同学（原镜片不透明）</option></select><button id="toggle">暂停</button><button id="night">白天 / 停电</button><input id="time" type="range" min="0" max="20" value="0" step=".02"><span id="clock">0.00s</span><select id="look" aria-label="眼睛方向"><option value="auto">自然眼动</option><option value="0,0">正视</option><option value="-.78,0">看左</option><option value=".78,0">看右</option><option value="0,.62">看上</option><option value="0,-.62">看下</option><option value=".4,.24">右上</option><option value=".78,.62">右上极限</option><option value="-.78,-.62">左下极限</option></select><select id="angle" aria-label="视角"><option value="0">正面</option><option value=".65">斜侧</option><option value="1.2">侧面</option><option value="-.65">左斜侧</option><option value="-1.5707963268">左正侧</option><option value="1.5707963268">右正侧</option></select><select id="effect" aria-label="表情"><option value="none">正常</option><option value="stun">眩晕闭眼</option><option value="ink">墨水</option></select><select id="surface" aria-label="几何检查"><option value="color">原材质</option><option value="wire">网格</option><option value="normal">法线 / 真实凹陷</option></select></nav><output id="details">加载真实 GLB…</output>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=campus-68b';
-import {setCharacterNight} from '../dist/character-materials.js?v=campus-68b';
+import {loadStudentAssets} from '../dist/student-assets.js?v=campus-74';
+import {setCharacterNight} from '../dist/character-materials.js?v=campus-74';
 const renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=T.SRGBColorSpace;document.body.append(renderer.domElement);
 const scene=new T.Scene();scene.background=new T.Color('#c8d2d5');const camera=new T.PerspectiveCamera(35,innerWidth/innerHeight,.01,20);camera.position.set(0,1.47,1.04);camera.lookAt(0,1.43,0);
 scene.add(new T.AmbientLight(0xffffff,.20));const key=new T.DirectionalLight(0xcbd8fa,.7);key.position.set(-1,2,3);scene.add(key);
@@ -15,7 +15,26 @@ select.onchange=()=>{for(const [name,actor]of Object.entries(actors))actor.group
 document.querySelector('#look').onchange=e=>{const xy=e.target.value==='auto'?null:e.target.value.split(',').map(Number);for(const actor of Object.values(actors))actor.setEyeLook(xy?{yaw:xy[0],pitch:xy[1]}:null);};
 document.querySelector('#angle').onchange=e=>{const a=+e.target.value;camera.position.set(Math.sin(a)*1.04,1.47,Math.cos(a)*1.04);camera.lookAt(0,1.43,0);};
 document.querySelector('#effect').onchange=e=>{for(const actor of Object.values(actors))actor.setMotion({seated:false,speed:0,restraint:e.target.value==='stun'?'stunned':'free',inkLeft:e.target.value==='ink'?4:0});running=true;document.querySelector('#toggle').textContent='暂停';};
+const reviewMaterials=new WeakMap();
+document.querySelector('#surface').onchange=e=>{for(const actor of Object.values(actors))actor.group.traverse(mesh=>{
+ if(!mesh.isSkinnedMesh)return;
+ if(!reviewMaterials.has(mesh))reviewMaterials.set(mesh,mesh.material);
+ const original=reviewMaterials.get(mesh);
+ if(mesh.material!==original)mesh.material.dispose();
+ if(e.target.value==='normal'){
+  const material=new T.MeshNormalMaterial();material.onBeforeCompile=original.onBeforeCompile;material.customProgramCacheKey=original.customProgramCacheKey;mesh.material=material;
+ }else {mesh.material=original;original.wireframe=e.target.value==='wire';original.needsUpdate=true;}
+});};
 window.eyeReview={actors,renderer,scene,camera,setTime(t){running=false;time=t;},setVariant(v){select.value=v;select.onchange();},setNight(n){if(isNight!==n)document.querySelector('#night').click();},diagnostics(){return actors[select.value].diagnostics().eyes;}};
-function frame(now){requestAnimationFrame(frame);if(running)time+=(now-last)/1000;last=now;for(const actor of Object.values(actors))actor.update(time);slider.value=time%20;clock.textContent=time.toFixed(2)+'s';details.textContent=JSON.stringify(actors[select.value].diagnostics().eyes,null,2);const y=1.43+actors[select.value].head.getWorldPosition(new T.Vector3()).y-headRestY[select.value],angle=+document.querySelector('#angle').value;camera.position.set(Math.sin(angle)*1.04,y+.04,Math.cos(angle)*1.04);camera.lookAt(0,y,0);renderer.render(scene,camera);}requestAnimationFrame(frame);
+// Shareable QA views make exact front/side/extreme and expression checks repeatable.
+const reviewQuery=new URLSearchParams(location.search);
+const reviewDistance=Math.max(.8,Math.min(12,Number(reviewQuery.get('distance'))||1.04));
+for(const id of ['variant','look','angle','effect','surface'])if(reviewQuery.has(id)){
+ const control=document.getElementById(id),value=reviewQuery.get(id);
+ if([...control.options].some(option=>option.value===value)){control.value=value;control.onchange({target:control});}
+}
+if(reviewQuery.get('night')==='1')document.querySelector('#night').click();
+if(reviewQuery.has('at')){time=Number(reviewQuery.get('at'))||0;running=false;document.querySelector('#toggle').textContent='继续';}
+function frame(now){requestAnimationFrame(frame);if(running)time+=(now-last)/1000;last=now;for(const actor of Object.values(actors))actor.update(time);slider.value=time%20;clock.textContent=time.toFixed(2)+'s';details.textContent=JSON.stringify(actors[select.value].diagnostics().eyes,null,2);const y=1.43+actors[select.value].head.getWorldPosition(new T.Vector3()).y-headRestY[select.value],angle=+document.querySelector('#angle').value;camera.position.set(Math.sin(angle)*reviewDistance,y+.04,Math.cos(angle)*reviewDistance);camera.lookAt(0,y,0);renderer.render(scene,camera);}requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 </script></html>

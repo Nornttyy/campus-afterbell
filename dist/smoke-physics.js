@@ -1,13 +1,22 @@
-import {ROOM,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight} from './classroom-layout.js?v=campus-68b';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-68b';
+import {mapBounds,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight,actorFloorHeight,actorEyeHeight,mapKind} from './classroom-layout.js?v=campus-74';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const colliderCache=new Map();
-function tablesFor(map='classroom',layout=null){const key=map,cache=layout?(layout.projectileColliderCache??=new Map()):colliderCache;if(!cache.has(key))cache.set(key,[...(layout?.desks||DESKS).map(d=>{const h=floorHeight((d.minX+d.maxX)/2,(d.minZ+d.maxZ)/2,map);return{...d,minY:h+.80,maxY:h+.895};}),...enclosureVolumes(map,layout),...OFFICE_SOLIDS,...floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})),{...LECTERN,minY:.16,maxY:1.15}]);return cache.get(key);}
+const furnishedMaps=new Set(['hotpot','toilet','dorm','playground']);
+function tablesFor(map='classroom',layout=null){
+ const key=map,cache=layout?(layout.projectileColliderCache??=new Map()):colliderCache;
+ if(!cache.has(key)){
+  // These maps supply the real pot, cabinet, bunk and outdoor fixture volumes
+  // through enclosureVolumes. Flattening them into a desktop loses their shape.
+  const tables=furnishedMaps.has(mapKind(map))?[]:(layout?.desks||DESKS).map(d=>{const h=floorHeight((d.minX+d.maxX)/2,(d.minZ+d.maxZ)/2,map);return{...d,minY:h+.80,maxY:h+.895};});
+  cache.set(key,[...tables,...enclosureVolumes(map,layout),...OFFICE_SOLIDS,...(mapKind(map)==='playground'?[]:floorTiles(map).map(t=>({...t,minY:0,maxY:t.height}))),...(['toilet','dorm','playground'].includes(mapKind(map))?[]:[{...LECTERN,minY:.16,maxY:1.15}])]);
+ }
+ return cache.get(key);
+}
 
 function safeRelease(origin,hand,map,layout){
-  const tables=tablesFor(map,layout);
+  const tables=tablesFor(map,layout),bounds=mapBounds(map);
   let travel=1;
   // Sweep the canister out from the player rather than spawning beyond a wall.
   for(const box of tables){
@@ -20,7 +29,7 @@ function safeRelease(origin,hand,map,layout){
     if(lo<=hi&&lo<=1&&hi>=0)travel=Math.min(travel,Math.max(0,lo-.002));
   }
   const p=Object.fromEntries(['x','y','z'].map(axis=>[axis,origin[axis]+(hand[axis]-origin[axis])*travel]));
-  p.x=clamp(p.x,ROOM.minX+R,ROOM.maxX-R);p.z=clamp(p.z,ROOM.minZ+R,ROOM.maxZ-R);
+  p.x=clamp(p.x,bounds.minX+R,bounds.maxX-R);p.z=clamp(p.z,bounds.minZ+R,bounds.maxZ-R);
   p.y=Math.max(p.y,floorHeight(p.x,p.z,map)+R);return p;
 }
 
@@ -29,7 +38,7 @@ export function createSmokeProjectile(actor,id,charge=0,map='classroom',layout=n
   const yaw=actor.yaw||0,pitch=actor.pitch||0,elevation=clamp(.66-pitch,-.8,1.2),speed=5.2+2.8*charge;
   // Release from the left palm, in the same look basis as the first-person camera.
   // Horizontal aim adds an upward lob; looking down still permits a close throw.
-  const eye=floorHeight(actor.x,actor.z,map)+(actor.seated?1.43:actor.crouched?CRAWL_TUNING.eyeHeight:1.65);
+  const eye=actorFloorHeight(actor,map)+actorEyeHeight(actor,map);
   const forward=.55*Math.cos(pitch)-.06*Math.sin(pitch);
   const release=safeRelease({x:actor.x,y:eye,z:actor.z},{x:actor.x+Math.sin(yaw)*forward+Math.cos(yaw)*.14,
     y:eye-.55*Math.sin(pitch)-.06*Math.cos(pitch),z:actor.z+Math.cos(yaw)*forward-Math.sin(yaw)*.14},map,layout);
@@ -41,7 +50,7 @@ export function createSmokeProjectile(actor,id,charge=0,map='classroom',layout=n
 
 // Small swept steps keep a thrown canister from tunnelling through desk slabs.
 export function stepSmokeProjectile(p,dt,layout=null){
-  const map=p.map||'classroom',tables=tablesFor(map,layout);
+  const map=p.map||'classroom',tables=tablesFor(map,layout),bounds=mapBounds(map);
   let impacts=[];
   const count=Math.max(1,Math.ceil(dt/.008)),h=dt/count;
   for(let i=0;i<count;i++){
@@ -53,10 +62,10 @@ export function stepSmokeProjectile(p,dt,layout=null){
     p.x+=p.vx*h;p.y+=p.vy*h-.5*GRAVITY*h*h;p.z+=p.vz*h;p.vy-=GRAVITY*h;
     let normal=null;
     if(p.y<floorHeight(p.x,p.z,map)+R){p.y=floorHeight(p.x,p.z,map)+R;normal=[0,1,0];}
-    if(p.x<ROOM.minX+R){p.x=ROOM.minX+R;normal=[1,0,0];}
-    else if(p.x>ROOM.maxX-R){p.x=ROOM.maxX-R;normal=[-1,0,0];}
-    if(p.z<ROOM.minZ+R){p.z=ROOM.minZ+R;normal=[0,0,1];}
-    else if(p.z>ROOM.maxZ-R){p.z=ROOM.maxZ-R;normal=[0,0,-1];}
+    if(p.x<bounds.minX+R){p.x=bounds.minX+R;normal=[1,0,0];}
+    else if(p.x>bounds.maxX-R){p.x=bounds.maxX-R;normal=[-1,0,0];}
+    if(p.z<bounds.minZ+R){p.z=bounds.minZ+R;normal=[0,0,1];}
+    else if(p.z>bounds.maxZ-R){p.z=bounds.maxZ-R;normal=[0,0,-1];}
     for(const d of tables){
       if(p.x<d.minX-R||p.x>d.maxX+R||p.z<d.minZ-R||p.z>d.maxZ+R||p.y<d.minY-R||p.y>d.maxY+R)continue;
       const faces=[['y',d.maxY+R,1],['y',d.minY-R,-1],['x',d.minX-R,-1],['x',d.maxX+R,1],['z',d.minZ-R,-1],['z',d.maxZ+R,1]];

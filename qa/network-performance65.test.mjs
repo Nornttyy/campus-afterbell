@@ -16,7 +16,7 @@ async function observe(base,peer,delta=true){
 }
 
 test('hard eight-person room cap includes the teacher and cannot be increased by configuration',()=>{
- for(const requested of [undefined,8,16,999]){const room=new CampusRoom({code:'656565',maxPlayers:requested}),people=Array.from({length:8},(_,i)=>room.join({rolePreference:i?'student':'teacher'}));assert.equal(MAX_ROOM_PLAYERS,8);assert.equal(room.maxPlayers,8);assert.throws(()=>room.join(),/最多8人/);room.begin(people[0]);assert.equal(people.filter(p=>p.role==='teacher').length,1);assert.equal(room.sim._team.size,7);}
+ for(const requested of [undefined,8]){const room=new CampusRoom({code:'656565',maxPlayers:requested}),people=Array.from({length:8},(_,i)=>room.join({rolePreference:i?'student':'teacher'}));assert.equal(MAX_ROOM_PLAYERS,8);for(const invalid of[1,9,16,999,2.5,'4'])assert.throws(()=>new CampusRoom({maxPlayers:invalid}),/2–8/);assert.equal(room.maxPlayers,8);assert.throws(()=>room.join(),/最多8人/);room.begin(people[0]);assert.equal(people.filter(p=>p.role==='teacher').length,1);assert.equal(room.sim._team.size,7);}
 });
 test('delta state reconstructs changing arrays, hidden fields and clear events without mutating the baseline',()=>{
  const room=new CampusRoom({code:'656566',seed:65}),teacher=room.join({rolePreference:'teacher'}),student=room.join();const before=structuredClone(room.snapshot(student)),original=structuredClone(before);room.begin(teacher);room.tick(.05);const after=structuredClone(room.snapshot(student)),delta=diffNetworkState(before,after),rebuilt=applyNetworkDelta(before,delta);assert.deepEqual(rebuilt,after);assert.deepEqual(before,original);

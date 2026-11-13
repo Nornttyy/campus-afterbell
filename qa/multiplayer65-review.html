@@ -4,8 +4,8 @@
 <div class="bar"><label>视角 <select id="view" aria-label="玩家视角"><option value="0">房主 · 老师候选</option></select></label><label>画质 <select id="quality" aria-label="画质"><option value="high">高</option><option value="low">低</option></select></label><button id="left">向左看</button><button id="right">向右看</button><span id="status">正在加载真实场景</span></div>
 <main id="viewport"><canvas id="scene" tabindex="0" aria-label="真实多人场景"></canvas></main><div id="hud"></div><small>WASD 移动当前玩家；在画面拖动鼠标转头。只使用真实网络输入，不修改服务器坐标。关闭测试会离开全部 8 个客户端。</small><p><output id="metrics"></output></p><output id="errors"></output>
 <script type="module">
-import {connectCampusRoom} from '../dist/network-client.js?v=campus-68b';
-import {createClassroom} from '../dist/classroom.js?v=campus-68b';
+import {connectCampusRoom} from '../dist/network-client.js?v=campus-74';
+import {createClassroom} from '../dist/classroom.js?v=campus-74';
 // Split the eight test SSE streams across two loopback host names: Chrome
 // limits HTTP/1.1 to six connections per origin. Both names reach the same server.
 const endpoint='http://127.0.0.1:8933',canvas=document.querySelector('#scene'),status=document.querySelector('#status'),metrics=document.querySelector('#metrics'),errors=document.querySelector('#errors'),view=document.querySelector('#view'),buttons=['walk','stop','bell','close'].map(id=>document.getElementById(id));

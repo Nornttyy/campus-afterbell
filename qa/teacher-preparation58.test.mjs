@@ -6,6 +6,7 @@ import {CampusRoom} from '../server/room-simulation.js';
 import {NORMAL_WALK_SPEEDS,BACKWARD_SPEED_RATIO} from '../dist/movement55.js';
 import {firstPersonEyeHeight} from '../dist/first-person-view.js';
 import {TEACHER_VIEW_HEIGHT,STUDENT_VIEW_HEIGHT} from '../dist/camera-height58.js';
+import {TEACHER_PROPORTIONS} from '../dist/teacher-proportions73.js';
 import {applyRoomLighting,ROOM_LIGHTING} from '../dist/room-lighting58.js';
 import {TEACHER_SPAWN} from '../dist/classroom-layout.js';
 
@@ -35,8 +36,9 @@ for(const backward of [false,true])test(`carrying a pupil keeps normal ${backwar
  const free=run(false),held=run(true);assert.ok(Math.abs(free.player.z-held.player.z)<1e-8);assert.ok(Math.abs(Math.abs(held.player.z)-NORMAL_WALK_SPEEDS.teacher*(backward?BACKWARD_SPEED_RATIO:1)*.4)<1e-8);assert.equal(held.students[0].captivity,'carried');
 });
 
-test('teacher standing camera is 20 percent above student and ignores invalid crawl state',()=>{
- assert.equal(TEACHER_VIEW_HEIGHT,STUDENT_VIEW_HEIGHT*1.20);
+test('teacher standing camera follows the taller teacher body and ignores invalid crawl state',()=>{
+ assert.equal(TEACHER_VIEW_HEIGHT,TEACHER_PROPORTIONS.eyeHeight);
+ assert.ok(TEACHER_VIEW_HEIGHT>STUDENT_VIEW_HEIGHT);
  assert.equal(firstPersonEyeHeight({seated:false,crouched:true},'teacher'),TEACHER_VIEW_HEIGHT);
  assert.equal(firstPersonEyeHeight({seated:false},'student'),STUDENT_VIEW_HEIGHT);
 });

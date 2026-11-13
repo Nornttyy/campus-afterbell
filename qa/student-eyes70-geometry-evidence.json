@@ -1,0 +1,236 @@
+{
+  "method": "CPU evaluation of actual GLB vertices using the same inward displacement function as the shader; separate native Chrome render screenshots verify appearance.",
+  "models": [
+    {
+      "variant": "boy",
+      "sourceTriangles": 7898,
+      "refinedTriangles": 10118,
+      "sourceGroups": 0,
+      "diagnostics": {
+        "enabled": true,
+        "gaze": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "vertices": 1299,
+        "pupilDepthMm": 3.5,
+        "geometry": "subdivided-sclera-with-inward-vertex-cup",
+        "triangles": 10118
+      },
+      "poses": [
+        {
+          "gaze": [
+            0,
+            0
+          ],
+          "movedVertices": 94,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            -0.78,
+            0
+          ],
+          "movedVertices": 64,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            0.78,
+            0
+          ],
+          "movedVertices": 67,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            0,
+            -0.62
+          ],
+          "movedVertices": 69,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            0,
+            0.62
+          ],
+          "movedVertices": 63,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            -0.6419150689000083,
+            -0.5102401829718014
+          ],
+          "movedVertices": 76,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            0.6419150689000083,
+            0.5102401829718014
+          ],
+          "movedVertices": 57,
+          "maxInsetMm": 3.5
+        }
+      ]
+    },
+    {
+      "variant": "girl",
+      "sourceTriangles": 7900,
+      "refinedTriangles": 10427,
+      "sourceGroups": 0,
+      "diagnostics": {
+        "enabled": true,
+        "gaze": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "vertices": 1452,
+        "pupilDepthMm": 3.5,
+        "geometry": "subdivided-sclera-with-inward-vertex-cup",
+        "triangles": 10427
+      },
+      "poses": [
+        {
+          "gaze": [
+            0,
+            0
+          ],
+          "movedVertices": 83,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            -0.78,
+            0
+          ],
+          "movedVertices": 74,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            0.78,
+            0
+          ],
+          "movedVertices": 66,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            0,
+            -0.62
+          ],
+          "movedVertices": 76,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            0,
+            0.62
+          ],
+          "movedVertices": 62,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            -0.6419150689000083,
+            -0.5102401829718014
+          ],
+          "movedVertices": 80,
+          "maxInsetMm": 3.5
+        },
+        {
+          "gaze": [
+            0.6419150689000083,
+            0.5102401829718014
+          ],
+          "movedVertices": 78,
+          "maxInsetMm": 3.5
+        }
+      ]
+    },
+    {
+      "variant": "ponytail",
+      "sourceTriangles": 7899,
+      "refinedTriangles": 10728,
+      "sourceGroups": 0,
+      "diagnostics": {
+        "enabled": true,
+        "gaze": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "vertices": 1607,
+        "pupilDepthMm": 4.5,
+        "geometry": "subdivided-sclera-with-inward-vertex-cup",
+        "triangles": 10728
+      },
+      "poses": [
+        {
+          "gaze": [
+            0,
+            0
+          ],
+          "movedVertices": 124,
+          "maxInsetMm": 4.5
+        },
+        {
+          "gaze": [
+            -0.78,
+            0
+          ],
+          "movedVertices": 81,
+          "maxInsetMm": 4.5
+        },
+        {
+          "gaze": [
+            0.78,
+            0
+          ],
+          "movedVertices": 94,
+          "maxInsetMm": 4.5
+        },
+        {
+          "gaze": [
+            0,
+            -0.62
+          ],
+          "movedVertices": 101,
+          "maxInsetMm": 4.5
+        },
+        {
+          "gaze": [
+            0,
+            0.62
+          ],
+          "movedVertices": 125,
+          "maxInsetMm": 4.5
+        },
+        {
+          "gaze": [
+            -0.6419150689000083,
+            -0.5102401829718014
+          ],
+          "movedVertices": 81,
+          "maxInsetMm": 4.5
+        },
+        {
+          "gaze": [
+            0.6419150689000083,
+            0.5102401829718014
+          ],
+          "movedVertices": 122,
+          "maxInsetMm": 4.5
+        }
+      ]
+    }
+  ]
+}

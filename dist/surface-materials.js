@@ -3,7 +3,7 @@ import * as T from './vendor/three.module.js';
 // Generated albedo stays free of painted scene shadows; scene lights supply them.
 export async function loadCampusSurfaces(){
  const loader=new T.TextureLoader();
- const files={floor:'./assets/materials/terrazzo-34.png',wall:'./assets/materials/paint-plaster-34.png',board:'./assets/materials/chalkboard-34.png'};
+ const files={floor:'./assets/materials/terrazzo-72.png',wall:'./assets/materials/paint-plaster-34.png',board:'./assets/materials/chalkboard-34.png'};
  const entries=await Promise.all(Object.entries(files).map(async([key,file])=>{
   const map=await loader.loadAsync(new URL(file,import.meta.url).href);
   map.colorSpace=T.SRGBColorSpace;map.wrapS=map.wrapT=T.MirroredRepeatWrapping;
@@ -49,4 +49,22 @@ export function setWallSurfaceUV(object,assets,metres=1){
   else uv.setXY(i,x/metres,y/metres);
  }
  object.geometry=geometry;assets.add(geometry);return object;
+}
+
+// Fixed architectural contact only attenuates indirect bounce. Sunlight and
+// moving-object shadows remain real scene lights. No full-screen dark overlay.
+export function addWallContact(material){
+ const previous=material.onBeforeCompile;
+ material.onBeforeCompile=shader=>{
+  previous?.(shader);
+  shader.vertexShader='varying vec3 vWallPosition72;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>',
+   '#include <worldpos_vertex>\nvWallPosition72 = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+  shader.fragmentShader='varying vec3 vWallPosition72;\n'+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
+   float lowerContact = 1.0-smoothstep(0.13,0.43,vWallPosition72.y);
+   float ceilingContact = 1.0-smoothstep(0.0,0.22,abs(vWallPosition72.y-4.51));
+   reflectedLight.indirectDiffuse *= 1.0 - 0.16*lowerContact - 0.12*ceilingContact;`);
+ };
+ material.customProgramCacheKey=()=> 'classroom-wall-contact72';
 }

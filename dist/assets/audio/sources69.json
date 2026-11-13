@@ -1,0 +1,38 @@
+{
+  "source": "https://bigsoundbank.com/steps-slipper-on-tiling-s0179.html",
+  "author": "Joseph SARDIN",
+  "license": "CC0",
+  "changes": "Six individual contacts, gain matched with short fades; no generated noise layers.",
+  "clips": [
+    {
+      "file": "teacher-step-0.wav",
+      "sourceStart": 0.05,
+      "duration": 0.42
+    },
+    {
+      "file": "teacher-step-1.wav",
+      "sourceStart": 1.452,
+      "duration": 0.42
+    },
+    {
+      "file": "teacher-step-2.wav",
+      "sourceStart": 2.925,
+      "duration": 0.42
+    },
+    {
+      "file": "teacher-step-3.wav",
+      "sourceStart": 4.25,
+      "duration": 0.42
+    },
+    {
+      "file": "teacher-step-4.wav",
+      "sourceStart": 5.789,
+      "duration": 0.42
+    },
+    {
+      "file": "teacher-step-5.wav",
+      "sourceStart": 7.17,
+      "duration": 0.42
+    }
+  ]
+}

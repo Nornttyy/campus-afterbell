@@ -1,14 +1,15 @@
-import {createFacialEffects} from './facial-effects64.js?v=campus-68b';
+import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-74';
+import {createFacialEffects} from './facial-effects64.js?v=campus-74';
 import {requireModelBudget} from './model-budget64.js';
-import {createCapturePose} from './capture-poses.js?v=campus-68b';
+import {createCapturePose} from './capture-poses.js?v=campus-74';
 import * as THREE from './vendor/three.module.js';
-import {normalWalkCycleRate} from './movement55.js?v=campus-68b';
-import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-68b';
+import {normalWalkCycleRate} from './movement55.js?v=campus-74';
+import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-74';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-68b';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-68b';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-68b';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-68b';
+import {createCrawlPose} from './crawl-pose.js?v=campus-74';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-74';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-74';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-74';
 
 export async function loadTeacherModel(){
   const url=new URL('./assets/models/teacher-v2.glb?v=mesh-64',import.meta.url);
@@ -49,7 +50,9 @@ export function createRiggedTeacher(gltf){
   const group=new THREE.Group();group.name='classroom-teacher-tripo';
   const model=gltf.scene;group.add(model);
   const metric=gltf.parser?.json?.asset?.extras?.characters40?.normalized===true;
-  if(!metric){const bounds=new THREE.Box3().setFromObject(model,true),size=bounds.getSize(new THREE.Vector3()),factor=2.08/size.y;model.scale.multiplyScalar(factor);model.position.y-=bounds.min.y*factor;}
+  if(!metric){const bounds=new THREE.Box3().setFromObject(model,true),size=bounds.getSize(new THREE.Vector3()),factor=TEACHER_PROPORTIONS.height/size.y;model.scale.multiplyScalar(factor);model.position.y-=bounds.min.y*factor;}
+  if(metric)model.scale.multiplyScalar(TEACHER_PROPORTIONS.height/(gltf.parser.json.asset.extras.characters40.height||TEACHER_PROPORTIONS.sourceHeight));
+  group.updateMatrixWorld(true);
   group.userData.asset=metric?'teacher-v2':'teacher-v1';group.userData.fingersPerHand=4;
   model.traverse(o=>{if(o.isMesh){o.castShadow=true;if(o.isSkinnedMesh)o.frustumCulled=false;}});
   useCharacterBaseColor(model);
@@ -94,7 +97,7 @@ export function createRiggedTeacher(gltf){
     const feet={},hands={};for(const side of ['Left','Right']){feet[side]=group.worldToLocal(bones[side+'Foot'].getWorldPosition(new THREE.Vector3()));hands[side]=group.worldToLocal(bones[side+'Hand'].getWorldPosition(new THREE.Vector3()));}
     // The cushion top is 0.5225 m. The pelvis is above it, with thighs going
     // forward and shins down; this is separate from the 0.34 m floor stun.
-    seatHipSaved=hip.position.clone();const pelvis=group.worldToLocal(hip.getWorldPosition(new THREE.Vector3()));pelvis.y=THREE.MathUtils.lerp(pelvis.y,.685,seatWeight);pelvis.z-=.025*seatWeight;hip.position.copy(hip.parent.worldToLocal(group.localToWorld(pelvis)));group.updateMatrixWorld(true);
+    seatHipSaved=hip.position.clone();const pelvis=group.worldToLocal(hip.getWorldPosition(new THREE.Vector3()));pelvis.y=THREE.MathUtils.lerp(pelvis.y,.5225+(.685-.5225)*TEACHER_PROPORTIONS.height/TEACHER_PROPORTIONS.sourceHeight,seatWeight);pelvis.z-=.025*seatWeight;hip.position.copy(hip.parent.worldToLocal(group.localToWorld(pelvis)));group.updateMatrixWorld(true);
     for(const [side,sign]of [['Left',1],['Right',-1]]){
       const foot=feet[side].clone().lerp(new THREE.Vector3(sign*.14,feet[side].y,.24),seatWeight);
       chairLimb(bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],group.localToWorld(foot),group.localToWorld(new THREE.Vector3(sign*.25,.55,.68)));
@@ -205,5 +208,5 @@ export function createRiggedTeacher(gltf){
   update(0,{phase:'watching'});
   return{group,bones,update,getHand:side=>anchors[side],castChalk:progress=>{gesture.cast=THREE.MathUtils.clamp(Number(progress)||0,0,1);},gripNeck,setGesture:value=>{gesture={card:false,cast:0,...value};},
     dispose(){faceEffects.dispose();mixer.stopAllAction();mixer.uncacheRoot(model);},
-    diagnostics:()=>({asset:group.userData.asset,clips:Object.keys(actions),weights:{...weights},height:2.08,face:faceEffects.diagnostics(),animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),headLook:{yaw:lookValue,pitch:lookPitchValue},seatedWeight:seatWeight,capture:capturePose.state(),crawl:crawlPose.state()})};
+    diagnostics:()=>({asset:group.userData.asset,clips:Object.keys(actions),weights:{...weights},height:TEACHER_PROPORTIONS.height,face:faceEffects.diagnostics(),animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),headLook:{yaw:lookValue,pitch:lookPitchValue},seatedWeight:seatWeight,capture:capturePose.state(),crawl:crawlPose.state()})};
 }

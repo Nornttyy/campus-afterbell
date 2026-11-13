@@ -62,7 +62,7 @@ export function createCampusServer({rooms=new Map(),allowedOrigins=[],tickHz=30,
    if(url.pathname==='/api/health'){json(res,200,{ok:true,protocol:1,rooms:rooms.size});return;}
    if(req.method==='POST'&&url.pathname==='/api/rooms'){
     rate(req.socket.remoteAddress,5);if(rooms.size>=maxRooms)throw new RoomError(503,'当前房间已满，请稍后再试');const input=await body(req);let code;do{code=String(randomInt(100000,1000000));}while(rooms.has(code));
-    const room=new CampusRoom({code,map:input.map,floor:input.floor,settings:input.settings}),member=room.join(input);rooms.set(code,room);json(res,201,{token:member.token,room:room.publicRoom(member),state:room.snapshot(member)});return;
+    const room=new CampusRoom({code,map:input.map,floor:input.floor,maxPlayers:input.maxPlayers,settings:input.settings}),member=room.join(input);rooms.set(code,room);json(res,201,{token:member.token,room:room.publicRoom(member),state:room.snapshot(member)});return;
    }
    if(req.method==='POST'&&/^\/api\/rooms\/\d{6}\/join$/.test(url.pathname)){
     rate(req.socket.remoteAddress,12);const code=url.pathname.split('/')[3],room=rooms.get(code);if(!room)throw new RoomError(404,'没有这个房间号');const member=room.join(await body(req));json(res,200,{token:member.token,room:room.publicRoom(member),state:room.snapshot(member)});flush(room);return;

@@ -9,7 +9,7 @@ import {loadGeometry} from './gltf-geometry.mjs';
 
 function keyboardBoxes(){
  const scene=new T.Scene(),boxes=[],mat=(color,opts={})=>new T.MeshBasicMaterial({color}),box=(material,p,size,rotation,parent)=>{const mesh=new T.Mesh(new T.BoxGeometry(...size),material);mesh.position.fromArray(p);if(rotation)mesh.rotation.fromArray(rotation);parent.add(mesh);if(size[0]===.035&&size[1]===.008&&size[2]===.029)boxes.push(mesh);return mesh;};
- const room=createRoomVariants({scene,box,rounded:(m,p,s,r,rot,parent)=>box(m,p,s,rot,parent),mat,texture:()=>null,bakeStatic:()=>{}});
+ const room=createRoomVariants({scene,box,rounded:(m,p,s,r,rot,parent)=>box(m,p,s,rot,parent),mat,texture:()=>new T.Texture(),bakeStatic:()=>{}});
  room.setSeats([{id:0,deskX:0,deskZ:.78,x:0,z:0,yaw:0}]);room.setMap('computer');scene.updateMatrixWorld(true);
  return boxes.filter(mesh=>mesh.parent.parent===room.stations.get(0)).map(mesh=>new T.Box3().setFromObject(mesh));
 }

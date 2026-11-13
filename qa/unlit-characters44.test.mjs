@@ -5,7 +5,7 @@ import * as T from '../dist/vendor/three.module.js';
 import {GLTFLoader} from '../dist/vendor/addons/loaders/GLTFLoader.js';
 import {createRiggedStudent,createRiggedPalm,STUDENT_ASSETS} from '../dist/student-assets.js';
 import {createRiggedTeacher} from '../dist/imported-actors.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-68b';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-74';
 import {useCharacterBaseColor,setCharacterNight} from '../dist/character-materials.js';
 
 // Parse the real skin, material factors, attributes and embedded image bytes.
@@ -35,21 +35,35 @@ function originals(root){
 function verifySurfaces(root,before){
  let surfaces=0,textured=0,caps=0;
  root.traverse(mesh=>{if(!mesh.isMesh)return;
-  // Eye repair changes only the raised pupil cap on a clone. UVs, topology,
-  // skinning and every vertex outside the eye mask must still match the GLB.
+  // Eye repair subdivides a small sclera patch on a runtime clone. All
+  // original non-eye triangles, UVs and skinning must still match the GLB.
   const sourceGeometry=before.has(mesh.geometry)?mesh.geometry:before.sourceMeshes.get(mesh);
   if(!sourceGeometry)return;
   if(sourceGeometry!==mesh.geometry){
-   assert.deepEqual(mesh.geometry.index?.array,sourceGeometry.index?.array,'source triangles changed');
+   const eyeMask=mesh.geometry.attributes.studentEyeWeights;
+   if(eyeMask){
+    const sourcePosition=sourceGeometry.attributes.position,bounds=new T.Box3(),v=new T.Vector3();
+    for(let i=0;i<sourcePosition.count;i++)if(eyeMask.getX(i)+eyeMask.getY(i)>0)bounds.expandByPoint(v.fromBufferAttribute(sourcePosition,i));
+    bounds.expandByScalar(.02);
+    const indices=mesh.geometry.index.array,triangles=new Set();
+    for(let i=0;i<indices.length;i+=3)triangles.add([indices[i],indices[i+1],indices[i+2]].join(','));
+    const original=sourceGeometry.index.array;
+    for(let i=0;i<original.length;i+=3){
+     const ids=[original[i],original[i+1],original[i+2]],box=new T.Box3();
+     for(const id of ids)box.expandByPoint(v.fromBufferAttribute(sourcePosition,id));
+     if(!box.intersectsBox(bounds))assert.ok(triangles.has(ids.join(',')),'a triangle outside the local eye patch changed');
+    }
+    for(let i=sourcePosition.count;i<mesh.geometry.attributes.position.count;i++)assert.ok(bounds.containsPoint(v.fromBufferAttribute(mesh.geometry.attributes.position,i)),'subdivision escaped the eye patch');
+   }else assert.deepEqual(mesh.geometry.index?.array,sourceGeometry.index?.array,'non-eye triangles changed');
    for(const [name,attribute]of Object.entries(sourceGeometry.attributes)){
     const repaired=mesh.geometry.attributes[name],eyeMask=mesh.geometry.attributes.studentEyeWeights;
     if(eyeMask&&(name==='position'||name==='normal')){
-     assert.equal(repaired.count,attribute.count);
+     assert.ok(repaired.count>=attribute.count);
      for(let i=0;i<attribute.count;i++){
       if(eyeMask.getX(i)+eyeMask.getY(i)>0)continue;
       for(let k=0;k<attribute.itemSize;k++)assert.equal(repaired.getComponent(i,k),attribute.getComponent(i,k),`${name} changed outside eye repair`);
      }
-    }else assert.deepEqual(repaired?.array,attribute.array,`source ${name} attribute changed`);
+    }else assert.deepEqual(repaired?.array.slice(0,attribute.array.length),attribute.array,`original ${name} attribute changed`);
    }
   }
   surfaces++;assert.equal(mesh.receiveShadow,false,`${mesh.name}: still receives scene shadows`);

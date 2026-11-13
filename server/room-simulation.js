@@ -12,8 +12,8 @@ const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
 const cleanName=value=>String(value||'同学').replace(/[\u0000-\u001f<>]/g,'').slice(0,16)||'同学';
 const CONTEXT=['player','selected','holding','_movement','_rescueId','_rescueProgress','completed'];
-const studentCommands=new Set(['setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
-const teacherCommands=new Set(['setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
+const studentCommands=new Set(['setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','toggleToiletDoor','toggleBedLie','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
+const teacherCommands=new Set(['toggleToiletDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
 const scoringEvents=new Set(['complete','gum-score','bubble-score','snake-food','valorant-watch']);
 const teacherFeedbackEvents=new Set(['wrong-grab','correct-capture','stamina-low']);
 function context(actor){return{player:actor,selected:actor.id===-1?'chalk':actor.action||actor._slots?.[0]?.action||'snack',holding:false,_movement:{x:0,z:0},_rescueId:null,_rescueProgress:0,completed:actor.completed||Object.fromEntries(Object.keys(CLASSROOM_ACTIONS).map(k=>[k,0]))};}
@@ -65,9 +65,9 @@ class SharedRound extends TeacherRound{
   for(const member of this.room?.members.values()||[])if(member.role==='student'&&!member.context.player.seated)reserved.add(member.studentId);
   const available=seat=>!occupied.has(seat.id)&&!reserved.has(seat.id),prior=this.seats[actor._targetSeatId??actor.id];
   let seat=prior&&available(prior)?prior:null;
-  if(!seat){let best=Infinity;for(const candidate of this.seats){if(!available(candidate))continue;const route=this._walkRoute(actor,candidate,.2),distance=Math.hypot(actor.x-candidate.x,actor.z-candidate.z);if(!route.length&&distance>1e-8)continue;const length=route.reduce((sum,p,i)=>sum+Math.hypot(p.x-(i?route[i-1].x:actor.x),p.z-(i?route[i-1].z:actor.z)),0);if(length<best){best=length;seat=candidate;}}}
+  if(!seat){let best=Infinity;for(const candidate of this.seats){if(!available(candidate))continue;const route=this._walkRoute(actor,this._seatApproach(candidate),.2),distance=Math.hypot(actor.x-this._seatApproach(candidate).x,actor.z-this._seatApproach(candidate).z);if(!route.length&&distance>1e-8)continue;const length=route.reduce((sum,p,i)=>sum+Math.hypot(p.x-(i?route[i-1].x:actor.x),p.z-(i?route[i-1].z:actor.z)),0);if(length<best){best=length;seat=candidate;}}}
   actor.holding=false;actor.mood='walking';if(!seat){actor._returnRoute=[];return true;}
-  if(actor._returnSeatId!==seat.id||!actor._returnRoute.length&&Math.hypot(actor.x-seat.x,actor.z-seat.z)>1e-8){actor._targetSeatId=seat.id;actor._returnSeatId=seat.id;actor._returnRoute=this._walkRoute(actor,seat,.2);if(!actor._returnRoute.length&&Math.hypot(actor.x-seat.x,actor.z-seat.z)>1e-8)return true;}
+  if(actor._returnSeatId!==seat.id||!actor._returnRoute.length&&Math.hypot(actor.x-this._seatApproach(seat).x,actor.z-this._seatApproach(seat).z)>1e-8){actor._targetSeatId=seat.id;actor._returnSeatId=seat.id;actor._returnRoute=this._walkRoute(actor,this._seatApproach(seat),.2);if(!actor._returnRoute.length&&Math.hypot(actor.x-this._seatApproach(seat).x,actor.z-this._seatApproach(seat).z)>1e-8)return true;}
   if(this._follow(actor,actor._returnRoute,AI_WALK_SPEEDS.student,dt)){actor._returnRoute=null;delete actor._returnSeatId;this._seatForClass(actor);actor._decisionAt=this.elapsed+3;}return true;
  }
 }
@@ -75,8 +75,9 @@ class SharedRound extends TeacherRound{
 export const MAX_ROOM_PLAYERS=8;
 export class CampusRoom{
  constructor({code,seed=Date.now()>>>0,map='classroom',floor=1,maxPlayers=MAX_ROOM_PLAYERS,settings=DEFAULT_ROUND_SETTINGS}={}){
-  if(!validRoundSettings(settings))throw new RoomError(400,'时长须为5–20分钟，捣蛋目标须为30–120');this.settings={...settings};
-  this.code=code;this.seed=seed;this.map=Layout.CAMPUS_MAPS.includes(map)?map:'classroom';this.floor=Math.max(1,Math.min(8,Number(floor)||1));this.maxPlayers=Math.max(2,Math.min(MAX_ROOM_PLAYERS,Number.isInteger(maxPlayers)?maxPlayers:MAX_ROOM_PLAYERS));this.members=new Map();this.hostId=null;this.sequence=0;this.events=[];this.createdAt=Date.now();this.updatedAt=this.createdAt;
+  if(!Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>MAX_ROOM_PLAYERS)throw new RoomError(400,'人数上限须为2–8人');
+  if(!validRoundSettings(settings))throw new RoomError(400,'时长须为5–20分钟，捣蛋目标须为20–160，粉笔耗体力须为开或关');this.settings={...settings};
+  this.code=code;this.seed=seed;this.map=Layout.isCampusMap(map)?map:'classroom';this.floor=Math.max(1,Math.min(8,Number(floor)||1));this.maxPlayers=maxPlayers;this.members=new Map();this.hostId=null;this.sequence=0;this.events=[];this.createdAt=Date.now();this.updatedAt=this.createdAt;
   this.elevator=createElevator();
   this.sim=new SharedRound({seed,map:this.map,...this.settings});this.sim.room=this;this.teacherActor=this.sim.player;this.teacherContext=context(this.teacherActor);this.sim.start({gathering:true});
   // Only connected humans are the hidden mischievous students. Remaining
@@ -127,7 +128,7 @@ export class CampusRoom{
   this.events.push({type:'roles-assigned',teacherId:chosen.id,networkSequence:++this.sequence});this.sequence++;return started;
  }
  _rebuild(map,seed=this.seed){
-  this.map=map;this.seed=seed>>>0;this.floor=Layout.CAMPUS_MAPS.indexOf(map)+1;
+  this.map=map;this.seed=seed>>>0;this.floor=Layout.campusFloor(map);
   this.sim=new SharedRound({seed:this.seed,map,...this.settings});this.sim.room=this;this.teacherActor=this.sim.player;this.teacherContext=context(this.teacherActor);this.teacherMember=null;this.sim.start({gathering:true});this.sim._team=new Set();this.events=[];
   this._initializeStudents();
   let i=0;for(const m of this.members.values()){m.role='student';m.doorUse=false;m.doorProgress=0;m.lastInput=Date.now();const actor=this.sim.students[m.studentId];this._prepareHuman(m,actor,i++);m.context=context(actor);this.sim._team.add(actor.id);}
@@ -136,7 +137,7 @@ export class CampusRoom{
  travelFloor(member,map){
   const people=[...this.members.values()].map(m=>({player:m.context.player,connected:m.connected}));
   const error=departureError(this.elevator,people,{map,currentMap:this.map,stage:this.sim.stage,status:this.sim.status,host:member.id===this.hostId});
-  if(error)throw new RoomError(member.id!==this.hostId?403:Layout.CAMPUS_MAPS.includes(map)?409:400,error);
+  if(error)throw new RoomError(member.id!==this.hostId?403:Layout.isCampusMap(map)?409:400,error);
   for(const m of this.members.values()){m.context._movement={x:0,z:0};m.context.holding=false;m.context.player.holding=false;m.context.player.crouched=false;m.context._rescueId=null;m.context._rescueProgress=0;m.doorUse=false;m.doorProgress=0;}
   departElevator(this.elevator,map,this.map);Layout.updateLayoutDoors(this.sim.layout,{elevatorClosed:true});this.events.push({type:'elevator-start',map,networkSequence:++this.sequence});return true;
  }
@@ -148,13 +149,15 @@ export class CampusRoom{
  }
  configureRound(member,settings){
   if(member.id!==this.hostId)throw new RoomError(403,'只有房主可以修改设置');
-  if(!validRoundSettings(settings))throw new RoomError(400,'时长须为5–20分钟，捣蛋目标须为30–120');
+  if(!validRoundSettings(settings))throw new RoomError(400,'时长须为5–20分钟，捣蛋目标须为20–160，粉笔耗体力须为开或关');
   if(this.sim.stage!=='gathering')throw new RoomError(409,'开局后不能修改设置');
   if(!this.sim.configureRound(settings))return false;this.settings={...settings};this.sequence++;return true;
  }
  command(member,command,args=[],inputSeq=0){
   member.lastInput=Date.now();member.lastSeen=Date.now();
   // Focus/pause cleanup is intentionally role-agnostic in the controller.
+  if(command==='toggleToiletDoor'&&(!Number.isInteger(args[0])||args[0]<0||args[0]>=this.sim.seats.length))throw new RoomError(400,'无效隔间');
+  if(command==='takePlaygroundFood'&&args[0]!==undefined&&!['snack','drink','burger'].includes(args[0]))throw new RoomError(400,'无效食品');
   if(command==='setComputerPlayback'&&member.role==='teacher')return false;
   if(command==='setWriting'&&args[0]===false&&member.role!=='teacher')return false;
   if(command==='setRescue'&&args[0]===null&&member.role==='teacher')return false;
@@ -269,6 +272,6 @@ export class RoomError extends Error{constructor(status,message){super(message);
 
 // Base helpers call other public helpers through this; dispatch those too so
 // a student's hold/take flow does not hit TeacherRound's intentional no-ops.
-for(const name of ['hold','releaseUse','toggleDrawer','toggleBook','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer']){
+for(const name of ['hold','releaseUse','toggleDrawer','toggleBook','toggleToiletDoor','toggleBedLie','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer']){
  SharedRound.prototype[name]=function(...args){const proto=this.player?.id===-1?TeacherRound.prototype:ClassroomRound.prototype;return proto[name]?.apply(this,args);};
 }

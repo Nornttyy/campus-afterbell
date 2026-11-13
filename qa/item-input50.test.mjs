@@ -95,13 +95,13 @@ test('production computer controller scores only visible advancing playback and 
  }finally{f.close();}
 });
 
-for(const teacher of [false,true])test(`production ${teacher?'teacher':'student'} movement sounds steps only while actually travelling`,()=>{
+for(const teacher of [false,true])test(`production ${teacher?'teacher movement has foot contacts':'student movement stays completely silent'} while actually travelling`,()=>{
  const f=fixture({teacher});try{
   const p=f.round.player;Object.assign(p,{x:9,z:-4,yaw:0,seated:false,seatId:null,crouched:false});f.advance(.1);f.sounds.length=0;
   f.advance(1.2);assert.equal(f.sounds.filter(([kind])=>kind==='step').length,0,'standing still must not make steps');
   const before={x:p.x,z:p.z};f.setAxes({forward:1});f.advance(1.2);
   assert.ok(Math.abs(Math.hypot(p.x-before.x,p.z-before.z)-(teacher?2.2:1.8)*1.2)<.001,'use real role movement through the controller');
-  const steps=f.sounds.filter(([kind])=>kind==='step');assert.ok(steps.length>=2&&steps.length<=3,'normal walking has distinct, bounded foot contacts');assert.ok(steps.every(([,gain])=>gain>0&&gain<1));
+  const steps=f.sounds.filter(([kind])=>kind==='step');if(teacher){assert.ok(steps.length>=2&&steps.length<=3,'teacher walking has distinct, bounded foot contacts');assert.ok(steps.every(([,gain])=>gain>0&&gain<1));}else assert.equal(steps.length,0,'students have no walking sound, including the local player');
   f.sounds.length=0;f.setAxes({forward:0});f.advance(1.2);assert.equal(f.sounds.filter(([kind])=>kind==='step').length,0,'stopping must stop footsteps immediately');
  }finally{f.close();}
 });
@@ -126,13 +126,13 @@ test('remote teacher footsteps fade with distance and are silent sixty metres aw
  assert.ok(levels[0]>levels[1]*3&&levels[1]>0,'distance attenuation must meaningfully reduce the received volume');
 });
 
-test('nearby visible students have footsteps; hidden, seated and moved-by-capture classmates do not',()=>{
+test('all nearby students stay silent, including visible walking, hidden, seated and carried classmates',()=>{
  for(const state of [{visible:true,seated:false,captivity:'free'}, {visible:false,seated:false,captivity:'free'}, {visible:true,seated:true,captivity:'free'}, {visible:true,seated:false,captivity:'carried'}]){
   const f=fixture();try{
    const p=f.round.player,s=f.round.students.find(actor=>actor!==p);Object.assign(s,{x:p.x+1,z:p.z,...state,_decisionAt:Infinity});f.advance(.1);f.sounds.length=0;
    for(let i=0;i<80;i++){s.z+=1.8/60;f.advance(1/60);}
    const count=f.sounds.filter(([kind])=>kind==='step').length;
-   if(state.visible&&!state.seated&&state.captivity==='free')assert.ok(count>=2);else assert.equal(count,0);
+   assert.equal(count,0,'no student state may emit footsteps');
   }finally{f.close();}
  }
 });
