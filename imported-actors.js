@@ -1,15 +1,15 @@
-import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-75';
-import {createFacialEffects} from './facial-effects64.js?v=campus-75';
+import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-76';
+import {createFacialEffects} from './facial-effects64.js?v=campus-76';
 import {requireModelBudget} from './model-budget64.js';
-import {createCapturePose} from './capture-poses.js?v=campus-75';
+import {createCapturePose} from './capture-poses.js?v=campus-76';
 import * as THREE from './vendor/three.module.js';
-import {normalWalkCycleRate} from './movement55.js?v=campus-75';
-import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-75';
+import {normalWalkCycleRate} from './movement55.js?v=campus-76';
+import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-76';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-75';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-75';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-75';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-75';
+import {createCrawlPose} from './crawl-pose.js?v=campus-76';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-76';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-76';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-76';
 
 export async function loadTeacherModel(){
   const url=new URL('./assets/models/teacher-v2.glb?v=mesh-64',import.meta.url);

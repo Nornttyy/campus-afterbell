@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {handFrame} from './hand-motion.js?v=campus-75';
+import {handFrame} from './hand-motion.js?v=campus-76';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const clamp=T.MathUtils.clamp;
 function frame(along,normal){const y=along.clone().normalize(),z=normal.clone().addScaledVector(y,-normal.dot(y)).normalize(),x=V().crossVectors(y,z).normalize();return Q().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));}

@@ -1,4 +1,4 @@
-import {mapKind,OFFICE_DESKS} from './classroom-layout.js?v=campus-75';
+import {mapKind,OFFICE_DESKS} from './classroom-layout.js?v=campus-76';
 
 // All lengths are metres. Heights are relative to the actor's floor; the view
 // anchor already follows the floor, including the raised lecture-room rows.

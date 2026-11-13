@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,dormCabinetDoorPose,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-75';
-export * from './dorm-layout70.js?v=campus-75';
+import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,dormCabinetDoorPose,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-76';
+export * from './dorm-layout70.js?v=campus-76';
 
 const stateValue=(source,id,fallback)=>{const entry=source instanceof Map?source.get(id):source?.[id];return entry==null?fallback:typeof entry==='number'?Math.max(0,Math.min(1,entry)):typeof entry==='object'?!!entry.open:!!entry;};
 const damp=(a,b,dt)=>a+(b-a)*(1-Math.exp(-10*Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0))));

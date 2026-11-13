@@ -1,26 +1,26 @@
-import {createStudentSize} from './student-size73.js?v=campus-75';
-import {createFacialEffects} from './facial-effects64.js?v=campus-75';
+import {createStudentSize} from './student-size73.js?v=campus-76';
+import {createFacialEffects} from './facial-effects64.js?v=campus-76';
 import {requireModelBudget} from './model-budget64.js';
-import {WRITING_PROPS} from './writing-props58.js?v=campus-75';
-import {WRITING_GRIPS} from './writing-grips58.js?v=campus-75';
-import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-75';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-75';
-import {createCapturePose} from './capture-poses.js?v=campus-75';
+import {WRITING_PROPS} from './writing-props58.js?v=campus-76';
+import {WRITING_GRIPS} from './writing-grips58.js?v=campus-76';
+import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-76';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-76';
+import {createCapturePose} from './capture-poses.js?v=campus-76';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-75';
-import {propContact} from './prop-assets.js?v=campus-75';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-76';
+import {propContact} from './prop-assets.js?v=campus-76';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-75';
-import {createCrawlPose} from './crawl-pose.js?v=campus-75';
-import {createStudentGestures} from './student-gestures.js?v=campus-75';
-import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-75';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-75';
-import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-75';
-import {createStudentFaceShape} from './student-face-shape75.js?v=campus-75';
-import {createStudentEyes} from './student-eyes56.js?v=campus-75';
-import {createStudyBook} from './study-book58.js?v=campus-75';
-import {normalWalkCycleRate} from './movement55.js?v=campus-75';
-import {writingStroke,thirdPersonPenTime} from './study-motion64.js?v=campus-75';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-76';
+import {createCrawlPose} from './crawl-pose.js?v=campus-76';
+import {createStudentGestures} from './student-gestures.js?v=campus-76';
+import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-76';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-76';
+import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-76';
+import {createStudentFaceShape} from './student-face-shape75.js?v=campus-76';
+import {createStudentEyes} from './student-eyes56.js?v=campus-76';
+import {createStudyBook} from './study-book58.js?v=campus-76';
+import {normalWalkCycleRate} from './movement55.js?v=campus-76';
+import {writingStroke,thirdPersonPenTime} from './study-motion64.js?v=campus-76';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 export const STUDENT_ASSETS=Object.freeze({
  boy:Object.freeze({file:'student-boy-v4',contact:'boy'}),
@@ -92,7 +92,7 @@ export async function loadStudentAssets(){
  const sources=Object.fromEntries(variants.map((v,i)=>[v,loaded[i]]));
  return {createStudent:(options={})=>{const variant=normalizeStudentVariant(options.variant,options),source=sources[variant];return createRiggedStudent({scene:cloneSkin(source.scene),animations:source.animations},{...options,variant,metric:true,motionProfile:source.parser.json.asset.extras.characters40,asset:STUDENT_ASSETS[variant].file});},createHand:(side,scale)=>createRiggedPalm(loaded[side<0?4:5],side,scale),createTeacherHand:(side,scale)=>{const hand=createRiggedPalm(loaded[side<0?6:7],side,scale);hand.group.userData.characterRole='teacher';hand.group.userData.asset=side<0?'teacher-hand-left-v1':'teacher-hand-right-v1';return hand;}};
 }
-export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glasses=false,metric=gltf.parser?.json?.asset?.extras?.characters40?.normalized===true,motionProfile=gltf.parser?.json?.asset?.extras?.characters40||{},asset=null,referenceShape=true}={}){
+export function createRiggedStudent(gltf,{seated=true,seed=0,variant='boy',glasses=false,metric=gltf.parser?.json?.asset?.extras?.characters40?.normalized===true,motionProfile=gltf.parser?.json?.asset?.extras?.characters40||{},asset=null,referenceShape=false}={}){
  variant=normalizeStudentVariant(variant,{glasses});glasses=variant==='glasses';
  const group=new T.Group();group.name=`student-${variant}-tripo`;group.userData.character=variant;group.userData.asset=asset||(metric?STUDENT_ASSETS[variant].file:glasses?'student-glasses-v1':`student-${variant}-v3`);
  const model=gltf.scene;model.scale.setScalar(metric?1:1.80);group.add(model);

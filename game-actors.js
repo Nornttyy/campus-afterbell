@@ -1,13 +1,13 @@
 import {requireModelBudget} from './model-budget64.js';
-import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-75';
-import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-75';
-import {createHandSupport} from './hand-support55.js?v=campus-75';
+import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-76';
+import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-76';
+import {createHandSupport} from './hand-support55.js?v=campus-76';
 import * as THREE from './vendor/three.module.js';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-75';
-import {clonePropAsset,propContact} from './prop-assets.js?v=campus-75';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-75';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-75';
-export {loadPropAssets} from './prop-assets.js?v=campus-75';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-76';
+import {clonePropAsset,propContact} from './prop-assets.js?v=campus-76';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-76';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-76';
+export {loadPropAssets} from './prop-assets.js?v=campus-76';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
 // First-person hands use camera coordinates: the scene is in front at -Z.
