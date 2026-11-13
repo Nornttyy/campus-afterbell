@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {sampleComputerPlayback} from './computer-playback56.js?v=campus-74';
+import {sampleComputerPlayback} from './computer-playback56.js?v=campus-75';
 
 export const COMPUTER_APPS=Object.freeze(['photoshop','unity','snake','valorant']);
 const W=768,H=432;

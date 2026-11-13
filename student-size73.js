@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-74';
+import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-75';
 const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
 // Retarget the accepted pose to a shorter body. Keep the furniture and held
 // objects in physical units, and preserve the calibrated arm and palm/finger size.
@@ -17,7 +17,7 @@ export function createStudentSize(group,model,bones){
  }
  return {
   restore(){for(const [b,q] of saved)b.quaternion.copy(q);saved.clear();model.scale.copy(sourceScale);model.position.copy(sourcePosition);armRoots.forEach((b,i)=>b.scale.copy(armScales[i]));},
-  apply({seated,crawling,restraint,dt,reset,tableSupport=true}){
+  apply({seated,crawling,restraint,dt,reset,tableSupport=true,pairedHands=false}){
    seatedBlend=reset?(seated?1:0):T.MathUtils.damp(seatedBlend,seated?1:0,10,dt);
    group.updateMatrixWorld(true);
    const support={};for(const side of ['Left','Right'])for(const part of ['Hand','Foot']){const b=bones[side+part];if(b)support[side+part]={position:group.worldToLocal(b.getWorldPosition(V())),rotation:b.getWorldQuaternion(Q())};}
@@ -38,7 +38,7 @@ export function createStudentSize(group,model,bones){
      limb(bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],group.localToWorld(target),foot.rotation);
     }
     const hand=support[side+'Hand'];
-    if(((tableSupport||side==='Right')&&seatedBlend>.001)||crawling||restraint==='bound'){
+    if(((tableSupport||pairedHands||side==='Right')&&seatedBlend>.001)||crawling||restraint==='bound'){
      const current=group.worldToLocal(bones[side+'Hand'].getWorldPosition(V())),weight=crawling||restraint==='bound'?1:seatedBlend;
      current.lerp(hand.position,weight);limb(bones[side+'Arm'],bones[side+'ForeArm'],bones[side+'Hand'],group.localToWorld(current),hand.rotation);
     }
