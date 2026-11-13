@@ -1,15 +1,15 @@
-import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-74';
-import {createFacialEffects} from './facial-effects64.js?v=campus-74';
+import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-75';
+import {createFacialEffects} from './facial-effects64.js?v=campus-75';
 import {requireModelBudget} from './model-budget64.js';
-import {createCapturePose} from './capture-poses.js?v=campus-74';
+import {createCapturePose} from './capture-poses.js?v=campus-75';
 import * as THREE from './vendor/three.module.js';
-import {normalWalkCycleRate} from './movement55.js?v=campus-74';
-import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-74';
+import {normalWalkCycleRate} from './movement55.js?v=campus-75';
+import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-75';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-74';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-74';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-74';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-74';
+import {createCrawlPose} from './crawl-pose.js?v=campus-75';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-75';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-75';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-75';
 
 export async function loadTeacherModel(){
   const url=new URL('./assets/models/teacher-v2.glb?v=mesh-64',import.meta.url);
@@ -158,6 +158,8 @@ export function createRiggedTeacher(gltf){
     group.updateMatrixWorld(true);
   }
   function update(time,{inkLeft=0,walking=0,speed=null,look=0,lookYaw=null,lookPitch=0,phase='board',crawling=false,seated=false}={}){
+    // The teacher never crawls, including stale motion snapshots or editor input.
+    crawling=false;
     const reset=lastTime===null||time<lastTime;
     // Match the game's 250 ms foreground bound; dropping time here alone
     // makes the teacher move farther than its feet animate on slow frames.

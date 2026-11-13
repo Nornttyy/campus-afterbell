@@ -1,5 +1,5 @@
-import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-74';
-import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-74';
+import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-75';
+import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-75';
 // Standing eye height follows the updated teacher model. Keep seated hands authored.
 export const STUDENT_VIEW_HEIGHT=STUDENT_PROPORTIONS.eyeHeight;
 export const STUDENT_SEATED_VIEW_HEIGHT=1.43;

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-74';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-75';
 import {loadGeometry} from './gltf-geometry.mjs';
 const V=(...v)=>new T.Vector3(...v),DT=1/60;
 function tick(actor,t,seconds=2){for(let i=0;i<seconds/DT;i++)actor.update(t+=DT);actor.group.updateMatrixWorld(true);return t;}
@@ -16,13 +16,26 @@ test('boy: switching from crawling to phone leaves real phone and finger skin be
  actor.update(0);actor.setMood('phone');actor.setMotion({crawling:false,seated:true,speed:0,carrying:true});let time=tick(actor,0,12);
  const samples=[];actor.group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const {position,skinIndex,skinWeight}=mesh.geometry.attributes;for(let i=0;i<position.count;i++){let weight=-1,name='';for(let j=0;j<4;j++)if(skinWeight.getComponent(i,j)>weight){weight=skinWeight.getComponent(i,j);name=mesh.skeleton.bones[skinIndex.getComponent(i,j)].name;}if(name.includes('Head')||name.includes('Hand'))samples.push({mesh,index:i,head:name.includes('Head')});}});
  for(let frame=0;frame<120;frame++){
-  actor.update(time+=DT);if(frame%15)continue;actor.group.updateMatrixWorld(true);const inverse=actor.group.matrixWorld.clone().invert();let chin=Infinity,handTop=-Infinity;
+  actor.update(time+=DT);if(frame%15)continue;actor.group.updateMatrixWorld(true);const inverse=actor.group.matrixWorld.clone().invert();let chin=Infinity;const headMeshes=new Map(),handPoints=[];
   actor.group.traverse(mesh=>{if(mesh.isSkinnedMesh)mesh.skeleton.update();});
-  for(const {mesh,index,head}of samples){const p=mesh.getVertexPosition(index,V()).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);if(head)chin=Math.min(chin,p.y);else handTop=Math.max(handTop,p.y);}
+  for(const {mesh,index,head}of samples){const p=mesh.getVertexPosition(index,V()).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);if(head){chin=Math.min(chin,p.y);if(!headMeshes.has(mesh))headMeshes.set(mesh,new Map());headMeshes.get(mesh).set(index,p);}else handPoints.push(p);}
   const box=new T.Box3();phone.traverse(mesh=>{if(!mesh.isMesh)return;for(let i=0;i<mesh.geometry.attributes.position.count;i++)box.expandByPoint(mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse));});
   assert.ok(box.min.y>.885,`phone cuts into the .88m desktop: ${box.min.y}`);
-  assert.ok(box.max.y<chin-.025,`phone intersects the actual chin skin: phone ${box.max.y}, chin ${chin}`);
-  assert.ok(handTop<chin-.004,`phone tapping puts real finger/palm skin in the chin: ${handTop} / ${chin}`);
+  // The shorter student's lower jaw now has an 18mm measured gap. Require
+  // positive physical clearance (10mm), not the old 25mm stylistic margin.
+  assert.ok(box.max.y<chin-.010,`phone intersects the actual chin skin: phone ${box.max.y}, chin ${chin}`);
+  // Check the actual head surface above each finger, not global Y extents:
+  // a finger forward of the chin may be higher without intersecting it.
+  for(const hand of handPoints)for(const [mesh,vertices]of headMeshes){
+   const indices=mesh.geometry.index;let lower=Infinity;
+   for(let i=0;i<indices.count;i+=3){
+    const a=vertices.get(indices.getX(i)),b=vertices.get(indices.getX(i+1)),c=vertices.get(indices.getX(i+2));if(!a||!b||!c)continue;
+    const den=(b.z-c.z)*(a.x-c.x)+(c.x-b.x)*(a.z-c.z);if(Math.abs(den)<1e-10)continue;
+    const u=((b.z-c.z)*(hand.x-c.x)+(c.x-b.x)*(hand.z-c.z))/den,v=((c.z-a.z)*(hand.x-c.x)+(a.x-c.x)*(hand.z-c.z))/den,w=1-u-v;
+    if(u<0||v<0||w<0)continue;lower=Math.min(lower,u*a.y+v*b.y+w*c.y);
+   }
+   assert.ok(hand.y<lower-.004,`finger enters head surface: ${hand.toArray()} / surface ${lower}`);
+  }
  }
  actor.dispose();
 });

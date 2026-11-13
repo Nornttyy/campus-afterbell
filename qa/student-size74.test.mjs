@@ -33,3 +33,12 @@ test('expanded playground: the whole AI queue reaches clear assembly positions b
   assert.equal(r._seatingRoutes.size,0);assert.ok(actors.every(s=>s.visible&&!s.seated));
  }
 });
+
+for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: standing head returns to its original orientation after crawling, including repeated zero-delta display frames`,async()=>{
+ const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:false});
+ let t=0;const settle=(crawling,frames)=>{actor.setMood('resting');actor.setMotion({seated:false,crawling,speed:0,carrying:false});for(let i=0;i<frames;i++){actor.update(t+=1/60);actor.update(t);}};
+ try{
+  settle(false,120);actor.group.updateMatrixWorld(true);const original=actor.head.getWorldQuaternion(new T.Quaternion());
+  for(let i=0;i<3;i++){settle(true,120);settle(false,180);actor.group.updateMatrixWorld(true);const now=actor.head.getWorldQuaternion(new T.Quaternion());assert.ok(original.angleTo(now)<.02,`${variant}: head remains twisted ${original.angleTo(now)} rad after crawl ${i}`);}
+ }finally{actor.dispose();}
+});

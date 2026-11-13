@@ -11,7 +11,7 @@ const base=process.env.CAMPUS_MODEL_DIR
   : new URL('../dist/',import.meta.url);
 const T=await import(new URL('vendor/three.module.js',base));
 const {createStudent}=await import(new URL('characters.js',base));
-const {createDeskHands,createTeacher}=await import(new URL('game-actors.js?v=campus-74',base));
+const {createDeskHands,createTeacher}=await import(new URL('game-actors.js?v=campus-75',base));
 const DT=1/60;
 
 function studentHands(actor){

@@ -5,7 +5,7 @@ import * as T from '../dist/vendor/three.module.js';
 import {GLTFLoader} from '../dist/vendor/addons/loaders/GLTFLoader.js';
 import {createRiggedStudent,createRiggedPalm,STUDENT_ASSETS} from '../dist/student-assets.js';
 import {createRiggedTeacher} from '../dist/imported-actors.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-74';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-75';
 import {useCharacterBaseColor,setCharacterNight} from '../dist/character-materials.js';
 
 // Parse the real skin, material factors, attributes and embedded image bytes.
@@ -55,13 +55,14 @@ function verifySurfaces(root,before){
     }
     for(let i=sourcePosition.count;i<mesh.geometry.attributes.position.count;i++)assert.ok(bounds.containsPoint(v.fromBufferAttribute(mesh.geometry.attributes.position,i)),'subdivision escaped the eye patch');
    }else assert.deepEqual(mesh.geometry.index?.array,sourceGeometry.index?.array,'non-eye triangles changed');
+   const sculpted=new Set(mesh.geometry.userData.studentFace75?.changedIndices||[]);
    for(const [name,attribute]of Object.entries(sourceGeometry.attributes)){
     const repaired=mesh.geometry.attributes[name],eyeMask=mesh.geometry.attributes.studentEyeWeights;
-    if(eyeMask&&(name==='position'||name==='normal')){
+    if((eyeMask||sculpted.size)&&(name==='position'||name==='normal')){
      assert.ok(repaired.count>=attribute.count);
      for(let i=0;i<attribute.count;i++){
-      if(eyeMask.getX(i)+eyeMask.getY(i)>0)continue;
-      for(let k=0;k<attribute.itemSize;k++)assert.equal(repaired.getComponent(i,k),attribute.getComponent(i,k),`${name} changed outside eye repair`);
+      if(sculpted.has(i)||(eyeMask&&eyeMask.getX(i)+eyeMask.getY(i)>0))continue;
+      for(let k=0;k<attribute.itemSize;k++)assert.equal(repaired.getComponent(i,k),attribute.getComponent(i,k),`${name} changed outside eye/face repair`);
      }
     }else assert.deepEqual(repaired?.array.slice(0,attribute.array.length),attribute.array,`original ${name} attribute changed`);
    }

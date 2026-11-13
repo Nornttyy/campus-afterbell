@@ -60,12 +60,13 @@ for(const[role,file]of Object.entries(assets))test(`${role}: stationary crawl do
 
 // Exercise the real factories too: the crawl layer must survive the ordinary
 // hand/capture overlays, and leave no lowered pelvis behind after standing.
-for(const[role,file]of Object.entries(assets))test(`${role}: production actor enters and exits crawling through its public motion controls`,async()=>{
+for(const[role,file]of Object.entries(assets))test(`${role}: production actor respects its role's crawling permission`,async()=>{
  const gltf=await loadGeometry(file+'.glb');
  const actor=role==='teacher'?(await import('../dist/imported-actors.js')).createRiggedTeacher(gltf):(await import('../dist/student-assets.js')).createRiggedStudent(gltf,{variant:role,seated:false});
  let t=0;const step=crawling=>{if(role==='teacher')actor.update(t+=1/30,{crawling,speed:crawling?.55:0,phase:'watching'});else{actor.setMood('resting');actor.setMotion({seated:false,crawling,speed:crawling?.55:0});actor.update(t+=1/30);}};
  for(let i=0;i<45;i++)step(false);const upright=actor.bones.Hips.getWorldPosition(V()).y;
  for(let i=0;i<60;i++)step(true);
+ if(role==='teacher'){assert.equal(actor.diagnostics().crawl.blend,0);assert.ok(Math.abs(actor.bones.Hips.getWorldPosition(V()).y-upright)<.04,'teacher lowers into a crawling pose');actor.dispose();return;}
  assert.ok(actor.diagnostics().crawl.blend>.99);assert.ok(actor.bones.Hips.getWorldPosition(V()).y<upright-.3);
  const bounds=new T.Box3().setFromObject(actor.group,true);assert.ok(bounds.max.y<CRAWL_TUNING.bodyMaxY+.03,`${role} body still stands while camera crawls`);
  for(let i=0;i<60;i++)step(false);assert.equal(actor.diagnostics().crawl.blend,0);assert.ok(Math.abs(actor.bones.Hips.getWorldPosition(V()).y-upright)<.02);

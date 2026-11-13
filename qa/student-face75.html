@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>学生脸型核对</title>
+<style>body{margin:0;background:#d6dee0;font:14px system-ui;color:#25373b}canvas{display:block}nav{position:fixed;top:10px;left:10px;z-index:2;display:flex;gap:6px;padding:8px;background:#fffE;border-radius:6px}select,button{font:inherit;padding:6px}#labels{pointer-events:none;position:fixed;inset:66px 0 24px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 1fr}.label{padding:6px 10px;border:1px solid #fff8}.label span{background:#fffc;padding:3px 6px;border-radius:3px}output{position:fixed;bottom:0;background:#fffe;left:0;right:0;font-size:12px;padding:4px 10px}</style>
+<nav><select id="angle" aria-label="角度"><option value="0">正面</option><option value=".75">斜侧</option><option value="1.57079632679">侧面</option><option value="3.14159265359">背面</option></select><select id="pose" aria-label="姿态"><option value="resting">站立</option><option value="writing">写字</option><option value="reading">看书</option><option value="crawling">爬行</option></select><select id="light" aria-label="光照"><option value="day">白天</option><option value="night">停电</option></select><button id="play">播放</button><span>上：修改前 · 下：本轮脸型</span></nav><div id="labels"></div><output id="status">加载真实模型…</output>
+<script type="module">
+import * as T from '../dist/vendor/three.module.js';
+import {loadStudentAssets} from '../dist/student-assets.js?v=campus-75';
+import {setCharacterNight} from '../dist/character-materials.js?v=campus-75';
+const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.setScissorTest(true);document.body.append(renderer.domElement);
+const factory=await loadStudentAssets(),roles=['boy','girl','ponytail','glasses'],names=['男同学','紫发同学','棕发同学','眼镜同学'],views=[];
+for(const referenceShape of [false,true])for(const [i,variant]of roles.entries()){
+ const scene=new T.Scene();scene.background=new T.Color('#cbd5d8');scene.add(new T.AmbientLight(0xadc4ee,.3));const key=new T.DirectionalLight(0xb9c6ff,.85);key.position.set(-3,5,4);scene.add(key);
+ const actor=factory.createStudent({variant,referenceShape,seated:false,seed:0});scene.add(actor.group);actor.setEyeLook({yaw:0,pitch:0});actor.setMood('resting');actor.setMotion({seated:false,speed:0});actor.update(0);
+ const camera=new T.PerspectiveCamera(34,1,.02,20);views.push({actor,scene,camera,referenceShape,variant});
+ const label=document.createElement('div');label.className='label';const span=document.createElement('span');span.textContent=names[i]+' · '+(referenceShape?'修改后':'修改前');label.append(span);document.querySelector('#labels').append(label);
+}
+const status=document.getElementById('status');status.dataset.ready='true';status.textContent=views.filter(v=>v.referenceShape).map(v=>v.variant+' '+v.actor.diagnostics().faceShape.changedVertices+' 顶点').join(' · ')+' · 同源贴图 / 相同镜头 / 不增加面数';
+let time=0,last=performance.now(),playing=false,settleFrames=0;
+document.querySelector('#pose').onchange=()=>{settleFrames=120;};
+document.querySelector('#play').onclick=e=>{playing=!playing;e.target.textContent=playing?'暂停':'播放';};
+document.querySelector('#light').onchange=e=>{for(const v of views){const night=e.target.value==='night';setCharacterNight(v.actor.group,night);v.scene.background.set(night?'#111924':'#cbd5d8');}};
+function resize(){renderer.setSize(innerWidth,innerHeight);}addEventListener('resize',resize);resize();
+function frame(now){requestAnimationFrame(frame);const dt=Math.min(.04,(now-last)/1000);last=now;if(playing)time+=dt;else if(settleFrames>0){time+=1/60;settleFrames--;}const w=innerWidth/4,h=(innerHeight-90)/2,angle=+document.querySelector('#angle').value,pose=document.querySelector('#pose').value;
+ for(const [i,v]of views.entries()){
+  v.actor.setMood(pose==='crawling'?'resting':pose);v.actor.setMotion({seated:['writing','reading'].includes(pose),crawling:pose==='crawling',speed:0});v.actor.update(time);
+  const target=v.actor.head.getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.15,0));v.camera.aspect=w/h;v.camera.updateProjectionMatrix();v.camera.position.copy(target).add(new T.Vector3(Math.sin(angle)*1.62,.035,Math.cos(angle)*1.62));v.camera.lookAt(target);
+  const x=(i%4)*w,y=24+(i<4?h:0);renderer.setViewport(x,y,w,h);renderer.setScissor(x,y,w,h);renderer.render(v.scene,v.camera);
+ }
+}requestAnimationFrame(frame);
+</script></html>
