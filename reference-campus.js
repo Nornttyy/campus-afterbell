@@ -1,10 +1,10 @@
 import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js';
-import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-76';
+import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-77';
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-76';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-76';
-import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-76';
-import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-76';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-77';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-77';
+import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-77';
+import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-77';
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
 export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces=null,artwork={},bakeStatic=()=>{}}){
  const classWidth=CLASSROOM.maxX-CLASSROOM.minX,classMidX=(CLASSROOM.minX+CLASSROOM.maxX)/2,westWallX=CLASSROOM.minX-.10,corridorWidth=CORRIDOR.maxX-CORRIDOR.minX,corridorLength=CORRIDOR.maxZ-CORRIDOR.minZ,corridorMidX=(CORRIDOR.minX+CORRIDOR.maxX)/2,corridorMidZ=(CORRIDOR.minZ+CORRIDOR.maxZ)/2,liftOffset=CORRIDOR.minZ-CLASSROOM.minZ;
@@ -150,6 +150,13 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   doors.set(d.id,leaf);targets.doors.push({id:d.id,object:leaf,point:new T.Vector3(7.30,1.30,d.center),duration:3});
   B(edge,[7.30,.012,d.center],[.27,.024,1.60],enclosure);
  }
+ // The numbered inspection-room door is part of the leaf, so it follows its
+ // complete opening animation. It is only shown on the dormitory floor.
+ const dormDoorNumber=new T.Group();dormDoorNumber.name='dorm-door-number';doors.get('rear').add(dormDoorNumber);dormDoorNumber.visible=false;
+ const dormNumberMap=texture(256,256,(c,w,h)=>{c.clearRect(0,0,w,h);c.fillStyle='#e8ede2';c.beginPath();c.arc(w/2,h/2,115,0,Math.PI*2);c.fill();c.strokeStyle='#7c918e';c.lineWidth=10;c.stroke();c.fillStyle='#49636a';c.font='bold 165px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('1',w/2,h/2+6);});
+ const dormNumberMat=mat('#fff',{map:dormNumberMap,transparent:true,roughness:.84,depthWrite:false}),dormNumberGeo=new T.PlaneGeometry(.56,.56);assets.add(dormNumberGeo);
+ for(const side of[-1,1])mesh(dormNumberGeo,dormNumberMat,[side*.041,2.12,-.8],[1,1,1],[0,side*Math.PI/2,0],dormDoorNumber);
+ markDynamic(dormDoorNumber);
  // End walls, blackboards, teaching platform, wall trim and ceiling form a
  // continuous shell at exactly the same boundaries as walking/throw collisions.
  B(cream,[classMidX,wallY,-10.10],[classWidth,wallHeight,.20]).name='classroom-rear-end-wall';
@@ -500,7 +507,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   attachUpperArchitecture(){enclosure.add(ceilingRig,upperWalls,indoorEnclosure);},
   getTargets(){return targets;},setDoors,getDoorMotion:()=>schoolDoorSnapshot(schoolDoorMotion),
   setOfficeDrawer(open){drawerOpen=!!open;},
-  setMap(map){const raised=mapKind(map)==='tiered',outdoor=mapKind(map)==='playground';room.visible=!outdoor;indoorEnclosure.visible=!outdoor;ceilingRig.visible=!outdoor;tiered.visible=raised;facades[0].visible=!raised&&!outdoor;facades[1].visible=raised;ceilingRig.position.y=raised?TIERED_CEILING_HEIGHT-CEILING_HEIGHT:0;upperWalls.visible=raised;},
+  setMap(map){const raised=mapKind(map)==='tiered',outdoor=mapKind(map)==='playground',dorm=mapKind(map)==='dorm';room.visible=!outdoor&&!dorm;indoorEnclosure.visible=!outdoor&&!dorm;ceilingRig.visible=!outdoor&&!dorm;doors.get('front').visible=!dorm;dormDoorNumber.visible=dorm;tiered.visible=raised;facades[0].visible=!raised&&!outdoor&&!dorm;facades[1].visible=raised;ceilingRig.position.y=raised?TIERED_CEILING_HEIGHT-CEILING_HEIGHT:0;upperWalls.visible=raised;},
   update(state,dt=1/60){setDoors(state);advanceSchoolDoors(schoolDoorMotion,dt);placeSchoolDoors();const step=Math.max(0,Math.min(.1,dt));liftAmount+=Math.sign(liftTarget-liftAmount)*Math.min(Math.abs(liftTarget-liftAmount),step*2.5);placeLiftDoors();drawerOpen=!!(state?.officeDeskOpen??state?.office?.open??drawerOpen);const openById=new Map((state?.officeDrawers||[]).map(d=>[d.id,d.open]));for(const[id,drawer]of officeDrawers){const open=openById.has(id)?openById.get(id):id===OFFICE_DESK.id?drawerOpen:false,old=drawerAmounts.get(id)||0,amount=old+((open?1:0)-old)*(1-Math.exp(-step*14));drawerAmounts.set(id,amount);drawer.position.z=-.08-amount*.52;}},
   setNight(night){sky.color.set(night?'#0d172e':'#c9e8f5');officeLight.intensity=night?.12:6.5;lamp.emissiveIntensity=night?.01:.48;}
  };

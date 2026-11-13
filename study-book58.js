@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
-export const STUDY_BOOK_POSE=Object.freeze({position:[0,1.01,.35],rotation:[.90,0,0]});
+export const STUDY_BOOK_POSE=Object.freeze({position:[0,1.04,.39],rotation:[.90,0,0]});
 // Hands and held pages share this small breathing motion, so neither slides
 // against the other. It never resizes the source book.
-export function studyBookPose(time=0){const breath=Math.sin(time*1.35);return{position:[0,1.01+.002*breath,.35],rotation:[.90+.006*breath,0,0]};}
+export function studyBookPose(time=0){const breath=Math.sin(time*1.35);return{position:[0,1.04+.002*breath,.39],rotation:[.90+.006*breath,0,0]};}
 
 // The held copy reuses this seat's real paper/cover geometry and material.
 // Instanced source meshes are intentionally invisible; the held copy is not

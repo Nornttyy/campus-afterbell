@@ -1,6 +1,6 @@
-import {LIFT,CAMPUS_MAPS,isCampusMap,campusFloor,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-76';
+import {LIFT,CAMPUS_MAPS,isCampusMap,campusFloor,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-77';
 
-import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-76';
+import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-77';
 
 // Two seconds for closing/settling, plus one second per floor crossed.
 export const ELEVATOR_SECONDS=3;
