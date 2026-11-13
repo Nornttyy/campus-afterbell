@@ -28,3 +28,11 @@ These are interval-frame observations, not a full surveyed floor plan. Six bunk 
 - Two obsolete roof tests were updated to use a point inside the new dorm and its actual 3.45 m ceiling, instead of the removed classroom center at x=0. Indoor roof collision assertions remain in place.
 
 Night remains dark and the teacher's flashlight is retained. New surfaces and furniture were inspected on desktop; no claim of real-phone FPS, exact source animation, or public multiplayer availability is made.
+
+## Follow-up correction — campus-78
+
+The earlier one-room reconstruction above is superseded. Rechecked frames `first-detail-1720` and `third-0015` show multiple doors/rooms. The current reconstruction has three separate dorm rooms, four bunks per room (24 places total), connected to a shared hall. The precise room dimensions and bed capacity remain reconstruction choices, not measured original-game specifications.
+
+All bed occupants now remain side-lying while awake; closing their eyes does not rotate the whole body into a second pose. A dedicated pose layer removes seated knee/wrist angles. Each of the four actual supplied skinned characters was checked against pillow and mattress support in upper and lower bunks. Opening the cupboard wakes the student without sitting up. User-authored first-person animation files were not edited.
+
+The former classroom floor/navigation bounds caused unreachable beds in the additional rooms. Navigation now uses the dorm union, with all 24 bed approaches checked against collision. Doors, cupboard rays and actual E/Q interactions were checked separately.

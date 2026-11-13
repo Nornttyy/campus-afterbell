@@ -8,7 +8,7 @@ export const TOILET_DOOR=Object.freeze({width:1.86,depth:.045,height:1.57,bottom
 export const TOILET_CABINET=Object.freeze({x:.68,z:-.52,width:.43,depth:.35,height:1.12,bottom:.10,doorAngle:-Math.PI*.48});
 export const TOILET_STALLS=Object.freeze([-7.75,-3.45,.85].flatMap((z,row)=>[-5.05,-1.95,1.15,4.25].map((x,col)=>Object.freeze({id:row*4+col,row,col,x,z,yaw:0}))));
 export const TOILET_SEATS=Object.freeze(TOILET_STALLS.map(s=>Object.freeze({
- id:s.id,row:s.row,col:s.col,x:s.x-.18,z:s.z-.48,y:.48,yaw:0,
+ id:s.id,row:s.row,col:s.col,x:s.x-.18,z:s.z-.48,y:.36,yaw:0,
  // Existing interaction callers use deskX/Z; these are CABINET anchors.
  deskX:s.x+TOILET_CABINET.x,deskZ:s.z+TOILET_CABINET.z+.21,
  cabinetX:s.x+TOILET_CABINET.x,cabinetZ:s.z+TOILET_CABINET.z,
@@ -21,8 +21,8 @@ const fixedFixtures=Object.freeze(TOILET_STALLS.flatMap(s=>[
  volume('toilet-rear-'+s.id,s.x-1.08,s.x+1.08,s.z-1.22,s.z-1.16,.16,1.92),
  volume('toilet-hinge-'+s.id,s.x-1.06,s.x-.93,s.z+1.15,s.z+1.23,.18,1.89),
  volume('toilet-latch-'+s.id,s.x+.93,s.x+1.06,s.z+1.15,s.z+1.23,.18,1.89),
- volume('toilet-bowl-'+s.id,s.x-.51,s.x+.15,s.z-.94,s.z-.04,0,.50),
- volume('toilet-tank-'+s.id,s.x-.51,s.x+.15,s.z-1.12,s.z-.75,0,1.32)
+ volume('toilet-bowl-'+s.id,s.x-.39,s.x+.03,s.z-.76,s.z-.23,0,.365),
+ volume('toilet-tank-'+s.id,s.x-.39,s.x+.03,s.z-.965,s.z-.65,0,.75)
 ]));
 // Food cupboards are hollow: projectile/flash tests see their back, sides
 // and two shelf bays. Walking still uses the cupboard's full footprint.

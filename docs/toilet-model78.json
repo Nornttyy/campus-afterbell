@@ -1,0 +1,21 @@
+{
+  "source": "https://studio.tripo3d.ai/3d-model/生成一个白色的简化的马桶厚厚圆圆的结构-结构简单-马桶盖打开的状态-马桶盖子与水箱中间没有缝隙紧挨在一起-没有多余结构-f2842f08-a1c5-4762-bd8c-666cfd112948",
+  "sourceSHA256": "aa1682ac7e0696f5a11f772d922bb977209e971d21d82923c8077f7946d0f2fe",
+  "sourceTriangles": 23370,
+  "triangles": 7800,
+  "outputSHA256": "a3ede902e34a68ec6388ce37b04d266b7b4315d6ad9aa65d480aaacfff50496d",
+  "min": [
+    -0.20584149658679962,
+    0.0,
+    -0.48022371530532837
+  ],
+  "max": [
+    0.2053915113210678,
+    0.7452659010887146,
+    0.2470075786113739
+  ],
+  "scale": 0.7608695652173912,
+  "translationZ": -0.116667,
+  "textures": "Original 2K PBR unchanged",
+  "bytes": 561540
+}

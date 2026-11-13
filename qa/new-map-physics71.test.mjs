@@ -14,7 +14,7 @@ const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
 const projectile=(map,layout,values)=>Object.assign(createSmokeProjectile({id:9,x:6.5,z:6,yaw:0},90,0,map,layout),values);
 
 test('special maps keep genuine actor places without synthesizing ordinary desks or chairs',()=>{
- for(const [map,count] of [['hotpot',24],['toilet',12],['dorm',12],['playground',24]]){
+ for(const [map,count] of [['hotpot',24],['toilet',12],['dorm',24],['playground',24]]){
   const c=context(map);assert.equal(c.seats.length,count);assert.equal(c.desks.length,0);assert.ok(c.furnitureVolumes.length);
   if(map!=='hotpot')assert.equal(c.chairBacks.length,OFFICE_DESKS.length);
   if(map!=='hotpot')assert.ok(!c.walkSolids.includes(LECTERN));
@@ -61,16 +61,16 @@ test('throws collide with the current cubicle door leaf instead of an ordinary .
  assert.ok(p.bounces>0);assert.ok(p.y>1.16,'pot rim is higher than a desktop');
 });
 
-test('lower and upper bunk eyes and ink hit boxes follow sitting and lying poses above the mattress',()=>{
+test('lower and upper bunk eyes and ink hit boxes stay horizontal both awake and asleep above the mattress',()=>{
  for(const bed of DORM_BEDS.slice(0,2))for(const lying of[false,true]){
   const actor={id:1,x:bed.x,z:bed.z,yaw:bed.lieYaw,seated:true,seatId:bed.id,bedId:bed.id,lying};
-  near(actorFloorHeight(actor,'dorm'),bed.supportHeight);near(actorEyeHeight(actor,'dorm'),lying?.23:.94);near(effectEye(actor,'dorm').y,bed.supportHeight+(lying?.23:.94));
-  const body=actorBodyVolume(actor,'dorm');near(body.maxY,bed.supportHeight+(lying?.45:1.13));assert.ok(contains(body,actor.x,effectEye(actor,'dorm').y,actor.z));
+  near(actorFloorHeight(actor,'dorm'),bed.supportHeight);near(actorEyeHeight(actor,'dorm'),.23);near(effectEye(actor,'dorm').y,bed.supportHeight+(.23));
+  const body=actorBodyVolume(actor,'dorm');near(body.maxY,bed.supportHeight+(.76));assert.ok(contains(body,actor.x,effectEye(actor,'dorm').y,actor.z));
   const p=projectile('dorm',null,{kind:'ink',ownerId:9,x:actor.x,z:actor.z-.6,y:bed.supportHeight+.90,vx:0,vy:0,vz:15,retired:false});
   // Empty geometry isolates swept actor contact from the physical bunk frame.
   const empty={desks:[],furnitureVolumes:[],wallVolumes:[],dynamicSolids:[]};
   const result=stepThrowableProjectile(p,.08,[actor],empty);
-  assert.equal(result.effect?.hitActorId===actor.id,!lying,'a lying student cannot be hit at their former upright head position');
+  assert.equal(result.effect?.hitActorId===actor.id,false,'reclining pupils cannot be hit above their actual horizontal body');
  }
  const lower=DORM_BEDS[0],actor={id:1,x:lower.x,z:lower.z,seated:false,bedId:lower.id};assert.equal(actorFloorHeight(actor,'dorm'),0);
  actor.seated=true;actor.officeChair=true;assert.equal(actorFloorHeight(actor,'dorm'),0);assert.equal(actorEyeHeight(actor,'dorm'),1.43);

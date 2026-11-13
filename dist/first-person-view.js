@@ -1,7 +1,7 @@
-import {teacherViewHeight,STUDENT_VIEW_HEIGHT} from './camera-height58.js?v=campus-77';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-77';
+import {teacherViewHeight,STUDENT_VIEW_HEIGHT} from './camera-height58.js?v=campus-78';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-78';
 import * as T from './vendor/three.module.js';
-import {setCharacterNight} from './character-materials.js?v=campus-77';
+import {setCharacterNight} from './character-materials.js?v=campus-78';
 // Hands follow horizontal body turns, never camera pitch. Seated/restrained
 // hands keep their body heading while the player looks around.
 export function sampleFirstPersonMotion(previous,player,time){
@@ -21,8 +21,8 @@ export function sampleFirstPersonMotion(previous,player,time){
  return{x:player?.x||0,z:player?.z||0,time,yaw,locked,bodyYaw,speed,amount,crawlBlend,phase:(previous?.phase||0)+(travelled*(crawl?11:4.1))};
 }
 export function firstPersonEyeHeight(player,role='student'){
+ if(player?.onBed)return Number.isFinite(player.eyeHeight)?player.eyeHeight:.23;
  if(player?.stunLeft>0||player?.captivity==='stunned')return role==='teacher'?1.12:1.05;
- if(player?.onBed)return Number.isFinite(player.eyeHeight)?player.eyeHeight:player.lying?.23:.94;
  const height=role==='teacher'?teacherViewHeight(player):player?.seated!==false?1.43:player.crouched?CRAWL_TUNING.eyeHeight:STUDENT_VIEW_HEIGHT;
  return height+(['carried','bound'].includes(player?.captivity)?.20:0);
 }

@@ -1,13 +1,13 @@
-import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-77';
-import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-77';
-import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-77';
-import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_SHELL_SOLIDS,DORM_CEILING,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-77';
-import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-77';
-import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-77';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-77';
+import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-78';
+import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-78';
+import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-78';
+import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-78';
+import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-78';
+import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-78';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-78';
 // Elevator operation is enabled; boarding and per-round limits are authoritative.
 export const ELEVATOR_ENABLED=true;
-import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-77';
+import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-78';
 export const TEACHER_EYE_HEIGHT=TEACHER_PROPORTIONS.eyeHeight;
 // Metres, shared by rendering and authoritative collision. The user's plan is
 // rotated in world space: office at +Z, lift at -Z, corridor along the right.
@@ -18,6 +18,7 @@ export const LIFT=Object.freeze({minX:8.10,maxX:10.60,minZ:CORRIDOR.minZ-3,maxZ:
 export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:CORRIDOR.minZ+.65});
 export const ROOM=Object.freeze({minX:CLASSROOM.minX,maxX:CORRIDOR.maxX,minZ:LIFT.minZ,maxZ:OFFICE.maxZ});
 export function mapBounds(map='classroom'){
+ if(mapKind(map)==='dorm')return{...ROOM,maxX:DORM_BOUNDS.maxX,minX:Math.min(ROOM.minX,DORM_BOUNDS.minX)};
  if(mapKind(map)!=='playground')return ROOM;
  const b=PLAYGROUND_LAYOUT.bounds;
  return {minX:Math.min(ROOM.minX,b.minX),maxX:Math.max(ROOM.maxX,b.maxX),minZ:Math.min(ROOM.minZ,b.minZ),maxZ:Math.max(ROOM.maxZ,b.maxZ)};
@@ -108,6 +109,13 @@ const boundaries=[
  V(OFFICE.minX-.20,OFFICE.minX,CLASSROOM.maxZ,OFFICE.maxZ+.20),V(OFFICE.minX,OFFICE.maxX+.20,OFFICE.maxZ,OFFICE.maxZ+.20),
  V(LIFT.minX-.20,LIFT.minX,LIFT.minZ-.20,portalZ),V(LIFT.maxX,LIFT.maxX+.20,LIFT.minZ-.20,portalZ),V(LIFT.minX,LIFT.maxX,LIFT.minZ-.20,LIFT.minZ)
 ];
+// Dormitories replace classroom and corridor side walls, retaining office/lift.
+const dormCommonWalls=Object.freeze([
+ V(CORRIDOR.minX,LIFT.minX,portalZ-.20,portalZ),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ-.20,portalZ),
+ V(OFFICE.minX-.20,OFFICE.doorMinX,8.8,9.02),V(OFFICE.doorMaxX,OFFICE.maxX+.20,8.8,9.02),
+ V(OFFICE.maxX,OFFICE.maxX+.20,8.8,OFFICE.maxZ+.20),V(OFFICE.minX-.20,OFFICE.minX,8.8,OFFICE.maxZ+.20),V(OFFICE.minX,OFFICE.maxX+.20,OFFICE.maxZ,OFFICE.maxZ+.20),
+ V(LIFT.minX-.20,LIFT.minX,LIFT.minZ-.20,portalZ),V(LIFT.maxX,LIFT.maxX+.20,LIFT.minZ-.20,portalZ),V(LIFT.minX,LIFT.maxX,LIFT.minZ-.20,LIFT.minZ)
+]);
 const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(8.30,10.10,8.80,9.02,3.08),V(LIFT.minX,LIFT.maxX,portalZ-.20,portalZ,3.12)];
 const baseWalls=Object.freeze([...PARTITIONS,...boundaries]);
 const sealedLift=ELEVATOR_ENABLED?[]:[V(LIFT.minX,LIFT.maxX,portalZ-.22,portalZ+.02,.02,3.12)];
@@ -117,7 +125,7 @@ const fixedCeilings=Object.freeze([V(CORRIDOR.minX,CORRIDOR.maxX+.20,portalZ-.20
 const flatCeilings=Object.freeze([V(west-.20,7.40,-10.20,9.02,CEILING_HEIGHT,CEILING_HEIGHT+.16),...fixedCeilings]);
 const raisedCeilings=Object.freeze([V(west-.20,7.40,-10.20,9.02,TIERED_CEILING_HEIGHT,TIERED_CEILING_HEIGHT+.16),...fixedCeilings]);
 const raisedUpperWalls=Object.freeze([V(west-.20,west,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(7.20,7.40,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(west,7.20,-10.20,-10.00,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(west,7.20,8.80,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT)]);
-export function ceilingVolumes(map='classroom'){return mapKind(map)==='dorm'?[DORM_CEILING,...fixedCeilings]:mapKind(map)==='playground'?fixedCeilings:mapKind(map)==='tiered'?raisedCeilings:flatCeilings;}
+export function ceilingVolumes(map='classroom'){return mapKind(map)==='dorm'?[...DORM_CEILINGS,...fixedCeilings]:mapKind(map)==='playground'?fixedCeilings:mapKind(map)==='tiered'?raisedCeilings:flatCeilings;}
 // The teacher laptop is only present on computer floors. Separate base and
 // lid bounds avoid treating the air above its keyboard as a solid monitor.
 const laptopVolumes=Object.freeze([V(-1.175,-.515,7.395,7.825,1.1475,1.1975),V(-1.175,-.515,7.354,7.429,1.1835,1.570)]);
@@ -131,7 +139,7 @@ const outdoorFixedWalls=Object.freeze(boundaries.filter(w=>!(w.maxX<=CLASSROOM.m
 const outdoorWalls=Object.freeze([...outdoorFixedWalls,...PLAYGROUND_SOLIDS.filter(s=>s.id.includes('-wall'))]);
 const outdoorHeaders=Object.freeze([...headers.slice(DOORS.length),V(PLAYGROUND_LAYOUT.entrance.x-.02,PLAYGROUND_LAYOUT.entrance.x+.12,PLAYGROUND_LAYOUT.entrance.minZ-.07,PLAYGROUND_LAYOUT.entrance.maxZ+.07,2.35,2.43)]);
 export function enclosureVolumes(map='classroom',context=null){
- const kind=mapKind(map),shell=context?.wallVolumes||(kind==='playground'?[...outdoorWalls,...outdoorHeaders]:WALL_VOLUMES);
+ const kind=mapKind(map),shell=context?.wallVolumes||(kind==='playground'?[...outdoorWalls,...outdoorHeaders]:kind==='dorm'?[...dormCommonWalls,...DORM_SHELL_SOLIDS,...DORM_CORRIDOR_SOLIDS,...sealedLift,...headers.slice(2)]:WALL_VOLUMES);
  const furniture=context?.furnitureVolumes||[...specialFurnitureVolumes(map),...specialFurnitureDoors(map)];
  return [...shell,...furniture,...(kind==='tiered'?raisedUpperWalls:[]),...ceilingVolumes(map),...(kind==='computer'?laptopVolumes:[]),...(context?.dynamicSolids||[])];
 }
@@ -155,13 +163,13 @@ export function actorFloorHeight(actor,map='classroom',carrier=null){if(actor.ma
 // Heights are relative to the actor's support surface. A bunk's mattress
 // replaces the floor origin; using the school-chair height adds it twice.
 export function actorEyeHeight(actor,map='classroom'){
- if(mapKind(map)==='dorm'&&actor.seated&&!actor._officeChair&&!actor.officeChair)return actor.lying?.23:.94;
+ if(mapKind(map)==='dorm'&&actor.seated&&!actor._officeChair&&!actor.officeChair)return .23;
  if(actor.crouched&&!actor.seated)return CRAWL_TUNING.eyeHeight;
  return actor.id===-1?TEACHER_EYE_HEIGHT:actor.seated?1.43:STUDENT_PROPORTIONS.eyeHeight;
 }
 export function actorBodyVolume(actor,map='classroom'){
  const base=actorFloorHeight(actor,map),bed=mapKind(map)==='dorm'&&actor.seated&&!actor._officeChair&&!actor.officeChair;
- if(bed&&actor.lying)return orientedVolume(actor.x,actor.z,actor.yaw||0,.50,1.66,base+.04,base+.45);
+ if(bed)return orientedVolume(actor.x-Math.cos(actor.yaw||0)*.12,actor.z+Math.sin(actor.yaw||0)*.12,actor.yaw||0,1.90,.72,base+.01,base+.76);
  const height=bed?1.13:actor.crouched&&!actor.seated?CRAWL_TUNING.bodyMaxY:actor.id===-1?TEACHER_PROPORTIONS.bodyHeight:actor.seated?1.64:STUDENT_PROPORTIONS.bodyHeight;
  return{minX:actor.x-.32,maxX:actor.x+.32,minZ:actor.z-.29,maxZ:actor.z+.29,minY:base+.08,maxY:base+height};
 }
@@ -171,7 +179,11 @@ export function floorTiles(map='tiered'){
  const xs=[CLASSROOM.minX,6.00,6.20,6.40,6.60,6.80,7.00,7.20],zs=[-10.00,-5.90,-5.70,-2.30,-2.10,1.30,1.50],out=[];
  for(let i=0;i<xs.length-1;i++)for(let j=0;j<zs.length-1;j++){const h=floorHeight((xs[i]+xs[i+1])/2,(zs[j]+zs[j+1])/2,map);if(h>0)out.push({minX:xs[i],maxX:xs[i+1],minZ:zs[j],maxZ:zs[j+1],height:h});}return out;
 }
-export function walkableFootprint(x,z,r=.18,context=null){if(mapKind(context?.map)==='playground'&&playgroundWalkable(x,z,r))return true;const dorm=mapKind(context?.map)==='dorm',b=dorm?DORM_BOUNDS:CLASSROOM;return (x>=b.minX+r&&x<=CORRIDOR.maxX-r&&z>=b.minZ+r&&z<=b.maxZ-r)||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=CLASSROOM.maxZ-r&&z<=OFFICE.maxZ-r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=LIFT.minZ+r&&z<=CORRIDOR.minZ+.40);}
+export function walkableFootprint(x,z,r=.18,context=null){
+ const kind=mapKind(context?.map);if(kind==='playground'&&playgroundWalkable(x,z,r))return true;
+ const room=kind==='dorm'?DORM_ROOM_RECTS.some(b=>x>=b.minX+r&&x<=b.maxX-r&&z>=b.minZ+r&&z<=b.maxZ-r):(x>=CLASSROOM.minX+r&&x<=CORRIDOR.maxX-r&&z>=CLASSROOM.minZ+r&&z<=CLASSROOM.maxZ-r);
+ return room||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=CLASSROOM.maxZ-r&&z<=OFFICE.maxZ-r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=LIFT.minZ+r&&z<=CORRIDOR.minZ+.40);
+}
 export function clearWallSegment(a,b,context=null){
  for(const w of context?.walls||WALLS){let lo=0,hi=1;for(const axis of ['X','Z']){const k=axis.toLowerCase(),d=b[k]-a[k];if(Math.abs(d)<1e-8){if(a[k]<w['min'+axis]||a[k]>w['max'+axis]){lo=2;break;}}else{let u=(w['min'+axis]-a[k])/d,v=(w['max'+axis]-a[k])/d;if(u>v)[u,v]=[v,u];lo=Math.max(lo,u);hi=Math.min(hi,v);}}if(lo<=hi&&hi>=0&&lo<=1)return false;}return true;
 }
@@ -197,11 +209,11 @@ function furnitureAmount(source,id){
 function specialFurnitureDoors(map,state={}){
  const kind=mapKind(map);
  if(kind==='toilet')return toiletDynamicSolids(Object.fromEntries(TOILET_STALLS.map(s=>[s.id,furnitureAmount(state.toiletDoors,s.id)])),Object.fromEntries(TOILET_STALLS.map(s=>[s.id,furnitureAmount(state.toiletCabinets,s.id)])));
- if(kind==='dorm')return DORM_SEATS.flatMap(s=>dormCabinetDoorSolids(s.id,furnitureAmount(state.dormCabinets,s.id)));
+ if(kind==='dorm')return [...DORM_SEATS.flatMap(s=>dormCabinetDoorSolids(s.id,furnitureAmount(state.dormCabinets,s.id))),...DORM_ROOMS.flatMap(r=>dormDoorSolids(r.id,state.dormDoors?.[r.id]??1))];
  return[];
 }
 function rebuildWalkCollisions(context){
- const kind=mapKind(context.map),sightFurniture=context.furnitureVolumes.filter(s=>/^hotpot-screen-|^toilet-(left|right|rear|hinge|latch|door)-/.test(s.id||''));
+ const kind=mapKind(context.map),sightFurniture=context.furnitureVolumes.filter(s=>/^dorm-room-door-|^hotpot-screen-|^toilet-(left|right|rear|hinge|latch|door)-/.test(s.id||''));
  context.walls=[...(context._buildingWalls||[]),...sightFurniture];
  context.walkSolids=[...context.desks,...context.chairBacks,...(context._buildingWalls||[]),...context.furnitureWalkSolids,...(['toilet','dorm','playground'].includes(kind)?[]:[LECTERN]),...OFFICE_SOLIDS,...(context.dynamicSolids||[])];
  context.routeGrids.clear();context.projectileColliderCache?.clear();return context;
@@ -209,10 +221,10 @@ function rebuildWalkCollisions(context){
 // The simulation and renderer share CURRENT numeric openness. This function
 // never advances animation independently or snaps a moving leaf to its target.
 export function updateSpecialFurnitureCollisions(context,state={}){
- const kind=mapKind(context.map),doorKeys=kind==='toilet'?['toiletDoors','toiletCabinets']:kind==='dorm'?['dormCabinets']:[];
+ const kind=mapKind(context.map),doorKeys=kind==='toilet'?['toiletDoors','toiletCabinets']:kind==='dorm'?['dormCabinets','dormDoors']:[];
  context._specialFurnitureState??={};for(const key of doorKeys)if(Object.hasOwn(state,key))context._specialFurnitureState[key]=state[key];
  const current=context._specialFurnitureState,ids=kind==='toilet'?TOILET_STALLS:DORM_SEATS;
- const signature=JSON.stringify([kind,...doorKeys.map(key=>ids.map(s=>furnitureAmount(current[key],s.id)))]);
+ const signature=JSON.stringify([kind,...doorKeys.map(key=>(key==='dormDoors'?DORM_ROOMS:ids).map(s=>key==='dormDoors'?(current[key]?.[s.id]??1):furnitureAmount(current[key],s.id)))]);
  if(context._furnitureCollisionSignature===signature)return false;
  context._furnitureCollisionSignature=signature;context.furnitureDynamicSolids=specialFurnitureDoors(context.map,current);
  context.furnitureVolumes=[...specialFurnitureVolumes(context.map),...context.furnitureDynamicSolids];
@@ -239,15 +251,15 @@ export function layoutDoorSnapshot(context){return schoolDoorSnapshot(context.do
 function rebuildDoorCollisions(context){
  const kind=mapKind(context.map),outdoor=kind==='playground';
  const signature=JSON.stringify([kind,context.elevatorClosed,...SCHOOL_DOOR_IDS.map(id=>context.doorMotion[id].amount)]);if(context._doorCollisionSignature===signature)return context;context._doorCollisionSignature=signature;
- const leaves=SCHOOL_DOOR_IDS.filter(id=>(!outdoor||id==='office')&&(kind!=='dorm'||id!=='front')).flatMap(id=>schoolDoorSegments(id,context.doorMotion[id].amount,{doors:DOORS,office:OFFICE}));
+ const leaves=SCHOOL_DOOR_IDS.filter(id=>(!outdoor||id==='office')&&(kind!=='dorm'||id==='office')).flatMap(id=>schoolDoorSegments(id,context.doorMotion[id].amount,{doors:DOORS,office:OFFICE}));
  if(context.elevatorClosed)leaves.push(V(LIFT.minX,LIFT.maxX,portalZ-.22,portalZ+.02,.02,3.12));
- const walls=outdoor?outdoorWalls:kind==='dorm'?[...baseWalls,...DORM_SHELL_SOLIDS.filter(s=>s.minY===0)]:baseWalls;
+ const walls=outdoor?outdoorWalls:kind==='dorm'?[...dormCommonWalls,...DORM_CORRIDOR_SOLIDS.filter(s=>s.minY===0),...DORM_SHELL_SOLIDS.filter(s=>s.minY===0)]:baseWalls;
  context._buildingWalls=[...walls,...leaves];
- context.wallVolumes=[...walls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...leaves,...(outdoor?outdoorHeaders:headers),...(kind==='dorm'?DORM_SHELL_SOLIDS.filter(s=>s.minY>0):[])];
+ context.wallVolumes=[...walls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...leaves,...(outdoor?outdoorHeaders:kind==='dorm'?headers.slice(2):headers),...(kind==='dorm'?[...DORM_SHELL_SOLIDS,...DORM_CORRIDOR_SOLIDS].filter(s=>s.minY>0):[])];
  return rebuildWalkCollisions(context);
 }
 const defaultLayout=createLayoutContext();
-export function blocked(x,z,radius=.18,context=defaultLayout){return !walkableFootprint(x,z,radius,context)||(context?.walkSolids||defaultLayout.walkSolids).some(d=>x>d.minX-radius&&x<d.maxX+radius&&z>d.minZ-radius&&z<d.maxZ+radius);}
+export function blocked(x,z,radius=.18,context=defaultLayout){return !walkableFootprint(x,z,radius,context)||(context?.walkSolids||defaultLayout.walkSolids).some(d=>x>d.minX-radius+1e-9&&x<d.maxX+radius-1e-9&&z>d.minZ-radius+1e-9&&z<d.maxZ+radius-1e-9);}
 export function chairExit(seat,radius=.18,context=defaultLayout){
   // Stand beside the chair, not inside the seat/backrest. Facing islands use
   // their own chair axes; never move a player across a wall to find a free spot.
@@ -259,7 +271,7 @@ export function chairExit(seat,radius=.18,context=defaultLayout){
   return null;
 }
 function movementStepClear(x,z,nextX,nextZ,radius,context){
-  const dynamic=[...(context.dynamicSolids||[]),...(context.furnitureDynamicSolids||[])],inside=(d,px,pz)=>px>d.minX-radius&&px<d.maxX+radius&&pz>d.minZ-radius&&pz<d.maxZ+radius;
+  const dynamic=[...(context.dynamicSolids||[]),...(context.furnitureDynamicSolids||[])],inside=(d,px,pz)=>px>d.minX-radius+1e-9&&px<d.maxX+radius-1e-9&&pz>d.minZ-radius+1e-9&&pz<d.maxZ+radius-1e-9;
   if(!dynamic.some(d=>inside(d,x,z)))return !blocked(nextX,nextZ,radius,context);
   // A drawer may open while someone is beside it. Only that newly overlapping
   // dynamic geometry permits an outward step; static walls/desks remain solid.
@@ -313,7 +325,7 @@ function walkGridEdgeClear(a,b,radius,context){
   // Grid edges are axis aligned. One interval test per solid replaces several
   // sampled collision scans and still catches leaves thinner than a grid cell.
   const minX=Math.min(a.x,b.x),maxX=Math.max(a.x,b.x),minZ=Math.min(a.z,b.z),maxZ=Math.max(a.z,b.z);
-  for(const d of context.walkSolids)if(maxX>d.minX-radius&&minX<d.maxX+radius&&maxZ>d.minZ-radius&&minZ<d.maxZ+radius)return false;
+  for(const d of context.walkSolids)if(maxX>d.minX-radius+1e-9&&minX<d.maxX+radius-1e-9&&maxZ>d.minZ-radius+1e-9&&minZ<d.maxZ+radius-1e-9)return false;
   const steps=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.06));
   for(let i=1;i<steps;i++)if(!walkableFootprint(a.x+(b.x-a.x)*i/steps,a.z+(b.z-a.z)*i/steps,radius,context))return false;
   return true;
@@ -331,7 +343,7 @@ function routeGrid(radius,context){
   const cell=ROUTE_CELL,anchorX=-7.20+radius,anchorZ=-13.00+radius;
   const bounds=mapBounds(context.map);
   const x0=anchorX+Math.floor((bounds.minX+radius-anchorX)/cell)*cell,z0=anchorZ+Math.floor((bounds.minZ+radius-anchorZ)/cell)*cell;
-  const w=Math.floor((ROOM.maxX-radius-x0)/cell)+1,h=Math.floor((ROOM.maxZ-radius-z0)/cell)+1;
+  const w=Math.floor((bounds.maxX-radius-x0)/cell)+1,h=Math.floor((bounds.maxZ-radius-z0)/cell)+1;
   if(w<1||h<1)return null;
   const points=Array.from({length:w*h},(_,i)=>({x:x0+i%w*cell,z:z0+Math.floor(i/w)*cell}));
   const free=new Uint8Array(w*h),edges=new Uint8Array(w*h);

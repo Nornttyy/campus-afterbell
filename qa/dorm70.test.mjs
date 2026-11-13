@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import * as T from '../dist/vendor/three.module.js';
-import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,DORM_BOUNDS,DORM_SHELL_SOLIDS,dormBodyOffset,dormCabinetDoorPose,dormCabinetDoorSolids} from '../dist/dorm-layout70.js';
+import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_BOUNDS,DORM_SHELL_SOLIDS,dormBodyOffset,dormCabinetDoorPose,dormCabinetDoorSolids} from '../dist/dorm-layout70.js';
 import {createDormRoom} from '../dist/dorm-room70.js';
 import {createLayoutContext,walkRoute,blocked,moveInRoom,enclosureVolumes,clearWallSegment,ceilingVolumes} from '../dist/classroom-layout.js';
 import {hotpotHelpers} from './hotpot70-helpers.mjs';
@@ -11,14 +11,13 @@ test('dorm server layout is pure frozen data and upper/lower beds have independe
  const code=await readFile(new URL('../dist/dorm-layout70.js',import.meta.url),'utf8');assert.doesNotMatch(code,/^import\s/m);assert.equal(DORM_SEATS,DORM_BEDS);assert.ok(Object.isFrozen(DORM_BEDS)&&Object.isFrozen(DORM_SOLIDS));assert.ok(DORM_BEDS.length>=12&&DORM_BEDS.length<=30);assert.equal(new Set(DORM_BEDS.map(b=>b.id)).size,DORM_BEDS.length);
  for(const bunk of DORM_BUNKS){const beds=DORM_BEDS.filter(b=>b.bunkId===bunk.id);assert.equal(beds.length,2);assert.equal(beds[1].supportHeight-beds[0].supportHeight,1.44);assert.notEqual(beds[0].cabinetId,beds[1].cabinetId);for(const b of beds){assert.equal(b.id,b.seatId);assert.equal(b.id,b.bedId);assert.equal(b.map,'dorm');assert.ok(b.hidePen&&b.hideBook);assert.ok(b.foodY>b.cabinetY&&b.foodY<b.cabinetY+DORM_CABINET.height);assert.ok(!inside(b.exitX,b.exitZ),'unblocked exit '+b.id);}}
 });
-test('the inspection dorm is a narrow two-wall bunk room with one entrance and reachable beds',()=>{
+test('three independent narrow dorm rooms connect to one corridor and every bunk is reachable',()=>{
  const c=createLayoutContext(DORM_SEATS),entrance={x:9.2,z:-8};
- assert.equal(DORM_BUNKS.length,6);assert.equal(new Set(DORM_BUNKS.map(b=>b.x)).size,2);
- assert.ok(DORM_BOUNDS.maxX-DORM_BOUNDS.minX<7);assert.equal(blocked(4.1,0,.23,c),false);
+ assert.equal(DORM_BUNKS.length,12);assert.equal(DORM_ROOMS.length,3);for(const room of DORM_ROOMS){assert.equal(DORM_BEDS.filter(b=>b.roomId===room.id).length,8);}assert.ok(DORM_ROOM_BOUNDS.maxX-DORM_ROOM_BOUNDS.minX<7);
  for(const b of DORM_BEDS){const dest={x:b.exitX,z:b.exitZ};assert.equal(blocked(dest.x,dest.z,.2,c),false,'exit '+b.id);const route=walkRoute(entrance,dest,.2,c);assert.ok(route.length,'path to '+b.id);let p=entrance;for(const next of route){const steps=Math.ceil(Math.hypot(next.x-p.x,next.z-p.z)/.04),dx=(next.x-p.x)/steps,dz=(next.z-p.z)/steps;for(let i=0;i<steps;i++)p=moveInRoom(p,dx,dz,.2,c);assert.ok(Math.hypot(p.x-next.x,p.z-next.z)<1e-5,'walkable path '+b.id);}}
  assert.equal(clearWallSegment({x:8,z:-8},{x:6.6,z:-8},c),true);
  assert.equal(clearWallSegment({x:8,z:7},{x:6.6,z:7},c),false,'old front door is a solid wall');
- for(const p of [{x:0,z:0},{x:4,z:6}])assert.equal(blocked(p.x,p.z,.18,c),true,'unused classroom area is inaccessible');
+ for(const p of [{x:0,z:-3},{x:4,z:7}])assert.equal(blocked(p.x,p.z,.18,c),true,'unused classroom area is inaccessible');
  assert.equal(ceilingVolumes('dorm')[0].minY,DORM_BOUNDS.height);
  const all=enclosureVolumes('dorm',c);for(const v of DORM_SHELL_SOLIDS)assert.ok(all.some(w=>w.minX===v.minX&&w.maxX===v.maxX&&w.minZ===v.minZ&&w.maxZ===v.maxZ));
 });
@@ -55,9 +54,9 @@ test('disposing a dormant map releases owned resources once without freeing shar
 
 test('sleeping pupils lie lengthwise with their heads on the pillow in both wall rows',()=>{
  for(const bed of DORM_BEDS){
-  const off=dormBodyOffset(bed.lieYaw,true),frame=new T.Object3D();frame.position.set(bed.lieX+off.x,bed.supportHeight+off.y,bed.lieZ+off.z);frame.rotation.set(0,bed.lieYaw,off.roll);frame.updateMatrixWorld(true);
+  const off=dormBodyOffset(bed.lieYaw,true),frame=new T.Object3D();frame.position.set(bed.lieX+off.x,bed.supportHeight+off.y,bed.lieZ+off.z);frame.rotation.set(off.pitch,bed.lieYaw,off.roll,'YXZ');frame.updateMatrixWorld(true);
   const head=frame.localToWorld(new T.Vector3(0,1.49,0));assert.ok(Math.hypot(head.x-bed.headX,head.z-bed.headZ)<.001,'head on pillow '+bed.id);
   const feet=frame.localToWorld(new T.Vector3(0,0,0));assert.ok(Math.abs(head.distanceTo(feet)-1.49)<1e-6);
-  const facing=new T.Vector3(0,0,1).transformDirection(frame.matrixWorld);assert.ok(facing.x*(bed.col?-1:1)>.99,'face towards the aisle '+bed.id);
+  const facing=new T.Vector3(0,0,1).transformDirection(frame.matrixWorld);assert.ok(Math.abs(facing.y)<1e-6,'face sideways '+bed.id);
  }
 });
