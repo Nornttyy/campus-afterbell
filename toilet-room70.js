@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
-import {placeFurniture67} from './furniture-assets67.js?v=campus-81';
-import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-81';
-export * from './toilet-layout70.js?v=campus-81';
+import {placeFurniture67} from './furniture-assets67.js?v=campus-82';
+import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-82';
+export * from './toilet-layout70.js?v=campus-82';
 
 function ellipseRing(outerX,outerZ,innerX,innerZ,height){
  const shape=new T.Shape();shape.absellipse(0,0,outerX,outerZ,0,Math.PI*2,false);const hole=new T.Path();hole.absellipse(0,0,innerX,innerZ,0,Math.PI*2,true);shape.holes.push(hole);

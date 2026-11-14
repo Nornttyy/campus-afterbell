@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-81';
+import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-82';
 const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
 // Retarget the accepted pose to a shorter body. Keep the furniture and held
 // objects in physical units, and preserve the calibrated arm and palm/finger size.

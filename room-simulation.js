@@ -1,14 +1,14 @@
-import {reachesSchoolDoor} from './door-interaction54.js?v=campus-81';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-81';
-import {validComputerPlayback} from './computer-rules55.js?v=campus-81';
-import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-81';
-import {movementScale} from './movement55.js?v=campus-81';
+import {reachesSchoolDoor} from './door-interaction54.js?v=campus-82';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-82';
+import {validComputerPlayback} from './computer-rules55.js?v=campus-82';
+import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-82';
+import {movementScale} from './movement55.js?v=campus-82';
 const randomUUID=()=>globalThis.crypto.randomUUID();
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-81';
-import {TeacherRound} from './teacher-rules.js?v=campus-81';
-import * as Layout from './classroom-layout.js?v=campus-81';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-81';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-82';
+import {TeacherRound} from './teacher-rules.js?v=campus-82';
+import * as Layout from './classroom-layout.js?v=campus-82';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-82';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);

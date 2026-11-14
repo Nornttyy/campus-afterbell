@@ -1,4 +1,4 @@
-import {NetworkRound,RoomConnectionError,readEvent} from './network-client.js?v=campus-81';
+import {NetworkRound,RoomConnectionError,readEvent} from './network-client.js?v=campus-82';
 
 const PREFIX='campus-afterbell-81-',TIMEOUT=25000;
 const message=error=>error?.type==='peer-unavailable'?'没找到这个房间，请确认房间号和房主是否在线。':error?.type==='unavailable-id'?'房间号已被占用，请再试一次。':'暂时无法建立联机，请换个网络重试。';
@@ -45,7 +45,7 @@ class PeerRound extends NetworkRound{
  async leave(){try{await super.leave();}finally{this.transport?.close();}}
 }
 function attachHost(peer,options){
- const transport=new Transport(peer),worker=new Worker(new URL('./peer-room-worker79.js?v=campus-81',import.meta.url),{type:'module'}),connections=new Map();
+ const transport=new Transport(peer),worker=new Worker(new URL('./peer-room-worker79.js?v=campus-82',import.meta.url),{type:'module'}),connections=new Map();
  worker.postMessage({type:'init',options});
  transport.send=packet=>worker.postMessage({...packet,client:'host'});
  worker.onmessage=({data:{client,packet}})=>{

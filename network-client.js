@@ -1,8 +1,8 @@
-import {createLayoutContext,updateLayoutDoors,moveInRoom} from './classroom-layout.js?v=campus-81';
-import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-81';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-81';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-81';
-import {applyNetworkDelta} from './network-state65.js?v=campus-81';
+import {createLayoutContext,updateLayoutDoors,moveInRoom} from './classroom-layout.js?v=campus-82';
+import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-82';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-82';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-82';
+import {applyNetworkDelta} from './network-state65.js?v=campus-82';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
 const NO_ROOM_SERVICE='这个地址没有多人房间服务，请先玩单人模式，或填写已部署的联机服务器地址。';
