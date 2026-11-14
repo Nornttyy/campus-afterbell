@@ -39,7 +39,7 @@ for(const [kind,points] of Object.entries({snack:1,drink:1,burger:1,banana:1,gar
  if(kind==='lunch'){r.interact();Object.assign(r.player,{x:OFFICE_CHAIR.x,z:OFFICE_CHAIR.z});assert.equal(r.openOfficeDrawer(),true);}
  else{Object.assign(r.player._slots[0],{action:kind,progress:0,readyAt:0});r.setDrawerOpen(true);}
  assert.equal(r.takeSlot(0),true);const item=r.player._slots[0];r.setLook(0,0);r.hold(true);r.step(1);assert.equal(item.progress,0);r.setLook(0,.55);r.step(1);assert.ok(item.progress>.33);r.hold(false);assert.equal(item.progress,0);
- r.hold(true);r.step(3-DT);assert.equal(r.score,0);r.step(DT);assert.equal(r.score,points);assert.equal(r.completed[kind],1);r.hold(false);r.step(3);assert.equal(r.score,points);assert.equal(r.completed[kind],1);
+ r.hold(true);r.step(2-DT);assert.equal(r.score,0);r.step(DT);assert.equal(r.score,points);assert.equal(r.completed[kind],1);r.hold(false);r.step(3);assert.equal(r.score,points);assert.equal(r.completed[kind],1);
 });
 
 function teacherFixture(seated){

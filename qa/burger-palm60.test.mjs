@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-81';
-import {createRiggedPalm} from '../dist/student-assets.js?v=campus-81';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-81';
-import {createSoloRound} from '../dist/solo-round.js?v=campus-81';
-import {drawerHandTarget} from '../dist/drawer-hand-target58.js?v=campus-81';
-import {firstPersonEyeHeight} from '../dist/first-person-view.js?v=campus-81';
-import {handFrame} from '../dist/hand-motion.js?v=campus-81';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-82';
+import {createRiggedPalm} from '../dist/student-assets.js?v=campus-82';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-82';
+import {createSoloRound} from '../dist/solo-round.js?v=campus-82';
+import {drawerHandTarget} from '../dist/drawer-hand-target58.js?v=campus-82';
+import {firstPersonEyeHeight} from '../dist/first-person-view.js?v=campus-82';
+import {handFrame} from '../dist/hand-motion.js?v=campus-82';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {propSurface} from './whole-palm-geometry54.mjs';
 
@@ -147,7 +147,7 @@ for(const open of [true,false])test(`seed73 held burger: true palm and four fing
  binding=skin.palm.matrixWorld.clone().invert().multiply(burger.matrixWorld);measure('held');
  assert.equal(round.hold(true),true);
  let elapsed=0;
- for(const frame of [1,18,54,108,162]){advance(frame-elapsed);elapsed=frame;assert.equal(round.snapshot().player.eating,true);measure(`eating ${(frame/60).toFixed(2)}s`);}
+ for(const frame of [1,18,42,78,114]){advance(frame-elapsed);elapsed=frame;assert.equal(round.snapshot().player.eating,true);measure(`eating ${(frame/60).toFixed(2)}s`);}
  assert.equal(round.snapshot().drawer.drawnSlot,0);assert.ok(maxBindingDrift<1e-6,`burger slipped relative to the hand by ${maxBindingDrift}`);
  const mm=record=>Object.fromEntries(Object.entries(record).map(([part,value])=>[part,Number((value*1000).toFixed(3))]));
  t.diagnostic(JSON.stringify({drawer:open?'open':'closed',vertices:skin.counts,poses:results.map(({label,gaps,tipGaps,palmarGap,depth,deepestPart,palmContactCount,palmSpan})=>({label,gapsMm:mm(gaps),tipGapsMm:mm(tipGaps),palmarGapMm:Number((palmarGap*1000).toFixed(3)),penetrationMm:Number((depth*1000).toFixed(3)),deepestPart,palmarContactCount:palmContactCount,palmarSpanMm:Number((palmSpan*1000).toFixed(3))}))}));

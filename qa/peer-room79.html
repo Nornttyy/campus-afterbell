@@ -3,7 +3,7 @@
 <h1>房主联机实测</h1><label>名字<input id="name" value="同学"></label><label>房间号<input id="code" placeholder="六位房间号"></label><label>人数<input id="players" type="number" value="8" min="2" max="8"></label>
 <button id="create">创建</button><button id="join">加入</button><button id="teacher">选老师</button><button id="student">选学生</button><button id="begin">开始</button><button id="walk">移动两秒</button><button id="leave">退出</button><output id="status">尚未连接</output><pre id="state"></pre>
 <script type="module">
-import{connectPeerRoom}from'../dist/peer-room79.js?v=campus-81';
+import{connectPeerRoom}from'../dist/peer-room79.js?v=campus-82';
 let round,last=performance.now();const $=s=>document.querySelector(s),status=$('#status');
 async function connect(code){status.textContent='连接中';try{round=await connectPeerRoom({code,name:$('#name').value,maxPlayers:+$('#players').value,settings:{duration:600,target:120,chalkStamina:false},onError:e=>status.textContent=e});$('#code').value=round.room.code;status.textContent='已连接';}catch(e){status.textContent=e.message;console.error(e);}}
 $('#create').onclick=()=>connect('');$('#join').onclick=()=>connect($('#code').value);$('#teacher').onclick=()=>round?.setPreference('teacher');$('#student').onclick=()=>round?.setPreference('student');$('#begin').onclick=()=>round?.command('startBell');$('#walk').onclick=()=>{round?.setMovement(0,1);setTimeout(()=>round?.setMovement(0,0),2000);};$('#leave').onclick=()=>{round?.leave();round=null;status.textContent='已退出';};

@@ -1,6 +1,6 @@
-import {CampusRoom,RoomError} from './room-simulation.js?v=campus-81';
-import {diffNetworkState} from './network-state65.js?v=campus-81';
-import {validCommand,validVoice} from './room-validation79.js?v=campus-81';
+import {CampusRoom,RoomError} from './room-simulation.js?v=campus-82';
+import {diffNetworkState} from './network-state65.js?v=campus-82';
+import {validCommand,validVoice} from './room-validation79.js?v=campus-82';
 
 // One authoritative simulation per host. Transport identities are assigned by
 // the data connection, never by fields inside a guest's packet.

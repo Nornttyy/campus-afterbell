@@ -1,8 +1,8 @@
 // Exports actual skinned hand + unchanged prop triangles for offline pose inspection.
 import {readFileSync,writeFileSync} from 'node:fs';
 import * as T from '../dist/vendor/three.module.js';
-import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-81';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-81';
+import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-82';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-82';
 import {loadGeometry} from './gltf-geometry.mjs';
 const [file,variant='boy',kind='drink']=process.argv.slice(2),profile=JSON.parse(readFileSync(file)).find(r=>r.variant===variant&&r.kind===kind);
 await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry(new URL(url).pathname.split('/').pop())}});

@@ -1,9 +1,9 @@
-import {createClassroom} from '../dist/classroom.js?v=campus-81';
-import {createClassroomGame} from '../dist/classroom-game.js?v=campus-81';
-import {TeacherRound} from '../dist/teacher-rules.js?v=campus-81';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-81';
-import {DETENTION} from '../dist/classroom-layout.js?v=campus-81';
-import {attachReviewLog} from './review-event-log.js?v=campus-81';
+import {createClassroom} from '../dist/classroom.js?v=campus-82';
+import {createClassroomGame} from '../dist/classroom-game.js?v=campus-82';
+import {TeacherRound} from '../dist/teacher-rules.js?v=campus-82';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-82';
+import {DETENTION} from '../dist/classroom-layout.js?v=campus-82';
+import {attachReviewLog} from './review-event-log.js?v=campus-82';
 const params=new URLSearchParams(location.search),teacher=params.get('role')!=='student',map=params.get('map')||'classroom';
 const canvas=document.querySelector('#classroom'),scene=await createClassroom(canvas),round=new (teacher?TeacherRound:ClassroomRound)({seed:44,map,target:100000});
 const audio={apply(){},start(){},click(){},effect(){}};

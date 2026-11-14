@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createRoomVariants} from '../dist/room-variants.js?v=campus-81';
-import {createSeatLayout,createLayoutContext,blocked} from '../dist/classroom-layout.js?v=campus-81';
-import {ClassroomRound,chalkHit} from '../dist/classroom-rules.js?v=campus-81';
-import {COMPUTER_DRAWER_FOODS} from '../dist/item-rules50.js?v=campus-81';
-import {interactionIntent} from '../dist/interaction-intent54.js?v=campus-81';
-import {CLASSROOM_PROP_SOURCES,loadPropAssets,restDeskItem} from '../dist/prop-assets.js?v=campus-81';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-81';
-import {createDrawerPickTarget,pickDrawerItem} from '../dist/drawer-picking.js?v=campus-81';
+import {createRoomVariants} from '../dist/room-variants.js?v=campus-82';
+import {createSeatLayout,createLayoutContext,blocked} from '../dist/classroom-layout.js?v=campus-82';
+import {ClassroomRound,chalkHit} from '../dist/classroom-rules.js?v=campus-82';
+import {COMPUTER_DRAWER_FOODS} from '../dist/item-rules50.js?v=campus-82';
+import {interactionIntent} from '../dist/interaction-intent54.js?v=campus-82';
+import {CLASSROOM_PROP_SOURCES,loadPropAssets,restDeskItem} from '../dist/prop-assets.js?v=campus-82';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-82';
+import {createDrawerPickTarget,pickDrawerItem} from '../dist/drawer-picking.js?v=campus-82';
 import {CampusRoom} from '../server/room-simulation.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 const DT=1/60,V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
@@ -62,7 +62,7 @@ test('formal E intents open the real computer drawer, pick its food, and repleni
   r.player._slots[0].action='burger';r.player.action=r.selected='burger';
   f.scene.updateMatrixWorld(true);const handle=f.drawer.group.localToWorld(V(0,.701,-.454));f.ray.set(f.origin,handle.sub(f.origin).normalize());assert.ok(f.ray.intersectObject(f.drawer.group,true).length,'real front/handle is an E target');
   assert.equal(key(r,{kind:'desk'},'E'),true);f.settle(r.snapshot().drawer.open);const slot=f.cast();assert.equal(slot,0);assert.equal(key(r,{kind:'item',slot},'E'),true);
-  assert.equal(r.snapshot().drawer.drawnSlot,0);r.hold(true);r.step(3);assert.equal(r.completed.burger,1);assert.equal(r.snapshot().drawer.slots[0].action,null);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.snapshot().drawer.drawnSlot,null);
+  assert.equal(r.snapshot().drawer.drawnSlot,0);r.hold(true);r.step(2);assert.equal(r.completed.burger,1);assert.equal(r.snapshot().drawer.slots[0].action,null);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.snapshot().drawer.drawnSlot,null);
   r.step(179*DT);assert.equal(r.snapshot().drawer.slots[0].action,null);r.step(DT);assert.ok(COMPUTER_DRAWER_FOODS.includes(r.snapshot().drawer.slots[0].action));assert.equal(r.snapshot().drawer.slots.length,1);
   assert.equal(key(r,{kind:'desk'},'Q'),true);assert.equal(r.snapshot().drawer.open,false);
  }finally{f.dispose();}

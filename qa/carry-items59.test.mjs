@@ -20,7 +20,7 @@ for(const map of ['classroom','computer7'])test(`${map}: carrying exits with E, 
  Object.assign(p,{x:8.8,z:2});r.setMovement(0,.4);r.step(.4);assert.equal(r.score,0);assert.equal(item.progress,0);
  r.setLook(0,0);r.hold(true);r.step(.5);assert.equal(item.progress,0);assert.equal(r.snapshot().player.eating,false);
  r.setLook(0,.55);r.step(1);assert.ok(item.progress>.32);r.hold(false);assert.equal(item.progress,0);
- r.hold(true);r.step(3-DT);assert.equal(item.action,'burger');r.step(DT);assert.equal(item.action,null);assert.equal(p._drawnSlot,null);assert.equal(r.score,1);assert.equal(item.heldBy,undefined);
+ r.hold(true);r.step(2-DT);assert.equal(item.action,'burger');r.step(DT);assert.equal(item.action,null);assert.equal(p._drawnSlot,null);assert.equal(r.score,1);assert.equal(item.heldBy,undefined);
  r.hold(false);r.setMovement(0,0);sit(r,origin===0?1:0);assert.notEqual(p._slots,slots);assert.equal(r.classSlotsBySeat.get(origin),slots);assert.equal(p._slots.length,map==='classroom'?3:1);
  r.step(3-DT);assert.equal(item.action,null);r.step(DT);assert.ok(item.action);assert.equal(slots.length,map==='classroom'?3:1);
 });
@@ -57,7 +57,7 @@ for(const map of ['classroom','computer7'])test(`${map}: two authenticated pupil
  const seat=room.sim.seats[9],first=a.context.player,second=b.context.player;Object.assign(first,{x:seat.x,z:seat.z});assert.equal(room.command(a,'interact',[seat.id]),'seated');Object.assign(first._slots[0],{action:'burger',readyAt:0,progress:0});
  room.command(a,'setDrawerOpen',[true]);assert.equal(room.command(a,'takeSlot',[0]),true);const item=first._slots[0];room.command(a,'interact');Object.assign(first,{x:8.8,z:2});Object.assign(second,{x:seat.x,z:seat.z});assert.equal(room.command(b,'interact',[seat.id]),'seated');room.command(b,'setDrawerOpen',[true]);
  assert.equal(second._slots,first._slots);assert.equal(room.command(b,'takeSlot',[0]),false);assert.equal(room.snapshot(b).drawer.slots[0].action,null);assert.equal(room.snapshot(b).students.find(s=>s.id===a.studentId).heldAction,'burger');
- room.disconnect(a);room.tick(.5);assert.equal(item.heldBy,first.id);assert.equal(room.command(b,'takeSlot',[0]),false);room.reconnect(a);room.command(a,'setLook',[0,.55]);room.command(a,'hold',[true]);for(let i=0;i<180;i++)room.tick(DT);
+ room.disconnect(a);room.tick(.5);assert.equal(item.heldBy,first.id);assert.equal(room.command(b,'takeSlot',[0]),false);room.reconnect(a);room.command(a,'setLook',[0,.55]);room.command(a,'hold',[true]);for(let i=0;i<120;i++)room.tick(DT);
  assert.equal(item.action,null);assert.equal(first._drawnSlot,null);assert.equal(room.snapshot(a).score,1);assert.equal(room.snapshot(b).drawer.slots[0].readyIn,3);for(let i=0;i<180;i++)room.tick(DT);assert.ok(item.action);assert.equal(room.command(b,'takeSlot',[0]),true);
 });
 

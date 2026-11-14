@@ -3,7 +3,7 @@ import {STUDENT_PROPORTIONS} from '../dist/student-proportions73.js';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from '../dist/first-person-view.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-81';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-82';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 

@@ -2,7 +2,7 @@ import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {requireModelBudget} from './model-budget64.js';
 const registry=new Map();
-export const FURNITURE_SOURCES67=Object.freeze(Object.assign(Object.fromEntries(['mouse','keyboard','computer-tower','monitor','office-desk','office-chair','cabinet'].map(name=>[name,`./assets/models/${name}-v67.glb?v=tripo67`])),{toilet:'./assets/models/toilet-v78.glb?v=campus-81'}));
+export const FURNITURE_SOURCES67=Object.freeze(Object.assign(Object.fromEntries(['mouse','keyboard','computer-tower','monitor','office-desk','office-chair','cabinet'].map(name=>[name,`./assets/models/${name}-v67.glb?v=tripo67`])),{toilet:'./assets/models/toilet-v78.glb?v=campus-82'}));
 export const MONITOR67=Object.freeze({width:.598,height:.328,x:0,y:.305,z:-.037});
 export async function loadFurniture67({loader=new GLTFLoader()}={}){
  return Promise.all(Object.entries(FURNITURE_SOURCES67).map(async([name,path])=>{

@@ -44,7 +44,7 @@ test('two authenticated room members share front and office opening, independent
  const {CampusRoom}=await import('../server/room-simulation.js');const room=new CampusRoom({code:'650065',seed:73}),a=room.join({name:'甲'}),b=room.join({name:'乙'});for(let i=0;i<20;i++)room.tick(.1);
  for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:9.2,z:7.3,yaw:0}]]){
   Object.assign(a.context.player,p,{seated:false});Object.assign(b.context.player,{x:11.5,z:2,seated:false});
-  assert.equal(room.command(a,'setDoorUse',[true,false,id]),true);for(let i=0;i<31;i++)room.tick(.1);
+  assert.equal(room.command(a,'setDoorUse',[true,false,id]),true);for(let i=0;i<21;i++)room.tick(.1);
   assert.equal(room.snapshot(a).doorMotion[id].target,1);assert.deepEqual(room.snapshot(a).doorMotion,room.snapshot(b).doorMotion);
   const before=room.snapshot(a).doorMotion[id].amount;room.tick(.1);const after=room.snapshot(a).doorMotion[id].amount;assert.ok(after>before&&after<1);assert.deepEqual(room.snapshot(a).doorMotion,room.snapshot(b).doorMotion);
   for(let i=0;i<20;i++)room.tick(.1);assert.equal(room.snapshot(b).doorMotion[id].amount,1);assert.equal(room.elevator.phase,'idle');assert.equal(room.sim.layout.elevatorClosed,false);

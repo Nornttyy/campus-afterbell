@@ -19,7 +19,7 @@ test('flash and ink are drawer items used on deliberate release, and pause cance
  assert.ok(drawn.has('flash')&&drawn.has('ink'));assert.equal(drawn.has('computer'),false);
  for(const kind of ['flash','ink']){
   assert.equal(CLASSROOM_ACTIONS[kind].releaseToUse,true);
-  const r=quiet();take(r,kind);r.hold(true);r.step(.6);assert.ok(r.player.progress>.49);assert.equal(r.projectiles.length,0);
+  const r=quiet();take(r,kind);r.hold(true);r.step(.6);assert.ok(Math.abs(r.player.progress-.3)<1e-6);assert.equal(r.projectiles.length,0);
   r.pause();assert.equal(r.player._slots[0].action,kind);assert.equal(r.player.progress,0);assert.equal(r.releaseUse(),false);r.pause(false);
   r.hold(true);assert.equal(r.releaseUse(),true);assert.equal(r.projectiles.length,1);assert.equal(r.projectiles[0].kind,kind);assert.equal(r.projectiles[0].charge,0);
   assert.equal(r.completed[kind],1);assert.equal(r.score,0);assert.equal(r.releaseUse(),false);assert.equal(r.player._slots[0].action,null);

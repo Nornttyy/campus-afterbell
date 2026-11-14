@@ -3,8 +3,8 @@
 <nav><select id="angle" aria-label="角度"><option value="0">正面</option><option value=".75">斜侧</option><option value="1.57079632679">侧面</option><option value="3.14159265359">背面</option></select><select id="pose" aria-label="姿态"><option value="resting">站立</option><option value="writing">写字</option><option value="reading">看书</option><option value="crawling">爬行</option></select><select id="light" aria-label="光照"><option value="day">白天</option><option value="night">停电</option></select><button id="play">播放</button><span>上：修改前 · 下：本轮脸型</span></nav><div id="labels"></div><output id="status">加载真实模型…</output>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadStudentAssets} from '../dist/student-assets.js?v=campus-81';
-import {setCharacterNight} from '../dist/character-materials.js?v=campus-81';
+import {loadStudentAssets} from '../dist/student-assets.js?v=campus-82';
+import {setCharacterNight} from '../dist/character-materials.js?v=campus-82';
 const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.setScissorTest(true);document.body.append(renderer.domElement);
 const factory=await loadStudentAssets(),roles=['boy','girl','ponytail','glasses'],names=['男同学','紫发同学','棕发同学','眼镜同学'],views=[];
 for(const referenceShape of [false,true])for(const [i,variant]of roles.entries()){
