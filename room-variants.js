@@ -1,11 +1,11 @@
-import {createToiletRoom} from './toilet-room70.js?v=campus-78';
-import {createDormRoom} from './dorm-room70.js?v=campus-78';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-78';
-import {createHotpotRoom} from './hotpot-room70.js?v=campus-78';
-import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-78';
+import {createToiletRoom} from './toilet-room70.js?v=campus-79';
+import {createDormRoom} from './dorm-room70.js?v=campus-79';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-79';
+import {createHotpotRoom} from './hotpot-room70.js?v=campus-79';
+import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-79';
 import * as T from './vendor/three.module.js';
-import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-78';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-78';
+import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-79';
+import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,mapKind,floorHeight} from './classroom-layout.js?v=campus-79';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,screenContent=null,officeScreens=new Map()}){
  const hotpot=createHotpotRoom({parent:scene,box,rounded,mat,texture,bakeStatic});hotpot.group.visible=false;

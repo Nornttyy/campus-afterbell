@@ -1,8 +1,8 @@
-import {createLayoutContext,updateLayoutDoors,moveInRoom} from './classroom-layout.js?v=campus-78';
-import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-78';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-78';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-78';
-import {applyNetworkDelta} from './network-state65.js?v=campus-78';
+import {createLayoutContext,updateLayoutDoors,moveInRoom} from './classroom-layout.js?v=campus-79';
+import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-79';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-79';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-79';
+import {applyNetworkDelta} from './network-state65.js?v=campus-79';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
 const NO_ROOM_SERVICE='这个地址没有多人房间服务，请先玩单人模式，或填写已部署的联机服务器地址。';
@@ -11,7 +11,7 @@ const STREAM_TIMEOUT=10000;
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const finite=value=>typeof value==='number'&&Number.isFinite(value);
 const text=value=>typeof value==='string'&&value.length>0&&value.length<=160&&!/[<>\u0000-\u001f]/.test(value);
-class RoomConnectionError extends Error{constructor(message,{terminal=true,status=0}={}){super(message);this.name='RoomConnectionError';this.terminal=terminal;this.status=status;}}
+export class RoomConnectionError extends Error{constructor(message,{terminal=true,status=0}={}){super(message);this.name='RoomConnectionError';this.terminal=terminal;this.status=status;}}
 const protocolError=()=>new RoomConnectionError(INVALID_RESPONSE);
 function mime(response){return (response.headers.get('content-type')||'').split(';',1)[0].trim().toLowerCase();}
 function isJSON(response){return /^application\/(?:json|[\w.+-]+\+json)$/.test(mime(response));}
@@ -41,7 +41,7 @@ function validRoom(room){return object(room)&&/^\d{6}$/.test(room.code)&&typeof 
 function validActor(actor){return object(actor)&&Number.isInteger(actor.id)&&['x','z','yaw'].every(k=>finite(actor[k]));}
 function validState(state,room=null){return object(state)&&validRoom(state.room)&&(!room||state.room.code===room.code&&state.room.selfId===room.selfId)&&['student','teacher'].includes(state.role)&&['ready','playing','won','lost'].includes(state.status)&&['gathering','seating','class'].includes(state.stage)&&typeof state.map==='string'&&validActor(state.player)&&validActor(state.teacher)&&Array.isArray(state.students)&&state.students.every(validActor)&&object(state.drawer)&&Array.isArray(state.drawer.slots)&&state.drawer.slots.every(s=>object(s)&&Number.isInteger(s.id))&&Array.isArray(state.seats)&&Array.isArray(state.books)&&object(state.completed)&&finite(state.score)&&finite(state.target)&&finite(state.elapsed)&&Number.isSafeInteger(state.sequence)&&Array.isArray(state.events)&&state.events.every(e=>object(e)&&typeof e.type==='string');}
 function validSession(result){return object(result)&&typeof result.token==='string'&&result.token.length>=16&&validRoom(result.room)&&validState(result.state,result.room);}
-function readEvent(data,type,room,previous){
+export function readEvent(data,type,room,previous){
  let message;try{message=JSON.parse(data);}catch{throw protocolError();}
  if(type==='patch'){if(!object(message)||!previous||message.baseSequence!==previous.sequence||!Number.isSafeInteger(message.sequence)||message.sequence<message.baseSequence)throw protocolError();try{const next=applyNetworkDelta(previous,message.patch);if(next.sequence!==message.sequence)throw protocolError();message=next;}catch{throw protocolError();}}
  if((type==='state'||type==='patch')&&!validState(message,room))throw protocolError();
@@ -104,7 +104,7 @@ export class NetworkRound{
     // Browser scene compilation can delay reads and coalesce many valid SSE
     // events into one large chunk. Limit each event, not the transport batch.
     while((index=buffer.indexOf('\n\n'))>=0){if(index>524288)throw protocolError();const packet=buffer.slice(0,index);buffer=buffer.slice(index+2);let type='message',data='';for(const line of packet.split('\n')){if(line.startsWith('event:'))type=line.slice(6).trim();if(line.startsWith('data:'))data+=(data?'\n':'')+line.slice(5).trimStart();}if(!data||!['state','patch','voice','error'].includes(type))continue;const message=readEvent(data,type,this.room,this._state);
-     if(type==='state'||type==='patch'){heartbeat();if(message.sequence<this._sequence)continue;this._connected=true;const before=this.room,previous=this._state;this._state=message;this._reconcileLocal(previous,message);const actorChanged=previous.player.id!==message.player.id||previous.player.seated!==message.player.seated||previous.map!==message.map;if(actorChanged)this._look=null;else if(this._look&&(message.inputAck?.look||0)>=this._look.sequence)this._look=null;if(previous.map!==message.map||previous.stage!==message.stage)this._frames=[];this._frames.push({time:performance.now(),state:message,students:new Map(message.students.map(p=>[p.id,p]))});if(this._frames.length>5)this._frames.shift();this.room=message.room;this._events.push(...message.events.filter(event=>!Number.isSafeInteger(event.networkSequence)||event.networkSequence>this._sequence));this._sequence=message.sequence;this.voice.sync(this.room);if(JSON.stringify(before)!==JSON.stringify(this.room))this._onRoom(this.room,this._state);}
+     if(type==='state'||type==='patch'){heartbeat();if(message.sequence<this._sequence)continue;this._receiveState(message);}
      if(type==='voice')this.voice.receive(message).catch(error=>this._onError('语音连接失败：'+error.message));
      if(type==='error'){if(message.terminal===true)throw new RoomConnectionError(message.message);this._onError(message.message);}
     }
@@ -114,6 +114,7 @@ export class NetworkRound{
   finally{clearTimeout(watchdog);this._disconnected();try{await reader?.cancel();}catch{}reader?.releaseLock();}
   if(!this._closed&&!this._terminalError)this._retry=setTimeout(()=>this._listen(),1500);
  }
+ _receiveState(message){this._connected=true;const before=this.room,previous=this._state;this._state=message;this._reconcileLocal(previous,message);const actorChanged=previous.player.id!==message.player.id||previous.player.seated!==message.player.seated||previous.map!==message.map;if(actorChanged)this._look=null;else if(this._look&&(message.inputAck?.look||0)>=this._look.sequence)this._look=null;if(previous.map!==message.map||previous.stage!==message.stage)this._frames=[];this._frames.push({time:performance.now(),state:message,students:new Map(message.students.map(p=>[p.id,p]))});if(this._frames.length>5)this._frames.shift();this.room=message.room;this._events.push(...message.events.filter(event=>!Number.isSafeInteger(event.networkSequence)||event.networkSequence>this._sequence));this._sequence=message.sequence;this.voice.sync(this.room);if(JSON.stringify(before)!==JSON.stringify(this.room))this._onRoom(this.room,this._state);}
  _canPredict(state=this._state){const p=state.player;return this._connected&&!this._localPaused&&state.status==='playing'&&!p.seated&&!p.caught&&(!p.captivity||p.captivity==='free')&&!(p.stunLeft>0);}
  _moveVisual(position,movement,dt){
   const actor={...this._state.player,...position,...(this._look?{yaw:this._look.yaw}:{})};

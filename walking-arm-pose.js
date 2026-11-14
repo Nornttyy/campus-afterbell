@@ -20,7 +20,7 @@ export function createWalkingArmPose(group,bones){
    group.getWorldQuaternion(character);
    // The ponytail student's jacket is wider below the sleeve. Give that
    // model two extra degrees of clearance, without widening every student.
-   const degrees=teacher?0:group.userData.character==='ponytail'?28:26;
+   const degrees=teacher?0:group.userData.character==='ponytail'?18:group.userData.character==='glasses'?20:16;
    const blend=T.MathUtils.clamp(weight,0,1),angle=degrees*Math.PI/180*blend;
    const phase=walkTime/Math.max(.001,cycleDuration)*Math.PI*2;
    for(const [side,sign]of [['Left',1],['Right',-1]]){
@@ -28,11 +28,11 @@ export function createWalkingArmPose(group,bones){
     if(carrying&&side==='Left')continue;
     const ph=phase+(side==='Right'?Math.PI:0);
     rotate(bones[side+'Arm'],0,0,1,sign*angle);
-    rotate(bones[side+'Arm'],1,0,0,.30*Math.cos(ph)*blend);
+    rotate(bones[side+'Arm'],1,0,0,.24*Math.cos(ph)*blend);
     // The elbow folds as the hand comes forward, then relaxes behind the hip.
     // A delayed wrist follows that arc instead of holding a rigid palm.
-    rotate(bones[side+'ForeArm'],1,0,0,-.12*(.5-.5*Math.cos(ph-.30))*blend);
-    rotate(bones[side+'Hand'],1,0,0,.075*Math.sin(ph-.55)*blend);
+    rotate(bones[side+'ForeArm'],1,0,0,-.20*(.5-.5*Math.cos(ph-.30))*blend);
+    rotate(bones[side+'Hand'],1,0,0,.055*Math.sin(ph-.55)*blend);
    }
    group.updateMatrixWorld(true);
   }

@@ -6,8 +6,8 @@
   <meta name="campus-room-server" content="">
   <title>我带过最差的一届</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232d786c'/%3E%3Cpath d='M16 18h32v25H16z' fill='%23fff6dd'/%3E%3Cpath d='M25 49h14M32 43v6M24 27h16M24 34h10' stroke='%232d786c' stroke-width='4'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=campus-78">
-  <link rel="stylesheet" href="./reference-hud54.css?v=campus-78">
+  <link rel="stylesheet" href="./style.css?v=campus-79">
+  <link rel="stylesheet" href="./reference-hud54.css?v=campus-79">
 
 </head>
 <body>
@@ -65,7 +65,7 @@
   <dialog id="room-dialog" class="sheet room-sheet" aria-labelledby="room-title">
     <div class="sheet-top"><h2 id="room-title">多人教室</h2><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
     <dl class="room-summary"><div><dt>同学</dt><dd id="room-character">入场随机</dd></div></dl>
-    <div class="room-connect"><p id="room-server-note" hidden>当前网站暂未开通多人联机，可以先玩单人。</p><div id="room-player-fields"><label>昵称<input id="room-name" maxlength="16" value="同学" autocomplete="nickname"></label><label>房间号 · 最多 8 人<input id="room-code" maxlength="6" placeholder="留空创建房间" autocapitalize="characters" autocomplete="off"></label></div><details id="room-server-options"><summary>高级服务器设置</summary><input id="room-server" type="url" aria-label="服务器地址" placeholder="已部署的服务器地址（可选）"></details><p id="room-error" role="alert" hidden></p></div><div id="room-load" class="room-load" data-state="loading"><span id="room-load-status" role="status" aria-live="polite">正在准备教室</span><div class="loading-track"><span id="room-load-fill"></span></div></div>
+    <div class="room-connect"><div class="segmented room-entry-tabs" role="group" aria-label="房间操作"><button id="room-create-tab" aria-pressed="true">创建房间</button><button id="room-join-tab" aria-pressed="false">加入房间</button></div><div id="room-player-fields"><label>昵称<input id="room-name" maxlength="16" value="同学" autocomplete="nickname"></label><label id="room-code-label" hidden>房间号<input id="room-code" inputmode="numeric" maxlength="6" placeholder="六位房间号" autocomplete="off"></label></div><p class="room-host-note">由房主主持，房主离开后房间结束。</p><p id="room-error" role="alert" hidden></p></div><div id="room-load" class="room-load" data-state="loading"><span id="room-load-status" role="status" aria-live="polite">正在准备教室</span><div class="loading-track"><span id="room-load-fill"></span></div></div>
     <fieldset id="room-settings" class="round-options round-values"><legend>房间设置</legend><label>人数上限 <select id="round-players"><option value="2">2 人</option><option value="3">3 人</option><option value="4">4 人</option><option value="5">5 人</option><option value="6">6 人</option><option value="7">7 人</option><option value="8" selected>8 人</option></select></label><label>时长 <input id="round-minutes" type="number" min="5" max="20" step="1" value="10"> 分钟</label><label>捣蛋目标 <input id="round-goal" type="number" min="20" max="160" step="1" value="120"></label><label class="chalk-setting"><input id="round-chalk-stamina" type="checkbox"> 粉笔消耗体力 <small>每发 8 点</small></label></fieldset>
     <button class="primary-button compact" id="room-enter" disabled>准备中…</button>
     <button class="paper-button room-solo" id="room-solo" hidden>先玩单人</button>
@@ -77,9 +77,9 @@
     <div class="setting-row"><span>画面质量</span><div class="segmented" role="group" aria-label="画面质量"><button data-quality="high" aria-pressed="true">精致</button><button data-quality="low" aria-pressed="false">流畅</button></div></div>
     <label class="setting-row" for="motion-toggle"><span>场景动态</span><input id="motion-toggle" type="checkbox" class="switch" checked></label>
     <label class="setting-row" for="sound-cues-toggle"><span>声纹提示</span><input id="sound-cues-toggle" type="checkbox" class="switch" checked></label>
-    <div class="setting-row"><span>手部动作</span><a class="paper-button" href="./animation-editor.html?v=campus-78" target="_blank" rel="noopener">打开编辑器</a></div>
+    <div class="setting-row"><span>手部动作</span><a class="paper-button" href="./animation-editor.html?v=campus-79" target="_blank" rel="noopener">打开编辑器</a></div>
     <div id="control-settings"></div></div><button class="primary-button compact close" id="settings-done"><span>完成</span><svg><use href="#i-check"/></svg></button>
   </dialog>
 </main>
-<script type="module" src="./app.js?v=campus-78"></script>
+<script type="module" src="./app.js?v=campus-79"></script>
 </body></html>

@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {handFrame} from './hand-motion.js?v=campus-78';
+import {handFrame} from './hand-motion.js?v=campus-79';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 // Toilet support differs from the school chair. Keep feet on the floor and
 // hands on the knees instead of using the invisible desktop as a support.

@@ -1,7 +1,7 @@
-import {setupControlSettings} from './control-settings64.js?v=campus-78';
-import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-78';
-import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-78';
-import {connectCampusRoom,defaultCampusEndpoint} from './network-client.js?v=campus-78';
+import {setupControlSettings} from './control-settings64.js?v=campus-79';
+import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-79';
+import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-79';
+import {connectPeerRoom as connectCampusRoom} from './peer-room79.js?v=campus-79';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -101,32 +101,34 @@ async function startSolo(){
 }
 $('#enter-classroom').addEventListener('click',startGame);
 $('#enter-solo').addEventListener('click',startSolo);
+let roomEntryKind='create';
 function syncRoomCreation(){
-  const joining=entryMode==='online'&&!!$('#room-code').value.trim();
-  $('#room-settings').hidden=entryMode!=='online'||joining||(!$('#room-server').value.trim()&&!defaultCampusEndpoint());
+  const joining=entryMode==='online'&&(roomEntryKind==='join'||!!$('#room-code').value.trim());
+  $('#room-settings').hidden=entryMode!=='online'||joining;
+  $('#room-code-label').hidden=roomEntryKind!=='join';
+  $('#room-create-tab').setAttribute('aria-pressed',String(roomEntryKind==='create'));
+  $('#room-join-tab').setAttribute('aria-pressed',String(roomEntryKind==='join'));
   for(const id of ['#round-minutes','#round-goal','#round-chalk-stamina','#round-players'])$(id).disabled=joining;
 }
-$('#room-code').addEventListener('input',syncRoomCreation);
-$('#room-server').value=defaultCampusEndpoint();
 function syncServerNotice(){
-  const missing=!$('#room-server').value.trim()&&!defaultCampusEndpoint();
-  $('#room-server-note').hidden=entryMode==='solo'||!missing;
-  $('#room-player-fields').hidden=missing;syncRoomCreation();
+  syncRoomCreation();
   if(entryMode==='online'){
     const button=$('#room-enter');
-    if(missing){button.disabled=true;button.textContent='联机暂未配置';}
-    else if(roomConnecting===entryRequest){button.disabled=true;button.textContent='连接中…';}
-    else if(sceneReady){button.disabled=false;button.textContent='创建 / 加入房间';}
+    if(roomConnecting===entryRequest){button.disabled=true;button.textContent='连接中…';}
+    else if(sceneReady){button.disabled=false;button.textContent=roomEntryKind==='join'?'加入房间':'创建房间';}
     else if($('#room-load').dataset.state==='error'){button.disabled=false;button.textContent='重新准备';}
     else{button.disabled=true;button.textContent='准备中…';}
   }
 }
-$('#room-server').addEventListener('input',syncServerNotice);
+$('#room-code').addEventListener('input',syncRoomCreation);
+for(const [id,kind]of [['#room-create-tab','create'],['#room-join-tab','join']])$(id).addEventListener('click',()=>{
+ if(roomConnecting===entryRequest)return;roomEntryKind=kind;if(kind==='create')$('#room-code').value='';$('#room-error').hidden=true;syncServerNotice();
+});
 $('#room-solo').addEventListener('click',startSolo);
 $('#room-enter').addEventListener('click',async()=>{
   if(entryMode==='solo'){startSolo();return;}
-  const endpoint=$('#room-server').value.trim()||defaultCampusEndpoint();
-  if(!endpoint||roomConnecting===entryRequest){syncServerNotice();return;}
+  if(roomConnecting===entryRequest)return;
+  if(roomEntryKind==='join'&&!/^\d{6}$/.test($('#room-code').value.trim())){$('#room-error').hidden=false;$('#room-error').textContent='请输入六位房间号';return;}
   if(!sceneReady||!game){ensureWorld();return;}
   // Read the final visible values at submission, including an input that has
   // not blurred yet. Joining an existing room never changes its host settings.
@@ -134,10 +136,10 @@ $('#room-enter').addEventListener('click',async()=>{
   const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;roomConnecting=request;button.disabled=true;button.textContent='连接中…';error.hidden=true;
   try{
     entryCharacter=randomStudent();
-    const online=await connectCampusRoom({endpoint,code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina},onError:e=>toast(typeof e==='string'?e:e.message)});
+    const online=await connectCampusRoom({code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina},onError:e=>toast(typeof e==='string'?e:e.message)});
     if(disposed||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
     scene.setMap(online.snapshot().map);scene.setCharacter(online.player?.character||entryCharacter);scene.setActive(true);game.start({...roundOptions});
-  }catch(e){if(request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接不到服务器，请确认服务器已启动。':e.message;}}
+  }catch(e){if(request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接失败，请检查网络后重试。':e.message;}}
   finally{if(roomConnecting===request)roomConnecting=null;if(request===entryRequest&&entryMode==='online')syncServerNotice();}
 });
 document.addEventListener('keydown',e=>{if(e.repeat)return;if(e.key==='Enter'&&!$('dialog[open]')&&!game?.active&&!["BUTTON","INPUT","SELECT"].includes(document.activeElement?.tagName)){e.preventDefault();startSolo();}});
@@ -160,7 +162,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-78'),import('./classroom-game.js?v=campus-78')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-79'),import('./classroom-game.js?v=campus-79')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
       if(disposed){prepared.dispose();return null;}

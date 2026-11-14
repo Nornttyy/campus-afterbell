@@ -26,3 +26,5 @@ https://www.huya.com/video/play/1009030064.html
 computer/photoshop-workspace.jpg and computer/unity-workspace.png: actual vendor-documentation screenshots. Full source URLs, dimensions, excerpt timing and checksums are recorded in computer/sources56.json.
 These are identified third-party brand/reference assets, not CC0 or project-created artwork.
 Photoshop and Unity screens display the sourced screenshots as static images; they do not embed or run those applications.
+
+Campus 79 networking dependency: PeerJS 1.5.5, https://www.npmjs.com/package/peerjs and https://github.com/peers/peerjs . MIT license bundled at ../vendor/peerjs-LICENSE.txt. Browser direct rooms use the public PeerJS signaling service, plus Cloudflare and Google STUN; no TURN relay or availability guarantee. No microphone is enabled automatically.
