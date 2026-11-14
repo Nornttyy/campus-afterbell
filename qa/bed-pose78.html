@@ -3,8 +3,8 @@
 import * as T from '../dist/vendor/three.module.js';
 import {OrbitControls} from '../dist/vendor/addons/controls/OrbitControls.js';
 import {GLTFLoader} from '../dist/vendor/addons/loaders/GLTFLoader.js';
-import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-80';
-import {createDormRoom,DORM_BEDS,dormPoint,dormBodyOffset} from '../dist/dorm-room70.js?v=campus-80';
+import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-81';
+import {createDormRoom,DORM_BEDS,dormPoint,dormBodyOffset} from '../dist/dorm-room70.js?v=campus-81';
 import {hotpotHelpers} from './hotpot70-helpers.mjs';
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(56,innerWidth/innerHeight,.03,100),renderer=new T.WebGLRenderer({canvas:document.querySelector('canvas'),antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(2,devicePixelRatio));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1;scene.background=new T.Color('#455052');scene.add(new T.HemisphereLight('#e5f1f5','#988b76',2.1));const sun=new T.DirectionalLight('#ffefdb',2.2);sun.position.set(4,6,-5);scene.add(sun);
 const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;const room=createDormRoom(hotpotHelpers(scene,{textureDraw:true})),actors=new Map();let variant='boy',upper=false,sleeping=true,angle=false;

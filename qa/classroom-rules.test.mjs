@@ -30,9 +30,9 @@ function focusSeat(round,id){
   round._plan={intent:'investigate',targetId:id,since:round.elapsed,until:round.elapsed+100,route:[],routeLength:0,arrivedAt:round.elapsed,utility:999};
   round.teacher.intent='investigate';round.teacher.targetId=id;round._thinkAt=round.elapsed+100;
   for(const s of round.students)if(s.isTeammate){s._decisionAt=Infinity;s.holding=false;}
-  // A stocked phone isolates perception from the randomly drawn item mix.
-  actor._selectedSlot=0;Object.assign(actor._slots[0],{action:'phone',progress:0,readyAt:0});actor.action='phone';actor.holding=true;
-  if(actor.isPlayer){if(!round.snapshot().drawer.open)round.toggleDrawer();round.selectAction('phone');takeAndUse(round);}
+  // Keep a stocked phone visibly held, isolating perception from use duration.
+  actor._selectedSlot=0;Object.assign(actor._slots[0],{action:'phone',progress:0,readyAt:0});actor.action='phone';actor.holding=true;actor._speed=0;
+  if(actor.isPlayer){if(!round.snapshot().drawer.open)round.toggleDrawer();round.selectAction('phone');takeAndUse(round);round.hold(false);}
 }
 
 test('30 shared seats, five team members, a ten-minute clock and no ambient points',()=>{
@@ -105,7 +105,7 @@ test('pause freezes perception, AI, movement and smoke and resume needs fresh he
 test('four classmates plan and complete actual actions; ordinary NPCs never score or generate evidence',()=>{
   const r=new ClassroomRound({seed:73,target:100000});r.start();r.step(15);
   const s=r.snapshot(),events=r.drainEvents(),completed=events.filter(e=>e.type==='complete');
-  assert.ok(completed.length>0);assert.equal(s.score,completed.reduce((n,e)=>n+e.points,0));
+  assert.ok(completed.length>0);assert.equal(s.score,events.filter(e=>e.type==='complete'||e.type==='gum-score').reduce((n,e)=>n+e.points,0));
   assert.ok(completed.every(e=>FRIEND_SEATS.includes(e.studentId)&&e.actor==='ai'));
   assert.equal(new Set(s.students.filter(s=>s.isTeammate).map(s=>s.personality)).size,4);
   assert.ok(new Set(s.students.filter(s=>s.isTeammate).map(s=>s.action)).size>1);
@@ -180,12 +180,12 @@ test('a live cooperative session can fill the mischief meter without a task chec
   }
 });
 
-test('three-second pacing permits observation, actual scoring and valid terminal results',()=>{
+test('two-second pacing permits observation, actual scoring and valid terminal results',()=>{
   // These bounds protect the local prototype rhythm; they are not original-game values.
   for(const seed of [7,42,101]){
     const idle=new ClassroomRound({seed});idle.start();idle.step(30);
-    assert.equal(idle.snapshot().status,'playing');assert.ok(idle.snapshot().score<40);
-    // Isolate defeat from the faster three-second scoring target.
+    assert.equal(idle.snapshot().status,'playing');assert.ok(idle.snapshot().score<idle.target);assert.equal(idle.player._earnedPoints,0);assert.equal(idle.score,idle.drainEvents().filter(e=>e.type==='complete'||e.type==='gum-score').reduce((sum,e)=>sum+e.points,0));
+    // Isolate defeat from the faster two-second scoring target.
     const reckless=new ClassroomRound({seed});reckless.start();focusSeat(reckless,PLAYER_SEAT);for(const friend of reckless.students.filter(s=>s.isTeammate))friend._decisionAt=.5;let s=reckless.snapshot(),walked=0,previous=s.teacher;
     for(let i=0;i<2400&&s.status==='playing';i++){
       useAvailable(reckless,s);s=reckless.step(.25);
@@ -222,7 +222,7 @@ test('a stocked item must be taken from an open drawer, then may be held while c
   r.player._slots.forEach((slot,index)=>slot.action=['drink','snack','snack'][index]);
   assert.equal(takeAndUse(r),false);assert.equal(r.selectSlot(1),true);assert.equal(r.snapshot().drawer.open,false);assert.equal(takeAndUse(r),false);
   assert.equal(r.toggleDrawer(),true);assert.equal(takeAndUse(r),true);assert.equal(r.snapshot().drawer.drawnSlot,1);
-  assert.equal(r.toggleDrawer(),true);r.step(1);assert.equal(r.snapshot().holding,true);assert.equal(r.snapshot().actionProgress,.333333);
+  assert.equal(r.toggleDrawer(),true);r.step(1);assert.equal(r.snapshot().holding,true);assert.equal(r.snapshot().actionProgress,.5);
   r.hold(false);assert.equal(takeAndUse(r),true); // A concealed, already taken item remains available.
   const stock=r.snapshot().drawer.slots;r.interact();r.step(1);
   assert.equal(r.snapshot().drawer.open,false);assert.equal(r.toggleDrawer(),false);assert.equal(r.selectSlot(2),false);
@@ -233,11 +233,11 @@ test('a stocked item must be taken from an open drawer, then may be held while c
 });
 
 test('duplicate objects keep independent progress and only the completed slot is consumed',()=>{
-  const r=quietFixture(1);r.player._slots.forEach(s=>s.action='drink');r.toggleDrawer();takeAndUse(r);r.step(2);
-  assert.equal(r.snapshot().actionProgress,.666667);
+  const r=quietFixture(1);r.player._slots.forEach(s=>s.action='drink');r.toggleDrawer();takeAndUse(r);r.step(1);
+  assert.equal(r.snapshot().actionProgress,.5);
   choose(r,1);assert.equal(r.snapshot().actionProgress,0);assert.equal(r.snapshot().holding,false);
-  takeAndUse(r);r.step(1);assert.equal(r.snapshot().actionProgress,.333333);
-  choose(r,0);assert.equal(r.snapshot().actionProgress,0);takeAndUse(r);r.step(3);
+  takeAndUse(r);r.step(1);assert.equal(r.snapshot().actionProgress,.5);
+  choose(r,0);assert.equal(r.snapshot().actionProgress,0);takeAndUse(r);r.step(2);
   const s=r.snapshot();assert.equal(s.completed.drink,1);assert.equal(s.score,CLASSROOM_ACTIONS.drink.points);assert.equal(s.holding,false);assert.equal(s.drawer.drawnSlot,null);
   assert.deepEqual(s.drawer.slots[0],{id:0,action:null,readyIn:DEVELOPMENT_TUNING.drawerRefill});
   assert.equal(s.drawer.slots[1].action,'drink');assert.equal(s.drawer.slots[2].action,'drink');
@@ -246,12 +246,12 @@ test('duplicate objects keep independent progress and only the completed slot is
 
 test('consumed slots refill independently after three active seconds, with no automatic scoring',()=>{
   const r=quietFixture();r.player._slots.forEach(s=>s.action='snack');r.toggleDrawer();
-  r.takeSlot(2);r.hold(true);r.step(1.5);r.returnItem();assert.equal(r.player._slots[2].progress,0);r.takeSlot(0);r.hold(true);r.step(3);
+  r.takeSlot(2);r.hold(true);r.step(1.5);r.returnItem();assert.equal(r.player._slots[2].progress,0);r.takeSlot(0);r.hold(true);r.step(2);
   assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.hold(true),false);
-  r.takeSlot(2);r.hold(true);r.step(3);let s=r.snapshot();
-  assert.equal(s.drawer.slots[0].readyIn,0);assert.equal(s.drawer.slots[2].readyIn,3);assert.equal(s.score,2);
+  r.takeSlot(2);r.hold(true);r.step(2);let s=r.snapshot();
+  assert.equal(s.drawer.slots[0].readyIn,1);assert.equal(s.drawer.slots[2].readyIn,3);assert.equal(s.score,2);
   r.pause();const paused=r.snapshot();r.step(20);r.toggleDrawer();r.takeSlot(1);assert.deepEqual(r.snapshot(),paused);r.pause(false);
-  assert.ok(r.snapshot().drawer.slots[0].action);r.step(1.5);s=r.snapshot();
+  assert.equal(r.snapshot().drawer.slots[0].action,null);r.step(1.5);s=r.snapshot();
   assert.ok(Object.hasOwn(CLASSROOM_ACTIONS,s.drawer.slots[0].action));assert.equal(s.drawer.slots[0].readyIn,0);assert.equal(s.drawer.slots[2].readyIn,1.5);
   r.step(1.5);s=r.snapshot();assert.ok(s.drawer.slots[2].action);assert.equal(s.holding,false);assert.equal(s.score,2);
   r.step(10);assert.equal(r.snapshot().score,2);assert.equal(r.snapshot().actionProgress,0);
@@ -300,12 +300,12 @@ test('E takes without using, left release retains the item, Q returns without du
 });
 
 // Measure the public interaction clock, including an interrupted hold.
-test('ordinary drawer actions complete at exactly three active held seconds',()=>{
+test('ordinary drawer actions complete at exactly two active held seconds',()=>{
  for(const action of ['snack','phone','drink','burger']){
   const r=quietFixture();Object.assign(r.player._slots[0],{action,progress:0,readyAt:0});r.toggleDrawer();r.takeSlot(0);
-  assert.equal(CLASSROOM_ACTIONS[action].duration,3);r.step(5);assert.equal(r.snapshot().actionProgress,0);
+  assert.equal(CLASSROOM_ACTIONS[action].duration,2);r.step(5);assert.equal(r.snapshot().actionProgress,0);
   r.hold(true);r.step(1);r.hold(false);r.step(2);assert.equal(r.snapshot().completed[action],0);
-  r.hold(true);r.step((action==='phone'?2:3)-DT);assert.equal(r.snapshot().completed[action],0);assert.ok(r.snapshot().actionProgress<1);
+  r.hold(true);r.step((action==='phone'?1:2)-DT);assert.equal(r.snapshot().completed[action],0);assert.ok(r.snapshot().actionProgress<1);
   r.step(DT);assert.equal(r.snapshot().completed[action],1);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.snapshot().drawer.drawnSlot,null);assert.equal(r.snapshot().score,CLASSROOM_ACTIONS[action].points);
  }
 });
@@ -334,10 +334,10 @@ test('a smoke tap throws immediately on release, consumes exactly one item and c
 });
 test('smoke charge increases throw distance, saturates and waits indefinitely for release',()=>{
  const speeds=[];
- for(const seconds of [0,.6,1.2,6]){
+ for(const seconds of [0,1,2,6]){
   const r=heldSmoke();r.hold(true);r.step(seconds);const s=r.snapshot();
   assert.equal(s.projectiles.length,0);assert.equal(s.completed.smoke,0);assert.equal(s.drawer.drawnSlot,0);
-  assert.equal(s.actionProgress,Math.min(seconds/1.2,1));
+  assert.equal(s.actionProgress,Math.min(seconds/2,1));
   r.releaseUse();const p=r.snapshot().projectiles[0];speeds.push(Math.hypot(p.vx,p.vy,p.vz));
  }
  assert.ok(speeds[0]<speeds[1]&&speeds[1]<speeds[2]);assert.ok(Math.abs(speeds[2]-speeds[3])<1e-9);
@@ -352,7 +352,7 @@ test('put back, pause and input cancellation cancel charge without throwing or l
 
 test('smoke waits half a second after settling; wall hits and airborne bounces never start it',()=>{
  for(const aim of [{yaw:0,pitch:0,charge:0},{yaw:Math.PI/2,pitch:-.6,charge:1},{yaw:Math.PI,pitch:.6,charge:.5}]){
-  const r=heldSmoke();r.setLook(aim.yaw,aim.pitch);r.hold(true);r.step(aim.charge*1.2);r.releaseUse();
+  const r=heldSmoke();r.setLook(aim.yaw,aim.pitch);r.hold(true);r.step(aim.charge*2);r.releaseUse();
   let p,previousRest=0,hadImpactInAir=false;
   for(let i=0;i<600;i++){
    r.step(DT);p=r.projectiles[0];

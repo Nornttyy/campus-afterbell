@@ -8,9 +8,9 @@ function quiet(){const r=new ClassroomRound({target:100000,seed:44});r.start();r
 function bind(r,s,index=0){r.teacher.x=s.x;r.teacher.z=s.z+.9;r._stun(s);assert.ok(r._grab(s));r.teacher.x=DETENTION[index].x;r.teacher.z=DETENTION[index].z-1.1;assert.ok(r._bind(index));}
 function near(r,s){r.player.seated=false;r.player.seatId=null;r.player.x=s.x;r.player.z=s.z-.9;r.player.yaw=0;r.player.pitch=.35;}
 test('teammates need continuous nearby rescue input; walking away cancels; success restores gameplay',()=>{
- const r=quiet(),s=r.students[2];bind(r,s);near(r,s);assert.equal(r.rescueTarget().id,2);assert.ok(r.setRescue(2));r.step(.8);assert.equal(s.caught,true);assert.ok(r.snapshot().rescue.progress>.49);r.setRescue(null);r.step(2);assert.equal(s.caught,true);
+ const r=quiet(),s=r.students[2];bind(r,s);near(r,s);assert.equal(r.rescueTarget().id,2);assert.ok(r.setRescue(2));r.step(1);assert.equal(s.caught,true);assert.ok(r.snapshot().rescue.progress>.49);r.setRescue(null);r.step(2);assert.equal(s.caught,true);
  r.setRescue(2);r.player.x+=3;r.step(.2);assert.equal(r.snapshot().rescue.id,null);assert.equal(s.caught,true);
- near(r,s);r.setRescue(2);r.pause();const before=r.snapshot();r.step(9);assert.deepEqual(r.snapshot(),before);r.pause(false);r.setRescue(2);r.step(1.6);assert.equal(s.captivity,'free');assert.equal(s.postId,null);assert.equal(r.snapshot().caughtCount,0);assert.ok(!r._memory.get(s.id)?.confirmed);
+ near(r,s);r.setRescue(2);r.pause();const before=r.snapshot();r.step(9);assert.deepEqual(r.snapshot(),before);r.pause(false);r.setRescue(2);r.step(2);assert.equal(s.captivity,'free');assert.equal(s.postId,null);assert.equal(r.snapshot().caughtCount,0);assert.ok(!r._memory.get(s.id)?.confirmed);
  const route=s._returnRoute;assert.ok(route?.length,'rescued pupil did not receive a route back to their seat');
  const returnDistance=route.reduce((sum,p,i)=>sum+Math.hypot(p.x-(i?route[i-1].x:s.x),p.z-(i?route[i-1].z:s.z)),0),dt=1/60;
  // Each waypoint may consume one final simulation tick; the budget follows

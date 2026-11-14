@@ -1,6 +1,6 @@
-import {NetworkRound,RoomConnectionError,readEvent} from './network-client.js?v=campus-80';
+import {NetworkRound,RoomConnectionError,readEvent} from './network-client.js?v=campus-81';
 
-const PREFIX='campus-afterbell-79-',TIMEOUT=25000;
+const PREFIX='campus-afterbell-81-',TIMEOUT=25000;
 const message=error=>error?.type==='peer-unavailable'?'没找到这个房间，请确认房间号和房主是否在线。':error?.type==='unavailable-id'?'房间号已被占用，请再试一次。':'暂时无法建立联机，请换个网络重试。';
 function openPeer(Peer,id){return new Promise((resolve,reject)=>{
  const peer=new Peer(id,{debug:0,config:{iceServers:[{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun.l.google.com:19302'}]}});

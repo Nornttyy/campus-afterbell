@@ -11,7 +11,7 @@ function room(){const r=new CampusRoom({code:'550001',seed:73}),host=r.join({nam
 
 test('food requires lowered head with hysteresis; release resets, raised head alone only pauses',()=>{
  const r=quiet();take(r,'burger');r.player.pitch=0;r.hold(true);tick(r,1);assert.equal(r.player._slots[0].progress,0);assert.equal(r.snapshot().player.eating,false);
- r.setLook(0,.5);tick(r,1);const first=r.snapshot().actionProgress;assert.ok(first>.32&&first<.34);assert.equal(r.snapshot().player.eating,true);
+ r.setLook(0,.5);tick(r,1);const first=r.snapshot().actionProgress;assert.ok(first>.49&&first<.51);assert.equal(r.snapshot().player.eating,true);
  r.setLook(0,.34);tick(r,.2);assert.ok(r.snapshot().actionProgress>first);r.setLook(0,.2);const paused=r.snapshot().actionProgress;tick(r,.5);assert.equal(r.snapshot().actionProgress,paused);assert.equal(r.snapshot().player.eating,false);
  r.releaseUse();assert.equal(r.snapshot().actionProgress,0);r.setLook(0,.5);r.hold(true);tick(r,3);assert.equal(r.score,1);assert.equal(r.player._drawnSlot,null);r.releaseUse();assert.equal(r.score,1);assert.equal(r.drainEvents().filter(e=>e.type==='food-complete').length,1);
 });

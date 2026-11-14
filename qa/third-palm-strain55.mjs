@@ -1,7 +1,7 @@
 // Measures real palm-webbing edge elongation against the authored neutral skin.
 import {readFileSync,writeFileSync} from 'node:fs';
 import * as T from '../dist/vendor/three.module.js';
-import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-80';
+import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-81';
 import {loadGeometry} from './gltf-geometry.mjs';
 const profiles=process.argv.slice(2).flatMap(f=>JSON.parse(readFileSync(f))),results=[];
 for(const fit of profiles){

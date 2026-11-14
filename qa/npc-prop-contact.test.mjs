@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {STUDENT_ASSETS,createRiggedStudent} from '../dist/student-assets.js';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-80';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-80';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-81';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-81';
 import {fingerPadSurfaceDistance} from './prop-contact-helpers.mjs';
 
 const V=(...a)=>new T.Vector3(...a);

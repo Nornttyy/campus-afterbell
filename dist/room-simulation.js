@@ -1,4 +1,5 @@
 import {reachesSchoolDoor} from './door-interaction54.js';
+import {INTERACTION_SECONDS} from './item-rules50.js';
 import {validComputerPlayback} from './computer-rules55.js';
 import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js';
 import {movementScale} from './movement55.js';
@@ -226,7 +227,7 @@ export class CampusRoom{
   for(const member of this.members.values()){
    if(!member.doorUse)continue;const p=member.context.player,id=member.doorId||'rear',key=id==='office'?'officeDoorClosed':id+'DoorClosed';
    if(!member.connected||this.sim.layout[key]===member.doorTarget||id==='office'&&this.sim.layout.officeLocked||!reachesSchoolDoor(p,this.sim.layout,id)||this.sim._restrained(p)||p.seated){member.doorUse=false;member.doorProgress=0;continue;}
-   member.doorProgress=(member.doorProgress||0)+dt/3;if(member.doorProgress>=1){ClassroomRound.prototype.setSchoolDoor.call(this.sim,id,member.doorTarget);member.doorUse=false;member.doorProgress=0;}
+   member.doorProgress=Math.min(1,(member.doorProgress||0)+dt/INTERACTION_SECONDS);if(member.doorProgress>=1-1e-9){ClassroomRound.prototype.setSchoolDoor.call(this.sim,id,member.doorTarget);member.doorUse=false;member.doorProgress=0;}
   }
   const incoming=this.sim.drainEvents();for(const event of incoming)this.events.push({...event,networkSequence:++this.sequence});
   if(this.events.length>100)this.events.splice(0,this.events.length-100);this.sequence++;

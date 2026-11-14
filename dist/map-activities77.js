@@ -1,8 +1,8 @@
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-80';
-import {TOILET_STALLS} from './toilet-layout70.js?v=campus-80';
-// The clips establish hanging and plunging, but not timing/score. Three seconds
-// of plunging and food wrappers clogging a used bowl are explicit local tuning.
-export const PLUNGE_SECONDS=3;
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-81';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-81';
+import {TOILET_STALLS} from './toilet-layout70.js?v=campus-81';
+// Plunging shares the requested interaction duration with food and rescue.
+export const PLUNGE_SECONDS=INTERACTION_SECONDS;
 export const barById=id=>PLAYGROUND_LAYOUT.bars.find(b=>b.id===id);
 export const toiletBowl=id=>{const s=TOILET_STALLS.find(s=>s.id===id);return s?{x:s.x-.18,z:s.z-.48,y:.43}:null;};
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);

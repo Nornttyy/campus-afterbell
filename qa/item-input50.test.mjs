@@ -41,8 +41,8 @@ test('bound mouse hold stays at four circles, and release without contact launch
  }finally{f.close();}
 });
 test('production food input converts banana to a throwable peel and garlic to a five-second click ability',()=>{
- const f=fixture();try{f.take('banana');f.mouse(true);f.advance(3);assert.equal(f.rendered.selected,'bananaPeel');assert.equal(f.rendered.drawer.drawnSlot,0);f.mouse(false);assert.equal(f.round.peels.length,0);f.mouse(true);f.mouse(false);assert.equal(f.rendered.peels.length,1);assert.equal(f.rendered.drawer.drawnSlot,null);
-  f.take('garlic');f.mouse(true);f.advance(3);assert.equal(f.rendered.player.burpReadyLeft,5);assert.equal(f.round.burps.length,0);f.mouse(false);f.mouse(true);assert.equal(f.rendered.burps.length,1);assert.equal(f.rendered.player.burpReadyLeft,0);f.mouse(false);
+ const f=fixture();try{f.take('banana');f.mouse(true);f.advance(2);assert.equal(f.rendered.selected,'bananaPeel');assert.equal(f.rendered.drawer.drawnSlot,0);f.mouse(false);assert.equal(f.round.peels.length,0);f.mouse(true);f.mouse(false);assert.equal(f.rendered.peels.length,1);assert.equal(f.rendered.drawer.drawnSlot,null);
+  f.take('garlic');f.mouse(true);f.advance(2);assert.equal(f.rendered.player.burpReadyLeft,5);assert.equal(f.round.burps.length,0);f.mouse(false);f.mouse(true);assert.equal(f.rendered.burps.length,1);assert.equal(f.rendered.player.burpReadyLeft,0);f.mouse(false);
  }finally{f.close();}
 });
 test('E takes a harmless twirling pen, toggles writing, and Q returns without opening storage',()=>{
@@ -53,7 +53,7 @@ test('E takes a harmless twirling pen, toggles writing, and Q returns without op
 });
 test('computer E entry, app command and arrow keys score real snake food and preserve one three-second slot',()=>{
  const f=fixture({map:'computer7'});try{f.target({kind:'computer'});f.key('KeyE');f.advance(.1);assert.equal(f.rendered.player.computerActive,true);assert.equal(f.rendered.player.computer.app,'desktop');f.commands.app('snake');f.advance(.65);assert.equal(f.round.score,1);assert.equal(f.rendered.player.computer.snake.score,1);f.key('ArrowUp');f.advance(.16);assert.equal(f.rendered.player.computer.snake.direction,'up');f.key('KeyQ');f.advance(.1);assert.equal(f.rendered.player.computer.app,'desktop');assert.equal(f.rendered.player.computerActive,true);f.key('KeyQ');f.advance(.1);assert.equal(f.rendered.player.computerActive,false);
-  f.take('burger');f.mouse(true);f.advance(3);f.mouse(false);assert.equal(f.rendered.drawer.slots.length,1);assert.equal(f.rendered.drawer.slots[0].readyIn,3);f.advance(3-1/60);assert.equal(f.rendered.drawer.slots[0].action,null);f.advance(1/60);assert.ok(f.rendered.drawer.slots[0].action);
+  f.take('burger');f.mouse(true);f.advance(2);f.mouse(false);assert.equal(f.rendered.drawer.slots.length,1);assert.equal(f.rendered.drawer.slots[0].readyIn,3);f.advance(3-1/60);assert.equal(f.rendered.drawer.slots[0].action,null);f.advance(1/60);assert.ok(f.rendered.drawer.slots[0].action);
  }finally{f.close();}
 });
 test('teacher production left click requires but does not consume stamina and is blocked while stunned',()=>{
@@ -74,7 +74,7 @@ test('production audio dispatch keeps private chewing local and world sound mark
 
 
 test('unverified score, capture, AI observation and interaction messages never become gameplay subtitles',()=>{
- const f=fixture();try{const p=f.round.player;f.take('burger');f.mouse(true);f.advance(3);f.mouse(false);assert.equal(f.round.score,1);assert.ok(!f.element('#round-feedback').textContent,'food score stays in the score HUD');
+ const f=fixture();try{const p=f.round.player;f.take('burger');f.mouse(true);f.advance(2);f.mouse(false);assert.equal(f.round.score,1);assert.ok(!f.element('#round-feedback').textContent,'food score stays in the score HUD');
   for(const event of [{type:'observation',public:true,text:'老师已认出你'}, {type:'elevator-denied',message:'等待其他玩家'}, {type:'rear-door-blocked'}, {type:'gum-score',studentId:p.id,points:2}, {type:'snake-food',studentId:p.id,points:1}, {type:'stunned',studentId:p.id}, {type:'grabbed',studentId:p.id}, {type:'bound',studentId:p.id}, {type:'rescued',studentId:p.id}, {type:'correct-capture'}, {type:'wrong-grab'}]){f.round._events.push(event);f.advance(.02);assert.ok(!f.element('#round-feedback').textContent,event.type+' must not add a student subtitle');}
   assert.ok(f.sounds.some(([type])=>type==='food-complete'),'removing subtitles must retain public food audio');
  }finally{f.close();}

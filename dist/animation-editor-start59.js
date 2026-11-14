@@ -1,6 +1,6 @@
-import {createHandAnimationDocument} from './hand-animation-data59.js?v=campus-80';
-import {HAND_ANIMATION_BASELINE} from './hand-animation-baseline59.js?v=campus-80';
-import {completeAnimationDocument} from './animation-editor-state59.js?v=campus-80';
+import {createHandAnimationDocument} from './hand-animation-data59.js?v=campus-81';
+import {HAND_ANIMATION_BASELINE} from './hand-animation-baseline59.js?v=campus-81';
+import {completeAnimationDocument} from './animation-editor-state59.js?v=campus-81';
 
 // Only untouched legacy motion is removed during the v1 → v2 draft migration.
 // Duration/easing edits survive. Any authored hand pose, finger, or key timing

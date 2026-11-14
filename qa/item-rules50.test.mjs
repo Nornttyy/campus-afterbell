@@ -20,24 +20,24 @@ test('bound bubble caps at four cycles and attaches only when another head touch
  assert.equal(r.bubbles[0].attachedId,victim.id);assert.ok(r.snapshot().students[victim.id].bubbleLeft>9.9);assert.equal(r.snapshot().students[victim.id].bubbleSize,1);assert.equal(r.snapshot().player.bubble.progress,0);
  const x=victim.x+=.2;r.step(DT);assert.equal(r.bubbles[0].x,x);
 });
-test('banana takes three seconds and returns one peel, whose floor trap stuns once',()=>{
- const r=quiet();stock(r,'banana');r.hold(true);r.step(3-DT);assert.equal(r.player._slots[0].action,'banana');r.step(DT);assert.equal(r.player._slots[0].action,'bananaPeel');assert.equal(r.player._drawnSlot,0);assert.equal(r.score,1);
+test('banana takes two seconds and returns one peel, whose floor trap stuns once',()=>{
+ const r=quiet();stock(r,'banana');r.hold(true);r.step(2-DT);assert.equal(r.player._slots[0].action,'banana');r.step(DT);assert.equal(r.player._slots[0].action,'bananaPeel');assert.equal(r.player._drawnSlot,0);assert.equal(r.score,1);
  r.hold(true);assert.equal(r.releaseUse(),true);assert.equal(r.peels.length,1);const peel=r.peels[0];Object.assign(peel,{x:r.player.x,z:r.player.z,y:.075,armed:true,settled:true});r.step(DT);
  assert.equal(r.player.captivity,'stunned');assert.equal(r.player.seated,false);assert.ok(r.snapshot().player.stunLeft>3.9);assert.equal(r.peels.length,0);r.step(4);assert.equal(r.player.captivity,'free');
 });
 test('garlic arms one five-second straight burp, no auto-fire or extra uses',()=>{
- const r=quiet();stock(r,'garlic');r.hold(true);r.step(3);assert.equal(r.snapshot().player.burpReadyLeft,5);assert.equal(r.burps.length,0);r.setLook(0,0);assert.equal(r.hold(true),true);assert.equal(r.burps.length,1);assert.equal(r.burp(),false);
+ const r=quiet();stock(r,'garlic');r.hold(true);r.step(2);assert.equal(r.snapshot().player.burpReadyLeft,5);assert.equal(r.burps.length,0);r.setLook(0,0);assert.equal(r.hold(true),true);assert.equal(r.burps.length,1);assert.equal(r.burp(),false);
  const start={...r.burps[0]};for(const s of r.students)if(s!==r.player){s.x=30;s.z=30;}r.step(.2);assert.equal(r.burps[0].x,start.x);assert.ok(Math.abs(r.burps[0].z-start.z-.6)<1e-6);assert.equal(r.burps[0].y,start.y);
  const expired=quiet();stock(expired,'garlic');expired.hold(true);expired.step(8+DT);assert.equal(expired.burp(),false);assert.equal(expired.burps.length,0);
 });
 test('office stock is only lunch, refills after three seconds and survives leaving the chair',()=>{
- const r=quiet();r.interact();Object.assign(r.player,{x:OFFICE_CHAIR.x,z:OFFICE_CHAIR.z});assert.equal(r.openOfficeDrawer(),true);assert.equal(r.snapshot().drawer.office,true);assert.deepEqual(r.snapshot().drawer.slots.map(s=>s.action),['lunch']);assert.equal(r.takeSlot(0),true);r.hold(true);r.step(3);assert.equal(r.score,3);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);r.interact();r.step(3);assert.equal(r.officeSlots[0].action,'lunch');
+ const r=quiet();r.interact();Object.assign(r.player,{x:OFFICE_CHAIR.x,z:OFFICE_CHAIR.z});assert.equal(r.openOfficeDrawer(),true);assert.equal(r.snapshot().drawer.office,true);assert.deepEqual(r.snapshot().drawer.slots.map(s=>s.action),['lunch']);assert.equal(r.takeSlot(0),true);r.hold(true);r.step(2);assert.equal(r.score,3);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);r.interact();r.step(3);assert.equal(r.officeSlots[0].action,'lunch');
  const normal=r.seats.find(s=>!r.students.some(p=>p.seated&&p.seatId===s.id));Object.assign(r.player,normal);assert.equal(r.interact(normal.id),'seated');assert.equal(r.snapshot().drawer.office,false);assert.equal(r.snapshot().drawer.slots.length,3);
 });
 test('computer room has a desktop and snake scores only real food, with one three-second drawer slot',()=>{
  const r=quiet('computer7');assert.equal(r.player._slots.length,1);assert.equal(r.startComputer(),true);assert.equal(r.snapshot().player.computer.app,'desktop');r.hold(true);r.step(3);assert.equal(r.score,0);assert.equal(r.computerApp('study'),true);r.step(2);assert.equal(r.score,0);
  assert.equal(r.computerApp('snake'),true);r.step(.65);assert.equal(r.score,1);assert.equal(r.snapshot().player.computer.snake.score,1);assert.equal(r.snakeDirection('left'),false);assert.equal(r.computerApp('snake'),true);assert.equal(r.snapshot().player.computer.snake.score,1,'reopening must not reroll an active snake');
- r.stopComputer();stock(r,'burger');r.hold(true);r.step(3);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);r.step(3-DT);assert.equal(r.player._slots[0].action,null);r.step(DT);assert.ok(r.player._slots[0].action);
+ r.stopComputer();stock(r,'burger');r.hold(true);r.step(2);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);r.step(3-DT);assert.equal(r.player._slots[0].action,null);r.step(DT);assert.ok(r.player._slots[0].action);
 });
 test('snake rejects reverse turns, stops on collisions and never spawns food inside its body',()=>{
  const s=createSnake(4);assert.equal(turnSnake(s,'left'),false);assert.equal(stepSnake(s,.64),1);assert.equal(s.score,1);assert.ok(!s.body.some(p=>p.x===s.food.x&&p.y===s.food.y));stepSnake(s,5);assert.equal(s.alive,false);const score=s.score;stepSnake(s,5);assert.equal(s.score,score);

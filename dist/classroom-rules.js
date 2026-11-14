@@ -1,50 +1,49 @@
-import {DORM_ROOMS,dormDoorPose,dormDoorSolids,dormRoomPoint} from './dorm-layout70.js?v=campus-80';
-import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-80';
-import {TOILET_STALLS,toiletDoorPose,toiletDoorSolids} from './toilet-layout70.js?v=campus-80';
-import {PLAYGROUND_LAYOUT,PLAYGROUND_BOARD,PLAYGROUND_POSTS} from './playground-layout70.js?v=campus-80';
-import {floatingBubblePosition,bubbleTouchesHead} from './bubble-flight69.js?v=campus-80';
-import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-80';
-import {ordinaryStudyState} from './npc-study58.js?v=campus-80';
-import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-80';
-import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-80';
-import {ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-80';
-import {validRoundSettings,chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-80';
-import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-80';
-import {smokeEnvelope} from './smoke-physics.js?v=campus-80';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-80';
-import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-80';
-import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, CAMPUS_MAPS, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-80';
+import {DORM_ROOMS,dormDoorPose,dormDoorSolids,dormRoomPoint} from './dorm-layout70.js?v=campus-81';
+import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-81';
+import {TOILET_STALLS,toiletDoorPose,toiletDoorSolids} from './toilet-layout70.js?v=campus-81';
+import {PLAYGROUND_LAYOUT,PLAYGROUND_BOARD,PLAYGROUND_POSTS} from './playground-layout70.js?v=campus-81';
+import {floatingBubblePosition,bubbleTouchesHead} from './bubble-flight69.js?v=campus-81';
+import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-81';
+import {ordinaryStudyState} from './npc-study58.js?v=campus-81';
+import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-81';
+import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-81';
+import {INTERACTION_SECONDS,ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-81';
+import {validRoundSettings,chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-81';
+import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-81';
+import {smokeEnvelope} from './smoke-physics.js?v=campus-81';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-81';
+import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-81';
+import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, CAMPUS_MAPS, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-81';
 
 /** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:NORMAL_WALK_SPEEDS.student, teacherWalkSpeed:NORMAL_WALK_SPEEDS.teacher, crouchSpeed:CRAWL_TUNING.speed, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
 // Metres per second. Urgent rescue/chase and human movement have separate rules.
 export const AI_WALK_SPEEDS=Object.freeze({student:NORMAL_WALK_SPEEDS.student,teacherPatrol:NORMAL_WALK_SPEEDS.teacher,teacherPursuit:NORMAL_WALK_SPEEDS.teacher,teacherEntry:NORMAL_WALK_SPEEDS.teacher,teacherEscort:NORMAL_WALK_SPEEDS.teacherCarrying});
-export const RESCUE_DURATION=1.6;
+export const RESCUE_DURATION=INTERACTION_SECONDS;
 // Bound pupils visibly hold to blow, then wait through a 10-second cooldown.
 // The approximate fill/lifetime are local tuning. The video's score changes
 // belong to another pupil, so this action awards no points without more evidence.
-export const BUBBLE_TUNING=Object.freeze({duration:6,cycle:1.5,cooldown:10,pointsPerSecond:0,maxPoints:10,lifetime:6});
+export const BUBBLE_TUNING=Object.freeze({duration:ITEM50_TUNING.gumSeconds,cycle:ITEM50_TUNING.gumCycleSeconds,cooldown:10,pointsPerSecond:0,maxPoints:10,lifetime:6});
 export const FOOD_ACTIONS=Object.freeze(['snack','drink','burger','banana','garlic','lunch']);
 export const EATING_PITCH=Object.freeze({enter:.38,leave:.32});
 export const START_BELL=START_BELL_POSITION;
 export const CLASS_START_TIMING=Object.freeze({seating:30,classDuration:600,firstArrival:.15,arrivalSpacing:.36});
 export const CLASSROOM_ACTIONS = Object.freeze({
-  snack:Object.freeze({duration:3,points:1,risk:1,noise:.85,label:'偷吃零食'}),
-  phone:Object.freeze({duration:3,points:3.5,risk:1.3,noise:.12,label:'玩手机'}),
-  // Three-second use/refill follows the user's pacing; scoring/risk are local tuning.
-  drink:Object.freeze({duration:3,points:1,risk:1,noise:.55,label:'喝饮料'}),
-  burger:Object.freeze({duration:3,points:1,risk:1.1,noise:.75,label:'吃汉堡'}),
-  computer:Object.freeze({duration:3,points:1,risk:1.15,noise:.35,label:'玩贪吃蛇'}),
-  gum:Object.freeze({duration:6,points:0,risk:1.2,noise:.45,label:'吹泡泡糖'}),
-  banana:Object.freeze({duration:3,points:1,risk:1,noise:.4,label:'吃香蕉'}),
-  bananaPeel:Object.freeze({duration:1.2,releaseToUse:true,points:0,risk:1,noise:.2,label:'香蕉皮'}),
-  garlic:Object.freeze({duration:3,points:1,risk:1,noise:.6,label:'吃大蒜'}),
-  lunch:Object.freeze({duration:3,points:3,risk:1.3,noise:.7,label:'吃便当'}),
-  pen:Object.freeze({duration:3,points:0,risk:0,noise:0,label:'写字'}),
-  smoke:Object.freeze({duration:1.2,releaseToUse:true,points:0,risk:1,noise:.2,label:'烟雾弹'}),
+  snack:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.85,label:'偷吃零食'}),
+  phone:Object.freeze({duration:INTERACTION_SECONDS,points:3.5,risk:1.3,noise:.12,label:'玩手机'}),
+  drink:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.55,label:'喝饮料'}),
+  burger:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1.1,noise:.75,label:'吃汉堡'}),
+  computer:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1.15,noise:.35,label:'玩贪吃蛇'}),
+  gum:Object.freeze({duration:ITEM50_TUNING.gumSeconds,points:0,risk:1.2,noise:.45,label:'吹泡泡糖'}),
+  banana:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.4,label:'吃香蕉'}),
+  bananaPeel:Object.freeze({duration:INTERACTION_SECONDS,releaseToUse:true,points:0,risk:1,noise:.2,label:'香蕉皮'}),
+  garlic:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.6,label:'吃大蒜'}),
+  lunch:Object.freeze({duration:INTERACTION_SECONDS,points:3,risk:1.3,noise:.7,label:'吃便当'}),
+  pen:Object.freeze({duration:INTERACTION_SECONDS,points:0,risk:0,noise:0,label:'写字'}),
+  smoke:Object.freeze({duration:INTERACTION_SECONDS,releaseToUse:true,points:0,risk:1,noise:.2,label:'烟雾弹'}),
   // Throw controls and timings reconstruct the observed effects; they are not measured source values.
-  flash:Object.freeze({duration:1.2,releaseToUse:true,points:0,risk:1,noise:.2,label:'闪光弹'}),
-  ink:Object.freeze({duration:1.2,releaseToUse:true,points:0,risk:1,noise:.2,label:'墨水瓶'}),
+  flash:Object.freeze({duration:INTERACTION_SECONDS,releaseToUse:true,points:0,risk:1,noise:.2,label:'闪光弹'}),
+  ink:Object.freeze({duration:INTERACTION_SECONDS,releaseToUse:true,points:0,risk:1,noise:.2,label:'墨水瓶'}),
 });
 const STEP=1/60, EPS=1e-9, TAU=Math.PI*2, ACTION_KEYS=['snack','phone','smoke','drink','burger','flash','ink','gum','banana','garlic'];
 const emptyActionCounts=()=>Object.fromEntries(Object.keys(CLASSROOM_ACTIONS).map(key=>[key,0]));
@@ -232,7 +231,7 @@ export class ClassroomRound{
   _advanceDoorUse(dt){
     if(!this._doorUse)return;const id=this._doorId||'rear',key=id==='office'?'officeDoorClosed':id+'DoorClosed';
     if(this._restrained()||this.player.seated||id==='office'&&this.layout.officeLocked||!reachesSchoolDoor(this.player,this.layout,id)||this.layout[key]===this._doorTarget){this.setDoorUse(false);return;}
-    this._doorProgress=Math.min(1,this._doorProgress+dt/3);
+    this._doorProgress=Math.min(1,this._doorProgress+dt/INTERACTION_SECONDS);
     if(this._doorProgress+EPS>=1){this.setSchoolDoor(id,this._doorTarget);this.setDoorUse(false);}
   }
   start(options={}){if(this.status==='ready'){this.status='playing';if(options?.gathering)this._enterGathering();else this._observe('round-start',null,'课堂开始，捣乱值由实际行动积累。');}return this.snapshot();}

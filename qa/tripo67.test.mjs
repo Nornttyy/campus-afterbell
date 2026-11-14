@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import*as T from '../dist/vendor/three.module.js';
-import{loadGeometry}from './gltf-geometry.mjs';import{loadFurniture67,cloneFurniture67,MONITOR67}from '../dist/furniture-assets67.js?v=campus-80';
-import{createRoomVariants}from '../dist/room-variants.js?v=campus-80';import{modelTriangles}from '../dist/model-budget64.js';
+import{loadGeometry}from './gltf-geometry.mjs';import{loadFurniture67,cloneFurniture67,MONITOR67}from '../dist/furniture-assets67.js?v=campus-81';
+import{createRoomVariants}from '../dist/room-variants.js?v=campus-81';import{modelTriangles}from '../dist/model-budget64.js';
 const loader={loadAsync:url=>loadGeometry(new URL(url).pathname.split('/').pop())};const report=await loadFurniture67({loader});
 const V=()=>new T.Vector3(),bounds=o=>{o.updateWorldMatrix(true,true);return new T.Box3().setFromObject(o,true);};
 function fixture(){const scene=new T.Scene(),mat=(color,opts={})=>new T.MeshStandardMaterial({color,...opts});const make=(m,p,s,r,g)=>{const mesh=new T.Mesh(new T.BoxGeometry(...s),m);mesh.position.set(...p);if(r)mesh.rotation.set(...r);g.add(mesh);return mesh;};const variants=createRoomVariants({scene,box:make,rounded:(m,p,s,rad,r,g)=>make(m,p,s,r,g),mat,bakeStatic:()=>{},texture:()=>new T.Texture()});variants.setMap('computer');variants.setSeats([{id:0,deskX:0,deskZ:0,yaw:0}]);return {scene,variants};}

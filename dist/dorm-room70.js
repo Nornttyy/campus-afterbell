@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,DORM_ROOM_BOUNDS,DORM_ROOMS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,DORM_TABLES,dormDoorPose,dormDoorSolids,dormBodyOffset,dormPoint,dormCabinetDoorPose,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-80';
-export * from './dorm-layout70.js?v=campus-80';
+import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,DORM_ROOM_BOUNDS,DORM_ROOMS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,DORM_TABLES,dormDoorPose,dormDoorSolids,dormBodyOffset,dormPoint,dormCabinetDoorPose,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-81';
+export * from './dorm-layout70.js?v=campus-81';
 
 const stateValue=(source,id,fallback)=>{const entry=source instanceof Map?source.get(id):source?.[id];return entry==null?fallback:typeof entry==='number'?Math.max(0,Math.min(1,entry)):typeof entry==='object'?!!entry.open:!!entry;};
 const damp=(a,b,dt)=>a+(b-a)*(1-Math.exp(-10*Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0))));

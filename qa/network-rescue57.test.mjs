@@ -16,25 +16,25 @@ function network(){
  return{room,student,sim,rescuer,target,start:()=>room.command(student,'setRescue',[target.id]),cancel:()=>room.command(student,'setRescue',[null]),tick:()=>room.tick(1/60)};
 }
 
-test('solo and multiplayer both finish a real held rescue at 1.6 seconds, never before it',()=>{
+test('solo and multiplayer both finish a real held rescue at 2 seconds, never before it',()=>{
  for(const [name,make]of[['solo',solo],['network',network]]){
   const f=make();assert.equal(f.start(),true,name);
-  for(let i=0;i<95;i++)f.tick();assert.equal(f.target.captivity,'bound',`${name} at 95/60 seconds`);
-  f.tick();assert.equal(f.target.captivity,'free',`${name} at 96/60 seconds`);assert.equal(f.target.caught,false);
+  for(let i=0;i<119;i++)f.tick();assert.equal(f.target.captivity,'bound',`${name} at 119/60 seconds`);
+  f.tick();assert.equal(f.target.captivity,'free',`${name} at 120/60 seconds`);assert.equal(f.target.caught,false);
  }
 });
 
 test('cancelled rescue progress resets in both modes instead of completing after only the remaining time',()=>{
  for(const [name,make]of[['solo',solo],['network',network]]){
-  const f=make();assert.equal(f.start(),true);for(let i=0;i<48;i++)f.tick();f.cancel();for(let i=0;i<12;i++)f.tick();assert.equal(f.target.captivity,'bound');
-  assert.equal(f.start(),true);for(let i=0;i<95;i++)f.tick();assert.equal(f.target.captivity,'bound',name);f.tick();assert.equal(f.target.captivity,'free',name);
+  const f=make();assert.equal(f.start(),true);for(let i=0;i<60;i++)f.tick();f.cancel();for(let i=0;i<12;i++)f.tick();assert.equal(f.target.captivity,'bound');
+  assert.equal(f.start(),true);for(let i=0;i<119;i++)f.tick();assert.equal(f.target.captivity,'bound',name);f.tick();assert.equal(f.target.captivity,'free',name);
  }
 });
 
 test('disconnect cancels a half-completed rescue; reconnect requires a fresh full hold',()=>{
- const f=network();assert.equal(f.start(),true);for(let i=0;i<48;i++)f.tick();assert.ok(f.student.context._rescueProgress>.49);
+ const f=network();assert.equal(f.start(),true);for(let i=0;i<60;i++)f.tick();assert.ok(f.student.context._rescueProgress>.49);
  f.room.disconnect(f.student);assert.equal(f.student.context._rescueId,null);assert.equal(f.student.context._rescueProgress,0);
- for(let i=0;i<96;i++)f.tick();assert.equal(f.target.captivity,'bound','an offline player cannot finish the rescue');
- f.room.reconnect(f.student);for(let i=0;i<96;i++)f.tick();assert.equal(f.target.captivity,'bound','reconnection alone must not resume the old hold');
- assert.equal(f.start(),true);for(let i=0;i<95;i++)f.tick();assert.equal(f.target.captivity,'bound');f.tick();assert.equal(f.target.captivity,'free');
+ for(let i=0;i<120;i++)f.tick();assert.equal(f.target.captivity,'bound','an offline player cannot finish the rescue');
+ f.room.reconnect(f.student);for(let i=0;i<120;i++)f.tick();assert.equal(f.target.captivity,'bound','reconnection alone must not resume the old hold');
+ assert.equal(f.start(),true);for(let i=0;i<119;i++)f.tick();assert.equal(f.target.captivity,'bound');f.tick();assert.equal(f.target.captivity,'free');
 });
