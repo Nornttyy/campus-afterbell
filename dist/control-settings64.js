@@ -1,7 +1,7 @@
 export const CONTROL_KEY='campus-controls-v1';
 const QA_CONTROL_KEY='campus-controls-qa-v1';
 export const ACTION_KEYS=Object.freeze({forward:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',interact:'KeyE',return:'KeyQ',crawl:'ShiftLeft',use:'Mouse0',mic:'KeyM',pause:'Escape'});
-export const ACTION_LABELS=Object.freeze({forward:'前进',back:'后退',left:'左移',right:'右移',interact:'交互',return:'放回 / 返回',crawl:'爬行',use:'使用',mic:'麦克风',pause:'暂停'});
+export const ACTION_LABELS=Object.freeze({forward:'前进',back:'后退',left:'左移',right:'右移',interact:'交互',return:'放回 / 返回',crawl:'爬行 / 奔跑',use:'使用',mic:'麦克风',pause:'暂停'});
 export const TOUCH_DEFAULTS=Object.freeze({size:74,spacing:14,edge:22,bottom:24,leftHanded:false,sensitivity:1});
 const limits={size:[56,96],spacing:[8,28],edge:[8,80],bottom:[12,100],sensitivity:[.5,2]};
 export function validBinding(code){return typeof code==='string'&&/^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|Shift(Left|Right)|Mouse0|Escape)$/.test(code);}

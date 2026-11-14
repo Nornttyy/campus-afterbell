@@ -1,13 +1,13 @@
 import {requireModelBudget} from './model-budget64.js';
-import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-82';
-import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-82';
-import {createHandSupport} from './hand-support55.js?v=campus-82';
+import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-83';
+import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-83';
+import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-82';
-import {clonePropAsset,propContact} from './prop-assets.js?v=campus-82';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-82';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-82';
-export {loadPropAssets} from './prop-assets.js?v=campus-82';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
+import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-83';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-83';
+export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
 // First-person hands use camera coordinates: the scene is in front at -Z.
@@ -502,7 +502,7 @@ export function createDeskHands({createHand}={}){
   let penWriteBlend=0,penAge=0,bookBlend=0,drawerBlend=0,lowCarry=0,previousHandPositions=null,previousFood=null;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
-  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,bookAmount=0,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,animationPose=null}={}){
+  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,bookAmount=0,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,animationPose=null}={}){
     const authored=isHandAnimationPose(animationPose)&&!seated&&!carrying&&!holding&&!caught&&!computer&&!typing&&!bookAmount;
     function applyAuthored(weight){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
@@ -760,7 +760,7 @@ export function createDeskHands({createHand}={}){
     // Desk/keyboard contacts are solved after all viewmodel offsets. Each
     // fingertip bends at its own phalanges; the cached skin support cannot
     // enter the keys or desktop when the hand changes pose.
-    if(standing<.999&&!caught){
+    if(deskSurface&&standing<.999&&!caught){
       const deskFree=extension<.001,keyboard=computerBlend>.001;
       for(let i=0;i<2;i++){
         const idleSupport=1-ease(extension,0,.62),unoccupied=i===1&&active!=='phone'&&active!=='pen'||i===0&&active==='pen';

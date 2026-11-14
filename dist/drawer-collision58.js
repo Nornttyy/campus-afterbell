@@ -1,4 +1,4 @@
-import {mapKind,floorHeight,OFFICE_DESKS} from './classroom-layout.js?v=campus-82';
+import {mapKind,floorHeight,OFFICE_DESKS} from './classroom-layout.js?v=campus-83';
 // The visible trays extend beyond the desktop when pulled out. These bounds
 // follow that extension; seat spacing and the imported models are unchanged.
 function box(x,z,yaw,minX,maxX,minZ,maxZ,minY,maxY){

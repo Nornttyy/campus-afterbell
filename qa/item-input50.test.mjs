@@ -172,3 +172,15 @@ test('saved custom controls drive real interactions, keyboard use, return and cr
   Object.assign(f.round.player,{seated:false,seatId:null,x:8.8,z:1});f.send('keydown',{code:'KeyC'});f.advance(.05);assert.equal(f.round.player.crouched,true);f.send('keyup',{code:'KeyC'});assert.equal(f.round.player.crouched,false);
  }finally{f.close();if(original)Object.defineProperty(globalThis,'localStorage',original);else delete globalThis.localStorage;}
 });
+
+test('production Shift holds teacher sprint, keyup restores walk, and students still crawl',()=>{
+ for(const teacher of [true,false]){const f=fixture({teacher,map:'playground'});try{
+  const p=f.round.player;Object.assign(p,{x:0,z:-20,yaw:0,seated:false,seatId:null,crouched:false});f.advance(.1);
+  const start=p.z;f.send('keydown',{code:'KeyW'});f.advance(.5);const walked=p.z-start;
+  f.send('keydown',{code:'ShiftLeft'});f.advance(.5);const shifted=p.z-start-walked;
+  if(teacher){assert.ok(shifted>walked*1.4,`${shifted} vs ${walked}`);assert.equal(p.sprinting,true);assert.equal(p.crouched,false);}
+  else{assert.equal(p.crouched,true);assert.ok(shifted<walked);}
+  f.send('keyup',{code:'ShiftLeft'});f.advance(.05);assert.equal(Boolean(p.sprinting),false);assert.equal(p.crouched,false);
+  f.send('keyup',{code:'KeyW'});
+ }finally{f.close();}}
+});

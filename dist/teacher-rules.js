@@ -1,11 +1,11 @@
-import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-82';
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-82';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-82';
-import {teacherViewHeight} from './camera-height58.js?v=campus-82';
-import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-82';
+import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-83';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-83';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-83';
+import {teacherViewHeight} from './camera-height58.js?v=campus-83';
+import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-83';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-82';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-83';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
@@ -102,6 +102,6 @@ export class TeacherRound extends ClassroomRound{
     // once in the shared step, including network-controlled teachers.
     if(this._writing)t.stamina=Math.min(100,t.stamina+dt*10);
     if(this._writing)this._writeTime+=dt;
-    Object.assign(t,{x:p.x,z:p.z,yaw:p.yaw,phase:this._writing?'board':'watching',intent:this._writing?'write':'player',warning:false,looking:!this._writing,castProgress:0,writing:this._writing,writeProgress:this._writing?this._writeTime%1:0});
+    Object.assign(t,{x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,sprinting:Boolean(p.sprinting),phase:this._writing?'board':'watching',intent:this._writing?'write':'player',warning:false,looking:!this._writing,castProgress:0,writing:this._writing,writeProgress:this._writing?this._writeTime%1:0});
   }
 }

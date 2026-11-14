@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands,FOOD_ITEM_KINDS} from '../dist/game-actors.js?v=campus-82';
-import {createRiggedPalm,createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-82';
-import {createRiggedTeacher} from '../dist/imported-actors.js?v=campus-82';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-82';
-import {WHOLE_PALM_PROFILES} from '../dist/whole-palm-profiles54.js?v=campus-82';
-import {createRoomVariants} from '../dist/room-variants.js?v=campus-82';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-82';
-import {TeacherRound} from '../dist/teacher-rules.js?v=campus-82';
-import {OFFICE_CHAIRS} from '../dist/classroom-layout.js?v=campus-82';
+import {createDeskHands,FOOD_ITEM_KINDS} from '../dist/game-actors.js?v=campus-83';
+import {createRiggedPalm,createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-83';
+import {createRiggedTeacher} from '../dist/imported-actors.js?v=campus-83';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-83';
+import {WHOLE_PALM_PROFILES} from '../dist/whole-palm-profiles54.js?v=campus-83';
+import {createRoomVariants} from '../dist/room-variants.js?v=campus-83';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-83';
+import {TeacherRound} from '../dist/teacher-rules.js?v=campus-83';
+import {OFFICE_CHAIRS} from '../dist/classroom-layout.js?v=campus-83';
 import {campusScene} from './campus-geometry54-helpers.mjs';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {propSurface,handSamplingRig} from './whole-palm-geometry54.mjs';
@@ -83,4 +83,13 @@ test('formal classroom typing alternates real finger contacts without entering k
   for(const part of ['Index','Middle','Pinky','Thumb','Palm','Ring'])for(const v of rig.points(part)){v.applyMatrix4(hands.getHand('left').group.matrixWorld);const hit=new T.Raycaster(v.clone().add(V(0,.01,0)),V(0,-1,0),0,.03).intersectObject(campus.scene,true).find(h=>!h.object.material.transparent);if(hit){const distance=v.y-hit.point.y;assert.ok(distance>-.0003,'teacher skin enters the actual office table');nearest=Math.min(nearest,distance);}}
   assert.ok(nearest<.007,'teacher palm floats above its actual office desk');}
  }finally{campus.dispose();}
+});
+
+test('bed idle hands stay below the low pillow camera instead of resting on an invisible classroom desk',()=>{
+ const h=make(),anchor=new T.Group();anchor.add(h.group);let time=0;
+ for(let i=0;i<120;i++)h.update(time+=DT,{seated:true,deskSurface:false,eyeHeight:.23,freeLook:true});
+ anchor.updateMatrixWorld(true);
+ for(const side of ['left','right']){const p=h.getHand(side).group.getWorldPosition(V());assert.ok(p.y<0&&p.y>-.9,`${side} wrist is above the pillow camera: ${p.y}`);}
+ for(let i=0;i<120;i++)h.update(time+=DT,{seated:true,deskSurface:false,eyeHeight:.23,freeLook:true,action:'burger',carrying:true,holding:true,eating:true,progress:.5});
+ anchor.updateMatrixWorld(true);const prop=h.group.getObjectByName('layered-burger');assert.ok(prop.visible);const p=prop.getWorldPosition(V());assert.ok(Number.isFinite(p.y)&&p.y<0&&p.z<0,'food leaves the low forward view while eating');
 });

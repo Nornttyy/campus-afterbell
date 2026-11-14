@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
-import {createStudentEyes,STUDENT_EYE_REGIONS,studentEyeGaze,clampStudentEyeLook,studentEyeVertex,STUDENT_PUPIL_GEOMETRY} from '../dist/student-eyes56.js?v=campus-82';
-import {useCharacterBaseColor,setCharacterNight} from '../dist/character-materials.js?v=campus-82';
-import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-82';
+import {createStudentEyes,STUDENT_EYE_REGIONS,studentEyeGaze,clampStudentEyeLook,studentEyeVertex,STUDENT_PUPIL_GEOMETRY} from '../dist/student-eyes56.js?v=campus-83';
+import {useCharacterBaseColor,setCharacterNight} from '../dist/character-materials.js?v=campus-83';
+import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-83';
 const files=Object.fromEntries(Object.entries(STUDENT_ASSETS).map(([key,data])=>[key,data.file+'.glb']));
 function euler(geometry){const edges=new Set(),index=geometry.index.array,used=new Set(index);for(let i=0;i<index.length;i+=3)for(const [a,b] of [[index[i],index[i+1]],[index[i+1],index[i+2]],[index[i+2],index[i]]])edges.add(a<b?a+','+b:b+','+a);return used.size-edges.size+index.length/3;}
 function meshes(model){const out=[];model.traverse(mesh=>{if(mesh.isSkinnedMesh)out.push(mesh);});return out;}

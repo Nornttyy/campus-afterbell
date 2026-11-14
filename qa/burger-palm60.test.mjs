@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {createDeskHands} from '../dist/game-actors.js?v=campus-82';
-import {createRiggedPalm} from '../dist/student-assets.js?v=campus-82';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-82';
-import {createSoloRound} from '../dist/solo-round.js?v=campus-82';
-import {drawerHandTarget} from '../dist/drawer-hand-target58.js?v=campus-82';
-import {firstPersonEyeHeight} from '../dist/first-person-view.js?v=campus-82';
-import {handFrame} from '../dist/hand-motion.js?v=campus-82';
+import {createDeskHands} from '../dist/game-actors.js?v=campus-83';
+import {createRiggedPalm} from '../dist/student-assets.js?v=campus-83';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-83';
+import {createSoloRound} from '../dist/solo-round.js?v=campus-83';
+import {drawerHandTarget} from '../dist/drawer-hand-target58.js?v=campus-83';
+import {firstPersonEyeHeight} from '../dist/first-person-view.js?v=campus-83';
+import {handFrame} from '../dist/hand-motion.js?v=campus-83';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {propSurface} from './whole-palm-geometry54.mjs';
 

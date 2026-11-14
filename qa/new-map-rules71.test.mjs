@@ -59,7 +59,7 @@ test('waking and using the bedside cupboard preserve the player look direction a
 });
 
 test('new room background actors use rest, sitting and standing states without phantom reading props',()=>{
- for(const map of ['dorm','toilet','playground']){const r=quiet(map);for(let i=0;i<4;i++){const s=r.step(.2);for(const a of s.students.filter(a=>!a.isPlayer)){assert.equal(a.studyBookHeld,false);assert.equal(a.holding,false);assert.equal(a.mood,map==='dorm'?'resting':map==='toilet'?'sitting':'standing');if(map==='playground')assert.equal(a.seated,false);if(map==='dorm')assert.equal(a.lying,true);}}const state=ordinaryStudyState({id:1,seatYaw:0},{x:3,z:2},20,73,map);assert.equal(state.studyBookHeld,false);assert.equal(state.action,null);}
+ for(const map of ['dorm','toilet','playground']){const r=quiet(map);for(let i=0;i<4;i++){const s=r.step(.2);for(const a of s.students.filter(a=>!a.isPlayer)){assert.equal(a.studyBookHeld,false);assert.equal(a.holding,false);if(map==='playground')assert.ok(['standing','walking','hanging'].includes(a.mood));else assert.equal(a.mood,map==='dorm'?'resting':'sitting');if(map==='playground')assert.equal(a.seated,false);if(map==='dorm')assert.equal(a.lying,true);}}const state=ordinaryStudyState({id:1,seatYaw:0},{x:3,z:2},20,73,map);assert.equal(state.studyBookHeld,false);assert.equal(state.action,null);}
 });
 
 test('playground has standing spawns and nearby vending pickup; only eating earns points, stock never auto-refills',()=>{
