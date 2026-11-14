@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-82';
+import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-83';
 
 // Reuse the authored rigs at their authored metric heights. No new skin,
 // stretched model or synthetic portrait is introduced by the changing station.

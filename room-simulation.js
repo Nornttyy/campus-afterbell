@@ -1,21 +1,21 @@
-import {reachesSchoolDoor} from './door-interaction54.js?v=campus-82';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-82';
-import {validComputerPlayback} from './computer-rules55.js?v=campus-82';
-import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-82';
-import {movementScale} from './movement55.js?v=campus-82';
+import {reachesSchoolDoor} from './door-interaction54.js?v=campus-83';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-83';
+import {validComputerPlayback} from './computer-rules55.js?v=campus-83';
+import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-83';
+import {movementScale} from './movement55.js?v=campus-83';
 const randomUUID=()=>globalThis.crypto.randomUUID();
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-82';
-import {TeacherRound} from './teacher-rules.js?v=campus-82';
-import * as Layout from './classroom-layout.js?v=campus-82';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-82';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-83';
+import {TeacherRound} from './teacher-rules.js?v=campus-83';
+import * as Layout from './classroom-layout.js?v=campus-83';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-83';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
 const cleanName=value=>String(value||'同学').replace(/[\u0000-\u001f<>]/g,'').slice(0,16)||'同学';
 const CONTEXT=['player','selected','holding','_movement','_rescueId','_rescueProgress','completed'];
 const studentCommands=new Set(['setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
-const teacherCommands=new Set(['toggleToiletDoor','toggleDormDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
+const teacherCommands=new Set(['setSprint','toggleToiletDoor','toggleDormDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
 const scoringEvents=new Set(['complete','gum-score','bubble-score','snake-food','valorant-watch']);
 const teacherFeedbackEvents=new Set(['wrong-grab','correct-capture','stamina-low']);
 function context(actor){return{player:actor,selected:actor.id===-1?'chalk':actor.action||actor._slots?.[0]?.action||'snack',holding:false,_movement:{x:0,z:0},_rescueId:null,_rescueProgress:0,completed:actor.completed||Object.fromEntries(Object.keys(CLASSROOM_ACTIONS).map(k=>[k,0]))};}
@@ -140,7 +140,7 @@ export class CampusRoom{
   const people=[...this.members.values()].map(m=>({player:m.context.player,connected:m.connected}));
   const error=departureError(this.elevator,people,{map,currentMap:this.map,stage:this.sim.stage,status:this.sim.status,host:member.id===this.hostId});
   if(error)throw new RoomError(member.id!==this.hostId?403:Layout.isCampusMap(map)?409:400,error);
-  for(const m of this.members.values()){m.context._movement={x:0,z:0};m.context.holding=false;m.context.player.holding=false;m.context.player.crouched=false;m.context._rescueId=null;m.context._rescueProgress=0;m.doorUse=false;m.doorProgress=0;}
+  for(const m of this.members.values()){m.context._movement={x:0,z:0};m.context.holding=false;m.context.player.holding=false;m.context.player.crouched=false;m.context.player.sprinting=false;m.context._rescueId=null;m.context._rescueProgress=0;m.doorUse=false;m.doorProgress=0;}
   departElevator(this.elevator,map,this.map);Layout.updateLayoutDoors(this.sim.layout,{elevatorClosed:true});this.events.push({type:'elevator-start',map,networkSequence:++this.sequence});return true;
  }
  rematch(member){
@@ -187,7 +187,7 @@ export class CampusRoom{
   if(command==='setComputerPlayback'&&!validComputerPlayback(args[0]))throw new RoomError(400,'无效播放状态');
   if(['setMovement','setLook'].includes(command)&&!args.slice(0,2).every(finite))throw new RoomError(400,'无效坐标');
   if(command==='setMovement'&&args.some(n=>Math.abs(n)>1.001))throw new RoomError(400,'无效移动');
-  if(['hold','setCrouch','setWriting','setDrawerOpen','setBookRaised','setOfficeDrawerOpen'].includes(command)&&typeof args[0]!=='boolean')throw new RoomError(400,'无效状态');
+  if(['hold','setCrouch','setSprint','setWriting','setDrawerOpen','setBookRaised','setOfficeDrawerOpen'].includes(command)&&typeof args[0]!=='boolean')throw new RoomError(400,'无效状态');
   if(['takeSlot','selectSlot'].includes(command)&&(!Number.isInteger(args[0])||args[0]<0||args[0]>3||!member.context.player._slots[args[0]]))throw new RoomError(400,'无效物品位置');
   // The teacher is not in the student array while a pupil's context is active.
   // Check the selected physical chair across every role before any implicit sit.
@@ -222,7 +222,7 @@ export class CampusRoom{
   // The teacher is always the main simulation context. Student controls and
   // shared item progression are advanced alongside it, exactly once per tick.
   const ctx=this.teacherMember?.context||this.teacherContext;for(const key of CONTEXT)this.sim[key]=ctx[key];
-  if(this.teacherMember&&Date.now()-this.teacherMember.lastInput>500)this.sim._movement={x:0,z:0};
+  if(this.teacherMember&&Date.now()-this.teacherMember.lastInput>500){this.sim._movement={x:0,z:0};this.sim.player.sprinting=false;}
   this.sim.step(dt);for(const key of CONTEXT)ctx[key]=this.sim[key];
   for(const member of this.members.values()){
    if(!member.doorUse)continue;const p=member.context.player,id=member.doorId||'rear',key=id==='office'?'officeDoorClosed':id+'DoorClosed';

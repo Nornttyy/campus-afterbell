@@ -1,6 +1,6 @@
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-82';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-82';
-import {TOILET_STALLS} from './toilet-layout70.js?v=campus-82';
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-83';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-83';
+import {TOILET_STALLS} from './toilet-layout70.js?v=campus-83';
 // Plunging shares the requested interaction duration with food and rescue.
 export const PLUNGE_SECONDS=INTERACTION_SECONDS;
 export const barById=id=>PLAYGROUND_LAYOUT.bars.find(b=>b.id===id);
@@ -12,9 +12,8 @@ export function releaseMapActivity(round,a=round.player){
  a.mapActivity=null;a.mood='standing';a.holding=false;
  if(a===round.player){round.holding=false;round._movement={x:0,z:0};}return true;
 }
-export function startMapActivity(round,kind,id){
- const p=round.player;
- if(!round._inputAllowed()||round._restrained(p)||p.id===-1||p.seated||p.crouched||p._drawnSlot!=null||p.mapActivity||!['gathering','class'].includes(round.stage))return false;
+export function startMapActivity(round,kind,id,p=round.player){
+ if((p===round.player?!round._inputAllowed():round.status!=='playing'||round.paused)||round._restrained(p)||p.id===-1||p.seated||p.crouched||p._drawnSlot!=null||p.mapActivity||!['gathering','class'].includes(round.stage))return false;
  if(!['hang','plunge'].includes(kind))return false;
  const other=round.students.some(a=>a!==p&&a.mapActivity?.kind===kind&&a.mapActivity.id===id);if(other)return false;
  let target,stand;
@@ -30,7 +29,7 @@ export function startMapActivity(round,kind,id){
  }
  if(round._blocked(stand.x,stand.z,.18)||round.students.some(a=>a!==p&&a.visible!==false&&!a.seated&&distance(a,stand)<.36))return false;
  p.x=stand.x;p.z=stand.z;p.yaw=kind==='hang'?Math.PI/2:Math.PI;p.pitch=kind==='hang'?-.35:.55;
- p.mapActivity={kind,id,age:0,progress:0,bodyYaw:p.yaw};p.mood=kind==='hang'?'hanging':'plunging';p.holding=false;round.holding=false;round._movement={x:0,z:0};return true;
+ p.mapActivity={kind,id,age:0,progress:0,bodyYaw:p.yaw};p.mood=kind==='hang'?'hanging':'plunging';p.holding=false;if(p===round.player){round.holding=false;round._movement={x:0,z:0};}return true;
 }
 export function advanceMapActivities(round,dt){
  for(const p of round.students){const a=p.mapActivity;if(!a)continue;

@@ -1,4 +1,4 @@
-import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-82';
+import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-83';
 import * as T from './vendor/three.module.js';
 
 // A single compartment fits beside the existing tower without changing the
