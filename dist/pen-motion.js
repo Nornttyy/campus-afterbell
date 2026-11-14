@@ -1,6 +1,6 @@
 import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
-import {clonePropAsset} from './prop-assets.js?v=campus-79';
+import {clonePropAsset} from './prop-assets.js?v=campus-80';
 const V=()=>new T.Vector3();
 export const SCHOOL_PEN=Object.freeze({length:.175,tipY:-.0875,gripY:-.030,radius:.010,gripRadius:.0105});
 export function createSchoolPen(){

@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {createFingerRig,handFrame} from './hand-motion.js?v=campus-79';
+import {createFingerRig,handFrame} from './hand-motion.js?v=campus-80';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 
 // A separate bed pose, evaluated after desk, walk and size retargeting.

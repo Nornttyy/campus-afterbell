@@ -1,4 +1,4 @@
-import {GLOBAL_SOUND_EVENTS} from './audio-events69.js?v=campus-79';
+import {GLOBAL_SOUND_EVENTS} from './audio-events69.js?v=campus-80';
 const PUBLIC_NOISES=new Set(['food-complete','drink-complete','gum-pop','phone-notification','burp']);
 export const PUBLIC_SOUND_RADIUS=14;
 export function audibleCue(event,listener=null){return Boolean(PUBLIC_NOISES.has(event?.type)&&event?.audience!=='self'&&event?.recipientId==null&&Number.isFinite(event.x)&&Number.isFinite(event.z)&&(!listener||GLOBAL_SOUND_EVENTS.has(event.type)||(Number.isFinite(listener.x)&&Number.isFinite(listener.z)&&Math.hypot(event.x-listener.x,event.z-listener.z)<PUBLIC_SOUND_RADIUS)));}

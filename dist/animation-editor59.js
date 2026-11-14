@@ -1,14 +1,14 @@
 import * as T from './vendor/three.module.js';
 import {OrbitControls} from './vendor/addons/controls/OrbitControls.js';
 import {TransformControls} from './vendor/addons/controls/TransformControls.js';
-import {createRiggedPalm} from './student-assets.js?v=campus-79';
+import {createRiggedPalm} from './student-assets.js?v=campus-80';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createDeskHands} from './game-actors.js?v=campus-79';
-import {HAND_CLIP_IDS,createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-79';
-import {loadHandAnimations,saveHandAnimations,clearHandAnimations} from './hand-animation-runtime59.js?v=campus-79';
-import {createAnimationHistory,putAnimationFrame,moveAnimationFrame,retimeAnimationClip,mirrorAnimationHand,completeAnimationDocument} from './animation-editor-state59.js?v=campus-79';
+import {createDeskHands} from './game-actors.js?v=campus-80';
+import {HAND_CLIP_IDS,createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-80';
+import {loadHandAnimations,saveHandAnimations,clearHandAnimations} from './hand-animation-runtime59.js?v=campus-80';
+import {createAnimationHistory,putAnimationFrame,moveAnimationFrame,retimeAnimationClip,mirrorAnimationHand,completeAnimationDocument} from './animation-editor-state59.js?v=campus-80';
 
-import {prepareAnimationEditorDocument} from './animation-editor-start59.js?v=campus-79';
+import {prepareAnimationEditorDocument} from './animation-editor-start59.js?v=campus-80';
 
 const $=id=>document.getElementById(id),clone=v=>JSON.parse(JSON.stringify(v)),DRAFT='campus.handAnimationDraft.v2',LEGACY_DRAFT='campus.handAnimationDraft.v1',RAD=Math.PI/180;
 let doc=createHandAnimationDocument(),draftError='',draftNotice='';

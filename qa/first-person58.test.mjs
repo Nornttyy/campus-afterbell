@@ -1,6 +1,6 @@
-import {teacherViewHeight} from '../dist/camera-height58.js?v=campus-79';
+import {teacherViewHeight} from '../dist/camera-height58.js?v=campus-80';
 import test from 'node:test';import assert from 'node:assert/strict';
-import * as T from '../dist/vendor/three.module.js';import {createDeskHands} from '../dist/game-actors.js?v=campus-79';import {createRiggedPalm} from '../dist/student-assets.js';import {firstPersonBookContacts} from '../dist/first-person-hand-motion.js?v=campus-79';import {loadGeometry} from './gltf-geometry.mjs';import {handSamplingRig,propSurface} from './whole-palm-geometry54.mjs';
+import * as T from '../dist/vendor/three.module.js';import {createDeskHands} from '../dist/game-actors.js?v=campus-80';import {createRiggedPalm} from '../dist/student-assets.js';import {firstPersonBookContacts} from '../dist/first-person-hand-motion.js?v=campus-80';import {loadGeometry} from './gltf-geometry.mjs';import {handSamplingRig,propSurface} from './whole-palm-geometry54.mjs';
 const V=(...a)=>new T.Vector3(...a),DT=1/60,sources=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb','teacher-hand-left-v1.glb','teacher-hand-right-v1.glb'].map(loadGeometry));
 function make(teacher=false){return createDeskHands({createHand:(s,k)=>{const h=createRiggedPalm(sources[(teacher?2:0)+(s<0?0:1)],s,k);if(teacher)h.group.userData.characterRole='teacher';return h;}});}
 function parts(h){return ['left','right'].map((side,i)=>({hand:h.getHand(side),rig:handSamplingRig(h.getHand(side),{side:i?'Right':'Left',samples:100000})}));}

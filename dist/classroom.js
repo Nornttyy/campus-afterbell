@@ -1,39 +1,39 @@
-import {loadFurniture67} from './furniture-assets67.js?v=campus-79';
-import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-79';
-import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-79';
-import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-79';
-import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-79';
-import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-79';
-import {gameplayFov} from './view-tuning55.js?v=campus-79';
-import {setCharacterNight} from './character-materials.js?v=campus-79';
-import {createStaminaVision} from './stamina-vision55.js?v=campus-79';
-import {createSoundCues} from './sound-cue55.js?v=campus-79';
-import {createChalkPowder} from './chalk-powder55.js?v=campus-79';
-import {createSurveillanceView} from './surveillance-view54.js?v=campus-79';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-79';
-import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-79';
-import {instanceRigidProps} from './rigid-instances.js?v=campus-79';
-import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-79';
-import {createItemEffects50} from './item-effects50.js?v=campus-79';
-import {createBubbleEffects} from './bubble-effects.js?v=campus-79';
-import {loadCampusArtwork} from './campus-artwork.js?v=campus-79';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-79';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-79';
-import {createRoomVariants} from './room-variants.js?v=campus-79';
-import {createComputerScreenContent} from './computer-screen55.js?v=campus-79';
+import {loadFurniture67} from './furniture-assets67.js?v=campus-80';
+import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-80';
+import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-80';
+import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-80';
+import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-80';
+import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-80';
+import {gameplayFov} from './view-tuning55.js?v=campus-80';
+import {setCharacterNight} from './character-materials.js?v=campus-80';
+import {createStaminaVision} from './stamina-vision55.js?v=campus-80';
+import {createSoundCues} from './sound-cue55.js?v=campus-80';
+import {createChalkPowder} from './chalk-powder55.js?v=campus-80';
+import {createSurveillanceView} from './surveillance-view54.js?v=campus-80';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-80';
+import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-80';
+import {instanceRigidProps} from './rigid-instances.js?v=campus-80';
+import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-80';
+import {createItemEffects50} from './item-effects50.js?v=campus-80';
+import {createBubbleEffects} from './bubble-effects.js?v=campus-80';
+import {loadCampusArtwork} from './campus-artwork.js?v=campus-80';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-80';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-80';
+import {createRoomVariants} from './room-variants.js?v=campus-80';
+import {createComputerScreenContent} from './computer-screen55.js?v=campus-80';
 import * as THREE from './vendor/three.module.js';
-import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-79';
-import {createSmokeEffects} from './smoke-effects.js?v=campus-79';
-import {createItemOutline} from './item-outline.js?v=campus-79';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-79';
-import {dormBodyOffset} from './dorm-layout70.js?v=campus-79';
-import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-79';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-79';
-import {loadStudentAssets} from './student-assets.js?v=campus-79';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-79';
-import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-79';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-79';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-79';
+import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-80';
+import {createSmokeEffects} from './smoke-effects.js?v=campus-80';
+import {createItemOutline} from './item-outline.js?v=campus-80';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-80';
+import {dormBodyOffset} from './dorm-layout70.js?v=campus-80';
+import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-80';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-80';
+import {loadStudentAssets} from './student-assets.js?v=campus-80';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-80';
+import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-80';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-80';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-80';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
 
@@ -364,7 +364,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const ambient=new THREE.HemisphereLight(ROOM_LIGHTING.day.sky,ROOM_LIGHTING.day.ground,ROOM_LIGHTING.day.ambient);scene.add(ambient);
   const sun=new THREE.DirectionalLight('#fff2d7',4.2);sun.position.set(-17,7.4,7);sun.target.position.set(0,.65,-2);scene.add(sun,sun.target);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-19,right:19,top:16,bottom:-16,near:1,far:65});sun.shadow.bias=-.00015;sun.shadow.normalBias=.012;sun.shadow.radius=3.0;sun.shadow.intensity=.9;
   const fill=new THREE.DirectionalLight('#f4edda',ROOM_LIGHTING.day.fill);fill.position.set(5,4,6);scene.add(fill);
-  canvas.dataset.lighting='bright-interior-58';
+  canvas.dataset.lighting='bright-interior-80';
   // No flat additive rectangles: window mullions now create real sun/shadow shapes.
   // Batch fixed props by material. Animated pupils, curtain cloth and fans stay separate.
   function bakeStatic(group){
@@ -478,7 +478,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     setCharacterNight(scene,night);firstPersonView.setNight(night);
     applyRoomLighting(night,{ambient,sun,fill,teachingFill,lampMat,ceilingMaterial,scene});
     const outdoor=mapKind(mapVariant)==='playground';
-    if(outdoor){ambient.intensity=1.75;ambient.color.set('#d9f5ff');ambient.groundColor.set('#b8bc94');sun.intensity=3.4;fill.intensity=.38;teachingFill.intensity=.12;sun.position.set(-32,40,4);sun.target.position.set(-10.8,0,-21.2);}
+    if(outdoor){ambient.intensity=2.35;ambient.color.set('#e8f7ff');ambient.groundColor.set('#d4dab8');sun.intensity=3.4;fill.intensity=.65;teachingFill.intensity=.12;sun.position.set(-32,40,4);sun.target.position.set(-10.8,0,-21.2);}
     else{sun.position.set(-17,7.4,7);sun.target.position.set(0,.65,-2);}
     Object.assign(sun.shadow.camera,outdoor?{left:-44,right:44,top:44,bottom:-44,far:150}:{left:-19,right:19,top:16,bottom:-16,far:65});sun.shadow.camera.updateProjectionMatrix();
     camera.far=outdoor?160:70;camera.updateProjectionMatrix();scene.fog.near=outdoor?65:28;scene.fog.far=outdoor?130:55;
