@@ -1,10 +1,11 @@
-import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campus-80';
-import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-80';
+import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campus-81';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-81';
+import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-81';
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-80';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-80';
-import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-80';
-import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-80';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-81';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-81';
+import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-81';
+import {PARTITIONS,DOORS,LECTERN,OFFICE,LIFT,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,OFFICE_DESK,OFFICE_CHAIR,OFFICE_DESKS,OFFICE_CHAIRS,OFFICE_BOARD,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-81';
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
 export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces=null,artwork={},bakeStatic=()=>{}}){
  const classWidth=CLASSROOM.maxX-CLASSROOM.minX,classMidX=(CLASSROOM.minX+CLASSROOM.maxX)/2,westWallX=CLASSROOM.minX-.10,corridorWidth=CORRIDOR.maxX-CORRIDOR.minX,corridorLength=CORRIDOR.maxZ-CORRIDOR.minZ,corridorMidX=(CORRIDOR.minX+CORRIDOR.maxX)/2,corridorMidZ=(CORRIDOR.minZ+CORRIDOR.maxZ)/2,liftOffset=CORRIDOR.minZ-CLASSROOM.minZ;
@@ -147,7 +148,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   const leaf=new T.Group();leaf.name=`classroom-${d.id}-door`;leaf.position.set(7.30,0,d.maxZ);leaf.rotation.y=-Math.PI/2;
   const panel=new T.Group();panel.rotation.y=Math.PI;leaf.add(panel);doorLeaf(panel,1.60,3.02);enclosure.add(leaf);markDynamic(leaf);
   leaf.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'door',id:d.id};});
-  doors.set(d.id,leaf);targets.doors.push({id:d.id,object:leaf,point:new T.Vector3(7.30,1.30,d.center),duration:3});
+  doors.set(d.id,leaf);targets.doors.push({id:d.id,object:leaf,point:new T.Vector3(7.30,1.30,d.center),duration:INTERACTION_SECONDS});
   B(edge,[7.30,.012,d.center],[.27,.024,1.60],enclosure);
  }
  // The numbered inspection-room door is part of the leaf, so it follows its
@@ -291,7 +292,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  for(const y of[1.18,3.69])B(blue,[officeMidX,y,OFFICE.maxZ-.01],[officeWidth-.62,.07,.12],office);for(let i=0;i<=8;i++)B(blue,[OFFICE.minX+.32+i*(officeWidth-.64)/8,2.44,OFFICE.maxZ-.01],[.06,2.55,.12],office);B(glass,[officeMidX,2.44,OFFICE.maxZ],[officeWidth-.74,2.50,.016],office);B(edge,[officeMidX,1.14,OFFICE.maxZ-.15],[officeWidth-.50,.06,.30],office);
  for(const x of [OFFICE.doorMinX,OFFICE.doorMaxX])B(blue,[x,1.54,8.91],[.06,3.08,.25],office);B(blue,[OFFICE.doorX,3.07,8.91],[1.86,.06,.25],office);B(cream,[OFFICE.doorX,3.82,8.91],[1.80,1.38,.22],office);
  const officeDoors=[];for(const [i,x]of [OFFICE.doorMinX,OFFICE.doorMaxX].entries()){
-  const hinge=new T.Group();hinge.name='office-countdown-door';hinge.position.set(x,0,8.91);const panel=new T.Group();panel.rotation.y=i===0?Math.PI/2:-Math.PI/2;hinge.add(panel);doorLeaf(panel,.90,3.02);office.add(hinge);markDynamic(hinge);officeDoors.push(hinge);hinge.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'door',id:'office'};});targets.doors.push({id:'office',object:hinge,point:new T.Vector3(x,1.30,8.91),duration:3});
+  const hinge=new T.Group();hinge.name='office-countdown-door';hinge.position.set(x,0,8.91);const panel=new T.Group();panel.rotation.y=i===0?Math.PI/2:-Math.PI/2;hinge.add(panel);doorLeaf(panel,.90,3.02);office.add(hinge);markDynamic(hinge);officeDoors.push(hinge);hinge.traverse(o=>{if(o.isMesh)o.userData.campusTarget={type:'door',id:'office'};});targets.doors.push({id:'office',object:hinge,point:new T.Vector3(x,1.30,8.91),duration:INTERACTION_SECONDS});
  }
  const books=['#8d4940','#37596b','#d6b158','#53795d','#d1cfb5','#75627e'].map(c=>mat(c,{roughness:.83}));
  for(const z of [11.32,13.85,16.38,18.91]){

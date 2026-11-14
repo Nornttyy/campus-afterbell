@@ -1,3 +1,6 @@
+// Shared duration for timed use/charge interactions in solo and hosted rooms.
+// Cooldowns, refill delays and passive minigame scoring have separate pacing.
+export const INTERACTION_SECONDS=2;
 // Deterministic minigame state. The authoritative simulation advances the
 // snake; a client can request a direction but cannot submit earned points.
 export const ITEM50_TUNING=Object.freeze({gumSeconds:6,gumCycleSeconds:1.5,gumPoints:[1,2,3,0],peelStun:4,peelLifetime:45,burpWindow:5,burpSpeed:3,burpLifetime:2.5,burpStun:2.5,computerRefill:3});

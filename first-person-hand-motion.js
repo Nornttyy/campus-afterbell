@@ -1,12 +1,12 @@
 import * as T from './vendor/three.module.js';
-import {FIRST_PERSON_PEN_FITS} from './first-person-pen-fit58.js?v=campus-80';
-import {createPenFingerContact} from './pen-motion.js?v=campus-80';
+import {FIRST_PERSON_PEN_FITS} from './first-person-pen-fit58.js?v=campus-81';
+import {createPenFingerContact} from './pen-motion.js?v=campus-81';
 
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const ease=(t,a,b)=>T.MathUtils.smootherstep(t,a,b);
 
-// A complete use is three seconds. The endpoints have zero velocity, so a
-// completed bite returns to the same carry pose before the item is removed.
+// Authored three-unit gesture timeline, sampled from normalized use progress.
+// Zero-velocity endpoints return to the carry pose for any interaction duration.
 export function sampleFoodGesture(seconds){
  const t=T.MathUtils.clamp(seconds,0,3),out=1-ease(t,2.12,3);
  const turn=ease(t,0,.45)*out,reach=ease(t,.25,.85)*out;

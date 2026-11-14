@@ -1,13 +1,13 @@
-import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-80';
-import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-80';
-import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-80';
-import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-80';
-import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-80';
-import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-80';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-80';
+import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-81';
+import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-81';
+import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-81';
+import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-81';
+import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-81';
+import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-81';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-81';
 // Elevator operation is enabled; boarding and per-round limits are authoritative.
 export const ELEVATOR_ENABLED=true;
-import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-80';
+import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-81';
 export const TEACHER_EYE_HEIGHT=TEACHER_PROPORTIONS.eyeHeight;
 // Metres, shared by rendering and authoritative collision. The user's plan is
 // rotated in world space: office at +Z, lift at -Z, corridor along the right.
