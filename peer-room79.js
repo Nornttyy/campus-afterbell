@@ -45,7 +45,7 @@ class PeerRound extends NetworkRound{
  async leave(){try{await super.leave();}finally{this.transport?.close();}}
 }
 function attachHost(peer,options){
- const transport=new Transport(peer),worker=new Worker(new URL('./peer-room-worker79.js',import.meta.url),{type:'module'}),connections=new Map();
+ const transport=new Transport(peer),worker=new Worker(new URL('./peer-room-worker79.js?v=campus-81',import.meta.url),{type:'module'}),connections=new Map();
  worker.postMessage({type:'init',options});
  transport.send=packet=>worker.postMessage({...packet,client:'host'});
  worker.onmessage=({data:{client,packet}})=>{
