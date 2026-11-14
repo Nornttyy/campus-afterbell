@@ -35,3 +35,20 @@ test('production menu and classroom share one URL per physical module',async()=>
   }
   for(const file of ['prop-assets.js','game-actors.js','classroom-layout.js','vendor/three.module.js'])assert.ok([...graph].some(([path])=>path.endsWith('/dist/'+file)),`shared dependency ${file} was not inspected`);
 });
+
+// Workers have their own module realm. Pin the rules chain as well as the page
+// so an existing browser cannot host a new room with cached older use timers.
+test('multiplayer worker and authoritative rules use the current release cache key',async()=>{
+  const {revision}=await productionGraph();
+  const client=await readFile(new URL('../dist/peer-room79.js',import.meta.url),'utf8');
+  assert.ok(client.includes(`new URL('./peer-room-worker79.js?v=${revision}'`));
+  const chain={
+    'peer-room-worker79.js':['peer-room-host79.js'],
+    'peer-room-host79.js':['room-simulation.js'],
+    'room-simulation.js':['item-rules50.js','classroom-rules.js','teacher-rules.js'],
+  };
+  for(const [file,dependencies]of Object.entries(chain)){
+    const source=await readFile(new URL('../dist/'+file,import.meta.url),'utf8');
+    for(const name of dependencies)assert.ok(source.includes(`'./${name}?v=${revision}'`),`${file} can load stale ${name}`);
+  }
+});
