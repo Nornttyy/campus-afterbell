@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {STUDENT_ASSETS,createRiggedStudent} from '../dist/student-assets.js';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-78';
-import {createDeskItem} from '../dist/game-actors.js?v=campus-78';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-79';
+import {createDeskItem} from '../dist/game-actors.js?v=campus-79';
 
 const V=(...a)=>new T.Vector3(...a);
 await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry(new URL(url).pathname.split('/').pop())}});

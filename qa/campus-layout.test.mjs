@@ -50,7 +50,7 @@ test('cached navigation preserves caller endpoints and cannot be corrupted by co
 });
 
 test('different actor radii never reuse narrower doorway clearance',()=>{
- const ctx=createLayoutContext(SEATS),a={x:6,z:4.8},b={x:9.2,z:4.8};for(const radius of[.2,.81,.23,.81,.2]){assert.equal(blocked(a.x,a.z,radius,ctx),false);assert.equal(blocked(b.x,b.z,radius,ctx),false);const path=walkRoute(a,b,radius,ctx);if(radius===.81)assert.deepEqual(path,[]);else assert.ok(path.length);}
+ const ctx=createLayoutContext([]),a={x:6,z:4.8},b={x:9.2,z:4.8};for(const radius of[.2,.81,.23,.81,.2]){assert.equal(blocked(a.x,a.z,radius,ctx),false);assert.equal(blocked(b.x,b.z,radius,ctx),false);const path=walkRoute(a,b,radius,ctx);if(radius===.81)assert.deepEqual(path,[]);else assert.ok(path.length);}
 });
 
 test('small actors cannot route through a thin open door leaf',()=>{

@@ -89,7 +89,7 @@ test('failed preparation exposes a retry and does not permanently disable the ma
   const f=fixture();f.click('#enter-classroom');await flush();f.pending[0].reject(new Error('model download failed'));await flush();
   assert.equal(f.el('#room-enter').disabled,false);assert.equal(f.el('#room-enter').textContent,'重新准备');assert.equal(f.el('#enter-classroom').disabled,false);
   f.click('#room-enter');await flush();assert.equal(f.calls.creates.length,2);f.pending[1].resolve();await flush();
-  assert.equal(f.calls.controllers,1);assert.equal(f.el('#room-enter').textContent,'创建 / 加入房间');assert.equal(f.calls.starts.length,0);
+  assert.equal(f.calls.controllers,1);assert.equal(f.el('#room-enter').textContent,'创建房间');assert.equal(f.calls.starts.length,0);
 });
 test('a world finishing after page disposal is disposed without binding a controller',async()=>{
   const f=fixture();f.click('#enter-classroom');await flush();f.win.dispatchEvent(new Event('pagehide'));f.pending[0].resolve();await flush();
@@ -110,20 +110,19 @@ test('menu has no student selection and every new entry gets a random student, s
   assert.equal(f.calls.controllers,1);assert.equal(f.calls.creates.length,1);
 });
 
-test('static hosting explains missing room service and offers working solo without any request',async()=>{
-  const f=fixture({}, {endpoint:''});f.click('#enter-classroom');await flush();
-  assert.equal(f.el('#room-server').value,'');assert.equal(f.el('#room-server-note').hidden,false);
-  assert.equal(f.el('#room-server-options').open,false);assert.equal(f.el('#room-solo').hidden,false);assert.equal(f.el('#room-player-fields').hidden,true);assert.equal(f.el('#room-settings').hidden,true);
-  f.pending[0].resolve();await flush();assert.equal(f.el('#room-enter').disabled,true);assert.equal(f.el('#room-enter').textContent,'联机暂未配置');f.click('#room-enter');await flush();
-  assert.equal(f.calls.connections,0);assert.equal(f.el('#room-dialog').open,true);
-  f.click('#room-solo');await flush();assert.equal(f.calls.starts.length,1);assert.equal(f.calls.starts[0].solo,true);
-  assert.equal(f.calls.connections,0);assert.equal(f.el('#room-dialog').open,false);
+test('static hosting creates through the fixed peer transport without any server URL field',async()=>{
+ assert.doesNotMatch(html,/id="room-server"|id="room-server-options"/);
+ const f=fixture({}, {endpoint:''});f.click('#enter-classroom');await flush();
+ assert.equal(f.el('#room-player-fields').hidden,false);assert.equal(f.el('#room-settings').hidden,false);
+ f.pending[0].resolve();await flush();f.click('#room-enter');await flush();
+ assert.equal(f.calls.connections,1);assert.equal(f.calls.connectionOptions.endpoint,undefined);
+ assert.equal(f.calls.starts.length,1);assert.notEqual(f.calls.starts[0].solo,true);
 });
-test('an explicit room server still works on static hosting',async()=>{
-  const f=fixture({}, {endpoint:''});f.click('#enter-classroom');await flush();f.pending[0].resolve();await flush();
-  f.el('#room-server').value='https://rooms.example.test';f.el('#room-server').dispatchEvent(new Event('input'));
-  assert.equal(f.el('#room-server-note').hidden,true);f.click('#room-enter');await flush();
-  assert.equal(f.calls.connections,1);assert.equal(f.calls.starts.length,1);assert.notEqual(f.calls.starts[0].solo,true);
+test('join mode requires a six-digit code and never creates an accidental room',async()=>{
+ const f=fixture();f.click('#enter-classroom');await flush();f.pending[0].resolve();await flush();
+ f.click('#room-join-tab');assert.equal(f.el('#room-settings').hidden,true);assert.equal(f.el('#room-code-label').hidden,false);
+ f.click('#room-enter');await flush();assert.equal(f.calls.connections,0);assert.equal(f.el('#room-error').hidden,false);
+ f.el('#room-code').value='123456';f.click('#room-enter');await flush();assert.equal(f.calls.connections,1);assert.equal(f.calls.connectionOptions.code,'123456');
 });
 test('switching to solo while a room request is pending cannot reopen or replace the solo game',async()=>{
   let resolve;const connection=new Promise(r=>resolve=r),f=fixture({}, {connection});
@@ -162,9 +161,9 @@ test('changing audio after reloading retains the saved room duration and target'
 });
 
 
-test('changing advanced server input during a pending connection cannot submit a second room',async()=>{
+test('changing room mode during a pending connection cannot submit a second room',async()=>{
  let resolve;const connection=new Promise(r=>resolve=r),f=fixture({}, {connection});
  f.click('#enter-classroom');await flush();f.pending[0].resolve();await flush();f.click('#room-enter');await flush();
- f.el('#room-server').value='https://other.example';f.el('#room-server').dispatchEvent(new Event('input'));f.click('#room-enter');await flush();
+ f.click('#room-join-tab');f.click('#room-enter');await flush();
  assert.equal(f.el('#room-enter').disabled,true);assert.equal(f.calls.connections,1);resolve();await flush();assert.equal(f.calls.starts.length,1);
 });

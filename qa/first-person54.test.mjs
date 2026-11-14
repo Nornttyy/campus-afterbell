@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createDeskHands} from '../dist/game-actors.js';
 import {createRiggedPalm,createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-78';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-79';
 import {createBubbleEffects,ATTACHED_GUM_RADIUS} from '../dist/bubble-effects.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {surfaceDistance} from './prop-contact-helpers.mjs';

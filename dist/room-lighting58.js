@@ -1,6 +1,6 @@
 // Night values are the existing campus-58 profile, deliberately unchanged.
 export const ROOM_LIGHTING=Object.freeze({
- day:Object.freeze({ambient:2.55,sun:3.8,fill:.95,teaching:.70,lamp:1.0,sky:'#f4f7f7',ground:'#ddd9c8',sunColor:'#fff4df',ceiling:'#f1eee5',background:'#d2e7e9',fog:'#e3edf1'}),
+ day:Object.freeze({ambient:2.25,sun:4.6,fill:.82,teaching:.85,lamp:1.0,sky:'#f4f7f7',ground:'#e2e1d7',sunColor:'#fff6e7',ceiling:'#f1eee5',background:'#d2e7e9',fog:'#e3edf1'}),
  night:Object.freeze({ambient:.30,sun:.035,fill:.055,teaching:.055,lamp:.015,sky:'#7890c5',ground:'#9ca5b5',sunColor:'#7084ac',ceiling:'#3c4b67',background:'#0a1428',fog:'#15223a'})
 });
 export function applyRoomLighting(night,{ambient,sun,fill,teachingFill,lampMat,ceilingMaterial,scene}){

@@ -2,8 +2,8 @@
 // prop transforms fixed, avoid stretching their shared palm webbing into sheets.
 import {readFileSync,writeFileSync} from 'node:fs';
 import * as T from '../dist/vendor/three.module.js';
-import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-78';
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-78';
+import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-79';
+import {loadPropAssets,CLASSROOM_PROP_SOURCES} from '../dist/prop-assets.js?v=campus-79';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {propSurface} from './whole-palm-geometry54.mjs';
 const V=()=>new T.Vector3(),profiles=JSON.parse(readFileSync(process.argv[2])),output=[];

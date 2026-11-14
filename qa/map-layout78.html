@@ -1,13 +1,13 @@
 <!doctype html><meta charset="utf-8"><title>宿舍睡姿与地图检查</title><style>body{margin:0;background:#26312d;color:#fff;font:14px sans-serif}nav{display:flex;gap:8px;padding:10px;align-items:center;flex-wrap:wrap}button{padding:8px;flex-shrink:0}canvas{display:block;width:100vw;height:calc(100vh - 60px)}output{font-size:12px;width:100%;overflow-wrap:anywhere}</style>
 <nav><button id="dormhall">宿舍走廊</button><button id="sleep">睡姿近看</button><button id="sleep2">对面床</button><button id="sleep3">第三间</button><button id="toiletwide">厕所全景</button><button id="toiletseat">马桶坐下检查</button><button id="potwide">火锅全景</button><button id="bar">单杠准备</button><button id="toilet">厕所准备</button><button id="hotpot">火锅材质</button><button id="dorm">宿舍材质</button><button id="lower">下铺检查</button><button id="upper">上铺检查</button><button id="cabinet">看床边柜</button><button id="food">看柜内食物</button><button id="leavebed">下床</button><button id="use">E 互动</button><button id="return">Q 松手</button><button id="view">切换旁观</button><output id="status">加载中</output></nav><canvas></canvas>
 <script type="module">
-import {createClassroom} from '../dist/classroom.js?v=campus-78';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-78';
-import {interactionIntent} from '../dist/interaction-intent54.js?v=campus-78';
-import {PLAYGROUND_LAYOUT} from '../dist/playground-layout70.js?v=campus-78';
+import {createClassroom} from '../dist/classroom.js?v=campus-79';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-79';
+import {interactionIntent} from '../dist/interaction-intent54.js?v=campus-79';
+import {PLAYGROUND_LAYOUT} from '../dist/playground-layout70.js?v=campus-79';
 import {DORM_BEDS,dormRoomPoint,dormPoint} from '../dist/dorm-layout70.js';
-import {TOILET_SEATS} from '../dist/toilet-layout70.js?v=campus-78';
-import {toiletBowl} from '../dist/map-activities77.js?v=campus-78';
+import {TOILET_SEATS} from '../dist/toilet-layout70.js?v=campus-79';
+import {toiletBowl} from '../dist/map-activities77.js?v=campus-79';
 const canvas=document.querySelector('canvas'),scene=await createClassroom(canvas),out=document.querySelector('output');
 let round,observer=false,view=null,last=0,inspection=false;
 function reset(map){inspection=false;round=new ClassroomRound({map,target:10000});round.start();round._advanceTeacher=()=>{};round._perceive=()=>{};round._hear=()=>{};for(const a of round.students)if(a!==round.player){a.visible=false;a._profile=null;a.isTeammate=false;}round.teacher.visible=false;observer=false;scene.setMap(map);}

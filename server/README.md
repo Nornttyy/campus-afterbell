@@ -1,6 +1,8 @@
 # Campus room server
 
-Run `npm run serve:online`, then open `http://127.0.0.1:8931/` in two browser windows. Create a room in one window and enter its six-digit code in the other. Two connected human players are required to start. The other pupils are AI decoys and do not count as network players.
+The published game now defaults to player-hosted WebRTC rooms (`dist/peer-room79.js`). No Node deployment or server-address field is required. The room simulation is shared with this legacy HTTP server through `dist/room-simulation.js`; this folder remains for backend development and protocol regression tests.
+
+Run `npm run serve:online` to expose the legacy API and static files. The static menu still uses the new peer transport; use the network test harness or `NetworkRound` directly to exercise HTTP/SSE. Two connected human players are required to start a round. The other pupils are AI decoys and do not count as network players.
 
 The same process serves `dist/` and the authenticated `/api/` routes. `HOST` defaults to `0.0.0.0`; `PORT` defaults to `8931`. Another device on the same network can use the computer's LAN IP and port, subject to its firewall. Restart the process after changing the server or rules modules. There are no install-time dependencies.
 
@@ -22,12 +24,6 @@ If an audio track ends because the microphone disappears or permission is revoke
 
 `npm run test:online` starts an ephemeral local HTTP server and verifies independent peers, token rejection, origin checks, host-only start, role assignment, movement, privacy filtering, reconnect, room-scoped voice signaling, seat conflicts, item completion, timed doors and separate room layouts. It also checks public held props without private inventory, office chair exclusivity across roles, shared drawer movement, banana peel flight/landing/stun, garlic burps, bubble growth/attachment, and teacher ink/flash/stun state. Score feedback is personalized; global effects remain visible to the other clients. The HTTP test requires permission to listen on a loopback port.
 
-GitHub Pages can serve the client files but cannot run this Node process. No public persistent server deployment or paid hosting purchase is included. To make internet rooms available, deploy this folder plus `dist/` to an actual Node host and serve it behind HTTPS, with proxy buffering disabled for `/api/events`. The easiest origin setup is serving the game and API from this same process. HTTP loopback preview origins (`localhost`, `127.0.0.1`, `[::1]`) are allowed on development ports. Other separate client origins must be explicitly added using `ALLOWED_ORIGINS=https://example.com`; there is no wildcard CORS setting. The current process is one instance with in-memory rooms; use a single instance or sticky room routing until shared persistence is implemented.
+GitHub Pages serves the current client. PeerJS public signaling and STUN establish browser-to-browser connections; the host's Web Worker runs the authoritative room. A host refresh/exit ends the room. There is no host migration, persistent session, or TURN relay. Restrictive networks can fail to connect; eight physical devices and cross-network voice remain unverified.
 
-For this repository's GitHub Pages client, launch the deployed server from the repository root with the exact client origin allowed:
-
-```sh
-HOST=0.0.0.0 PORT=8931 ALLOWED_ORIGINS=https://nornttyy.github.io node server/server.js
-```
-
-Terminate HTTPS at the host or reverse proxy and forward both `/api/` and the event stream to that process. Then enter the public HTTPS server origin (for example `https://rooms.example.com`, not the GitHub Pages URL or `/api` path) in the game's multiplayer server field. The example domain is a placeholder, not an existing deployed service. The health URL at that origin, `/api/health`, must return JSON with `ok: true` and `protocol: 1`; an HTML hosting page is not a room backend. Other players must use that same backend and room code. A public HTTPS page cannot use a plain HTTP remote backend, and `127.0.0.1` always points to each player's own computer. Publishing the GitHub branches alone does not perform any of this server deployment.
+For an optional dedicated HTTP backend, deploy this folder and `dist/` behind HTTPS, with event buffering disabled. Separate client origins must be set with `ALLOWED_ORIGINS`; no wildcard CORS is used. The developer must select `NetworkRound` in a custom client integration; there is no server field in the published player UI.

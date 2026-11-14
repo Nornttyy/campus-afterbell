@@ -87,11 +87,11 @@ test('held keys and browser shortcuts cannot save a binding, and disposed listen
 });
 
 test('QA preview reads and writes an isolated session namespace without touching real custom bindings',()=>{
- const custom=normalizeControls({keys:{interact:'KeyG',crawl:'KeyC'},touch:{size:91}}),f=fixture({saved:custom,search:'?v=campus-78&qaControls=1'});
+ const custom=normalizeControls({keys:{interact:'KeyG',crawl:'KeyC'},touch:{size:91}}),f=fixture({saved:custom,search:'?v=campus-79&qaControls=1'});
  try{
   const production=f.local.get(CONTROL_KEY);assert.equal(readControls().keys.interact,'KeyE','preview must start with its own preferences');
   f.arm();f.key('KeyF');assert.equal(readControls().keys.interact,'KeyF');assert.equal(f.local.get(CONTROL_KEY),production);assert.equal(f.writes[0].name,'session');assert.notEqual(f.writes[0].key,CONTROL_KEY);
-  globalThis.location.search='?v=campus-78';assert.deepEqual(readControls(),custom,'returning to production keeps all existing preferences');
+  globalThis.location.search='?v=campus-79';assert.deepEqual(readControls(),custom,'returning to production keeps all existing preferences');
   globalThis.location.search='?qaControls=1';assert.equal(readControls().keys.interact,'KeyF','reloading this QA tab retains only its test preferences');
  }finally{f.close();}
 });

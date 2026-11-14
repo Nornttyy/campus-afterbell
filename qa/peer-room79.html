@@ -1,0 +1,11 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>房主联机实测</title>
+<style>body{font:16px system-ui;padding:24px;background:#f4f0e3;color:#23323a}button,input{font:inherit;padding:10px;margin:4px}pre{white-space:pre-wrap}label{display:block}</style>
+<h1>房主联机实测</h1><label>名字<input id="name" value="同学"></label><label>房间号<input id="code" placeholder="六位房间号"></label><label>人数<input id="players" type="number" value="8" min="2" max="8"></label>
+<button id="create">创建</button><button id="join">加入</button><button id="teacher">选老师</button><button id="student">选学生</button><button id="begin">开始</button><button id="walk">移动两秒</button><button id="leave">退出</button><output id="status">尚未连接</output><pre id="state"></pre>
+<script type="module">
+import{connectPeerRoom}from'../dist/peer-room79.js?v=campus-79';
+let round,last=performance.now();const $=s=>document.querySelector(s),status=$('#status');
+async function connect(code){status.textContent='连接中';try{round=await connectPeerRoom({code,name:$('#name').value,maxPlayers:+$('#players').value,settings:{duration:600,target:120,chalkStamina:false},onError:e=>status.textContent=e});$('#code').value=round.room.code;status.textContent='已连接';}catch(e){status.textContent=e.message;console.error(e);}}
+$('#create').onclick=()=>connect('');$('#join').onclick=()=>connect($('#code').value);$('#teacher').onclick=()=>round?.setPreference('teacher');$('#student').onclick=()=>round?.setPreference('student');$('#begin').onclick=()=>round?.command('startBell');$('#walk').onclick=()=>{round?.setMovement(0,1);setTimeout(()=>round?.setMovement(0,0),2000);};$('#leave').onclick=()=>{round?.leave();round=null;status.textContent='已退出';};
+setInterval(()=>{const now=performance.now();if(round){const s=round.step((now-last)/1000);$('#state').textContent=JSON.stringify({connection:s.connection,code:s.room.code,self:s.room.selfId,host:s.room.hostId,members:s.room.members.map(m=>({id:m.id,name:m.name,role:m.role,character:m.character})),stage:s.stage,player:{x:s.player.x,z:s.player.z,id:s.player.id},others:s.students.filter(p=>p.networkHuman).map(p=>({id:p.id,x:p.x,z:p.z})),settings:s.room.settings,maxPlayers:s.room.maxPlayers,sequence:s.sequence},null,2);}last=now;},100);
+</script></html>
