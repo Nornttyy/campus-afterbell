@@ -3,7 +3,7 @@
 </style></head><body><div id="locker-loading">加载正式场景和角色…</div><nav id="locker-qa"><button id="qa-walk">走到更衣柜</button><button id="qa-locker">看更衣柜</button><button id="qa-open">打开更衣柜</button><button id="qa-interact">实际 E 互动</button><button id="qa-pause">暂停 / 房间设置</button><button id="qa-hide">隐藏工具</button><output id="locker-state">加载中</output></nav><script type="module">
 const base=document.baseURI,markup=await fetch(new URL('./index.html',base)).then(r=>r.text()),parsed=new DOMParser().parseFromString(markup,'text/html');
 document.body.prepend(document.importNode(parsed.querySelector('#game'),true));document.body.prepend(document.importNode(parsed.querySelector('.icon-defs'),true));
-const [{createClassroom},{createClassroomGame},{createSoloRound},{createSessionUI}]=await Promise.all(['./classroom.js?v=campus-83','./classroom-game.js?v=campus-83','./solo-round.js?v=campus-83','./session-ui.js?v=campus-83'].map(p=>import(new URL(p,base))));
+const [{createClassroom},{createClassroomGame},{createSoloRound},{createSessionUI}]=await Promise.all(['./classroom.js?v=campus-84','./classroom-game.js?v=campus-84','./solo-round.js?v=campus-84','./session-ui.js?v=campus-83'].map(p=>import(new URL(p,base))));
 const $=id=>document.getElementById(id),canvas=$('classroom');canvas.hidden=false;
 // QA leaves the pointer unlocked so the visible buttons can be clicked.
 canvas.requestPointerLock=()=>Promise.resolve();

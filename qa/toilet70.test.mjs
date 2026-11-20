@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import * as T from '../dist/vendor/three.module.js';
-import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorPose,toiletDoorSolids,toiletCabinetDoorPose,toiletCabinetDoorSolids,toiletDynamicSolids} from '../dist/toilet-layout70.js';
+import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorReach,toiletDoorPose,toiletDoorSolids,toiletCabinetDoorPose,toiletCabinetDoorSolids,toiletDynamicSolids} from '../dist/toilet-layout70.js';
 import {createToiletRoom} from '../dist/toilet-room70.js';
 import {hotpotHelpers} from './hotpot70-helpers.mjs';
 const intersects=(x,z,solids,r=.2)=>solids.some(s=>x>s.minX-r&&x<s.maxX+r&&z>s.minZ-r&&z<s.maxZ+r&&s.minY<1.5&&s.maxY>.12);
@@ -44,4 +44,18 @@ test('each cubicle and cabinet animates independently, occupancy indicators upda
 });
 test('scene disposal releases owned meshes once, leaves shared helper geometry intact and can be called repeatedly',()=>{
  const parent=new T.Group(),helpers=hotpotHelpers(parent);let disposedShared=0;for(const g of helpers.sharedGeometries)g.addEventListener('dispose',()=>disposedShared++);const room=createToiletRoom(helpers),bowl=room.seats.get(0).fixture.children[1];let ownDisposed=0;bowl.geometry.addEventListener('dispose',()=>ownDisposed++);room.dispose();room.dispose();room.update({},1);assert.equal(parent.children.length,0);assert.equal(ownDisposed,1);assert.equal(disposedShared,0);helpers.dispose();
+});
+
+test('a seated pupil can still pick their fully opened stall door and its fittings',()=>{
+ const room=createToiletRoom(hotpotHelpers(new T.Group())),seat=TOILET_SEATS[9];
+ try{
+  room.update({toiletDoors:{[seat.id]:1}});room.group.updateMatrixWorld(true);
+  const door=room.doors.get(seat.id),eye=new T.Vector3(seat.x,1.43,seat.z);
+  assert.equal(door.target,door.hinge);assert.ok(door.target.children.length>2);
+  const point=new T.Box3().setFromObject(door.panel,true).getCenter(new T.Vector3());
+  const dir=point.sub(eye).normalize(),reach=toiletDoorReach({seated:true,seatId:seat.id},seat.id);
+  const hit=new T.Raycaster(eye,dir,0,reach).intersectObject(door.target,true)[0];
+  assert.ok(hit&&hit.distance>2.5&&hit.distance<reach);
+  assert.ok(toiletDoorReach({seated:false},seat.id)<hit.distance);
+ }finally{room.dispose();}
 });

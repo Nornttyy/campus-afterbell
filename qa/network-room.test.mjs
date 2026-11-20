@@ -67,3 +67,27 @@ test('browser adapter predicts each mouse delta immediately and reconciles ackno
   const room=runtime.rooms.get(a.room.code),seed=room.seed;room.sim._finish('won','mischief');await wait(()=>a.status==='won');await assert.rejects(b.rematch(),/房主/);await a.rematch();await wait(()=>b.snapshot().stage==='gathering'&&b.status==='playing');assert.equal(room.seed,(seed+1)>>>0);assert.equal(room.members.size,2);assert.equal(room.teacherMember,null);assert.equal(a.room.code,b.room.code);assert.equal(a.room.members.every(m=>m.role==='student'),true);
  }finally{await a?.leave();await b?.leave();await runtime.close();}
 });
+
+test('two connected clients share the dispenser, pickup and Q return over the room stream',async()=>{
+ const {connectCampusRoom}=await import('../dist/network-client.js');
+ const {PLAYGROUND_LAYOUT}=await import('../dist/playground-layout70.js');
+ const runtime=createCampusServer();await new Promise(resolve=>runtime.server.listen(0,'127.0.0.1',resolve));
+ const endpoint='http://127.0.0.1:'+runtime.server.address().port,errors=[];
+ const wait=async check=>{for(let i=0;i<180;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,15));}throw new Error('售货机状态没有同步');};
+ let host,guest;
+ try{
+  host=await connectCampusRoom({endpoint,map:'playground',onError:error=>errors.push(error)});
+  guest=await connectCampusRoom({endpoint,code:host.room.code,onError:error=>errors.push(error)});
+  const room=runtime.rooms.get(host.room.code),v=PLAYGROUND_LAYOUT.vending[0];
+  for(const member of room.members.values())Object.assign(member.context.player,{x:v.x+1.2,z:v.z,seated:false});
+  await wait(()=>host.snapshot().connection==='connected'&&guest.snapshot().connection==='connected'&&Math.abs(guest._state.player.x-v.x-1.2)<.01);
+  host.pressVendingButton(v.id);
+  await wait(()=>{const s=guest.snapshot(),drop=s.vendingStock?.[v.id];return drop?.action&&s.sceneElapsed-drop.droppedAt>.42;});
+  const action=guest.snapshot().vendingStock[v.id].action;
+  guest.collectVendingFood(v.id);await wait(()=>guest.snapshot().drawer.drawnSlot===0&&host.snapshot().vendingStock[v.id].action===null);
+  assert.equal(guest.snapshot().selected,action);
+  guest.returnItem();await wait(()=>guest.snapshot().drawer.drawnSlot===null&&host.snapshot().vendingStock[v.id].action===action);
+  host.collectVendingFood(v.id);await wait(()=>host.snapshot().drawer.drawnSlot===0&&guest.snapshot().vendingStock[v.id].action===null);
+  assert.equal(host.snapshot().selected,action);assert.equal(host.snapshot().score,0);assert.deepEqual(errors,[]);
+ }finally{await guest?.leave();await host?.leave();await runtime.close();}
+});

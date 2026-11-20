@@ -1,12 +1,12 @@
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-83';
-import {createReferenceHUD} from './reference-hud54.js?v=campus-83';
-import {interactionIntent} from './interaction-intent54.js?v=campus-83';
+import {createReferenceHUD} from './reference-hud54.js?v=campus-84';
+import {interactionIntent} from './interaction-intent54.js?v=campus-84';
 import {createSessionUI} from './session-ui.js?v=campus-83';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-83';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-84';
 import {referenceNotice} from './reference-notices55.js?v=campus-83';
 
 // Input/UI only. Perception, movement and team results live in rules.

@@ -18,7 +18,7 @@ Object.defineProperty(T.WebGLRenderer.prototype,'render',{configurable:true,get(
  try{return fn.call(this,s,c);}finally{for(const o of hidden)o.visible=true;}
  });}});
 const base=document.baseURI,markup=await fetch(new URL('./index.html',base)).then(r=>r.text()),doc=new DOMParser().parseFromString(markup,'text/html');document.body.prepend(document.importNode(doc.querySelector('#game'),true));document.body.prepend(document.importNode(doc.querySelector('.icon-defs'),true));
-const [{createClassroom},{createClassroomGame},{createSoloRound},{DETENTION}]=await Promise.all(['./classroom.js?v=campus-83','./classroom-game.js?v=campus-83','./solo-round.js?v=campus-83','./classroom-layout.js?v=campus-83'].map(p=>import(new URL(p,base))));
+const [{createClassroom},{createClassroomGame},{createSoloRound},{DETENTION}]=await Promise.all(['./classroom.js?v=campus-84','./classroom-game.js?v=campus-84','./solo-round.js?v=campus-84','./classroom-layout.js?v=campus-84'].map(p=>import(new URL(p,base))));
 const $=id=>document.getElementById(id),canvas=$('classroom');canvas.hidden=false;canvas.requestPointerLock=()=>Promise.resolve();const round=createSoloRound({role:'student',seed:73,target:120}),scene=await createClassroom(canvas,{active:true,snapEntry:true}),game=createClassroomGame({scene,round,audio:{apply(){},start(){},effect(){},click(){}},onExit:()=>location.reload()});game.start();round.reset(73);round.start();round._advanceTeacher=()=>{};for(const s of round.students)s._decisionAt=Infinity;
 const pupil=round.students[2],post=DETENTION[2];round._team.add(pupil.id);let view='front';
 // Local AI snapshots intentionally have no cosmetic field; inject the QA

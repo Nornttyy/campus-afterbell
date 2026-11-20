@@ -2,7 +2,7 @@
 const base=document.baseURI;
 const markup=await fetch(new URL('./index.html',base)).then(r=>r.text()),parsed=new DOMParser().parseFromString(markup,'text/html');
 document.body.prepend(document.importNode(parsed.querySelector('#game'),true));document.body.prepend(document.importNode(parsed.querySelector('.icon-defs'),true));
-const [{createClassroom},{createClassroomGame},{createSoloRound}]=await Promise.all(['./classroom.js?v=campus-83','./classroom-game.js?v=campus-83','./solo-round.js'].map(p=>import(new URL(p,base))));
+const [{createClassroom},{createClassroomGame},{createSoloRound}]=await Promise.all(['./classroom.js?v=campus-84','./classroom-game.js?v=campus-84','./solo-round.js'].map(p=>import(new URL(p,base))));
 const role=new URL(location.href).searchParams.get('role')==='teacher'?'teacher':'student',round=createSoloRound({role,target:100,seed:73});
 const canvas=document.querySelector('#classroom');canvas.hidden=false;canvas.requestPointerLock=()=>Promise.resolve();
 const scene=await createClassroom(canvas,{active:true,snapEntry:true});

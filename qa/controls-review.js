@@ -1,6 +1,6 @@
-import {createClassroom} from '../dist/classroom.js?v=campus-83';
-import {createClassroomGame} from '../dist/classroom-game.js?v=campus-83';
-import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-83';
+import {createClassroom} from '../dist/classroom.js?v=campus-84';
+import {createClassroomGame} from '../dist/classroom-game.js?v=campus-84';
+import {ClassroomRound} from '../dist/classroom-rules.js?v=campus-84';
 import {attachReviewLog} from './review-event-log.js?v=campus-83';
 class ReviewRound extends ClassroomRound{
   reset(){return super.reset(11);}

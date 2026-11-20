@@ -33,3 +33,23 @@ test('rendered props match collision sizes; board and portal remain usable witho
   let disposal=0;r.group.traverse(o=>{if(o.isMesh)o.geometry.addEventListener('dispose',()=>disposal++);});r.update(2);assert.equal(r.group.userData.lastUpdate,2);r.dispose();r.dispose();assert.equal(r.group.parent,null);assert.ok(disposal>0);
  }finally{r.dispose();}
 });
+
+test('the physical UNLOCK button moves inward and the separately pickable food settles on the ground',()=>{
+ const r=createPlaygroundRoom({includeBackground:false,includeSky:false});
+ try{
+  const [id,entry]=r.vendingTargets.entries().next().value;
+  const {button,front,ground,pickup,yaw}=entry,normal=new T.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+  const start=new T.Vector3(front.x,front.y,front.z);r.group.updateMatrixWorld(true);
+  const ray=new T.Raycaster(start.clone().addScaledVector(normal,.45),normal.clone().negate());
+  assert.equal(ray.intersectObject(button)[0]?.object,button);assert.equal(pickup.visible,false);
+  const stock={[id]:{action:'snack',pressedAt:4,droppedAt:4}};
+  r.update(4,stock);const startY=pickup.position.y;
+  r.update(4.125,stock);assert.ok(button.position.clone().sub(start).dot(normal)<-.012);assert.ok(pickup.position.y<startY);
+  r.update(4.5,stock);r.group.updateMatrixWorld(true);
+  assert.ok(button.position.distanceTo(start)<.0001);
+  assert.ok(Math.abs(new T.Box3().setFromObject(pickup,true).min.y-ground.y)<.001);
+  assert.ok(Math.hypot(pickup.position.x-ground.x,pickup.position.z-ground.z)<.001);
+  const prop=pickup.children[0];r.update(5,{[id]:{...stock[id],action:null}});assert.equal(pickup.visible,false);
+  r.update(6,stock);assert.equal(pickup.children[0],prop);
+ }finally{r.dispose();}
+});

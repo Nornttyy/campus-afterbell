@@ -4,6 +4,8 @@ import {CampusRoom,MAX_ROOM_PLAYERS} from '../server/room-simulation.js';
 import {createCampusServer} from '../server/server.js';
 import {NetworkRound} from '../dist/network-client.js';
 import {diffNetworkState,applyNetworkDelta} from '../dist/network-state65.js';
+import {dormDoorSolids} from '../dist/dorm-layout70.js';
+import {toiletDoorSolids} from '../dist/toilet-layout70.js';
 import {blocked} from '../dist/classroom-layout.js';
 
 const wait=async(check,timeout=2500)=>{const start=performance.now();while(performance.now()-start<timeout){if(check())return;await new Promise(r=>setTimeout(r,10));}throw new Error('Room did not synchronize');};
@@ -59,4 +61,36 @@ test('front and office network hold progress use the shared HUD interaction kind
  for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:9.2,z:7.3,yaw:0}]]){
   const room=new CampusRoom({code:'650066',seed:73}),member=room.join();for(let i=0;i<20;i++)room.tick(.1);Object.assign(member.context.player,p,{seated:false});assert.equal(room.command(member,'setDoorUse',[true,false,id]),true);room.tick(.5);const state=room.snapshot(member);assert.equal(state.interaction.kind,'rear-door');assert.equal(state.interaction.doorId,id);assert.equal(state.doorUse.id,id);assert.ok(state.interaction.progress>0&&state.interaction.progress<1);assert.equal(state.doorUse.progress,state.interaction.progress);
  }
+});
+
+test('local prediction follows anchored activities and changing special doors on delta snapshots',()=>{
+ const room=new CampusRoom({code:'840065',map:'dorm'}),member=room.join(),frame=room.snapshot(member);
+ const round=Object.create(NetworkRound.prototype);
+ Object.assign(round,{_connected:true,_state:frame,_localPaused:false,_visualTime:0,_rtt:60,_moveSeq:0,_localMotion:{x:1,z:0},_correction:{x:0,z:0},_frames:[]});
+ round._reconcileLocal(frame,frame);
+ const leaf=dormDoorSolids(1,0)[7],point=[(leaf.minX+leaf.maxX)/2,(leaf.minZ+leaf.maxZ)/2];
+ assert.equal(blocked(...point,.15,round._predictionLayout),false);
+ const changed={...frame,dormDoors:{...frame.dormDoors,1:0}};
+ round._state=changed;round._reconcileLocal(frame,changed);
+ assert.equal(changed.seats,frame.seats);
+ assert.equal(blocked(...point,.15,round._predictionLayout),true);
+ const anchored={...changed,player:{...changed.player,seated:false,captivity:'free',mapActivity:{kind:'plunge',id:2}}};
+ round._state=anchored;round._reconcileLocal(changed,anchored);
+ round._localMotion={x:1,z:0};
+ for(let i=0;i<4;i++)round._advanceLocal(1/60);
+ assert.equal(round._visualPosition.x,anchored.player.x);assert.equal(round._visualPosition.z,anchored.player.z);
+ const released={...anchored,player:{...anchored.player,mapActivity:null}};
+ round._state=released;round._reconcileLocal(anchored,released);
+ assert.equal(round._canPredict(),true);
+ assert.deepEqual(round._localMotion,{x:0,z:0});
+});
+
+test('a toilet stall door opens for client movement without replacing the seat layout',()=>{
+ const room=new CampusRoom({code:'840066',map:'toilet'}),member=room.join(),frame=room.snapshot(member);
+ const round=Object.create(NetworkRound.prototype);
+ Object.assign(round,{_connected:true,_visualTime:0,_rtt:60,_moveSeq:0,_localMotion:{x:0,z:0},_frames:[]});
+ const shut={...frame,toiletDoors:{...frame.toiletDoors,0:0}},open={...shut,toiletDoors:{...shut.toiletDoors,0:1}};
+ const leaf=toiletDoorSolids(0,0)[7],point=[(leaf.minX+leaf.maxX)/2,(leaf.minZ+leaf.maxZ)/2];
+ round._state=shut;round._reconcileLocal(shut,shut);assert.equal(blocked(...point,.15,round._predictionLayout),true);
+ round._state=open;round._reconcileLocal(shut,open);assert.equal(blocked(...point,.15,round._predictionLayout),false);
 });
