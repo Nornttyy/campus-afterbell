@@ -41,6 +41,9 @@ function leafVolumes(id,x,z,width,depth,angle,minY,maxY){
  const count=12,length=width/count,cos=Math.cos(angle),sin=Math.sin(angle),rx=Math.abs(cos)*length/2+Math.abs(sin)*depth/2,rz=Math.abs(sin)*length/2+Math.abs(cos)*depth/2;
  return Array.from({length:count},(_,i)=>{const t=(i+.5)*length,cx=x+cos*t,cz=z-sin*t;return volume(id+'-'+i,cx-rx,cx+rx,cz-rz,cz+rz,minY,maxY);});
 }
+export function toiletDoorReach(actor,id){
+ return actor.seated&&actor.seatId===id ? 3.65 : 2.45;
+}
 export function toiletDoorPose(id,openness=0){
  const s=stallFor(id);if(!s)return null;
  return{x:s.x+TOILET_DOOR.hingeX,z:s.z+TOILET_DOOR.hingeZ,angle:TOILET_DOOR.angle*clamp(openness),openness:clamp(openness)};

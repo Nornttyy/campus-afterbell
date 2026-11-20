@@ -1,11 +1,11 @@
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
-import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-83';
-export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-83';
+import {createDeskItem} from './game-actors.js?v=campus-84';
+import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-84';
+export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-84';
 
 // The reference has an OPEN sports ground, not desks standing on a green floor.
-// These authored scene meshes reproduce observed features without introducing
-// an unverified food dispenser, score rule, classroom ceiling or seating layout.
+// The track, bars and vending machines share their placement with the rules.
 export function playgroundTrackRing(track,outerRadius,innerRadius){
  const positions=[],uv=[],index=[],samples=[];
  for(let half=0;half<2;half++)for(let i=0;i<=48;i++){const a=half*Math.PI+i/48*Math.PI;samples.push({a,z:half===0?track.straightHalf:-track.straightHalf});}
@@ -41,9 +41,30 @@ function surfaceTexture(type){
 }
 function paintedTexture(kind){
  if(typeof document==='undefined')return null;
- if(kind==='sports'){const map=new T.TextureLoader().load(new URL('./assets/posters/playground-sports73.png',import.meta.url).href);if(map){map.colorSpace=T.SRGBColorSpace;map.anisotropy=4;}return map||null;}
+ if(kind==='sports'||kind==='vending-shelf'){
+  const url=kind==='sports'?new URL('./assets/posters/playground-sports73.png',import.meta.url):new URL('./assets/materials/playground-vending84.webp',import.meta.url);
+  const map=new T.TextureLoader().load(url.href);
+  if(map){map.colorSpace=T.SRGBColorSpace;map.anisotropy=4;}
+  return map||null;
+ }
  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=256;const c=canvas.getContext('2d');
- if(kind==='fence'){
+ if(kind==='unlock'){
+  c.fillStyle='#096ba5';c.fillRect(0,0,512,256);c.fillStyle='#fff9e8';
+  c.font='bold 106px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('UNLOCK',256,136);
+ }else if(kind==='track-banner'){
+  canvas.width=768;c.fillStyle='#eee4bf';c.fillRect(0,0,768,256);c.fillStyle='#ec983a';c.fillRect(6,6,756,244);
+  for(const [offset,color] of [[0,'#f4b52c'],[32,'#d84e27']]){
+   c.fillStyle=color;c.beginPath();c.moveTo(8,24+offset);c.bezierCurveTo(250,170,470,100,760,12+offset);c.lineTo(760,48+offset);c.bezierCurveTo(430,180,230,192,8,60+offset);c.closePath();c.fill();
+  }
+  for(const [x,y,color] of [[118,127,'#78b446'],[174,143,'#77bdcf']]){
+   c.fillStyle=color;c.beginPath();c.arc(x,y,44,0,Math.PI*2);c.fill();c.fillStyle='#234055';c.beginPath();c.arc(x+9,y-25,6,0,Math.PI*2);c.fill();
+   c.strokeStyle='#234055';c.lineWidth=7;c.lineJoin='round';c.lineCap='round';
+   for(const line of [[-20,-8,-6,-12,5,-19,17,-8,26,-16],[6,-16,-3,1,10,10,19,24],[-3,1,-14,18,-26,15]]){
+    c.beginPath();c.moveTo(x+line[0],y+line[1]);for(let i=2;i<line.length;i+=2)c.lineTo(x+line[i],y+line[i+1]);c.stroke();
+   }
+  }
+  c.font='bold 125px "PingFang SC", sans-serif';c.textAlign='center';c.strokeStyle='#fff4d2';c.lineWidth=8;c.strokeText('奋进',470,187);c.fillStyle='#193b79';c.fillText('奋进',470,187);
+ }else if(kind==='fence'){
   canvas.height=512;c.clearRect(0,0,512,512);c.strokeStyle='#46534d';c.lineWidth=3;
   for(let x=-512;x<1024;x+=128){c.beginPath();c.moveTo(x,0);c.lineTo(x+512,512);c.stroke();c.beginPath();c.moveTo(x,0);c.lineTo(x-512,512);c.stroke();}
  }else{
@@ -155,15 +176,21 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  const boardTarget=new T.Mesh(ownGeo(new T.PlaneGeometry(board.width,board.height)),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));materials.add(boardTarget.material);boardTarget.name='playground-teacher-writing-board';boardTarget.position.set(board.x,board.y,board.z-.061);boardTarget.rotation.y=Math.PI;boardTarget.userData.interaction='board';group.add(boardTarget);referenceObjects.push(boardTarget);
  const posterBlue=mat('#ffffff',{map:ownTexture(paintedTexture('blue')),roughness:.85}),posterOrange=mat('#ffffff',{map:ownTexture(paintedTexture('orange')),roughness:.85});
  const sportsPoster=mat('#ffffff',{map:ownTexture(paintedTexture('sports')),roughness:.85});
- for(const [i,n]of layout.notices.entries())uprightBoard(n.x,n.z,n.yaw,n.width,n.height,i?posterOrange:sportsPoster);
+ for(const [i,n]of layout.notices.entries())uprightBoard(n.x,n.z,n.yaw,n.width,n.height,i===0?sportsPoster:i%2?posterOrange:posterBlue);
+ const sportsBanner=mat('#ffffff',{map:ownTexture(paintedTexture('track-banner')),roughness:.85});
+ const bannerZ=layout.vending[0].z-2.3;
+ panel(sportsBanner,[b.minX+.023,1.30,bannerZ],4.55,1.35,Math.PI/2);
  // A mixture of blue/orange school banners is visible along the real walls.
  for(let i=0;i<6;i++){
   const z=b.minZ+3.2+i*(b.length-6.4)/5;
   if(z+1.7<layout.entrance.minZ||z-1.7>layout.entrance.maxZ)panel(i%2?posterBlue:posterOrange,[b.maxX-.011,1.30,z],3.4,1.34,-Math.PI/2);
-  panel(i%2?posterOrange:posterBlue,[b.minX+.011,1.30,z+1.1],3.2,1.34,Math.PI/2);
+  if(Math.abs(z+1.1-bannerZ)>3.9)panel(i%2?posterOrange:posterBlue,[b.minX+.011,1.30,z+1.1],3.2,1.34,Math.PI/2);
  }
  panel(sportsPoster,[t.cx,1.30,b.minZ+.011],5.4,1.8,0);
- function czSafe(z,b){return Math.max(b.minZ+1.6,Math.min(b.maxZ-1.6,z));}
+ const vendingTargets=new Map();
+ const buttonGeometry=ownGeo(new T.CylinderGeometry(.080,.084,.037,12).rotateX(Math.PI/2));
+ const buttonRed=mat('#d51918',{roughness:.46}),controlBlue=mat('#096ba5',{roughness:.52});
+ const label=mat('#ffffff',{map:ownTexture(paintedTexture('unlock'))}),shelf=mat('#ffffff',{map:ownTexture(paintedTexture('vending-shelf')),roughness:.58});
  for(const [i,machine]of layout.vending.entries()){
   const {x,z,yaw,width:w,height:h,depth:d}=machine,root=new T.Group();root.position.set(x,0,z);root.rotation.y=yaw;root.updateMatrixWorld(true);
   const pt=(a,b,c)=>new T.Vector3(a,b,c).applyMatrix4(root.matrixWorld).toArray(),mb=(m,p,dim)=>box(m,pt(...p),dim,[0,yaw,0]);
@@ -174,15 +201,20 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
   // Four front glass edges and a diagonal soft reflection, without opaque flat glass.
   for(const sx of[-.435,.225])mb(frame,[sx,1.18,d/2+.047],[.018,1.07,.018]);
   mb(lightGlass,[-.33,1.20,d/2+.047],[.035,.86,.008]);
-  mb(sportsBlue,[w/2+.21,.66,.03],[.25,1.32,.23]);mb(lightGlass,[w/2+.21,1.19,.16],[.18,.16,.04]);
-  const button=new T.CylinderGeometry(.065,.065,.038,18);add(button,white,pt(w/2+.21,1.19,.19),[Math.PI/2,yaw,0]);button.dispose();
-
-  for(const shelf of[0,1,2]){
-   mb(frame,[-.10,.76+shelf*.32,d/2+.055],[.62,.025,.045]);
-   for(let j=0;j<4;j++)mb([red,blue,yellow,white][(i+j+shelf)%4],[-.32+j*.145,.85+shelf*.32,d/2+.06],[.095,.16,.055]);
+  panel(shelf,pt(-.105,1.18,d/2+.057),.61,1.0,yaw);
+  const side=w/2-.155;
+  mb(white,[-.135,h/2,d/2+.010],[w-.30,h-.12,.014]);
+  mb(controlBlue,[side,h/2,d/2+.031],[.286,h-.09,.045]);
+  for(const sx of [-1,1])for(const sy of [-1,1]){
+   mb(white,[side+sx*.093,1.19+sy*.110,d/2+.058],[.043,.008,.009]);
+   mb(white,[side+sx*.111,1.19+sy*.089,d/2+.058],[.008,.049,.009]);
   }
-  mb(lightGlass,[.367,1.42,d/2+.02],[.19,.17,.025]);mb(dark,[.37,1.20,d/2+.03],[.13,.028,.025]);
-  for(let row=0;row<3;row++)mb(white,[.37,.98-row*.12,d/2+.035],[.075,.055,.03]);
+  mb(white,[side,1.19,d/2+.057],[.195,.194,.034]);
+  panel(label,pt(side,1.345,d/2+.059),.262,.118,yaw);
+  const front=vendingPoint(machine,'button'),ground=vendingPoint(machine,'pickup');
+  const button=new T.Mesh(buttonGeometry,buttonRed);button.name=machine.id+'-button';button.position.set(front.x,front.y,front.z);button.rotation.y=yaw;group.add(button);
+  const pickup=new T.Group();pickup.name=machine.id+'-pickup';pickup.visible=false;pickup.rotation.y=yaw;group.add(pickup);
+  vendingTargets.set(machine.id,{machine,button,pickup,front,ground,yaw,models:new Map(),action:null,baseY:0});
   mb(dark,[-.12,.39,d/2+.03],[.63,.19,.025]);mb(frame,[-.12,.29,d/2+.08],[.68,.06,.16]);
   for(let slat=0;slat<6;slat++)mb(dark,[-.34+slat*.13,.17,d/2+.032],[.075,.02,.012]);
  }
@@ -221,10 +253,33 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
   const mesh=new T.Mesh(geometry,material);mesh.name='playground-batch-'+bucket+'-'+material.uuid.slice(0,6);mesh.castShadow=bucket!=='fence'&&bucket!=='city-window';mesh.receiveShadow=true;geometry.computeBoundingBox();geometry.computeBoundingSphere();group.add(mesh);
  }
  group.userData.layoutEvidence=layout.evidence;group.userData.independentOutdoor=true;
+ function updateVending(time,stock){
+  for(const [id,entry] of vendingTargets){
+   const item=stock[id],action=item?.action??null,age=time-(item?.pressedAt??-100);
+   const press=age>=0&&age<.25 ? .027*Math.sin(Math.PI*age/.25) : 0,sin=Math.sin(entry.yaw),cos=Math.cos(entry.yaw);
+   entry.button.position.set(entry.front.x-sin*press,entry.front.y,entry.front.z-cos*press);
+   if(action!==entry.action){
+    entry.pickup.clear();entry.action=action;entry.pickup.visible=Boolean(action);
+    if(action){
+     if(!entry.models.has(action)){
+      const model=createDeskItem(action);model.rotation.set(action==='burger' ? .05 : -1.24,0,-.14);model.updateMatrixWorld(true);
+      if(!model.userData.propAsset)model.traverse(o=>{if(o.isMesh)ownGeo(o.geometry);});
+      const minY=new T.Box3().setFromObject(model,true).min.y;
+      entry.models.set(action,{model,baseY:-minY});
+     }
+     const {model,baseY}=entry.models.get(action);entry.baseY=baseY;entry.pickup.add(model);
+    }
+   }
+   if(action){
+    const t=Math.min(1,Math.max(0,(time-item.droppedAt)/VENDING_FALL_SECONDS)),back=(1-t)*.31;
+    entry.pickup.position.set(entry.ground.x-sin*back,entry.ground.y+entry.baseY+.30*(1-t*t),entry.ground.z-cos*back);
+   }
+  }
+ }
  let disposed=false;
- return{group,layout,colliders:layout.colliders,posts:layout.posts,board:layout.board,boardTarget,entrance:layout.entrance,
+ return{group,layout,vendingTargets,colliders:layout.colliders,posts:layout.posts,board:layout.board,boardTarget,entrance:layout.entrance,
   floorHeight:(x,z)=>playgroundFloorHeight(x,z,layout),
-  update(time){if(disposed)return;group.userData.lastUpdate=Number.isFinite(time)?time:0;},
+  update(time,stock={}){if(disposed)return;group.userData.lastUpdate=Number.isFinite(time)?time:0;updateVending(group.userData.lastUpdate,stock);},
   diagnostics(){let triangles=0,meshes=0;group.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;}});return{meshes,triangles,foodRulesDefined:false,seats:0,width:layout.bounds.width,length:layout.bounds.length,postCount:layout.posts.length,sportsBars:layout.bars.length};},
   dispose(){if(disposed)return;disposed=true;group.removeFromParent();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();for(const t of textures)t.dispose();group.clear();}
  };

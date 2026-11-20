@@ -15,7 +15,7 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
  $('#resume-game').textContent='继续游戏';$('#leave-game').textContent='退出游戏';
  const settings=make('button','paper-button','设置');settings.id='pause-settings';settings.addEventListener('click',()=>{$('#settings-dialog')?.showModal();});pause.insertBefore(settings,$('#leave-game'));if(details)pause.insertBefore(details,$('#leave-game'));
  $('#student-controls').textContent='WASD 移动 · 鼠标转向\nE 拿取 / 打开 / 坐下\nQ 放回 / 关闭 / 起身\n拿笔后 E 切换转笔和写字\n长按左键使用 · 投掷物松开抛出\n对准后门按住 E 开门 / Q 关门\n按住 E 解救 · Shift 爬行\n机房方向键 / WASD 控制贪吃蛇\nM 麦克风 · ESC 暂停';
- $('#teacher-controls').textContent='WASD 移动 · 鼠标转向\n左键投粉笔 · E 抓住眩晕同学\n木桩前 E 绑住 · Q 放下\n黑板前按住 E 写字\nE 开门 / Q 关门\nM 麦克风 · ESC 暂停';
+ $('#teacher-controls').textContent='WASD 移动 · 按住 Shift 奔跑 · 鼠标转向\n左键投粉笔 · E 抓住眩晕同学\n木桩前 E 绑住 · Q 放下\n黑板前按住 E 写字\nE 开门 / Q 关门\nM 麦克风 · ESC 暂停';
  const summary=make('div','result-summary'),scoreBox=result.querySelector('.result-number'),caughtBox=make('div','result-number');
  const caught=make('strong'),caughtLabel=make('span',null,'被捕人数');caught.id='result-caught';caughtBox.append(caught,caughtLabel);summary.append(scoreBox,caughtBox);result.insertBefore(summary,$('#result-detail'));
  const table=make('div','result-ranking');table.setAttribute('aria-label','本局成绩');result.insertBefore(table,$('#retry-game'));
@@ -26,7 +26,7 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
   update(s){
    const key=bindings().keys,move=[key.forward,key.left,key.back,key.right].map(keyLabel).join(' / '),use=keyLabel(key.use),e=keyLabel(key.interact),q=keyLabel(key.return);
    $('#student-controls').textContent=`${move} 移动 · 鼠标转向\n${e} 拿取 / 打开 / 坐下\n${q} 放回 / 关闭 / 起身\n拿笔后 ${e} 切换转笔和写字\n长按 ${use} 使用 · 投掷物松开抛出\n按住 ${e} 解救 · ${keyLabel(key.crawl)} 爬行\n机房方向键控制电脑\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
-   $('#teacher-controls').textContent=`${move} 移动 · 鼠标转向\n${use} 投粉笔 · ${e} 抓住眩晕同学\n木桩前 ${e} 绑住 · ${q} 放下\n黑板前按住 ${e} 写字\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
+   $('#teacher-controls').textContent=`${move} 移动 · 按住 ${keyLabel(key.crawl)} 奔跑 · 鼠标转向\n${use} 投粉笔 · ${e} 抓住眩晕同学\n木桩前 ${e} 绑住 · ${q} 放下\n黑板前按住 ${e} 写字\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
    const model=hud54Model(s),signature=JSON.stringify(model.rows);ranking.hidden=s.stage!=='class';
    if(signature!==lastRank){lastRank=signature;rankList.replaceChildren(...model.rows.map((p,i)=>{const li=make('li');li.dataset.self=String(p.isSelf);li.append(make('span','rank-place',i+1),make('span','rank-name',p.name),make('strong','rank-points',p.points));return li;}));}
    const p=s.player,carrying=s.drawer.drawnSlot!=null,pen=carrying&&s.selected==='pen';

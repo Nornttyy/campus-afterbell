@@ -22,6 +22,12 @@ export function createPlaygroundLayout(options={}){
  const board=Object.freeze({id:'playground-teacher-board',x:cx,z:maxZ-.17,y:1.40,width:3.8,height:1.46,yaw:Math.PI,writePosition:Object.freeze({x:cx,z:maxZ-.96,y:0,yaw:0})});
  const vending=Array.from({length:3},(_,i)=>Object.freeze({id:'playground-vending-'+i,x:minX+.52,z:cz-straightHalf*.72+i*straightHalf*.72,yaw:Math.PI/2,width:1.04,height:1.86,depth:.64}));
  const notices=[{x:cx+innerRadius-.18,z:cz-1.4,yaw:Math.PI/2},{x:cx-innerRadius+.18,z:cz+1.6,yaw:-Math.PI/2}].map((p,i)=>Object.freeze({...p,id:'playground-notice-'+i,width:2.45,height:1.16}));
+ // The wide cut following the UNLOCK close-up shows a pair of public noticeboards
+ // on the paved strip beside the first machine, facing the running lanes.
+ for(const [i,offset] of [2.15,4.05].entries())notices.push(Object.freeze({
+  id:'playground-vending-notice-'+i,x:vending[0].x+.08,z:vending[0].z+offset,
+  yaw:vending[0].yaw,width:1.55,height:1.10
+ }));
  const bars=Array.from({length:6},(_,i)=>Object.freeze({id:'playground-bar-'+i,x:maxX-1.18,z:cz-straightHalf+1.25+i*2.35,width:1.55,height:1.55+(i%3)*.24,radius:.07}));
  const colliders=[
   volume('playground-west-wall',minX-.15,minX,minZ-.15,maxZ+.15),
@@ -33,11 +39,23 @@ export function createPlaygroundLayout(options={}){
   ...posts.map(p=>volume('playground-post-'+p.id,p.x-p.radius,p.x+p.radius,p.z-p.radius,p.z+p.radius,p.y,p.y+p.height,{kind:'post'})),
   ...bars.flatMap(bar=>[-1,1].map((side,i)=>volume(bar.id+'-post-'+i,bar.x-bar.radius,bar.x+bar.radius,bar.z+side*bar.width/2-bar.radius,bar.z+side*bar.width/2+bar.radius,0,bar.height,{kind:'sports-bar'}))),
   ...vending.map(v=>volume(v.id,v.x-v.depth/2,v.x+v.depth/2,v.z-v.width/2,v.z+v.width/2,0,v.height,{kind:'vending'})),
-  ...vending.map(v=>volume(v.id+'-unlock',v.x-.105,v.x+.165,v.z-v.width/2-.335,v.z-v.width/2-.085,0,1.32,{kind:'vending-button'})),
   ...notices.map(n=>volume(n.id,n.x-.22,n.x+.22,n.z-n.width/2,n.z+n.width/2,0,2.65,{kind:'notice'}))
  ];
  return Object.freeze({bounds:Object.freeze({minX,maxX,minZ,maxZ,width,length}),track,steps:Object.freeze(steps),posts:Object.freeze(posts),board,bars:Object.freeze(bars),vending:Object.freeze(vending),notices:Object.freeze(notices),colliders:Object.freeze(colliders),entrance:Object.freeze({x:maxX,z:entranceZ,minZ:entranceMin,maxZ:entranceMax,width:entranceWidth,yaw:-Math.PI/2}),connector:Object.freeze({minX:maxX,maxX:maxX+.20,minZ:entranceMin,maxZ:entranceMax}),evidence:'reference-ratio reconstruction from 0300/0310/0340 and sports bars from second video 0001; exact dimensions unmeasured'});
 }
+// Shared points on the front of the cabinet, in metres. Picking and reach
+// checks use the same points for every orientation of the cabinet.
+export function vendingPoint(machine,part){
+ const button=part==='button',side=button?machine.width/2-.155:-.11;
+ const front=machine.depth/2+(button ? .085 : .42),sin=Math.sin(machine.yaw),cos=Math.cos(machine.yaw);
+ return {x:machine.x+cos*side+sin*front,y:button ? 1.19 : .008,z:machine.z-sin*side+cos*front};
+}
+export function canReachVending(actor,machine,part){
+ const point=vendingPoint(machine,part),dx=actor.x-machine.x,dz=actor.z-machine.z;
+ const front=dx*Math.sin(machine.yaw)+dz*Math.cos(machine.yaw);
+ return front>.12&&Math.hypot(actor.x-point.x,actor.z-point.z)<1.7;
+}
+export const VENDING_FALL_SECONDS=.34;
 export const PLAYGROUND_LAYOUT=createPlaygroundLayout();
 export const PLAYGROUND_SOLIDS=PLAYGROUND_LAYOUT.colliders;
 export const PLAYGROUND_POSTS=PLAYGROUND_LAYOUT.posts;

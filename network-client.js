@@ -1,7 +1,7 @@
-import {createLayoutContext,updateLayoutDoors,moveInRoom} from './classroom-layout.js?v=campus-83';
+import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-84';
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-83';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-83';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-84';
 import {applyNetworkDelta} from './network-state65.js?v=campus-83';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
@@ -115,7 +115,7 @@ export class NetworkRound{
   if(!this._closed&&!this._terminalError)this._retry=setTimeout(()=>this._listen(),1500);
  }
  _receiveState(message){this._connected=true;const before=this.room,previous=this._state;this._state=message;this._reconcileLocal(previous,message);const actorChanged=previous.player.id!==message.player.id||previous.player.seated!==message.player.seated||previous.map!==message.map;if(actorChanged)this._look=null;else if(this._look&&(message.inputAck?.look||0)>=this._look.sequence)this._look=null;if(previous.map!==message.map||previous.stage!==message.stage)this._frames=[];this._frames.push({time:performance.now(),state:message,students:new Map(message.students.map(p=>[p.id,p]))});if(this._frames.length>5)this._frames.shift();this.room=message.room;this._events.push(...message.events.filter(event=>!Number.isSafeInteger(event.networkSequence)||event.networkSequence>this._sequence));this._sequence=message.sequence;this.voice.sync(this.room);if(JSON.stringify(before)!==JSON.stringify(this.room))this._onRoom(this.room,this._state);}
- _canPredict(state=this._state){const p=state.player;return this._connected&&!this._localPaused&&state.status==='playing'&&!p.seated&&!p.caught&&(!p.captivity||p.captivity==='free')&&!(p.stunLeft>0);}
+ _canPredict(state=this._state){const p=state.player;return this._connected&&!this._localPaused&&state.status==='playing'&&!p.seated&&!p.mapActivity&&!p.caught&&(!p.captivity||p.captivity==='free')&&!(p.stunLeft>0);}
  _moveVisual(position,movement,dt){
   const actor={...this._state.player,...position,...(this._look?{yaw:this._look.yaw}:{})};
   if(this._state.elevator?.phase==='travel'){moveElevatorPassenger(actor,movement,dt,this._predictionLayout);return{x:actor.x,z:actor.z};}
@@ -126,8 +126,9 @@ export class NetworkRound{
   this._receivedAt=performance.now();
   if(this._visualTime==null||previous.map!==state.map||previous.stage!==state.stage||Math.abs(this._visualTime-state.sceneElapsed)>.5){this._visualTime=state.sceneElapsed;this._clockCorrection=0;}else this._clockCorrection=state.sceneElapsed+Math.min(.12,this._rtt/2000)-this._visualTime;
   if(!this._predictionLayout||previous.map!==state.map||previous.seats!==state.seats)this._predictionLayout=createLayoutContext(state.seats,state);
+  if(previous.dormDoors!==state.dormDoors||previous.toiletDoors!==state.toiletDoors||previous.dormCabinets!==state.dormCabinets||previous.toiletCabinets!==state.toiletCabinets)updateSpecialFurnitureCollisions(this._predictionLayout,state);
   updateLayoutDoors(this._predictionLayout,{...state,elevatorClosed:state.elevator?.phase==='travel'});
-  const p=state.player,old=previous.player,discontinuity=previous.map!==state.map||previous.stage!==state.stage||p.id!==old.id||p.seated!==old.seated||p.seatId!==old.seatId||p.captivity!==old.captivity||previous.elevator?.phase!==state.elevator?.phase;
+  const p=state.player,old=previous.player,discontinuity=previous.map!==state.map||previous.stage!==state.stage||p.id!==old.id||p.seated!==old.seated||p.seatId!==old.seatId||p.mapActivity?.id!==old.mapActivity?.id||p.mapActivity?.kind!==old.mapActivity?.kind||p.captivity!==old.captivity||previous.elevator?.phase!==state.elevator?.phase;
   if(!this._visualPosition||discontinuity||!this._canPredict(state)||Math.hypot(p.x-this._visualPosition.x,p.z-this._visualPosition.z)>1){this._visualPosition={x:p.x,z:p.z};this._correction={x:0,z:0};if(discontinuity)this._localMotion={x:0,z:0};return;}
   // Never reconcile a newly reversed/released input against a snapshot that
   // has not applied it yet. Prediction remains bounded during connection loss.
@@ -146,7 +147,7 @@ export class NetworkRound{
  }
  _interpolatedActors(){
   const frames=this._frames;if(frames.length<2)return{};const target=performance.now()-70;let a=frames[0],b=frames[frames.length-1];for(let i=1;i<frames.length;i++)if(frames[i].time>=target){a=frames[i-1];b=frames[i];break;}
-  const t=Math.max(0,Math.min(1,(target-a.time)/Math.max(1,b.time-a.time))),blend=(x,y)=>{if(!x||!y||x.captivity!==y.captivity||x.seated!==y.seated||x.visible!==y.visible||Math.hypot(x.x-y.x,x.z-y.z)>2)return y;const turn=Math.atan2(Math.sin(y.yaw-x.yaw),Math.cos(y.yaw-x.yaw));return{...y,x:x.x+(y.x-x.x)*t,z:x.z+(y.z-x.z)*t,yaw:x.yaw+turn*t};};
+  const t=Math.max(0,Math.min(1,(target-a.time)/Math.max(1,b.time-a.time))),blend=(x,y)=>{if(!x||!y||x.captivity!==y.captivity||x.seated!==y.seated||x.mapActivity?.id!==y.mapActivity?.id||x.mapActivity?.kind!==y.mapActivity?.kind||x.visible!==y.visible||Math.hypot(x.x-y.x,x.z-y.z)>2)return y;const turn=Math.atan2(Math.sin(y.yaw-x.yaw),Math.cos(y.yaw-x.yaw));return{...y,x:x.x+(y.x-x.x)*t,z:x.z+(y.z-x.z)*t,yaw:x.yaw+turn*t};};
   return{students:this._state.students.map(p=>p.isPlayer?p:blend(a.students?.get(p.id),b.students?.get(p.id))||p),teacher:this._state.role==='teacher'?this._state.teacher:blend(a.state.teacher,b.state.teacher)};
  }
  pause(value=true){this._localPaused=Boolean(value);if(value){this.command('setComputerPlayback',{playing:false,visible:false,mediaTime:0});this.command('setMovement',0,0);this.command('hold',false);this.command(this.player?.id===-1||this._state?.role==='teacher'?'setSprint':'setCrouch',false);this.command('setRescue',null);}return this.snapshot();}
@@ -157,7 +158,7 @@ export class NetworkRound{
  async leave(){if(this._closed)return;this._closed=true;this._disconnected();clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this.voice.close();this._controller?.abort();try{await this._post('/api/leave',{});}catch{}}
  dispose(){return this.leave();}
 }
-for(const method of ['setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
+for(const method of ['setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','pressVendingButton','collectVendingFood','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
  NetworkRound.prototype[method]=function(...args){return this.command(method,...args);};
 }
 

@@ -1,9 +1,9 @@
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-83';
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-84';
 import {DORM_ROOMS,dormRoomPoint} from './dorm-layout70.js?v=campus-83';
 import {HOTPOT_TABLES} from './hotpot-layout70.js?v=campus-83';
-import {TOILET_STALLS} from './toilet-layout70.js?v=campus-83';
+import {TOILET_STALLS} from './toilet-layout70.js?v=campus-84';
 import {NORMAL_WALK_SPEEDS} from './movement55.js?v=campus-83';
-import {startMapActivity,releaseMapActivity} from './map-activities77.js?v=campus-83';
+import {startMapActivity,releaseMapActivity} from './map-activities77.js?v=campus-84';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const vendingApproach=v=>({x:v.x+Math.sin(v.yaw)*.95,z:v.z+Math.cos(v.yaw)*.95});
 // Locations come from the existing reference-based furnishings. Delays and
@@ -41,13 +41,15 @@ export function advancePlaygroundPupil(round,a,dt){
    a._outdoorGoal=null;
    if(g.barId)startMapActivity(round,'hang',g.barId,a);
    if(g.vendingId){
-    const foods=['snack','drink','burger'],food=foods[(a.id+Math.floor(round.elapsed/20))%foods.length];
-    if(round._takePlaygroundFood(a,food)){
+    if(!round.vendingStock[g.vendingId]?.action)round._pressVendingButton(a,g.vendingId);
+    if(round._collectVendingFood(a,g.vendingId)){
      const v=PLAYGROUND_LAYOUT.vending.find(v=>v.id===g.vendingId),side=a.id%2?1:-1;
      for(const offset of[side*4,-side*4,side*7]){
       const point={x:v.x+Math.sin(v.yaw)*(3+a.id%3),z:v.z+offset};
       if(goal(round,a,point,{leaveVending:true}))break;
      }
+    }else if(round.vendingStock[g.vendingId]?.action){
+     a._outdoorGoal=g;a.mood='standing';return true;
     }a._decisionAt=round.elapsed;
    }
   }

@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {placeFurniture67} from './furniture-assets67.js?v=campus-83';
-import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-83';
-export * from './toilet-layout70.js?v=campus-83';
+import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-84';
+export * from './toilet-layout70.js?v=campus-84';
 
 function ellipseRing(outerX,outerZ,innerX,innerZ,height){
  const shape=new T.Shape();shape.absellipse(0,0,outerX,outerZ,0,Math.PI*2,false);const hole=new T.Path();hole.absellipse(0,0,innerX,innerZ,0,Math.PI*2,true);shape.holes.push(hole);
@@ -58,7 +58,8 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic}){
   for(const side of[-1,1]){render(knobGeo,edge,[1.70,.91,side*.048],hinge);const plaque=render(signGeo,signMaps[0],[1.04,1.59,side*.027],hinge,[0,side<0?Math.PI:0,0]);plaque.name='toilet-occupancy-'+s.id+'-'+side;}
   render(posterGeo,posterMat,[.77,.91,-.026],hinge,[0,Math.PI,0]);
   hinge.traverse(o=>{o.userData.animated=true;});
-  doors.set(s.id,{group:hinge,hinge,panel:door,target:door,open:0,openness:0,occupied:false,solids:()=>toiletDoorSolids(s.id,doors.get(s.id).open)});
+  Object.assign(hinge.userData,{doorId:s.id,interaction:'cubicle-door'});
+  doors.set(s.id,{group:hinge,hinge,panel:door,target:hinge,open:0,openness:0,occupied:false,solids:()=>toiletDoorSolids(s.id,doors.get(s.id).open)});
   const c=TOILET_CABINET,cabinet=new T.Group();cabinet.name='toilet-cabinet-'+s.id;cabinet.position.set(s.x+c.x,0,s.z+c.z);fixed.add(cabinet);
   box(wood,[0,.66,-.16],[.43,1.12,.028],null,cabinet);
   for(const x of[-.202,.202])box(wood,[x,.66,0],[.026,1.12,.35],null,cabinet);
