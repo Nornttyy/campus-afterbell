@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,DORM_ROOM_BOUNDS,DORM_ROOMS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,DORM_TABLES,dormDoorPose,dormDoorSolids,dormBodyOffset,dormPoint,dormCabinetDoorPose,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-83';
-export * from './dorm-layout70.js?v=campus-83';
+import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,DORM_ROOM_BOUNDS,DORM_ROOMS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,DORM_HALL_CABINETS,DORM_TABLES,dormDoorPose,dormDoorSolids,dormBodyOffset,dormPoint,dormCabinetDoorPose,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-85';
+export * from './dorm-layout70.js?v=campus-85';
 
 const stateValue=(source,id,fallback)=>{const entry=source instanceof Map?source.get(id):source?.[id];return entry==null?fallback:typeof entry==='number'?Math.max(0,Math.min(1,entry)):typeof entry==='object'?!!entry.open:!!entry;};
 const damp=(a,b,dt)=>a+(b-a)*(1-Math.exp(-10*Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0))));
@@ -36,6 +36,15 @@ export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic}){
   const x=wall.id.includes('left')?7.415:12.425,z=(wall.minZ+wall.maxZ)/2;
   box(hallStripe,[x,1.21,z],[.026,.22,wall.maxZ-wall.minZ],null,fixed);
   box(trim,[x,.09,z],[.03,.18,wall.maxZ-wall.minZ],null,fixed);
+ }
+ for(const cab of DORM_HALL_CABINETS){
+  const x=(cab.minX+cab.maxX)/2,z=(cab.minZ+cab.maxZ)/2,w=cab.maxX-cab.minX,d=cab.maxZ-cab.minZ,side=x<10?1:-1;
+  box(wood,[x,.49,z],[w,.94,d],null,fixed).name=cab.id;
+  box(endWood,[x,.955,z],[w+.03,.05,d+.028],null,fixed);
+  for(const sign of [-1,1]){
+   box(endWood,[x+side*w*.50,.49,z+sign*d*.246],[.018,.82,d*.46],null,fixed);
+   box(bracket,[x+side*(w*.50+.022),.56,z+sign*.087],[.035,.12,.022],null,fixed);
+  }
  }
  const bottleGeo=own(new T.CylinderGeometry(.083,.095,.34,16)),capGeo=own(new T.CylinderGeometry(.071,.071,.065,16)),cupGeo=own(new T.CylinderGeometry(.046,.038,.073,12,1,true)),cupBaseGeo=own(new T.CylinderGeometry(.037,.037,.006,12)),aqua=material('#28969c',{roughness:.42,metalness:.12}),handle=own(new T.TorusGeometry(.07,.012,5,12,Math.PI*1.6));
  const doorPaint=material('#91b8bb',{roughness:.7}),doorDark=material('#466e75',{roughness:.68}),doorMetal=material('#b2beb6',{roughness:.44,metalness:.5}),numberGeo=own(new T.PlaneGeometry(.57,.57));

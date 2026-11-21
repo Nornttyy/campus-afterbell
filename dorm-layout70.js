@@ -4,8 +4,8 @@
 export const DORM_ROOM_BOUNDS=Object.freeze({minX:-3.1,maxX:3.1,minZ:0,maxZ:10.2,height:3.45});
 export const DORM_ROOMS=Object.freeze([
  {id:1,x:7.2,z:-8,yaw:-Math.PI/2},
- {id:2,x:7.2,z:2.8,yaw:-Math.PI/2},
- {id:3,x:12.64,z:-8,yaw:Math.PI/2}
+ {id:3,x:7.2,z:2.8,yaw:-Math.PI/2},
+ {id:2,x:12.64,z:2.8,yaw:Math.PI/2}
 ].map(Object.freeze));
 export function dormPoint(b,x,z){const c=Math.cos(b.yaw),s=Math.sin(b.yaw);return{x:b.x+c*x+s*z,z:b.z-s*x+c*z};}
 export function dormRoomPoint(id,x,z){const room=DORM_ROOMS.find(r=>r.id===Number(id));return room?dormPoint(room,x,z):null;}
@@ -42,20 +42,33 @@ export const DORM_SHELL_SOLIDS=Object.freeze(DORM_ROOMS.flatMap(r=>[
 ].map(v=>rotateVolume({...v,id:'dorm-room-'+r.id+'-'+v.id},r))));
 export const DORM_CEILINGS=Object.freeze(DORM_ROOMS.map(r=>rotateVolume(volume('dorm-ceiling-'+r.id,b.minX-.2,b.maxX+.2,-.2,b.maxZ+.2,b.height,b.height+.16),r)));
 export const DORM_CEILING=DORM_CEILINGS[0];
-export const DORM_CORRIDOR_SOLIDS=Object.freeze([
- ...[[-17.72,-11.3],[-4.7,-.5],[6.1,8.8]].map(([lo,hi],i)=>volume('dorm-hall-left-'+i,7.2,7.4,lo,hi,0,4.51)),
- ...[[-17.72,-11.3],[-4.7,8.8]].map(([lo,hi],i)=>volume('dorm-hall-right-'+i,12.44,12.64,lo,hi,0,4.51)),
- volume('dorm-hall-left-cap',7.2,7.4,-11.3,6.1,3.45,4.51),volume('dorm-hall-right-cap',12.44,12.64,-11.3,-4.7,3.45,4.51)
+// Fill between actual room shells so changing a door never leaves a false wall.
+export const DORM_CORRIDOR_SOLIDS=Object.freeze(['left','right'].flatMap(side=>{
+ const left=side==='left',minX=left?7.2:12.44,maxX=left?7.4:12.64;
+ const rooms=DORM_ROOMS.filter(room=>(room.yaw<0)===left).sort((a,b)=>a.z-b.z);
+ const panels=[];let cursor=-17.72;
+ for(const room of rooms){
+  const start=room.z+b.minX-.2,end=room.z+b.maxX+.2;
+  panels.push(volume('dorm-hall-'+side+'-'+room.id,minX,maxX,cursor,start,0,4.51));
+  panels.push(volume('dorm-hall-'+side+'-cap-'+room.id,minX,maxX,start,end,b.height,4.51));
+  cursor=end;
+ }
+ panels.push(volume('dorm-hall-'+side+'-end',minX,maxX,cursor,8.8,0,4.51));
+ return panels;
+}));
+export const DORM_HALL_CABINETS=Object.freeze([
+ volume('dorm-hall-cabinet-west',7.45,7.92,-.55,.92,0,.98),
+ volume('dorm-hall-cabinet-east',11.92,12.39,-.55,.92,0,.98)
 ]);
 const tableSolids=DORM_TABLES.flatMap(t=>[
  volume('dorm-table-top-'+t.id,-.51,.51,-.72,.72,.735,.78),
  ...[-1,1].flatMap(x=>[-1,1].map(z=>volume('dorm-table-leg-'+t.id+'-'+x+'-'+z,x*.445-.022,x*.445+.022,z*.65-.022,z*.65+.022,0,.735)))
 ].map(v=>rotateVolume(v,t)));
-export const DORM_WALK_SOLIDS=Object.freeze([...DORM_BUNKS.flatMap(b=>[
+export const DORM_WALK_SOLIDS=Object.freeze([...DORM_HALL_CABINETS,...DORM_BUNKS.flatMap(b=>[
  rotateVolume(volume('dorm-bunk-footprint-'+b.id,-1.28,1.28,-.70,.90,0,2.63),b),
  rotateVolume(volume('dorm-cabinet-footprint-'+b.id,-1.94,-1.36,-.23,.43,0,3.38),b)
 ]),...DORM_TABLES.map(t=>rotateVolume(volume('dorm-table-footprint-'+t.id,-.51,.51,-.72,.72,0,.78),t))]);
-export const DORM_SOLIDS=Object.freeze([...DORM_BUNKS.flatMap(world=>{
+export const DORM_SOLIDS=Object.freeze([...DORM_HALL_CABINETS,...DORM_BUNKS.flatMap(world=>{
  const b={id:world.id,x:0,z:0};
  const volumes=[];
  for(const sx of[-1,1])for(const sz of[-1,1])volumes.push(volume(`dorm-post-${b.id}-${sx}-${sz}`,b.x+sx*1.22-.06,b.x+sx*1.22+.06,b.z+sz*.65-.05,b.z+sz*.65+.05,.025,2.63));

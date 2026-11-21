@@ -1,7 +1,7 @@
-import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-84';
+import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-85';
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-83';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-84';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-85';
 import {applyNetworkDelta} from './network-state65.js?v=campus-83';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
@@ -57,7 +57,7 @@ export function defaultCampusEndpoint(){
  if(location.hostname==='github.io'||location.hostname.endsWith('.github.io'))return '';
  return ['localhost','127.0.0.1'].includes(location.hostname)&&location.port!=='8931'?`${location.protocol}//${location.hostname}:8931`:location.origin;
 }
-export async function connectCampusRoom({endpoint=defaultCampusEndpoint(),code='',name='同学',character='boy',rolePreference='student',map='classroom',floor=1,maxPlayers=8,settings,onRoom=()=>{},onError=()=>{},onVoice=()=>{}}={}){
+export async function connectCampusRoom({endpoint=defaultCampusEndpoint(),code='',name='同学',character='boy',rolePreference='student',map='classroom',floor,maxPlayers=8,settings,onRoom=()=>{},onError=()=>{},onVoice=()=>{}}={}){
  endpoint=String(endpoint??'').trim().replace(/\/+$/,'');if(!endpoint)throw new RoomConnectionError('该网站尚未连接联机服务器，请先玩单人模式，或填写联机服务器地址。');
  let parsed;try{parsed=new URL(endpoint);}catch{throw new RoomConnectionError('请输入完整的 HTTP 或 HTTPS 联机服务器地址。');}if(!['http:','https:'].includes(parsed.protocol))throw new RoomConnectionError('房间地址必须是 HTTP 或 HTTPS');
  code=String(code).trim();if(code&&!/^\d{6}$/.test(code))throw new Error('请输入六位房间号');
@@ -158,7 +158,7 @@ export class NetworkRound{
  async leave(){if(this._closed)return;this._closed=true;this._disconnected();clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this.voice.close();this._controller?.abort();try{await this._post('/api/leave',{});}catch{}}
  dispose(){return this.leave();}
 }
-for(const method of ['setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','pressVendingButton','collectVendingFood','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
+for(const method of ['setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','pressVendingButton','collectVendingFood','takeMeal','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
  NetworkRound.prototype[method]=function(...args){return this.command(method,...args);};
 }
 

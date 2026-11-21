@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
-import {createDeskItem} from './game-actors.js?v=campus-84';
+import {createDeskItem} from './game-actors.js?v=campus-85';
 import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-84';
 export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-84';
 
@@ -181,8 +181,8 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  const bannerZ=layout.vending[0].z-2.3;
  panel(sportsBanner,[b.minX+.023,1.30,bannerZ],4.55,1.35,Math.PI/2);
  // A mixture of blue/orange school banners is visible along the real walls.
- for(let i=0;i<6;i++){
-  const z=b.minZ+3.2+i*(b.length-6.4)/5;
+ for(let i=0;i<12;i++){
+  const z=b.minZ+3.2+i*(b.length-6.4)/11;
   if(z+1.7<layout.entrance.minZ||z-1.7>layout.entrance.maxZ)panel(i%2?posterBlue:posterOrange,[b.maxX-.011,1.30,z],3.4,1.34,-Math.PI/2);
   if(Math.abs(z+1.1-bannerZ)>3.9)panel(i%2?posterOrange:posterBlue,[b.minX+.011,1.30,z+1.1],3.2,1.34,Math.PI/2);
  }
@@ -223,9 +223,14 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
   box(concrete,[t.cx,-.14,t.cz],[115,.12,115]);
 
   const city=[mat('#b6bfae'),mat('#d4d2bd'),mat('#b3c5c5'),mat('#b5af93')],window=mat('#617f7c',{roughness:.4,metalness:.12}),windowLight=mat('#b3d1c9',{roughness:.4});
-  const buildings=[];for(let i=0;i<7;i++)buildings.push({x:b.minX-5.0-(i%2)*2.7,z:b.minZ-8+i*(b.length+16)/6,w:3.1+(i%3),d:3.7,h:10+(i*7%15),seed:i});
-  for(let i=0;i<5;i++)buildings.push({x:b.minX-5+i*(b.width+10)/4,z:b.minZ-7.5-(i%2)*3,w:3.2+(i%3),d:3.4,h:13+(i*11%16),seed:i+8});
-  for(let i=0;i<4;i++)buildings.push({x:b.minX-3+i*(b.width+6)/3,z:b.maxZ+7.5+(i%2)*4,w:3.5,d:3.6,h:12+(i*5%13),seed:i+15});
+  // Three residential clusters leave the long elevations open to the sky.
+  const buildings=[
+   [b.minX-7,b.minZ+4,6.5,4.4,15],[b.minX-12,b.minZ+9,5.2,4.7,17],
+   [b.minX-5,b.maxZ-10,5.6,4.2,13],[b.minX-10,b.maxZ-5,6.1,4.8,17],
+   [t.cx-12,b.minZ-9,7.1,4.8,12],[t.cx-6,b.minZ-12,4.2,4.5,9],
+   [t.cx+9,b.maxZ+8,5.2,4.6,20],[t.cx+15,b.maxZ+13,6.8,4.2,15],
+   [b.maxX+6,b.maxZ-5,4.6,4.1,8]
+  ].map(([x,z,w,d,h],seed)=>({x,z,w,d,h,seed}));
   for(const a of buildings){
    const cm=city[a.seed%city.length];box(cm,[a.x,a.h/2-1,a.z],[a.w,a.h,a.d]);box(cap,[a.x,a.h-.93,a.z],[a.w+.14,.16,a.d+.14]);
    for(let level=3;level<a.h-1;level+=3.5)box(cap,[a.x,level,a.z],[a.w+.08,.10,a.d+.08]);

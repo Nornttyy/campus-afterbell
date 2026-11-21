@@ -7,7 +7,7 @@ export function setSchoolDoorTargets(motion,closed){for(const id of SCHOOL_DOOR_
 export function copySchoolDoorMotion(motion,snapshot){for(const id of SCHOOL_DOOR_IDS){if(!snapshot?.[id])continue;motion[id].amount=clamp(snapshot[id].amount);motion[id].target=clamp(snapshot[id].target);motion[id].blocked=!!snapshot[id].blocked;}return motion;}
 export function schoolDoorSegments(id,amount,geometry){
  const angle=clamp(amount)*Math.PI/2,s=Math.sin(angle),c=Math.cos(angle),leaves=[];
- if(id==='office')for(const [i,x]of [geometry.office.doorMinX,geometry.office.doorMaxX].entries())leaves.push({x,z:8.91,dx:(i===0?1:-1)*.90*c,dz:.90*s,thickness:.09});
+ if(id==='office')for(const [i,x]of [geometry.office.doorMinX,geometry.office.doorMaxX].entries())leaves.push({x,z:geometry.office.doorZ,dx:(i===0?1:-1)*.90*c,dz:geometry.office.opensZ*.90*s,thickness:.09});
  else{const d=geometry.doors.find(d=>d.id===id);if(!d)return[];leaves.push({x:7.30,z:d.maxZ,dx:(d.maxZ-d.minZ)*s,dz:-(d.maxZ-d.minZ)*c,thickness:.085});}
  // Short conservative boxes follow the rotating panel; a single whole-leaf
  // bounding box would block the empty triangle beside a half-open door.

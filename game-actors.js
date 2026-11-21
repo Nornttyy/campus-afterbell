@@ -6,7 +6,7 @@ import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
 import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-83';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-84';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-85';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -461,6 +461,33 @@ const deskItemFactories=Object.freeze({
  drink:drinkProp,burger:burgerProp,banana:bananaProp,bananaPeel:()=>bananaProp(true),
  garlic:garlicProp,gum:gumProp,lunch:lunchProp,pen:penProp
 });
+const servingTemplates=new Map();
+export function createServingDish(dish){
+  if(dish!=='chickenBucket'&&dish!=='layerCake')return createDeskItem(dish);
+  if(servingTemplates.has(dish))return servingTemplates.get(dish).clone(true);
+  const g=new THREE.Group();g.name=dish;
+  const cream=mat('cakeCream','#fff1d5'),red=mat('bucketPrint','#c9212b'),crumb=mat('chickenCrumb','#e7a13b'),crust=mat('chickenEdge','#aa682e');
+  const ring=(material,top,bottom,height,y)=>mesh(g,new THREE.CylinderGeometry(top,bottom,height,20),material,[0,y,0]);
+  if(dish==='chickenBucket'){
+    ring(red,.145,.116,.13,-.002);
+    ring(cream,.146,.144,.012,.061);ring(cream,.118,.117,.008,-.064);
+    for(let i=0;i<5;i++){
+      const a=i*2.4,x=.068*Math.sin(a),z=.062*Math.cos(a),y=.078+i*.0045;
+      mesh(g,new THREE.IcosahedronGeometry(1,1),i%2?crumb:crust,[x,y,z],[.044,.055,.042],[a,.34,a*.65]);
+      for(let j=0;j<5;j++){const b=j*2.3;mesh(g,new THREE.IcosahedronGeometry(.012,0),crumb,[x+Math.sin(b)*.033,y+.038+j*.001,z+Math.cos(b)*.025]);}
+    }
+    // Wrap three cream printed medallions around the red takeaway tub.
+    for(let i=0;i<3;i++){const a=i*Math.PI*2/3,mark=new THREE.Group();mark.position.set(Math.sin(a)*.135,0,Math.cos(a)*.135);mark.rotation.y=a;g.add(mark);
+      detailOval(mark,cream,[0,0,0],[.032,.028,.004]);detailOval(mark,red,[0,.002,.004],[.019,.014,.003]);}
+  }else{
+    const sponge=mat('cakeSponge','#74402c'),icing=mat('berryIcing','#b94743');
+    for(const [y,h,m]of [[-.047,.034,sponge],[-.024,.013,cream],[.000,.035,sponge],[.023,.012,icing],[.043,.028,cream]])ring(m,.103,.103,h,y);
+    for(let i=0;i<8;i++){const a=i*Math.PI/4;detailOval(g,cream,[Math.sin(a)*.079,.060,Math.cos(a)*.079],[.018,.012,.018]);}
+    detailOval(g,red,[0,.079,0],[.022,.027,.022]);curve(g,mat('cherryStem','#55815b'),[[0,.096,0],[.004,.11,.001],[.016,.117,.002]],.002);
+  }
+  batch(g);servingTemplates.set(dish,g);return g.clone(true);
+}
+
 export function createDeskItem(action){
   if(!Object.hasOwn(deskItemFactories,action))throw new RangeError(`Unknown desk item: ${action}`);
   const factory=deskItemFactories[action];
@@ -484,6 +511,7 @@ export function createDeskHands({createHand}={}){
   const supports=arms.map(arm=>createHandSupport(arm.hand));
   const wholeGrips=arms.map((arm,i)=>createWholePalmGrip(arm.hand,i?1:-1));
   const props=Object.fromEntries(DESK_ITEM_KINDS.map(kind=>[kind,createDeskItem(kind)]));Object.values(props).forEach(p=>group.add(p));
+  const burgerModel=props.burger.children.slice(),servingModels=new Map();let servingLook=null;
   // Fixed object-to-palm transforms preserve contact during wrist rotation.
   const grips={
     snack:{position:v(.0637,.07626,-.03728),rotation:new THREE.Quaternion(-.0259436,.434251,-.0045194,.900407).normalize()},
@@ -502,7 +530,7 @@ export function createDeskHands({createHand}={}){
   let penWriteBlend=0,penAge=0,bookBlend=0,drawerBlend=0,lowCarry=0,previousHandPositions=null,previousFood=null;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
-  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,bookAmount=0,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,animationPose=null}={}){
+  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,examPen=null,mealDish=null,bookAmount=0,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,animationPose=null}={}){
     const authored=isHandAnimationPose(animationPose)&&!seated&&!carrying&&!holding&&!caught&&!computer&&!typing&&!bookAmount;
     function applyAuthored(weight){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
@@ -524,6 +552,16 @@ export function createDeskHands({createHand}={}){
     if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=using=throwCharge=releaseCharge=foodAge=foodAmount=foodPhase=penWriteBlend=penAge=bookBlend=drawerBlend=lowCarry=0,previousHandPositions=null,previousFood=null;wasReleasing=foodWasUsing=false;for(const key of Object.keys(foodPose))foodPose[key]=0;}
     const dt=lastTime===null?1/60:clamp(time-lastTime,0,.08);lastTime=time;
     const requested=DESK_ITEM_KINDS.includes(action)?action:'snack';
+    const dish=requested==='burger'&&['chickenBucket','layerCake'].includes(mealDish)?mealDish:null;
+    if(dish!==servingLook){
+      if(servingLook)servingModels.get(servingLook).visible=false;
+      for(const part of burgerModel)part.visible=!dish;
+      if(dish){
+        if(!servingModels.has(dish)){const serving=createServingDish(dish);props.burger.add(serving);servingModels.set(dish,serving);}
+        servingModels.get(dish).visible=true;
+      }
+      servingLook=dish;
+    }
     if(extension<.001){if(active!==requested){active=requested;useTime=0;}}
     const engaged=carrying&&!caught&&active===requested;
     focus=smooth(focus,engaged&&seated?1:0,dt,7);
@@ -537,10 +575,10 @@ export function createDeskHands({createHand}={}){
     const clear=ease(extension,0,.16),lower=ease(extension,.16,.32),reach=ease(extension,.30,.48),pull=ease(extension,.48,.72),grip=ease(extension,.42,.70),use=ease(extension,.70,1),p=clamp(Number(progress)||0,0,1);
     lowCarry=smooth(lowCarry,holding?0:1,dt,3);
     const writing=active==='pen'&&engaged&&seated&&penWriting;
-    penWriteBlend=smooth(penWriteBlend,writing?1:0,dt,9);
+    penWriteBlend=smooth(penWriteBlend,writing||examPen?1:0,dt,9);
     // Finish the grip change before restarting the roll. Spinning the target
     // through a half-turn during slerp switches its shortest arc and snaps.
-    if(active==='pen'&&engaged&&seated&&!penWriting&&penWriteBlend<.01)penAge+=dt;
+    if(active==='pen'&&engaged&&seated&&!penWriting&&!examPen&&penWriteBlend<.01)penAge+=dt;
     if(engaged&&(holding||writing)&&use>.94)useTime+=dt;else if(extension<.05)useTime=0;
     using=smooth(using,engaged&&(holding||writing)?1:0,dt,14);
     const eating=FOOD_ITEM_KINDS.includes(active)&&engaged&&holding&&(effectiveEating===null||effectiveEating);
@@ -724,7 +762,7 @@ export function createDeskHands({createHand}={}){
       const weight=ease(extension,.20,1),hand=arms[1].hand,pen=props.pen;
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
       const line=Math.sin(useTime*1.9),x=.135+.055*Math.sin(useTime*7.1),z=-.725+.035*line+.012*Math.sin(useTime*14.2);
-      const tip=v(x,.88+Math.abs(x)*Math.tan(.14)+.005-1.43,z);
+      const tip=examPen?v(examPen.x+.016*Math.sin(useTime*11),.887-1.43+(writing?.004:.026),examPen.z+.006*line):v(x,.88+Math.abs(x)*Math.tan(.14)+.005-1.43,z);
       const spin=penAge*Math.PI*2/1.6,twirl=1-penWriteBlend;
       const writeQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.24+.025*Math.sin(useTime*7.1),-.10,-.32));
       const penQ=penTwirlQuaternion(penAge).slerp(writeQ,penWriteBlend);
