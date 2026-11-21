@@ -1,10 +1,10 @@
-import {paperQuestion} from './upper-floor-view85.js?v=campus-85';
+import {paperQuestion} from './upper-floor-view85.js?v=campus-86';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-84';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-84';
 import {loadFurniture67} from './furniture-assets67.js?v=campus-83';
 import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-83';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
-import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-85';
+import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-86';
 import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-83';
 import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-83';
 import {gameplayFov} from './view-tuning55.js?v=campus-83';
@@ -12,7 +12,7 @@ import {setCharacterNight} from './character-materials.js?v=campus-83';
 import {createStaminaVision} from './stamina-vision55.js?v=campus-83';
 import {createSoundCues} from './sound-cue55.js?v=campus-83';
 import {createChalkPowder} from './chalk-powder55.js?v=campus-83';
-import {createSurveillanceView} from './surveillance-view54.js?v=campus-85';
+import {createSurveillanceView} from './surveillance-view54.js?v=campus-86';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-83';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
@@ -20,23 +20,23 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-83';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-83';
 import {loadCampusArtwork} from './campus-artwork.js?v=campus-85';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-85';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-85';
-import {createRoomVariants} from './room-variants.js?v=campus-85';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-86';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-86';
+import {createRoomVariants} from './room-variants.js?v=campus-86';
 import {createComputerScreenContent} from './computer-screen55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-83';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-83';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-85';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-86';
 import {dormBodyOffset} from './dorm-layout70.js?v=campus-85';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-83';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-85';
-import {loadStudentAssets} from './student-assets.js?v=campus-85';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-86';
+import {loadStudentAssets} from './student-assets.js?v=campus-86';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-85';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,CAMPUS_MAPS,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-85';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-86';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-86';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
 
@@ -380,7 +380,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   startBellModel.traverse(o=>{if(o.isMesh)o.userData.animated=true;});
   bakeStatic(room);bakeStatic(teachingEnd);for(const facade of campus.facades||[])bakeStatic(facade);bakeStatic(campus.tiered);for(const furniture of seatFurniture.values()){bakeStatic(furniture.body);bakeStatic(furniture.chair);}
   const screenContent=createComputerScreenContent();
-  const variants=createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,drawerRecords,screenContent,officeScreens:campus.officeScreens});let mapVariant='classroom';
+  const variants=createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,liftPanel:campus.liftPanel,stationFloor:mat('#f2ece0',{map:floorTexture}),drawerRecords,screenContent,officeScreens:campus.officeScreens});let mapVariant='classroom';
   for(const drawer of drawerRecords.values())bakeStatic(drawer.group);
   for(const book of deskBooks.values())bakeStatic(book);
   const rigidProps=instanceRigidProps([...drawerRecords.values()].map(d=>d.group).concat([...deskBooks.values(),...deskPens.values()], [...seatFurniture.values()].flatMap(f=>[f.body,f.chair]),variants.hardwareRoots,[...variants.drawers.values()].map(d=>d.group)),scene);
@@ -462,11 +462,11 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     const signature=seats.map(p=>`${p.id},${p.deskX},${p.deskZ},${p.x},${p.z},${p.yaw||0}`).join('|');if(!force&&signature===layoutSignature)return;
     layoutSignature=signature;currentSeats=seats;renderLayout=createLayoutContext(seats,{map:mapVariant,officeLocked:gameplay?.officeLocked,officeDoorClosed:gameplay?.officeDoorClosed,frontDoorClosed:gameplay?.frontDoorClosed,rearDoorClosed:gameplay?.rearDoorClosed,doorMotion:gameplay?.doorMotion});
     const activeSeats=new Set(seats.map(seat=>seat.id));
-    for(const[id,furniture]of seatFurniture)furniture.group.visible=activeSeats.has(id)&&!['toilet','dorm','playground'].includes(mapKind(mapVariant));
-    for(const[id,drawer]of drawerRecords)drawer.group.visible=activeSeats.has(id)&&!['computer','toilet','dorm','playground'].includes(mapKind(mapVariant));
-    for(const[id,book]of deskBooks)book.visible=activeSeats.has(id)&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant));
+    for(const[id,furniture]of seatFurniture)furniture.group.visible=activeSeats.has(id)&&!['toilet','dorm','playground','bus'].includes(mapKind(mapVariant));
+    for(const[id,drawer]of drawerRecords)drawer.group.visible=activeSeats.has(id)&&mapVariant!=='bus'&&!['computer','toilet','dorm','playground'].includes(mapKind(mapVariant));
+    for(const[id,book]of deskBooks)book.visible=activeSeats.has(id)&&(mapVariant!=='bus'||seats[id]?.busDeck===1)&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant));
     for(const record of pupilRecords)record.layoutActive=activeSeats.has(record.seat.id);
-    for(const seat of seats){const furniture=seatFurniture.get(seat.id);if(!furniture)continue;const yaw=seat.yaw||0,h=floorHeight(seat.x,seat.z,mapVariant),sin=Math.sin(yaw),cos=Math.cos(yaw);
+    for(const seat of seats){const furniture=seatFurniture.get(seat.id);if(!furniture)continue;const yaw=seat.yaw||0,h=floorHeight(seat.x,seat.z,mapVariant,seat.busDeck),sin=Math.sin(yaw),cos=Math.cos(yaw);
       furniture.group.position.set(seat.deskX,h,seat.deskZ);furniture.group.rotation.y=yaw;furniture.body.visible=!['computer','hotpot'].includes(mapKind(mapVariant));
       const drawer=drawerRecords.get(seat.id);Object.assign(drawer,{x:seat.deskX,z:seat.deskZ,yaw});drawer.group.position.set(drawer.x-sin*drawer.open*.24,h,drawer.z-cos*drawer.open*.24);drawer.group.rotation.y=yaw;
       const book=deskBooks.get(seat.id);book.position.set(seat.deskX-sin*.28,.88+h,seat.deskZ-cos*.28);book.rotation.order='YXZ';book.rotation.y=yaw;
@@ -476,11 +476,11 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     variants.setSeats(seats);canvas.dataset.seatLayout=JSON.stringify({pattern:seats[0]?.pattern||'',seats:seats.map(({id,deskX,deskZ,yaw})=>({id,deskX,deskZ,yaw}))});
   }
   function setMap(value){
-    mapVariant=CAMPUS_MAPS.includes(mapKind(value))?mapKind(value):'classroom';variants.setMap(mapVariant);campus.setMap(mapVariant);setSeats(currentSeats,true);stakes.visible=mapKind(mapVariant)!=='playground';for(const p of detentionForMap(mapVariant)){const model=postModels[p.id];if(model)model.position.set(p.x,floorHeight(p.x,p.z,mapVariant),p.z);}
+    mapVariant=isCampusMap(value)?mapKind(value):'classroom';variants.setMap(mapVariant);campus.setMap(mapVariant);if(mapVariant==='bus'){room.visible=false;for(const f of campus.facades)f.visible=false;}teachingEnd.visible=mapVariant!=='bus'&&(Boolean(gameplay)||canvas.dataset.gameplay==='true');setSeats(currentSeats,true);stakes.visible=mapKind(mapVariant)!=='playground';for(const p of detentionForMap(mapVariant)){const model=postModels[p.id];if(model)model.position.set(p.x,floorHeight(p.x,p.z,mapVariant,p.busDeck),p.z);}
     const night=['night','dorm'].includes(mapKind(mapVariant));setCampusNight(night);
     setCharacterNight(scene,night);firstPersonView.setNight(night);
     applyRoomLighting(night,{ambient,sun,fill,teachingFill,lampMat,ceilingMaterial,scene});
-    const outdoor=mapKind(mapVariant)==='playground';
+    const outdoor=['playground','bus'].includes(mapVariant);
     if(outdoor){ambient.intensity=2.35;ambient.color.set('#e8f7ff');ambient.groundColor.set('#d4dab8');sun.intensity=3.4;fill.intensity=.65;teachingFill.intensity=.12;sun.position.set(-32,40,4);sun.target.position.set(-10.8,0,-21.2);}
     else{sun.position.set(-17,7.4,7);sun.target.position.set(0,.65,-2);}
     Object.assign(sun.shadow.camera,outdoor?{left:-44,right:44,top:44,bottom:-44,far:150}:{left:-19,right:19,top:16,bottom:-16,far:65});sun.shadow.camera.updateProjectionMatrix();
@@ -497,7 +497,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   let lastFeedbackElapsed=-Infinity,activeCastTarget=null,previousCastProgress=0;
   const stakes=new THREE.Group();stakes.name='capture-posts';dynamic.add(stakes);
   const postModels=DETENTION.map(p=>{
-    const g=new THREE.Group();g.name='wooden-post-'+p.id;g.position.set(p.x,floorHeight(p.x,p.z,mapVariant),p.z);stakes.add(g);
+    const g=new THREE.Group();g.name='wooden-post-'+p.id;g.position.set(p.x,floorHeight(p.x,p.z,mapVariant,p.busDeck),p.z);stakes.add(g);
     cylinder(M.edge,[0,1.03,0],[.085,2.06,.10],null,g);
     rounded(M.wood,[0,2.035,0],[.15,.055,.15],.018,null,g);
     for(const z of [-.13,.13])rounded(M.dark,[0,.035,z],[.36,.07,.13],.018,null,g);
@@ -518,7 +518,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     heldChalk.visible=progress>0&&progress<.68;
     if(progress>.68&&target&&!target.caught){
       if(activeCastTarget!==target.id||previousCastProgress<=.68){castOrigin.copy(wristPosition);activeCastTarget=target.id;}
-      const flight=THREE.MathUtils.clamp((progress-.68)/.32,0,1);castTarget.set(target.x,floorHeight(target.x,target.z,mapVariant)+(target.seated===false?1.45:1.29),target.z);
+      const flight=THREE.MathUtils.clamp((progress-.68)/.32,0,1);castTarget.set(target.x,floorHeight(target.x,target.z,mapVariant,target.busDeck)+(target.seated===false?1.45:1.29),target.z);
       flyingChalk.visible=true;flyingChalk.position.lerpVectors(castOrigin,castTarget,flight);flyingChalk.position.y+=Math.sin(flight*Math.PI)*.10;flyingChalk.quaternion.setFromUnitVectors(upAxis,castTarget.clone().sub(castOrigin).normalize());
     }else{flyingChalk.visible=false;if(progress===0)activeCastTarget=null;}
     previousCastProgress=progress;
@@ -576,10 +576,10 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       viewFloor=actorFloorHeight(state.player,state.map,state.teacher);
       entryPosition.copy(camera.position);entryQuaternion.copy(camera.quaternion);entryFov=snapEntry?gameFov():camera.fov;entryTime=snapEntry?.7:0;gameTime=0;feedbackTime=0;teacherWorldSample=null;teacherWorldSpeed=0;firstPersonMotion=null;eyeHeight=null;drawerFocus=0;raisedSlot=null;drawerItemSignature='';
       pointer.set(0,0);dragging=false;teacher.group.position.set(BOARD.x,0,BOARD.z);teacher.group.rotation.y=0;lastTeacherPhase='board';
-      teachingEnd.visible=true;teacher.group.visible=true;hands.group.visible=true;canvas.style.cursor='';canvas.dataset.gameplay='true';
+      teachingEnd.visible=mapKind(state.map)!=='bus';teacher.group.visible=true;hands.group.visible=true;canvas.style.cursor='';canvas.dataset.gameplay='true';
       for(const record of pupilRecords){record.lastUpdate=-Infinity;record.worldMotion=null;record.worldHeading=null;}clearTeacherFeedback(state);
     }
-    setSeats(state.seats||currentSeats);if(mapKind(state.map)!==mapVariant)setMap(state.map);updateLayoutDoors(renderLayout,{officeLocked:state.officeLocked,officeDoorClosed:state.officeDoorClosed,frontDoorClosed:state.frontDoorClosed,rearDoorClosed:state.rearDoorClosed,doorMotion:state.doorMotion,elevatorClosed:state.elevator?.doorClosed});campus.setDoors(state);
+    setSeats(state.seats||currentSeats);if(mapKind(state.map)!==mapVariant)setMap(state.map);updateLayoutDoors(renderLayout,{busDeparted:state.busDeparted,officeLocked:state.officeLocked,officeDoorClosed:state.officeDoorClosed,frontDoorClosed:state.frontDoorClosed,rearDoorClosed:state.rearDoorClosed,doorMotion:state.doorMotion,elevatorClosed:state.elevator?.doorClosed});campus.setDoors(state);
     teacher.group.visible=state.stage!=='gathering'&&state.role!=='teacher'&&state.teacher?.visible!==false;
     gameplay=state;
   }
@@ -590,7 +590,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     const snapshots=new Map((state?.students||[]).map(s=>[s.id??s.seatId,s])),playerId=state?.player?.id??PLAYER_SEAT,playerSeat=state?.player?.seatId??null;
     const bookStates=new Map((state?.books||[]).map(b=>[b.id,b]));
     const readingSeats=state?new Set((state.students||[]).filter(student=>student.seated&&!student.caught&&student.id!==playerId).map(student=>student.seatId)):null;
-    for(const [id,book] of deskBooks){const a=state?(bookStates.get(id)?.amount??(coveredSeats.has(id)?1:0)):(coveredSeats.has(id)?1:0);book.visible=pupilRecords[id]?.layoutActive!==false&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant));book.rotation.x=(1-a)*Math.PI/2;book.userData.raised=a>.5;}
+    for(const [id,book] of deskBooks){const a=state?(bookStates.get(id)?.amount??(coveredSeats.has(id)?1:0)):(coveredSeats.has(id)?1:0);book.visible=pupilRecords[id]?.layoutActive!==false&&(mapVariant!=='bus'||currentSeats[id]?.busDeck===1)&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant));book.rotation.x=(1-a)*Math.PI/2;book.userData.raised=a>.5;}
     const candidates=[];let detentionIndex=0;
     for(const record of pupilRecords){
       const id=record.seat.id,snapshot=snapshots.get(id),caught=Boolean(snapshot?.caught);record.caught=caught;record.previewRole=state?.stage==='gathering'?snapshot?.previewRole:null;
@@ -640,12 +640,12 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
         }
       }
       const cycle=(animationTime+id*.83)%8,turn=cycle<1.15?Math.sin(cycle/1.15*Math.PI)*.48:0,flipping=record.layoutActive!==false&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))&&deskBooks.get(id)?.userData.raised&&(!state||readingSeats.has(id))&&!record.caught&&turn>.01;
-      const seatYaw=record.seat.yaw||0;posePosition.set(record.seat.deskX-Math.sin(seatYaw)*.28,.88+floorHeight(record.seat.x,record.seat.z,mapVariant),record.seat.deskZ-Math.cos(seatYaw)*.28);poseRotation.setFromEuler(poseEuler.set(0,seatYaw-turn,0));pupilMatrix.compose(posePosition,poseRotation,flipping?unitScale:hiddenScale);pageFlips.setMatrixAt(id,pupilMatrix);
+      const seatYaw=record.seat.yaw||0;posePosition.set(record.seat.deskX-Math.sin(seatYaw)*.28,.88+floorHeight(record.seat.x,record.seat.z,mapVariant,record.seat.busDeck),record.seat.deskZ-Math.cos(seatYaw)*.28);poseRotation.setFromEuler(poseEuler.set(0,seatYaw-turn,0));pupilMatrix.compose(posePosition,poseRotation,flipping?unitScale:hiddenScale);pageFlips.setMatrixAt(id,pupilMatrix);
     }
     syncDeskPenVisibility(pupilRecords,deskPens);
     for(const [id,pen]of deskPens){
       const taken=(state?.students||[]).some(p=>(p.penSeatId??p.seatId)===id&&(p.penTaken||(p.action==='pen'&&(p.carrying??(p.drawer?.drawnSlot!=null)))));
-      if(['computer','toilet','dorm','playground'].includes(mapKind(mapVariant))||((state?.player?.penSeatId??state?.player?.seatId)===id&&state.player.penTaken)||taken)pen.visible=false;
+      if(mapVariant==='bus'&&currentSeats[id]?.busDeck!==1||['computer','toilet','dorm','playground'].includes(mapKind(mapVariant))||((state?.player?.penSeatId??state?.player?.seatId)===id&&state.player.penTaken)||taken)pen.visible=false;
     }
     pageFlips.instanceMatrix.needsUpdate=true;
   }
@@ -665,7 +665,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     const cabinet=variants.cabinetFor(state?.player?.bedId??seat);
     const inventory=state?.drawer,officeSeat=Boolean(state?.player?.officeChair),computerDrawer=!officeSeat&&mapKind(mapVariant)==='computer'?variants.drawers.get(seat):null,host=officeSeat?(campus.officeDrawers.get(state?.player?.officeDeskId)||campus.officeDrawer):seat===null?null:cabinet?.foodAnchor||computerDrawer?.group||drawerRecords.get(seat)?.group;
     drawerItems.visible=Boolean(inventory&&host);
-    if(host&&drawerItems.parent!==host)host.add(drawerItems);drawerItems.position.y=cabinet?-(importedDesk?.drawerFloor??.65):officeSeat?(host?.userData.itemFloor!=null?host.userData.itemFloor-host.position.y-(importedDesk?.drawerFloor??.65):-.77):computerDrawer?computerDrawer.floor-(importedDesk?.drawerFloor??.65):0;drawerSlotProps.forEach((slot,index)=>{slot.group.position.x=(inventory?.slots?.length===1?0:index-1)*.28+(officeSeat?(host?.userData.itemX||0):0);slot.group.position.y=.680;slot.group.position.z=computerDrawer?.itemZ??-.16;if(cabinet){slot.group.position.x=inventory?.slots?.length===1?0:(index===0?-.09:index===1?.09:0);slot.group.position.z=index===1?-.065:.045;if(mapKind(mapVariant)==='toilet'&&index===2)slot.group.position.y+=.537;}});
+    if(host&&drawerItems.parent!==host)host.add(drawerItems);drawerItems.position.y=cabinet?-(importedDesk?.drawerFloor??.65):officeSeat?(host?.userData.itemFloor!=null?host.userData.itemFloor-host.position.y-(importedDesk?.drawerFloor??.65):-.77):computerDrawer?computerDrawer.floor-(importedDesk?.drawerFloor??.65):0;drawerSlotProps.forEach((slot,index)=>{slot.group.position.x=(inventory?.slots?.length===1?0:index-1)*.28+(officeSeat?(host?.userData.itemX||0):0);slot.group.position.y=.680;slot.group.position.z=computerDrawer?.itemZ??-.16;if(cabinet&&mapVariant==='bus'){slot.group.position.x=(index-1)*.158;slot.group.position.z=index===1?-.08:.028;}else if(cabinet){slot.group.position.x=inventory?.slots?.length===1?0:(index===0?-.09:index===1?.09:0);slot.group.position.z=index===1?-.065:.045;if(mapKind(mapVariant)==='toilet'&&index===2)slot.group.position.y+=.537;}});
     const signature=inventory?inventory.slots.map((slot,index)=>`${slot.action||''}:${index===raisedSlot}`).join('|'):'';
     if(signature!==drawerItemSignature){drawerItemSignature=signature;drawerSlotProps.forEach((slot,index)=>{
       for(const [action,prop]of slot.props)prop.visible=Boolean(inventory?.slots[index]?.action===action&&index!==raisedSlot);
@@ -680,12 +680,12 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     // Exact mesh hits first; a small local bounds margin makes a garlic clove
     // usable without enlarging the model or allowing a pick through furniture.
     const previousFar=itemRay.far;itemRay.far=Math.min(previousFar,2.5);
-    try{const blockers=[room,...furnitureRows.values(),variants.group,...variants.specialRoots,drawerItems.parent];for(const root of blockers)root?.updateWorldMatrix(true,true);return pickDrawerItem(itemRay,drawerSlotProps.flatMap(slot=>slot.pickTargets),blockers);}
+    try{const blockers=mapVariant==='bus'?[...variants.bus.shells.filter(r=>r.visible),drawerItems.parent]:[room,...furnitureRows.values(),variants.group,...variants.specialRoots,drawerItems.parent];for(const root of blockers)root?.updateWorldMatrix(true,true);return pickDrawerItem(itemRay,drawerSlotProps.flatMap(slot=>slot.pickTargets),blockers);}
     finally{itemRay.far=previousFar;}
   }
   const campusTargets=campus.getTargets();
   const isObjectVisible=object=>{for(let n=object;n;n=n.parent)if(!n.visible&&!n.userData.rigidInstanceSource)return false;return true;};
-  const campusTargetObject=(kind,id)=>variants.upper.target(kind,id,gameplay)||(kind==='sports-bar'||kind==='plunger'?mapActivityView.target(kind,id):kind==='rear-door'?campusTargets.doors.find(d=>d.id===(id||'rear'))?.object:kind==='office-desk'?campusTargets.officeDesks.find(d=>d.id===(id||OFFICE_DESK.id))?.object:kind==='office-chair'?campusTargets.officeChairs.find(c=>c.id===(id||OFFICE_CHAIR.id))?.object:kind==='locker'?campusTargets.lockers.find(l=>l.id===id)?.object||campusTargets.lockers[0]?.object:kind==='dorm-door'?variants.dorm.doors.get(id)?.target:kind==='toilet-door'?variants.toilet.doors.get(id)?.target:kind==='bed'?variants.dorm.beds.get(id)?.target:kind==='vending'?variants.vendingTargets.get(id)?.button:kind==='vending-food'?variants.vendingTargets.get(id)?.pickup:kind==='chair'?variants.seatTarget(id)||chairTargets.get(id):kind==='pen'?deskPens.get(id):null);
+  const campusTargetObject=(kind,id)=>variants.upper.target(kind,id,gameplay)||(kind==='sports-bar'||kind==='plunger'?mapActivityView.target(kind,id):kind==='rear-door'?campusTargets.doors.find(d=>d.id===(id||'rear'))?.object:kind==='office-desk'?campusTargets.officeDesks.find(d=>d.id===(id||OFFICE_DESK.id))?.object:kind==='office-chair'?campusTargets.officeChairs.find(c=>c.id===(id||OFFICE_CHAIR.id))?.object:kind==='locker'&&mapVariant==='bus'?variants.bus.lockers.find(l=>l.id===id)?.object:kind==='locker'?campusTargets.lockers.find(l=>l.id===id)?.object||campusTargets.lockers[0]?.object:kind==='dorm-door'?variants.dorm.doors.get(id)?.target:kind==='toilet-door'?variants.toilet.doors.get(id)?.target:kind==='bed'?variants.dorm.beds.get(id)?.target:kind==='vending'?variants.vendingTargets.get(id)?.button:kind==='vending-food'?variants.vendingTargets.get(id)?.pickup:kind==='chair'?variants.seatTarget(id)||chairTargets.get(id):kind==='pen'?deskPens.get(id):null);
   function getInteraction(){
     if(!gameplay||gameplay.paused||gameplay.status!=='playing'||gameplay.player.caught||gameplay.elevator?.phase==='travel')return null;
     const player=gameplay.player,preClass=gameplay.stage&&gameplay.stage!=='class';
@@ -701,13 +701,14 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       const id=hit?.uv?paperQuestion(hit.uv.x,hit.uv.y):null;
       if(id!=null)candidates.push({object:entry.object,hit,result:{kind:entry.kind,id}});
     }
-    if(gameplay.stage==='gathering'&&gameplay.startBellAvailable)add(startBellModel,{kind:'bell'});
-    if(gameplay.elevator?.disabled===false&&gameplay.stage==='gathering'&&!player.seated&&player.x>LIFT.minX&&player.x<LIFT.maxX&&player.z>LIFT.minZ&&player.z<LIFT.maxZ){campus.liftPanel.updateWorldMatrix(true,true);const hit=itemRay.intersectObject(campus.liftPanel,true).find(h=>h.object.userData.floorMap&&h.distance<2.5);if(hit)candidates.push({object:campus.liftPanel,hit,result:{kind:'lift',map:hit.object.userData.floorMap,floor:hit.object.userData.floor,current:hit.object.userData.floorMap===mapVariant}});}
-    if(gameplay.stage==='gathering'&&!player.seated)for(const target of campusTargets.lockers)add(target.object,{kind:'locker',id:target.id,role:target.id},2.5);
+    const activeLift=mapVariant==='bus'?variants.bus.liftPanel:campus.liftPanel;
+    if(gameplay.stage==='gathering'&&gameplay.startBellAvailable)add(mapVariant==='bus'?variants.bus.bell:startBellModel,{kind:'bell'});
+    if(gameplay.elevator?.disabled===false&&gameplay.stage==='gathering'&&!player.seated&&player.x>LIFT.minX&&player.x<LIFT.maxX&&player.z>LIFT.minZ&&player.z<LIFT.maxZ){activeLift.updateWorldMatrix(true,true);const hit=itemRay.intersectObject(activeLift,true).find(h=>h.object.userData.floorMap&&h.distance<2.5);if(hit)candidates.push({object:activeLift,hit,result:{kind:'lift',map:hit.object.userData.floorMap,floor:hit.object.userData.floor,current:hit.object.userData.floorMap===mapVariant}});}
+    if(gameplay.stage==='gathering'&&!player.seated)for(const target of (mapVariant==='bus'?variants.bus.lockers:campusTargets.lockers))add(target.object,{kind:'locker',id:target.id,role:target.id},2.5);
     if(player.seated&&gameplay.role!=='teacher'&&player.penTaken&&!player.officeChair)add(chairTargets.get(player.seatId),{kind:'chair',id:player.seatId},2.15);
     if(!player.seated&&gameplay.role!=='teacher'){
       const occupied=new Set((gameplay.students||[]).filter(p=>p.seated&&!p.caught).map(p=>p.seatId));
-      if(mapKind(mapVariant)!=='playground')for(const [id,chair]of chairTargets)if(!occupied.has(id))add(variants.seatTarget(id)||chair,{kind:mapKind(mapVariant)==='dorm'?'bed':'chair',id},2.15);
+      if(mapKind(mapVariant)!=='playground')for(const [id,chair]of chairTargets)if(!occupied.has(id)&&(mapVariant!=='bus'||currentSeats[id]?.busDeck===(player.busDeck||0)))add(variants.seatTarget(id)||chair,{kind:mapKind(mapVariant)==='dorm'?'bed':'chair',id},2.15);
     }
     if(!player.seated&&gameplay.role!=='teacher'&&!player.mapActivity)for(const t of mapActivityView.targets(gameplay))add(t.object,{kind:t.kind,id:t.id},2.4);
     if(mapKind(mapVariant)==='dorm'&&!player.seated)for(const[id,door]of variants.dorm.doors)add(door.target,{kind:'dorm-door',id,open:door.open>.5},2.4);
@@ -731,7 +732,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
         if(!player.officeChair){
           const cabinet=variants.cabinetFor(player.bedId??player.seatId),body=cabinet?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(player.seatId):mapKind(mapVariant)==='hotpot'?drawerRecords.get(player.seatId)?.group:deskTargets.get(player.seatId)),drawer=cabinet?.target||(mapKind(mapVariant)==='computer'?variants.drawers:drawerRecords).get(player.seatId)?.group;
           add(body,{kind:'desk'});add(drawer,{kind:'desk'});
-          const book=deskBooks.get(player.seatId);if(!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))){add(book,{kind:'book'});if(!player.penTaken&&gameplay.drawer?.drawnSlot===null)add(deskPens.get(player.seatId),{kind:'pen',id:player.seatId});}
+          const book=deskBooks.get(player.seatId);if((mapVariant!=='bus'||player.busDeck===1)&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))){add(book,{kind:'book'});if(!player.penTaken&&gameplay.drawer?.drawnSlot===null)add(deskPens.get(player.seatId),{kind:'pen',id:player.seatId});}
         }
       }
     }
@@ -739,7 +740,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     // No selection through walls or an intervening desktop. Repeated prop
     // source meshes stay raycastable even though GPU submission is instanced.
     if(candidates.length){
-      const blockerRoots=[room,teachingEnd,variants.group,...variants.specialRoots,...furnitureRows.values()];for(const root of blockerRoots)root.updateWorldMatrix(true,true);
+      const blockerRoots=(mapVariant==='bus'?variants.bus.shells:[room,teachingEnd,variants.group,...variants.specialRoots,...furnitureRows.values()]).filter(o=>o.visible);for(const root of blockerRoots)root.updateWorldMatrix(true,true);
       const blockers=itemRay.intersectObjects(blockerRoots,true).filter(h=>isObjectVisible(h.object)&&h.object.material?.visible!==false&&!h.object.material?.transparent);
       for(const c of candidates){const barrier=blockers.find(h=>h.distance<c.hit.distance-.035);if(!barrier)return c.result;let ancestor=barrier.object;while(ancestor&&ancestor!==c.object)ancestor=ancestor.parent;if(ancestor===c.object)return c.result;}
     }
@@ -754,7 +755,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   function updateItemHover(){
     const target=getInteraction();hoveredSlot=target?.kind==='item'?target.slot:null;
     let prop=campusTargetObject(target?.kind,target?.id);
-    if(!prop)prop=target?.kind==='bell'?startBellCap:target?.kind==='lift'?campus.liftPanel:target?.kind==='post'?postModels[target.id]:['rescue','release'].includes(target?.kind)?pupilRecords[target.id]?.actor?.group:hoveredSlot===null?target?.kind==='computer'?variants.screens.get(gameplay.player.seatId):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?(variants.cabinetFor(gameplay.player.bedId??gameplay.player.seatId)?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(gameplay.player.seatId):deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group)):null:drawerSlotProps[hoveredSlot]?.props.get(gameplay.drawer.slots[hoveredSlot].action);
+    if(!prop)prop=target?.kind==='bell'?(mapVariant==='bus'?variants.bus.bell:startBellCap):target?.kind==='lift'?(mapVariant==='bus'?variants.bus.liftPanel:campus.liftPanel):target?.kind==='post'?postModels[target.id]:['rescue','release'].includes(target?.kind)?pupilRecords[target.id]?.actor?.group:hoveredSlot===null?target?.kind==='computer'?variants.screens.get(gameplay.player.seatId):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?(variants.cabinetFor(gameplay.player.bedId??gameplay.player.seatId)?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(gameplay.player.seatId):deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group)):null:drawerSlotProps[hoveredSlot]?.props.get(gameplay.drawer.slots[hoveredSlot].action);
     itemOutline.select(prop||null);canvas.dataset.hoveredSlot=hoveredSlot===null?'':String(hoveredSlot);canvas.dataset.interaction=target?JSON.stringify(target):'';
     if(gameplay?.drawer?.open)canvas.dataset.drawerTargets=JSON.stringify(drawerSlotProps.map((slot,id)=>{const p=slot.group.getWorldPosition(new THREE.Vector3());p.project(camera);return{id,x:(p.x+1)/2,y:(1-p.y)/2};}));
   }
@@ -765,7 +766,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       // Perception and the rendered teacher use the same pose, without extra easing.
       const elapsed=Number.isFinite(state.sceneElapsed)?state.sceneElapsed:Number.isFinite(state.elapsed)?state.elapsed:gameTime;
       teacherWorldSample=sampleActorMotion(teacherWorldSample,t,elapsed,state.status==='playing'&&!state.paused);teacherWorldSpeed=teacherWorldSample.speed;
-      teacher.group.position.set(t.x,floorHeight(t.x,t.z,mapVariant),t.z);teacherWorldHeading=sampleActorHeading(teacherWorldHeading,{...t,captivity:phase==='stunned'?'stunned':'free'},elapsed);teacher.group.rotation.y=teacherWorldHeading.yaw;
+      teacher.group.position.set(t.x,floorHeight(t.x,t.z,mapVariant,t.busDeck),t.z);teacherWorldHeading=sampleActorHeading(teacherWorldHeading,{...t,captivity:phase==='stunned'?'stunned':'free'},elapsed);teacher.group.rotation.y=teacherWorldHeading.yaw;
       const walking=state.paused||state.status!=='playing'?0:THREE.MathUtils.clamp(teacherWorldSpeed/1.35,0,1);
       teacher.update(gameTime,{inkLeft:t.inkLeft||0,seated:Boolean(t.seated),crawling:Boolean(t.crouched&&t.carriedId==null),walking,speed:teacherWorldSpeed,lookYaw:wrappedAngle(t.yaw-teacher.group.rotation.y),lookPitch:t.pitch||0,phase:t.castProgress>0||t.carriedId!==null?'watching':phase,alert:Math.max((state.suspicion||0)/100,feedbackKind==='caught'?feedbackTime/.55:0)});
       lastTeacherPhase=phase;return;
@@ -815,7 +816,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
       const officeTray=player.officeChair?(campus.officeDrawers.get(player.officeDeskId)||campus.officeDrawer):null,deskTrayRecord=mapKind(mapVariant)==='computer'?variants.drawers.get(player.seatId):drawerRecords.get(player.seatId);
       const previousDrawerAmount=officeTray?Math.max(0,Math.min(1,(-officeTray.position.z-.08)/.52)):deskTrayRecord?.open||0,drawerTarget=gameplay.drawer?.open?1:0;
       const currentDrawerAmount=THREE.MathUtils.damp(previousDrawerAmount,drawerTarget,officeTray?14:drawerTarget>previousDrawerAmount?12:18,activeDt);
-      firstPersonDrawer=gameplay.exam?.mode==='card'||['toilet','dorm','playground'].includes(mapKind(mapVariant))?null:drawerHandTarget({player,drawer:gameplay.drawer,seats:currentSeats,map:mapVariant,amount:currentDrawerAmount,geometry:officeTray?.userData.handTarget});
+      firstPersonDrawer=gameplay.exam?.mode==='card'||['toilet','dorm','playground','bus'].includes(mapKind(mapVariant))?null:drawerHandTarget({player,drawer:gameplay.drawer,seats:currentSeats,map:mapVariant,amount:currentDrawerAmount,geometry:officeTray?.userData.handTarget});
       hands.update(gameTime,{animationPose:viewRole()==='teacher'?null:customHandAnimation.sample({role:'student',freeLook:true,seated,crouched,carrying:gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper',holding:Boolean(gameplay.holding),eating:Boolean(player.eating),penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),drawerOpen:Boolean(gameplay.drawer?.open),captivity:player.captivity,caught,computer:player.computerActive,bookAmount:gameplay.books?.find(b=>b.id===player.seatId)?.amount||0,movement:firstPersonMotion.amount,crawlBlend:firstPersonMotion.crawlBlend},gameTime),drawer:firstPersonDrawer,eyeHeight:firstPersonEyeHeight(player,'student'),deskSurface:!player.onBed&&mapKind(mapVariant)!=='toilet',mealDish:gameplay.drawer?.source?.dish,examPen:variants.upper.penContact(gameplay),action:gameplay.exam?.mode==='paper'?'pen':gameplay.selected,penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),holding:Boolean(gameplay.holding&&!caught),eating:Boolean(player.eating&&!caught),carrying:(gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper')&&!caught,progress:gameplay.actionProgress,alert:feedbackKind==='caught'?feedbackTime/.55:(gameplay.suspicion||0)/150,seated,crouched,caught,freeLook:true,viewPitch:basePitch+drawerPitch,computer:gameplay.player.computerActive,typing:Boolean(player.computerActive),bookAmount:gameplay.exam?.mode==='card'?.60:!player.officeChair&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))?(gameplay.books?.find(b=>b.id===player.seatId)?.amount||0):0,office:Boolean(player.officeChair),throwAge:player.itemThrowAge??Infinity,movement:firstPersonMotion.amount,walkPhase:firstPersonMotion.phase,crawlBlend:firstPersonMotion.crawlBlend});
       markStage('hands');const focus=THREE.MathUtils.clamp(hands.getFocus?.()||0,0,1),handState=hands.getDebug?.();canvas.dataset.itemReady=String(focus>.92&&gameplay.holding&&(handState?.extension??1)>=.99&&entryTime>=.7);
       const viewFocus=0,extraDrop=0;

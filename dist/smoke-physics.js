@@ -1,4 +1,4 @@
-import {mapBounds,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight,actorFloorHeight,actorEyeHeight,mapKind} from './classroom-layout.js?v=campus-85';
+import {mapBounds,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight,actorFloorHeight,actorEyeHeight,mapKind} from './classroom-layout.js?v=campus-86';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -6,6 +6,7 @@ const colliderCache=new Map();
 const furnishedMaps=new Set(['hotpot','toilet','dorm','playground']);
 function tablesFor(map='classroom',layout=null){
  const key=map,cache=layout?(layout.projectileColliderCache??=new Map()):colliderCache;
+ if(map==='bus'){if(!cache.has(key))cache.set(key,enclosureVolumes(map,layout));return cache.get(key);}
  if(!cache.has(key)){
   // These maps supply the real pot, cabinet, bunk and outdoor fixture volumes
   // through enclosureVolumes. Flattening them into a desktop loses their shape.

@@ -1,10 +1,10 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-85';
-import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,actorFloorHeight,actorEyeHeight,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-85';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-86';
+import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,actorFloorHeight,actorEyeHeight,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-86';
 
 // Local reconstruction parameters, not measured single-projectile durations.
 export const PROJECTILE_EFFECT_TUNING=Object.freeze({flashFuse:1.2,flashRange:8,flashWhite:4.5,flashFade:2.5,inkRange:2.2,inkDuration:7});
 const clamp=n=>Math.max(0,Math.min(1,n)),occluders=new Map();
-function boxesFor(map,layout=null){if(layout)return [...enclosureVolumes(map,layout),...OFFICE_SOLIDS,...(mapKind(map)==='playground'?[]:floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})))];if(!occluders.has(map))occluders.set(map,[...enclosureVolumes(map),...OFFICE_SOLIDS,...(mapKind(map)==='playground'?[]:floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})))]);return occluders.get(map);}
+function boxesFor(map,layout=null){if(map==='bus')return enclosureVolumes(map,layout);if(layout)return [...enclosureVolumes(map,layout),...OFFICE_SOLIDS,...(mapKind(map)==='playground'?[]:floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})))];if(!occluders.has(map))occluders.set(map,[...enclosureVolumes(map),...OFFICE_SOLIDS,...(mapKind(map)==='playground'?[]:floorTiles(map).map(t=>({...t,minY:0,maxY:t.height})))]);return occluders.get(map);}
 function segmentTime(a,b,box){
  let lo=0,hi=1;
  for(const axis of ['x','y','z']){
