@@ -1,7 +1,7 @@
 import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=campus-88';
-import {studyBookPose} from './study-book58.js?v=campus-83';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-89';
+import {studyBookPose} from './study-book58.js?v=campus-89';
 import {createPenFingerContact} from './pen-motion.js?v=campus-83';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const armName=/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/;
@@ -125,7 +125,7 @@ export function createStudentGestures(group,bones,clips,attachments){
    for(const d of typingRigs[side].digits){const curl=d.finger==='Thumb'?.42:.55;d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,curl*[.62,.87,.62][d.n-1]));}
    const page=Q().setFromAxisAngle(V(0,1,0),sign*.14),orientation=character.clone().multiply(bookRotation).multiply(page);
    orient(side,V(0,1,0).applyQuaternion(orientation),V(0,0,1).applyQuaternion(orientation));
-   const normal=V(0,0,1).applyQuaternion(orientation),contact=group.localToWorld(V(sign*.29,.110,.022).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
+   const normal=V(0,0,1).applyQuaternion(orientation),contact=group.localToWorld(V(sign*.310,.110,.022).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
    for(let k=0;k<3;k++){group.updateMatrixWorld(true);const tip=readingTips[side](),wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q()),target=wrist.getWorldPosition(V()).add(contact.clone().sub(tip));arm(side,target);wrist.quaternion.copy(wrist.parent.getWorldQuaternion(Q()).invert().multiply(rotation));}
    const planeOrigin=group.localToWorld(V(...pose.position));
    for(let k=0;k<2;k++){group.updateMatrixWorld(true);const pad=readingPad(side,'Middle',normal,planeOrigin,orientation),wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q()),offset=.006-pad.clone().sub(planeOrigin).dot(normal);arm(side,wrist.getWorldPosition(V()).addScaledVector(normal,offset));wrist.quaternion.copy(wrist.parent.getWorldQuaternion(Q()).invert().multiply(rotation));}

@@ -1,4 +1,4 @@
-import {paperQuestion} from './upper-floor-view85.js?v=campus-88';
+import {paperQuestion} from './upper-floor-view85.js?v=campus-89';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-84';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-84';
 import {loadFurniture67} from './furniture-assets67.js?v=campus-83';
@@ -20,22 +20,22 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-83';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-83';
 import {loadCampusArtwork} from './campus-artwork.js?v=campus-85';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-88';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-89';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-87';
-import {createRoomVariants} from './room-variants.js?v=campus-88';
+import {createRoomVariants} from './room-variants.js?v=campus-89';
 import {createComputerScreenContent} from './computer-screen55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-88';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-88';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-89';
 import {dormBodyOffset} from './dorm-layout70.js?v=campus-85';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-83';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-88';
-import {loadStudentAssets} from './student-assets.js?v=campus-88';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-89';
+import {loadStudentAssets} from './student-assets.js?v=campus-89';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-88';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-89';
 import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-87';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
@@ -183,34 +183,61 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   grain.wrapS=grain.wrapT=THREE.RepeatWrapping;M.wood.color.set('#ffffff');M.wood.map=grain;M.wood.roughness=.43;M.wood.needsUpdate=true;M.edge.color.set('#c77e24');
   const pageTexture=texture(256,128,(c,w,h)=>{c.fillStyle='#eee9d8';c.fillRect(0,0,w,h);for(let y=2;y<h;y+=4){c.strokeStyle=y%8?'#d4d0c1':'#c7c4b8';c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke();}});
   const pageMat=mat('#ffffff',{map:pageTexture,roughness:.93});
-  const coverTexture=texture(512,640,(c,w,h)=>{
-    c.fillStyle='#e8e3d6';c.fillRect(0,0,w,h);c.fillStyle='#b02c2b';c.fillRect(0,0,22,h);c.fillRect(22,0,w-22,206);c.fillRect(22,590,w-22,50);
-    c.fillStyle='#f5e9d4';c.font='bold 39px "Songti SC","SimSun",serif';c.fillText('数学',61,100);c.font='16px "PingFang SC",sans-serif';c.fillText('MATHEMATICS',63,144);
-    c.fillStyle='#4d514b';c.font='18px "Songti SC",serif';c.fillText('义务教育教科书',58,248);c.font='30px "Songti SC",serif';c.fillText('七年级  上册',58,294);
-    c.strokeStyle='#929a8c';c.lineWidth=2;for(let i=0;i<8;i++){c.beginPath();c.moveTo(60,360+i*23);c.lineTo(455,360+i*23);c.stroke();}for(let i=0;i<10;i++){c.beginPath();c.moveTo(60+i*43,350);c.lineTo(60+i*43,545);c.stroke();}
-    c.strokeStyle='#697c78';c.lineWidth=5;c.beginPath();c.moveTo(90,520);c.lineTo(360,355);c.lineTo(360,520);c.closePath();c.stroke();
+  function bookLandscape(c,x,y,w,h){
+    c.save();c.translate(x,y);c.scale(w/300,h/100);
+    c.beginPath();c.rect(0,0,300,100);c.clip();
+    // Two ink washes with a strip of paper left for the river.
+    for(const [colour,ridge] of [
+      ['#a6a491',[[0,69],[29,56],[41,60],[67,39],[82,43],[112,25],[129,37],[148,24],[172,40],[198,32],[225,46],[252,30],[283,44],[300,36]]],
+      ['#626757',[[0,75],[24,61],[47,65],[71,53],[97,59],[112,55],[138,68],[167,61],[196,66],[223,52],[251,59],[273,47],[300,55]]]
+    ]){
+      c.fillStyle=colour;c.beginPath();c.moveTo(0,100);
+      for(const [px,py] of ridge)c.lineTo(px,py);
+      c.lineTo(300,100);c.fill();
+    }
+    c.fillStyle='#dbd1b2';c.beginPath();c.moveTo(244,69);c.bezierCurveTo(188,74,189,76,166,79);
+    c.bezierCurveTo(130,83,86,83,55,100);c.lineTo(106,100);c.bezierCurveTo(141,83,199,83,213,76);c.fill();c.restore();
+  }
+  // Back and front share one atlas and material for every desk and held copy.
+  const coverTexture=texture(768,416,(c,w,h)=>{
+    c.scale(w/1024,h/640);
+    c.fillStyle='#a6453e';c.fillRect(0,0,512,640);c.fillStyle='#d99a88';c.fillRect(0,278,512,135);
+    c.fillStyle='#8b302c';c.fillRect(0,587,512,53);
+    c.fillStyle='#d9c7a4';c.fillRect(512,0,512,640);c.fillStyle='#a7352e';c.fillRect(512,0,512,126);
+    c.save();c.beginPath();c.rect(512,0,512,126);c.clip();c.strokeStyle='rgba(230,149,119,.31)';c.lineWidth=1.5;
+    for(let y=-240;y<136;y+=8){c.beginPath();c.moveTo(536,y);c.bezierCurveTo(690,y+155,866,y+177,1024,y+219);c.stroke();}
+    c.restore();
+    c.fillStyle='#557a65';c.fillRect(491,0,40,111);c.fillRect(491,494,40,146);
+    c.fillStyle='#f0e4ca';c.fillRect(758,166,236,180);c.fillStyle='#282a25';c.textAlign='center';
+    c.font='bold 69px "Kaiti SC","STKaiti","Songti SC",serif';c.fillText('语文',875,255);
+    c.font='23px "Songti SC",serif';c.fillText('七年级  上册',875,303);
+    bookLandscape(c,532,398,492,242);
   });
   const coverMat=mat('#ffffff',{map:coverTexture,roughness:.81});
-  function exercisePrint(right=false){return texture(512,640,(c,w,h)=>{
-    c.fillStyle='#faf8ef';c.fillRect(0,0,w,h);c.fillStyle='#252b2a';
-    c.font='bold 26px "PingFang SC","Microsoft YaHei",sans-serif';c.fillText(right?'随堂练习  03':'数学  ·  课堂笔记',30,46);
-    c.fillRect(30,61,452,3);c.font='17px "PingFang SC","Microsoft YaHei",sans-serif';c.fillText('班级 ______  姓名 ______  日期 ______',30,91);
-    const paragraph=(x,y,width,rows)=>{const lines=['观察图形，并根据条件完成下列问题。','已知两个角相等，求另一条边的长度。','请在横线上填写答案，并说明你的理由。','结合本节所学知识，写出计算的过程。','画出辅助线，标出图中对应的角和边。'];c.font='11px "Songti SC","SimSun",serif';c.fillStyle='#575951';for(let row=0;row<rows;row++)c.fillText(lines[(row+(right?2:0))%lines.length].slice(0,Math.floor(width/11)),x,y+row*15);};
-    c.fillStyle='#252b2a';c.font='bold 20px "PingFang SC",sans-serif';c.fillText(right?'一、选择与填空':'一、观察与思考',30,129);
-    paragraph(30,148,450,8);
-    c.fillStyle='#343b39';c.font='italic 24px Georgia,serif';c.fillText('a² + b² = c²',50,303);c.fillText('y = ax² + bx + c',50,341);
-    paragraph(30,367,260,10);
-    if(right){
-      c.fillStyle='#202523';c.fillRect(310,365,172,205);
-      c.strokeStyle='#f2f1e8';c.lineWidth=3;c.beginPath();c.moveTo(334,535);c.lineTo(458,535);c.lineTo(458,402);c.closePath();c.stroke();
-      c.font='italic 22px Georgia,serif';c.fillStyle='#f5f2e8';c.fillText('a',383,558);c.fillText('b',463,474);c.fillText('c',375,459);
-    }else{
-      c.fillStyle='#b0b3a8';c.fillRect(310,365,172,150);c.fillStyle='#727d73';
-      for(let i=0;i<7;i++)c.fillRect(321+i*22,394+(i%3)*15,13,110-(i%3)*15);
-      c.fillStyle='#4b554d';c.fillRect(310,492,172,23);paragraph(310,534,170,3);
-    }
-    c.strokeStyle='#707771';c.lineWidth=2;c.strokeRect(30,579,452,29);c.font='16px "PingFang SC",sans-serif';c.fillStyle='#434b45';c.fillText('认真观察  ·  写出你的解题过程',43,600);
-    c.font='15px Georgia,serif';c.textAlign='center';c.fillText(right?'48':'47',256,629);
+  function exercisePrint(right){return texture(512,640,(c,w,h)=>{
+    c.fillStyle='#f2ecd9';c.fillRect(0,0,w,h);c.fillStyle='#292b27';c.textAlign='center';
+    c.font='25px Georgia,serif';c.fillText(right?'6':'5',256,48);
+    c.font='bold 29px "Songti SC","SimSun",serif';c.fillText(right?'《老子》四章':'《论语》十二章',256,98);
+    const lines=right?[
+      '知人者智，自知者明。胜人者有力，自胜者强。',
+      '知足者富，强行者有志。不失其所者久。',
+      '合抱之木，生于毫末。九层之台，起于累土。',
+      '千里之行，始于足下。慎终如始，则无败事。'
+    ]:[
+      '子曰：“学而时习之，不亦说乎？有朋自远方来，',
+      '不亦乐乎？人不知而不愠，不亦君子乎？”',
+      '子曰：“温故而知新，可以为师矣。”',
+      '子曰：“学而不思则罔，思而不学则殆。”'
+    ];
+    c.textAlign='left';c.font='17px "Songti SC","SimSun",serif';
+    lines.forEach((line,i)=>c.fillText(line,47,145+i*35));
+    bookLandscape(c,right?234:33,287,243,164);
+    c.fillStyle='#33362e';c.font='bold 18px "Songti SC",serif';c.fillText('注释',right?40:301,329);
+    c.font='13px "Songti SC",serif';
+    const notes=right?['毫末，细毛的末端。','累土，堆积的泥土。','慎终如始，','同开始时一样慎重。']:['时习，按时温习。','愠，生气、恼怒。','罔，迷惑。','殆，疑惑。'];
+    notes.forEach((line,i)=>c.fillText(line,right?40:301,359+i*23));
+    c.fillRect(35,482,w-70,1);c.font='17px "Songti SC",serif';c.fillText('思考与练习',38,519);
+    c.font='14px "Songti SC",serif';c.fillText('朗读课文，联系上下文，说说你对文中这段话的理解。',38,554);
   });}
   const printMat=mat('#ffffff',{map:exercisePrint(false),roughness:.94}),printRightMat=mat('#ffffff',{map:exercisePrint(true),roughness:.94});
   // Terrazzo is a warm cement field with sparse irregular aggregates, not white confetti.
@@ -258,13 +285,18 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const deskBooks=new Map(),deskPens=new Map(),drawerRecords=new Map(),deskTargets=new Map();
   const coveredSeats=new Set(COVERED_SEATS);
   const uprightPageGeometry=new THREE.PlaneGeometry(.32,.43);assets.add(uprightPageGeometry);
+  const coverLeaves=[0,1].map(half=>{
+    const leaf=uprightPageGeometry.clone(),uv=leaf.attributes.uv;
+    for(let i=0;i<uv.count;i++)uv.setX(i,(uv.getX(i)+half)*.5);
+    assets.add(leaf);return leaf;
+  });
   function uprightBook(parent){
     const book=new THREE.Group();book.position.set(0,.88,.12);parent.add(book);
     for(const side of [-1,1]){
       const leaf=new THREE.Group();leaf.rotation.y=side*.14;book.add(leaf);
       rounded(M.paper,[side*.1675,.225,0],[.335,.45,.008],.002,null,leaf);
-      mesh(uprightPageGeometry,side<0?printMat:printRightMat,[side*.1675,.225,-.005],[1,1,1],[0,Math.PI,0],leaf);
-      mesh(uprightPageGeometry,coverMat,[side*.1675,.225,.005],[1,1,1],null,leaf);
+      mesh(uprightPageGeometry,side>0?printMat:printRightMat,[side*.1675,.225,-.005],[1,1,1],[0,Math.PI,0],leaf);
+      mesh(coverLeaves[side<0?0:1],coverMat,[side*.1675,.225,.005],[1,1,1],null,leaf);
     }
     return book;
   }

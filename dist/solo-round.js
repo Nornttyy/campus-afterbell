@@ -1,5 +1,5 @@
-import {ClassroomRound} from './classroom-rules.js?v=campus-88';
-import {TeacherRound} from './teacher-rules.js?v=campus-88';
+import {ClassroomRound} from './classroom-rules.js?v=campus-89';
+import {TeacherRound} from './teacher-rules.js?v=campus-89';
 import {updateLayoutDoors,CAMPUS_MAPS,campusFloor} from './classroom-layout.js?v=campus-87';
 import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-87';
 

@@ -1,4 +1,4 @@
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-88';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-89';
 import {mealPortion,mealInReach,examCardNumber,QUESTION_COUNT} from './upper-floors85.js?v=campus-85';
 export function takeMeal(round,id){
  const p=round.player,portion=mealPortion(id,round._sessionElapsed);
