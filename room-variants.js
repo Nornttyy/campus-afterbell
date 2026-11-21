@@ -1,8 +1,8 @@
 import {createBusRoom} from './bus-room86.js?v=campus-87';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-88';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-89';
 import {createToiletRoom} from './toilet-room70.js?v=campus-84';
 import {createDormRoom} from './dorm-room70.js?v=campus-85';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-88';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-89';
 import {createHotpotRoom} from './hotpot-room70.js?v=campus-85';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-83';
 import * as T from './vendor/three.module.js';
