@@ -3,7 +3,7 @@ import {DORM_ROOMS,dormRoomPoint} from './dorm-layout70.js?v=campus-85';
 import {HOTPOT_TABLES} from './hotpot-layout70.js?v=campus-85';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-84';
 import {NORMAL_WALK_SPEEDS} from './movement55.js?v=campus-83';
-import {startMapActivity,releaseMapActivity} from './map-activities77.js?v=campus-86';
+import {startMapActivity,releaseMapActivity} from './map-activities77.js?v=campus-87';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const vendingApproach=v=>({x:v.x+Math.sin(v.yaw)*.95,z:v.z+Math.cos(v.yaw)*.95});
 // Locations come from the existing reference-based furnishings. Delays and

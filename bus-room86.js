@@ -2,7 +2,7 @@
 // seat originate from the same measurements used by both room authorities.
 import * as T from './vendor/three.module.js';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
-import {BUS,BUS_SEATS,BUS_DECK_SLABS} from './bus-layout86.js?v=campus-86';
+import {BUS,BUS_SEATS,BUS_DECK_SLABS,COACH_CUSHION} from './bus-layout86.js?v=campus-87';
 
 export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor}){
  const group=new T.Group();group.name='excursion-ground-floor';scene.add(group);group.visible=false;
@@ -126,10 +126,12 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   const boardFace=label('秋 游 班 会','#285647','#e8ead8',66);B(iron,9.15,L+1.36,far+.14,2.12,1.09,.07);sign(boardFace,9.15,L+1.36,far+.19,2.04,1.01);
   const speaker=C('#deaa39');for(const x of [-5.85,8.85]){R(night,x,L+2.18,far+.13,.37,.47,.16);rod(speaker,[x,L+2.18,far+.20],[x,L+2.18,far+.25],.127);rod(night,[x,L+2.18,far+.25],[x,L+2.18,far+.26],.061);}
   for(const s of BUS_SEATS){const h=s.busDeck?U:L,dir=Math.sign(Math.sin(s.yaw)),g=new T.Group();g.position.set(s.x,h,s.z);g.rotation.y=s.yaw;group.add(g);chairs.set(s.id,g);
-   const wood=s.busDeck?oak:felt;R(wood,0,.50,0,.71,.155,.66,.062,g);
-   R(wood,0,.87,-.26,.71,.68,.16,.058,g,[-.09,0,0]);
-   if(!s.busDeck){R(felt,0,1.22,-.295,.62,.21,.195,.055,g);R(cream,0,1.265,-.293,.376,.13,.207,.024,g);for(const sx of [-.20,.20])B(amber,sx,.877,-.167,.012,.38,.008,g);for(const side of [-1,1]){B(cream,side*.342,.88,-.259,.030,.64,.16,g);B(amber,side*.34,.60,-.04,.062,.09,.42,g);}B(iron,0,.225,.005,.22,.40,.26,g);}
-   else for(const side of [-1,1])for(const z of [-.2,.19])B(iron,side*.265,.25,z,.033,.45,.035,g);
+   const wood=s.busDeck?oak:felt,cushion=COACH_CUSHION[s.surface],pad=s.busDeck?.075:.12;
+   R(wood,0,cushion.top-pad/2,cushion.centerZ,.71,pad,cushion.depth,.038,g);
+   const backTop=s.busDeck?1.03:1.20;R(wood,0,(backTop+cushion.top)/2,-.26,.71,backTop-cushion.top,.16,.058,g,[-.09,0,0]);
+   if(!s.busDeck){R(felt,0,1.22,-.295,.62,.21,.195,.055,g);R(cream,0,1.265,-.293,.376,.13,.207,.024,g);for(const sx of [-.20,.20])B(amber,sx,.877,-.167,.012,.38,.008,g);for(const side of [-1,1]){B(cream,side*.342,.82,-.259,.030,.78,.16,g);B(amber,side*.34,.54,-.04,.062,.075,.42,g);}B(iron,0,(cushion.top-pad)/2,.005,.22,cushion.top-pad,.26,g);}
+   else for(const side of [-1,1])for(const z of [-.21,.14])B(iron,side*.265,cushion.top/2,z,.033,cushion.top,.035,g);
+   for(const side of [-1,1])B(iron,side*.24,(.62+cushion.top)/2,-.26,.03,.64-cushion.top,.035,g);
    bakeStatic(g);
    const boxX=s.busDeck?s.deskX-dir*.37:s.deskX;const cabinet=new T.Group();cabinet.position.set(boxX,h,s.z);cabinet.rotation.y=s.yaw;group.add(cabinet);
    const height=s.busDeck?.42:.83,bottom=s.busDeck?.33:.05,top=bottom+height;
