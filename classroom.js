@@ -1,4 +1,4 @@
-import {paperQuestion} from './upper-floor-view85.js?v=campus-87';
+import {paperQuestion} from './upper-floor-view85.js?v=campus-88';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-84';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-84';
 import {loadFurniture67} from './furniture-assets67.js?v=campus-83';
@@ -12,7 +12,7 @@ import {setCharacterNight} from './character-materials.js?v=campus-83';
 import {createStaminaVision} from './stamina-vision55.js?v=campus-83';
 import {createSoundCues} from './sound-cue55.js?v=campus-83';
 import {createChalkPowder} from './chalk-powder55.js?v=campus-83';
-import {createSurveillanceView} from './surveillance-view54.js?v=campus-87';
+import {createSurveillanceView} from './surveillance-view54.js?v=campus-88';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-83';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
@@ -20,22 +20,22 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-83';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-83';
 import {loadCampusArtwork} from './campus-artwork.js?v=campus-85';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-87';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-88';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-87';
-import {createRoomVariants} from './room-variants.js?v=campus-87';
+import {createRoomVariants} from './room-variants.js?v=campus-88';
 import {createComputerScreenContent} from './computer-screen55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
-import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-83';
-import {createSmokeEffects} from './smoke-effects.js?v=campus-83';
+import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-88';
+import {createSmokeEffects} from './smoke-effects.js?v=campus-88';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-87';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-88';
 import {dormBodyOffset} from './dorm-layout70.js?v=campus-85';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-83';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-87';
-import {loadStudentAssets} from './student-assets.js?v=campus-87';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-88';
+import {loadStudentAssets} from './student-assets.js?v=campus-88';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-87';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-88';
 import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-87';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
@@ -117,12 +117,13 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   renderer.info.autoReset=false;
   renderer.shadowMap.enabled=!mobileRendering;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   const staminaVision=createStaminaVision(renderer),soundCues=createSoundCues(canvas.parentElement);
-  const scene=new THREE.Scene();scene.background=new THREE.Color('#d2e7e9');
+  const scene=new THREE.Scene(),baseBackground=new THREE.Color('#d2e7e9');scene.background=baseBackground;
   scene.fog=new THREE.Fog('#e3edf1',28,55);
   const camera=new THREE.PerspectiveCamera(40,1,.08,70);
   const chalkPowder=createChalkPowder(scene);
   const bubbleEffects=createBubbleEffects(scene,camera,{floorAt:floorHeight});
-  const surveillanceView=createSurveillanceView(scene,renderer,{beforeRender(){
+  const glassInView=cam=>campus.daylight.glassInView(cam);
+  const surveillanceView=createSurveillanceView(scene,renderer,{glassInView,beforeRender(){
     const cameraVisible=camera.visible,teacherVisible=teacher.group.visible;
     // Camera-attached feedback/bubble masks belong only to the local view.
     camera.visible=false;if(gameplay?.role==='teacher'&&gameplay.teacher?.visible!==false)teacher.group.visible=true;
@@ -229,13 +230,16 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   floorTexture.wrapS=floorTexture.wrapT=surfaces?THREE.MirroredRepeatWrapping:THREE.RepeatWrapping;floorTexture.repeat.set(surfaces?1.35:1,surfaces?1.35:1);
   const floorBump=surfaceHeight(floorTexture,assets,surfaces?1.35:1,surfaces?1.35:1);
   const floorMat=mat('#ffffff',{map:floorTexture,bumpMap:floorBump,bumpScale:surfaces?.00025:.004,roughness:.72});
-  if(surfaces)addTerrazzoGrout(floorMat);
+  const grout=surfaces?addTerrazzoGrout(floorMat):null;
   const contactTexture=texture(128,128,(c,w,h)=>{const g=c.createRadialGradient(w/2,h/2,5,w/2,h/2,w/2);g.addColorStop(0,'rgba(49,54,48,.48)');g.addColorStop(.45,'rgba(49,54,48,.24)');g.addColorStop(1,'rgba(49,54,48,0)');c.fillStyle=g;c.fillRect(0,0,w,h);});
   const contactMat=new THREE.MeshBasicMaterial({map:contactTexture,transparent:true,depthWrite:false,opacity:.62});materials.add(contactMat);
   function contact(x,z,w=1.7,d=1.2,parent=room){const g=new THREE.PlaneGeometry(w,d);assets.add(g);const o=mesh(g,contactMat,[x,.004,z],[1,1,1],[-Math.PI/2,0,0],parent);o.castShadow=false;}
 
   const campus=buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh,texture,assets,materials,floorMat,surfaces,artwork,bakeStatic});
   const {enclosure:teachingEnd,ceilingMaterial,curtains,setNight:setCampusNight}=campus;
+  for(const root of [importedDesk?.body,importedDesk?.drawer,importedDesk?.chair]){
+    root?.traverse(o=>{if(o.isMesh)for(const m of [o.material].flat())campus.daylight.bind(m,'furniture');});
+  }
   // A physical wall button, selected through the same centre ray as desks.
   const startBellModel=new THREE.Group();startBellModel.name='school-start-bell';teachingEnd.add(startBellModel);startBellModel.position.set(START_BELL_POSITION.x-6.02,0,START_BELL_POSITION.z-2.60);
   rounded(M.white,[6.02,1.52,2.60],[.05,.64,.57],.015,null,startBellModel);
@@ -475,11 +479,18 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     }
     variants.setSeats(seats);canvas.dataset.seatLayout=JSON.stringify({pattern:seats[0]?.pattern||'',seats:seats.map(({id,deskX,deskZ,yaw})=>({id,deskX,deskZ,yaw}))});
   }
+  function setOrdinaryDay(active){
+    campus.setDaylight(active);scene.background=active?campus.daylight.sky:baseBackground;
+    contactMat.opacity=active?.80:.62;
+    if(grout)grout.value=active?.065:.18;
+  }
   function setMap(value){
     mapVariant=isCampusMap(value)?mapKind(value):'classroom';variants.setMap(mapVariant);campus.setMap(mapVariant);if(mapVariant==='bus'){room.visible=false;for(const f of campus.facades)f.visible=false;}teachingEnd.visible=mapVariant!=='bus'&&(Boolean(gameplay)||canvas.dataset.gameplay==='true');setSeats(currentSeats,true);stakes.visible=mapKind(mapVariant)!=='playground';for(const p of detentionForMap(mapVariant)){const model=postModels[p.id];if(model)model.position.set(p.x,floorHeight(p.x,p.z,mapVariant,p.busDeck),p.z);}
     const night=['night','dorm'].includes(mapKind(mapVariant));setCampusNight(night);
     setCharacterNight(scene,night);firstPersonView.setNight(night);
+    scene.background=baseBackground;
     applyRoomLighting(night,{ambient,sun,fill,teachingFill,lampMat,ceilingMaterial,scene});
+    setOrdinaryDay(mapVariant==='classroom'&&Boolean(gameplay));
     const outdoor=['playground','bus'].includes(mapVariant);
     if(outdoor){ambient.intensity=2.35;ambient.color.set('#e8f7ff');ambient.groundColor.set('#d4dab8');sun.intensity=3.4;fill.intensity=.65;teachingFill.intensity=.12;sun.position.set(-32,40,4);sun.target.position.set(-10.8,0,-21.2);}
     else{sun.position.set(-17,7.4,7);sun.target.position.set(0,.65,-2);}
@@ -530,7 +541,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     const phone=createDeskItem('phone');group.add(phone);
     return[id,{group,phone}];
   }));
-  const smokeEffects=createSmokeEffects(renderer),thrownCanisters=[];
+  const smokeEffects=createSmokeEffects(renderer,{glassInView}),thrownCanisters=[];
   const throwableTemplates=new Map(THROWABLE_ITEM_KINDS.map(kind=>[kind,createDeskItem(kind)]));
   function updateSmoke(state){
     smokeEffects.update(state?.smokes||[]);
@@ -569,7 +580,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   function setGameplay(state){
     if(!state){
       if(!gameplay)return;gameplay=null;teachingEnd.visible=false;teacher.group.visible=false;hands.group.visible=false;flash.visible=false;flashMat.opacity=0;feedbackTime=0;teacherWorldSample=null;teacherWorldSpeed=0;drawerItems.visible=false;raisedSlot=null;drawerFocus=0;drawerItemSignature='';
-      staminaVision.reset();chalkPowder.clear();soundCues.update(null,0);surveillanceView.update(null);updateSmoke(null);bubbleEffects.update(null);itemEffects50.update(null);updateTeacherTools(null,0);clearTeacherFeedback();
+      setOrdinaryDay(false);staminaVision.reset();chalkPowder.clear();soundCues.update(null,0);surveillanceView.update(null);updateSmoke(null);bubbleEffects.update(null);itemEffects50.update(null);updateTeacherTools(null,0);clearTeacherFeedback();
       setSeats(SEATS,true);restorePupils();camera.fov=menuFov();camera.updateProjectionMatrix();canvas.style.cursor=tourEnabled?'grab':'';canvas.dataset.gameplay='false';canvas.dataset.itemReady='false';return;
     }
     if(!gameplay){
@@ -581,6 +592,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     }
     setSeats(state.seats||currentSeats);if(mapKind(state.map)!==mapVariant)setMap(state.map);updateLayoutDoors(renderLayout,{busDeparted:state.busDeparted,officeLocked:state.officeLocked,officeDoorClosed:state.officeDoorClosed,frontDoorClosed:state.frontDoorClosed,rearDoorClosed:state.rearDoorClosed,doorMotion:state.doorMotion,elevatorClosed:state.elevator?.doorClosed});campus.setDoors(state);
     teacher.group.visible=state.stage!=='gathering'&&state.role!=='teacher'&&state.teacher?.visible!==false;
+    if(!gameplay)setOrdinaryDay(mapVariant==='classroom');
     gameplay=state;
   }
   const moodMap={riding:'riding',sitting:'resting','pen-twirling':'pen',standing:'resting',walking:'resting',carried:'resting',bound:'resting',stunned:'thinking',rescuing:'rescuing',listening:'listening','computer-idle':'computer-idle',reading:'reading',writing:'writing',thinking:'thinking',snack:'snack',drink:'drink',burger:'burger',phone:'phone',computer:'computer',smoke:'smoke',flash:'flash',ink:'ink',banana:'banana',bananaPeel:'bananaPeel',garlic:'garlic',gum:'gum',lunch:'lunch',pen:'pen',caught:'resting',resting:'resting',alert:'thinking'};

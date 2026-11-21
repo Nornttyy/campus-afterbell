@@ -27,16 +27,19 @@ export function drawBoardSurface(context,width,height,source){
 }
 
 export function addTerrazzoGrout(material){
+ const strength={value:.18};
  material.onBeforeCompile=shader=>{
-  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+  shader.uniforms.terrazzoJointStrength=strength;
+  shader.fragmentShader='uniform float terrazzoJointStrength;\n'+shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
    #ifdef USE_MAP
     vec2 cellEdge=min(fract(vMapUv),1.0-fract(vMapUv));
     vec2 antialias=max(fwidth(vMapUv),vec2(0.0001));
     vec2 seam=1.0-smoothstep(vec2(0.0008),vec2(0.0008)+antialias,cellEdge);
-    diffuseColor.rgb*=1.0-0.18*max(seam.x,seam.y);
+    diffuseColor.rgb*=1.0-terrazzoJointStrength*max(seam.x,seam.y);
    #endif`);
  };
- material.customProgramCacheKey=()=> 'terrazzo-grout-34';
+ material.customProgramCacheKey=()=> 'terrazzo-grout-88';
+ return strength;
 }
 
 // Box walls use metres, so a narrow pier and a long corridor have the same grain size.

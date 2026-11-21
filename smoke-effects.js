@@ -2,12 +2,17 @@ import * as T from './vendor/three.module.js';
 
 // Half-resolution volume integration, clipped by the real classroom depth.
 // Each cloud is a 3D density field: no billboard circles or screen-wide fog wash.
-export function createSmokeEffects(renderer,{width=0,height=0,samples=4}={}){
+export function createSmokeEffects(renderer,{width=0,height=0,samples=4,glassInView=null}={}){
   const size=new T.Vector2(),volumeScene=new T.Scene(),screenScene=new T.Scene();
   const screenCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
   const opaque=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,depthBuffer:true});
   opaque.samples=samples;
   opaque.depthTexture=new T.DepthTexture(1,1,T.UnsignedIntType);
+  // On touch devices visible interior glass needs colour, but no multisample
+  // depth resolve or volume pass. The target allocates on its first use.
+  const paneColourType=renderer.extensions?.has('EXT_color_buffer_float')===false?T.UnsignedByteType:T.HalfFloatType;
+  const glassOnly=new T.WebGLRenderTarget(1,1,{type:paneColourType,depthBuffer:true});
+  glassOnly.depthTexture=new T.DepthTexture(1,1,T.UnsignedIntType);
   const mist=new T.WebGLRenderTarget(1,1,{depthBuffer:false,minFilter:T.LinearFilter,magFilter:T.LinearFilter});
   const data=new Uint8Array(32**3);let seed=17831;
   for(let i=0;i<data.length;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;data[i]=seed>>>24;}
@@ -69,9 +74,9 @@ export function createSmokeEffects(renderer,{width=0,height=0,samples=4}={}){
     const mesh=new T.Mesh(bounds,material);mesh.frustumCulled=false;volumeScene.add(mesh);pool.push(mesh);return mesh;
   }
   const composite=new T.ShaderMaterial({depthTest:false,depthWrite:false,toneMapped:true,
-    uniforms:{colorMap:{value:opaque.texture},smokeMap:{value:mist.texture},depthMap:{value:opaque.depthTexture},projectionInverse:{value:new T.Matrix4()},projection:{value:new T.Matrix4()},screenSize:{value:new T.Vector2()},smokeActive:{value:0},contactStrength:{value:.52}},
+    uniforms:{colorMap:{value:opaque.texture},smokeMap:{value:mist.texture},depthMap:{value:opaque.depthTexture},projectionInverse:{value:new T.Matrix4()},projection:{value:new T.Matrix4()},screenSize:{value:new T.Vector2()},smokeActive:{value:0},contactStrength:{value:.52},frostedGlass:{value:false}},
     vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=vec4(position.xy,0.,1.);}',
-    fragmentShader:`uniform sampler2D colorMap,smokeMap,depthMap;uniform mat4 projectionInverse,projection;uniform vec2 screenSize;uniform float smokeActive,contactStrength;varying vec2 v;
+    fragmentShader:`uniform sampler2D colorMap,smokeMap,depthMap;uniform mat4 projectionInverse,projection;uniform vec2 screenSize;uniform float smokeActive,contactStrength;uniform bool frostedGlass;varying vec2 v;
       vec3 surface(vec2 uv){float d=texture2D(depthMap,clamp(uv,vec2(.001),vec2(.999))).r;vec4 p=projectionInverse*vec4(uv*2.-1.,d*2.-1.,1.);return p.xyz/p.w;}
       float contactShade(){
         if(contactStrength<.001||texture2D(depthMap,v).r>.9999)return 1.;
@@ -89,7 +94,23 @@ export function createSmokeEffects(renderer,{width=0,height=0,samples=4}={}){
         }
         return 1.-clamp(occlusion*(3.0/16.)*contactStrength,0.,.42);
       }
-      void main(){vec3 scene=texture2D(colorMap,v).rgb*contactShade();vec4 smoke=smokeActive>.5?texture2D(smokeMap,v):vec4(0.);gl_FragColor=vec4(scene*(1.-smoke.a)+smoke.rgb,1.);
+      vec3 diffusePane(vec3 centre){
+        vec3 sum=centre*.55;float weights=.55;
+        for(int i=0;i<12;i++){
+          float j=float(i)+.5,a=j*2.39996323,r=sqrt(j/12.);
+          vec2 offset=vec2(cos(a),sin(a))*r*.021*screenSize.y/screenSize;
+          vec4 tap=texture2D(colorMap,clamp(v+offset,vec2(0.),vec2(1.)));
+          float w=(1.-smoothstep(.08,.85,tap.a))*(1.-.55*r*r);
+          sum+=w*tap.rgb;weights+=w;
+        }
+        return sum/weights;
+      }
+      void main(){
+        vec4 base=texture2D(colorMap,v);
+        float pane=frostedGlass?1.-smoothstep(.05,.94,base.a):0.;
+        vec3 scene=base.rgb;
+        if(pane>.01)scene=mix(scene,diffusePane(scene),pane);else scene*=contactShade();
+        vec4 smoke=smokeActive>.5?texture2D(smokeMap,v):vec4(0.);gl_FragColor=vec4(scene*(1.-smoke.a)+smoke.rgb,1.);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
       }`});
@@ -106,23 +127,27 @@ export function createSmokeEffects(renderer,{width=0,height=0,samples=4}={}){
     }
   }
   function render(scene,camera,quality='high'){
-    if(!active&&quality==='low'){renderer.render(scene,camera);return;}
+    camera.updateMatrixWorld();
+    const frost=Boolean(glassInView?.(camera)),low=quality==='low';
+    if(!active&&low&&!frost){renderer.render(scene,camera);return;}
+    const colourTarget=!active&&low?glassOnly:opaque;
     // Monitor feeds have physical render-target dimensions, independent of
     // the main canvas pixel ratio. Keep their buffers small and persistent.
     if(width>0&&height>0)size.set(width,height);else renderer.getDrawingBufferSize(size);
-    if(opaque.width!==size.x||opaque.height!==size.y)opaque.setSize(size.x,size.y);
+    if(colourTarget.width!==size.x||colourTarget.height!==size.y)colourTarget.setSize(size.x,size.y);
     const ratio=quality==='low'?.35:.5,w=Math.max(1,Math.floor(size.x*ratio)),h=Math.max(1,Math.floor(size.y*ratio));
-    if(mist.width!==w||mist.height!==h)mist.setSize(w,h);
-    camera.updateMatrixWorld();
+    if(active&&(mist.width!==w||mist.height!==h))mist.setSize(w,h);
     inverse.multiplyMatrices(camera.matrixWorld,camera.projectionMatrixInverse);
+    composite.uniforms.colorMap.value=colourTarget.texture;composite.uniforms.depthMap.value=colourTarget.depthTexture;
+    composite.uniforms.frostedGlass.value=frost;
     composite.uniforms.projectionInverse.value.copy(camera.projectionMatrixInverse);composite.uniforms.projection.value.copy(camera.projectionMatrix);composite.uniforms.screenSize.value.copy(size);composite.uniforms.smokeActive.value=active?1:0;composite.uniforms.contactStrength.value=quality==='low'?0:.52;
     for(const mesh of pool)if(mesh.visible)mesh.material.uniforms.resolution.value.set(w,h);
     const target=renderer.getRenderTarget(),face=renderer.getActiveCubeFace?.()||0,mip=renderer.getActiveMipmapLevel?.()||0,auto=renderer.autoClear,alpha=renderer.getClearAlpha();renderer.getClearColor(clearColor);
     try{
-      renderer.autoClear=true;renderer.setRenderTarget(opaque);renderer.render(scene,camera);
+      renderer.autoClear=true;renderer.setRenderTarget(colourTarget);renderer.render(scene,camera);
       if(active){renderer.setRenderTarget(mist);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(volumeScene,camera);}
       renderer.setClearColor(clearColor,alpha);renderer.setRenderTarget(target,face,mip);renderer.render(screenScene,screenCamera);
     }finally{renderer.setClearColor(clearColor,alpha);renderer.setRenderTarget(target,face,mip);renderer.autoClear=auto;}
   }
-  return{update,render,dispose(){opaque.dispose();opaque.depthTexture.dispose();mist.dispose();noise.dispose();bounds.dispose();for(const m of pool)m.material.dispose();quad.geometry.dispose();composite.dispose();}};
+  return{update,render,dispose(){opaque.dispose();opaque.depthTexture.dispose();glassOnly.dispose();glassOnly.depthTexture.dispose();mist.dispose();noise.dispose();bounds.dispose();for(const m of pool)m.material.dispose();quad.geometry.dispose();composite.dispose();}};
 }

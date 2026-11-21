@@ -1,11 +1,11 @@
 import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-83';
 import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-87';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-87';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-88';
 import {teacherViewHeight} from './camera-height58.js?v=campus-83';
 import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-87';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-87';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-88';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
