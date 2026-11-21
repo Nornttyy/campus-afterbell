@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
-import {createLayoutContext,queueLayoutDoors,advanceLayoutDoors,layoutDoorSnapshot,updateLayoutDoors,DOORS,OFFICE,clearWallSegment,moveInRoom,blocked} from '../dist/classroom-layout.js';
+import {createLayoutContext,queueLayoutDoors,advanceLayoutDoors,layoutDoorSnapshot,updateLayoutDoors,DOORS,OFFICE,START_BELL_POSITION,clearWallSegment,moveInRoom,blocked} from '../dist/classroom-layout.js';
 import {createSchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments} from '../dist/school-door-motion65.js';
 import {reachesSchoolDoor} from '../dist/door-interaction54.js';
 import {interactionIntent} from '../dist/interaction-intent54.js';
@@ -36,13 +36,13 @@ test('moving door waits for an actor entering its next swept segment, then conti
 });
 
 test('front and office use actual aiming and E/Q commands, office lock only applies during seating',()=>{
- const r=new ClassroomRound();r.start({gathering:true});r.step(2);for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:9.2,z:7.3,yaw:0}]]){Object.assign(r.player,p);assert.equal(reachesSchoolDoor(r.player,r.layout,id),true);const intent=interactionIntent(r.snapshot(),{kind:'rear-door',doorId:id},'E');assert.deepEqual(intent.args,[true,false,id]);assert.equal(r.setDoorUse(...intent.args),true);r.step(3);assert.equal(r.layout.doorMotion[id].target,1);r.step(2);const close=interactionIntent(r.snapshot(),{kind:'rear-door',doorId:id},'Q');assert.deepEqual(close.args,[true,true,id]);}
- Object.assign(r.player,{x:8.6,z:3.5,yaw:Math.atan2(7.43-8.6,3.15-3.5)});assert.equal(r.startBell(),true);assert.equal(r.layout.officeLocked,true);assert.equal(r.setSchoolDoor('office',false),false);r.step(30);assert.equal(r.layout.officeLocked,false);assert.equal(r.layout.doorMotion.office.target,1);
+ const r=new ClassroomRound();r.start({gathering:true});r.step(2);for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:OFFICE.doorX,z:OFFICE.doorZ+1.5,yaw:Math.PI}]]){Object.assign(r.player,p);assert.equal(reachesSchoolDoor(r.player,r.layout,id),true);const intent=interactionIntent(r.snapshot(),{kind:'rear-door',doorId:id},'E');assert.deepEqual(intent.args,[true,false,id]);assert.equal(r.setDoorUse(...intent.args),true);r.step(3);assert.equal(r.layout.doorMotion[id].target,1);r.step(2);const close=interactionIntent(r.snapshot(),{kind:'rear-door',doorId:id},'Q');assert.deepEqual(close.args,[true,true,id]);}
+ Object.assign(r.player,{x:START_BELL_POSITION.x+1.17,z:START_BELL_POSITION.z+.35,yaw:Math.atan2(-1.17,-.35)});assert.equal(r.startBell(),true);assert.equal(r.layout.officeLocked,true);assert.equal(r.setSchoolDoor('office',false),false);r.step(30);assert.equal(r.layout.officeLocked,false);assert.equal(r.layout.doorMotion.office.target,1);
 });
 
 test('two authenticated room members share front and office opening, independent from the lift',async()=>{
  const {CampusRoom}=await import('../server/room-simulation.js');const room=new CampusRoom({code:'650065',seed:73}),a=room.join({name:'甲'}),b=room.join({name:'乙'});for(let i=0;i<20;i++)room.tick(.1);
- for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:9.2,z:7.3,yaw:0}]]){
+ for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:OFFICE.doorX,z:OFFICE.doorZ+1.5,yaw:Math.PI}]]){
   Object.assign(a.context.player,p,{seated:false});Object.assign(b.context.player,{x:11.5,z:2,seated:false});
   assert.equal(room.command(a,'setDoorUse',[true,false,id]),true);for(let i=0;i<21;i++)room.tick(.1);
   assert.equal(room.snapshot(a).doorMotion[id].target,1);assert.deepEqual(room.snapshot(a).doorMotion,room.snapshot(b).doorMotion);

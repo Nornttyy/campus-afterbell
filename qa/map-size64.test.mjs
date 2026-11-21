@@ -9,7 +9,7 @@ function ray(scene,origin,direction,far=1){return new T.Raycaster(new T.Vector3(
 test('requested sizing preserves classroom door positions and expands only the existing corridor footprint',()=>{
  close((CORRIDOR.maxX-CORRIDOR.minX)/3.6,1.4);close((CORRIDOR.maxZ-CORRIDOR.minZ)/18.8,1.4);
  assert.ok(CLASSROOM.maxX-CLASSROOM.minX<14.4);assert.ok(CLASSROOM.maxX-CLASSROOM.minX>13.5);
- close(LIFT.maxX-LIFT.minX,2.5);close(LIFT.maxZ-LIFT.minZ,2.8);close(LIFT.maxZ,CORRIDOR.minZ-.2);
+ close(LIFT.maxX-LIFT.minX,2.5);close(LIFT.maxZ-LIFT.minZ,2.8);close(LIFT.minZ,CORRIDOR.maxZ+.2);
  const context=createLayoutContext(SEATS),z=(CLASSROOM.minZ+CORRIDOR.minZ)/2;
  assert.equal(blocked(0,z,.18,context),true,'extension must not invent a classroom behind the rear wall');
  assert.equal(blocked((CORRIDOR.minX+CORRIDOR.maxX)/2,z,.18,context),false);
@@ -30,8 +30,8 @@ test('corridor extension has continuous floor, walls and ceiling with no stretch
   for(const [x,z]of [[7.3,CLASSROOM.minZ-.2],[7.3,CORRIDOR.minZ-.1],[CORRIDOR.maxX+.1,CORRIDOR.minZ-.1]])for(const y of [.3,2,4.4]){
    const hits=ray(f.scene,[x+.4,y,z],[-1,0,0],.7);assert.ok(hits.length,`open corridor corner ${x},${z}`);
   }
-  const cabin=f.scene.getObjectByName('walkable-eight-floor-lift');assert.deepEqual(cabin.scale.toArray(),[1,1,1]);close(cabin.position.z,CORRIDOR.minZ-CLASSROOM.minZ);
+  const cabin=f.scene.getObjectByName('campus-lift');assert.deepEqual(cabin.scale.toArray(),[1,1,1]);close(cabin.position.z,CORRIDOR.minZ-CLASSROOM.minZ);
   const panel=f.campus.liftPanel.getWorldPosition(new T.Vector3());assert.ok(panel.z<LIFT.maxZ&&panel.z>LIFT.minZ);
-  close(f.scene.getObjectByName('role-changing-locker').position.x,ROLE_LOCKER.x);close(OFFICE.maxX,CORRIDOR.maxX);
+  close(f.scene.getObjectByName('role-changing-locker').position.x,ROLE_LOCKER.x);close(OFFICE.minX,CORRIDOR.minX);close(OFFICE.maxZ,CORRIDOR.minZ-.22);
  }finally{f.dispose();}
 });

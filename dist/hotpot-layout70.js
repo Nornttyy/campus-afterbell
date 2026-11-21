@@ -14,7 +14,7 @@ export const HOTPOT_SEATS=Object.freeze(HOTPOT_TABLES.flatMap(table=>[0,-Math.PI
 })));
 // Two folding-screen groups sit BETWEEN the rear and middle tables. The
 // centre passage stays open; no screen is added around every table.
-export const HOTPOT_SCREENS=Object.freeze([-3.1,3.2].flatMap((x,side)=>[-1.5,-.5,.5,1.5].map((offset,i)=>Object.freeze({id:side*4+i,x:x+offset*.81,z:-5.05,yaw:(i%2?1:-1)*.25,width:.84,height:2.36,depth:.065}))));
+export const HOTPOT_SCREENS=Object.freeze([-3.1,3.2].flatMap((x,side)=>[-1.5,-.5,.5,1.5].map((offset,i)=>Object.freeze({id:side*4+i,x:x+offset*(.84*Math.cos(.52)),z:-5.05,yaw:(i%2?1:-1)*.52,width:.84,height:2.36,depth:.065}))));
 const volume=(id,minX,maxX,minZ,maxZ,minY=0,maxY=.875)=>Object.freeze({id,minX,maxX,minZ,maxZ,minY,maxY});
 // Walkers cannot enter a tabletop footprint; airborne objects use the actual
 // thin top and narrower pedestal instead of a full-height invisible box.

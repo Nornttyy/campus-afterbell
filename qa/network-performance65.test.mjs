@@ -6,7 +6,7 @@ import {NetworkRound} from '../dist/network-client.js';
 import {diffNetworkState,applyNetworkDelta} from '../dist/network-state65.js';
 import {dormDoorSolids} from '../dist/dorm-layout70.js';
 import {toiletDoorSolids} from '../dist/toilet-layout70.js';
-import {blocked} from '../dist/classroom-layout.js';
+import {blocked,OFFICE} from '../dist/classroom-layout.js';
 
 const wait=async(check,timeout=2500)=>{const start=performance.now();while(performance.now()-start<timeout){if(check())return;await new Promise(r=>setTimeout(r,10));}throw new Error('Room did not synchronize');};
 async function post(base,path,data,token){const response=await fetch(base+path,{method:'POST',headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},body:JSON.stringify(data)});return{status:response.status,data:await response.json()};}
@@ -58,7 +58,7 @@ test('visual scene time advances every render frame while seated and stops on pa
 });
 
 test('front and office network hold progress use the shared HUD interaction kind and retain door identity',()=>{
- for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:9.2,z:7.3,yaw:0}]]){
+ for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:OFFICE.doorX,z:OFFICE.doorZ+1.5,yaw:Math.PI}]]){
   const room=new CampusRoom({code:'650066',seed:73}),member=room.join();for(let i=0;i<20;i++)room.tick(.1);Object.assign(member.context.player,p,{seated:false});assert.equal(room.command(member,'setDoorUse',[true,false,id]),true);room.tick(.5);const state=room.snapshot(member);assert.equal(state.interaction.kind,'rear-door');assert.equal(state.interaction.doorId,id);assert.equal(state.doorUse.id,id);assert.ok(state.interaction.progress>0&&state.interaction.progress<1);assert.equal(state.doorUse.progress,state.interaction.progress);
  }
 });

@@ -1,22 +1,23 @@
+import {SERVING_SOLIDS,CAFETERIA_SEATS} from './upper-floors85.js?v=campus-85';
 import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-83';
-import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-83';
+import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-85';
 import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-84';
-import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-83';
+import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-85';
 import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-84';
-import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-83';
+import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-85';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 // Elevator operation is enabled; boarding and per-round limits are authoritative.
 export const ELEVATOR_ENABLED=true;
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
 export const TEACHER_EYE_HEIGHT=TEACHER_PROPORTIONS.eyeHeight;
-// Metres, shared by rendering and authoritative collision. The user's plan is
-// rotated in world space: office at +Z, lift at -Z, corridor along the right.
+import {HALL,END_ORIGIN,officePlan,liftPlan,officeDeskPlans,officeChairPlans,officeBoardPlan,endPoint,endBounds} from './campus-ends.js?v=campus-85';
+ // In the walkthrough a player leaving the lift for the office has the classroom on the left.
 export const CLASSROOM=Object.freeze({minX:-6.65,maxX:7.20,minZ:-10.00,maxZ:8.80});
-export const CORRIDOR=Object.freeze({minX:7.40,maxX:12.44,minZ:-17.52,maxZ:8.80});
-export const OFFICE=Object.freeze({minX:-1.20,maxX:CORRIDOR.maxX,minZ:9.02,maxZ:20.80,doorX:9.20,doorMinX:8.30,doorMaxX:10.10});
-export const LIFT=Object.freeze({minX:8.10,maxX:10.60,minZ:CORRIDOR.minZ-3,maxZ:CORRIDOR.minZ-.20,x:9.35,z:CORRIDOR.minZ-1.70});
-export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:CORRIDOR.minZ+.65});
-export const ROOM=Object.freeze({minX:CLASSROOM.minX,maxX:CORRIDOR.maxX,minZ:LIFT.minZ,maxZ:OFFICE.maxZ});
+export const CORRIDOR=HALL;
+export const OFFICE=Object.freeze({...endBounds(officePlan),doorX:END_ORIGIN.x-officePlan.doorX,doorMinX:END_ORIGIN.x-officePlan.doorMaxX,doorMaxX:END_ORIGIN.x-officePlan.doorMinX,doorZ:HALL.minZ-.11,opensZ:-1});
+export const LIFT=Object.freeze({...endBounds(liftPlan),...endPoint(liftPlan.x,liftPlan.z)});
+export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:CORRIDOR.maxZ-.65});
+export const ROOM=Object.freeze({minX:CLASSROOM.minX,maxX:OFFICE.maxX,minZ:OFFICE.minZ,maxZ:LIFT.maxZ});
 export function mapBounds(map='classroom'){
  if(mapKind(map)==='dorm')return{...ROOM,maxX:DORM_BOUNDS.maxX,minX:Math.min(ROOM.minX,DORM_BOUNDS.minX)};
  if(mapKind(map)!=='playground')return ROOM;
@@ -24,18 +25,20 @@ export function mapBounds(map='classroom'){
  return {minX:Math.min(ROOM.minX,b.minX),maxX:Math.max(ROOM.maxX,b.maxX),minZ:Math.min(ROOM.minZ,b.minZ),maxZ:Math.max(ROOM.maxZ,b.maxZ)};
 }
 export const CEILING_HEIGHT=4.51,TIERED_CEILING_HEIGHT=5.55;
-export const TEACHER_SPAWN=Object.freeze({x:9.20,z:12.00,yaw:Math.PI,pitch:.025});
-export const OFFICE_DESK=Object.freeze({id:'office-lunch',x:4.80,z:13.10,width:1.844,depth:.892,yaw:0,drawerX:4.80,drawerZ:12.58});
-export const OFFICE_CHAIR=Object.freeze({id:'office-chair',deskId:OFFICE_DESK.id,x:4.80,z:11.96,yaw:0});
-export const OFFICE_DESKS=Object.freeze([OFFICE_DESK,...[[2.1,16.1],[6.1,16.1],[2.1,18.9],[6.1,18.9]].map(([x,z],i)=>Object.freeze({id:'office-work-'+i,x,z,width:1.844,depth:.892,yaw:0,drawerX:x,drawerZ:z-.52}))]);
-export const OFFICE_CHAIRS=Object.freeze([OFFICE_CHAIR,...OFFICE_DESKS.slice(1).map(d=>Object.freeze({id:d.id+'-chair',deskId:d.id,x:d.x,z:d.z-1.14,yaw:0}))]);
-export const OFFICE_BOARD=Object.freeze({x:8,z:20.35});
-export const ROLE_LOCKER=Object.freeze({x:CORRIDOR.maxX-.36,z:6.65,yaw:-Math.PI/2});
-export const START_BELL_POSITION=Object.freeze({x:7.43,z:3.15});
-export const CAMPUS_MAPS=Object.freeze(['classroom','night','tiered','computer','hotpot','toilet','dorm','playground']);
+export const TEACHER_SPAWN=Object.freeze({...endPoint(9.20,12.00),yaw:0,pitch:.025});
+export const OFFICE_DESKS=Object.freeze(officeDeskPlans.map(d=>{
+ const drawer=endPoint(d.drawerX,d.drawerZ);
+ return Object.freeze({...d,...endPoint(d.x,d.z),yaw:Math.PI,drawerX:drawer.x,drawerZ:drawer.z});
+}));
+export const OFFICE_CHAIRS=Object.freeze(officeChairPlans.map(c=>Object.freeze({...c,...endPoint(c.x,c.z),yaw:Math.PI})));
+export const OFFICE_DESK=OFFICE_DESKS[0],OFFICE_CHAIR=OFFICE_CHAIRS[0];
+export const OFFICE_BOARD=Object.freeze(endPoint(officeBoardPlan.x,officeBoardPlan.z));
+export const ROLE_LOCKER=Object.freeze({x:CORRIDOR.maxX-.36,z:CORRIDOR.minZ+2.28,yaw:-Math.PI/2});
+export const START_BELL_POSITION=Object.freeze({x:7.43,z:-4.0});
+export const CAMPUS_MAPS=Object.freeze(['classroom','night','tiered','computer','hotpot','toilet','dorm','playground','cafeteria','exam']);
 export function mapKind(map='classroom'){const kind=String(map).replace(/[0-9]+$/,'');return kind;}
 // Saved pre-expansion sessions used names such as computer7 and tiered8.
-// Preserve those names and their floor number, while new lobbies use the eight
+// Preserve those names and their floor number, while new lobbies use the
 // canonical names above. Invalid suffixes cannot create extra floors.
 export function isCampusMap(map){return typeof map==='string'&&(CAMPUS_MAPS.includes(map)||/^(classroom|night|tiered|computer)[1-8]$/.test(map));}
 export function campusFloor(map){if(!isCampusMap(map))return 0;const legacy=String(map).match(/([1-8])$/);return legacy?Number(legacy[1]):CAMPUS_MAPS.indexOf(map)+1;}
@@ -44,6 +47,8 @@ function layoutRandom(seed){let n=Number(seed)>>>0;return()=>{n=(Math.imul(n,166
 // Pure per-room data. Never replace the exported default array: a server can
 // run rooms with different layouts in the same JavaScript process safely.
 export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
+ if(mapKind(map)==='cafeteria')return CAFETERIA_SEATS;
+ if(mapKind(map)==='exam')arrangement=(Number(seed)>>>0)%2?'rows-wide':'rows-long';
  if(mapKind(map)==='hotpot')return HOTPOT_SEATS;
  if(mapKind(map)==='toilet')return TOILET_SEATS;
  if(mapKind(map)==='dorm')return DORM_SEATS;
@@ -79,7 +84,7 @@ export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
   // Give facing desks a real seam without resizing their authored geometry.
   blocks.forEach(({x,z},i)=>{const n=counts[i];if(n===4){for(const dz of [-.44,.44])for(const dx of [-.625,.625])add(x+dx,z+dz,dz>0?Math.PI:0);}else if(n===2){const loose=pattern==='mixed'&&random()>.5;for(const dx of loose?[-1.05,1.05]:[-.64,.64])add(x+dx,z,0);}});
  }
- const seats=raw.map((s,id)=>Object.freeze({...s,id,row:Math.floor(id/6),col:id%6,x:s.deskX-Math.sin(s.yaw)*.78,z:s.deskZ-Math.cos(s.yaw)*.78,pattern,map:mapKind(map)}));
+ const seats=raw.map((s,id)=>Object.freeze({...s,...(mapKind(map)==='exam'?{hideBook:true,hidePen:true}:{}),id,row:Math.floor(id/6),col:id%6,x:s.deskX-Math.sin(s.yaw)*.78,z:s.deskZ-Math.cos(s.yaw)*.78,pattern,map:mapKind(map)}));
  return Object.freeze(seats);
 }
 export const SEATS=createSeatLayout(73);
@@ -98,30 +103,31 @@ const V=(minX,maxX,minZ,maxZ,minY=0,maxY=CEILING_HEIGHT)=>Object.freeze({minX,ma
 export const DOOR_LEAVES=Object.freeze(DOORS.map(d=>V(7.30,8.88,d.maxZ-.07,d.maxZ+.07,.04,3.02)));
 // Continuous shell: classroom proportions are independent of the longer corridor.
 // The lift portal/cabin use the corridor's end, never the classroom's rear wall.
-const portalZ=CORRIDOR.minZ,west=CLASSROOM.minX;
-const boundaries=[
- V(west-.20,west,CLASSROOM.minZ-.20,OFFICE.minZ),
- V(west,CORRIDOR.minX,CLASSROOM.minZ-.20,CLASSROOM.minZ),
- V(CLASSROOM.maxX,CORRIDOR.minX,portalZ-.20,CLASSROOM.minZ-.20),
- V(CORRIDOR.minX,LIFT.minX,portalZ-.20,portalZ),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ-.20,portalZ),
- V(west,OFFICE.doorMinX,CLASSROOM.maxZ,OFFICE.minZ),V(OFFICE.doorMaxX,CORRIDOR.maxX+.20,CLASSROOM.maxZ,OFFICE.minZ),
- V(OFFICE.maxX,OFFICE.maxX+.20,portalZ-.20,OFFICE.maxZ+.20),
- V(OFFICE.minX-.20,OFFICE.minX,CLASSROOM.maxZ,OFFICE.maxZ+.20),V(OFFICE.minX,OFFICE.maxX+.20,OFFICE.maxZ,OFFICE.maxZ+.20),
- V(LIFT.minX-.20,LIFT.minX,LIFT.minZ-.20,portalZ),V(LIFT.maxX,LIFT.maxX+.20,LIFT.minZ-.20,portalZ),V(LIFT.minX,LIFT.maxX,LIFT.minZ-.20,LIFT.minZ)
-];
-// Dormitories replace classroom and corridor side walls, retaining office/lift.
-const dormCommonWalls=Object.freeze([
- V(CORRIDOR.minX,LIFT.minX,portalZ-.20,portalZ),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ-.20,portalZ),
- V(OFFICE.minX-.20,OFFICE.doorMinX,8.8,9.02),V(OFFICE.doorMaxX,OFFICE.maxX+.20,8.8,9.02),
- V(OFFICE.maxX,OFFICE.maxX+.20,8.8,OFFICE.maxZ+.20),V(OFFICE.minX-.20,OFFICE.minX,8.8,OFFICE.maxZ+.20),V(OFFICE.minX,OFFICE.maxX+.20,OFFICE.maxZ,OFFICE.maxZ+.20),
- V(LIFT.minX-.20,LIFT.minX,LIFT.minZ-.20,portalZ),V(LIFT.maxX,LIFT.maxX+.20,LIFT.minZ-.20,portalZ),V(LIFT.minX,LIFT.maxX,LIFT.minZ-.20,LIFT.minZ)
+const portalZ=CORRIDOR.maxZ,west=CLASSROOM.minX;
+const endWalls=Object.freeze([
+ V(CORRIDOR.minX,LIFT.minX,portalZ,portalZ+.20),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ,portalZ+.20),
+ V(OFFICE.minX-.20,OFFICE.doorMinX,OFFICE.maxZ,CORRIDOR.minZ),V(OFFICE.doorMaxX,OFFICE.maxX+.20,OFFICE.maxZ,CORRIDOR.minZ),
+ V(OFFICE.minX-.20,OFFICE.minX,OFFICE.minZ-.20,OFFICE.maxZ),V(OFFICE.maxX,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ),
+ V(OFFICE.minX,OFFICE.maxX,OFFICE.minZ-.20,OFFICE.minZ),
+ V(LIFT.minX-.20,LIFT.minX,portalZ,LIFT.maxZ+.20),V(LIFT.maxX,LIFT.maxX+.20,portalZ,LIFT.maxZ+.20),V(LIFT.minX,LIFT.maxX,LIFT.maxZ,LIFT.maxZ+.20)
 ]);
-const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(8.30,10.10,8.80,9.02,3.08),V(LIFT.minX,LIFT.maxX,portalZ-.20,portalZ,3.12)];
-const baseWalls=Object.freeze([...PARTITIONS,...boundaries]);
-const sealedLift=ELEVATOR_ENABLED?[]:[V(LIFT.minX,LIFT.maxX,portalZ-.22,portalZ+.02,.02,3.12)];
+const corridorEdges=[
+ V(CORRIDOR.maxX,CORRIDOR.maxX+.20,CORRIDOR.minZ,portalZ),
+ V(CLASSROOM.maxX,CORRIDOR.minX,CORRIDOR.minZ,CLASSROOM.minZ-.20)
+];
+const classEdges=[
+ V(west-.20,west,CLASSROOM.minZ-.20,CLASSROOM.maxZ+.22),
+ V(west,CORRIDOR.minX,CLASSROOM.minZ-.20,CLASSROOM.minZ),
+ V(west,CORRIDOR.minX,CLASSROOM.maxZ,CLASSROOM.maxZ+.22)
+];
+const dormCommonWalls=endWalls;
+const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(OFFICE.doorMinX,OFFICE.doorMaxX,OFFICE.maxZ,CORRIDOR.minZ,3.08),V(LIFT.minX,LIFT.maxX,portalZ,portalZ+.20,3.12)];
+const baseWalls=Object.freeze([...PARTITIONS,...classEdges,...corridorEdges,...endWalls]);
+const liftThreshold=()=>V(LIFT.minX,LIFT.maxX,portalZ-.02,portalZ+.22,.02,3.12);
+const sealedLift=ELEVATOR_ENABLED?[]:[liftThreshold()];
 export const WALLS=Object.freeze([...baseWalls,...DOOR_LEAVES,...sealedLift]);
 export const WALL_VOLUMES=Object.freeze([...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...DOOR_LEAVES,...sealedLift,...headers]);
-const fixedCeilings=Object.freeze([V(CORRIDOR.minX,CORRIDOR.maxX+.20,portalZ-.20,9.02,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,9.02,OFFICE.maxZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(LIFT.minX-.20,LIFT.maxX+.20,LIFT.minZ-.20,portalZ,3.12,3.28)]);
+const fixedCeilings=Object.freeze([V(CORRIDOR.minX-.20,CORRIDOR.maxX+.20,CORRIDOR.minZ-.22,portalZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(LIFT.minX-.20,LIFT.maxX+.20,portalZ+.20,LIFT.maxZ+.20,3.12,3.28)]);
 const flatCeilings=Object.freeze([V(west-.20,7.40,-10.20,9.02,CEILING_HEIGHT,CEILING_HEIGHT+.16),...fixedCeilings]);
 const raisedCeilings=Object.freeze([V(west-.20,7.40,-10.20,9.02,TIERED_CEILING_HEIGHT,TIERED_CEILING_HEIGHT+.16),...fixedCeilings]);
 const raisedUpperWalls=Object.freeze([V(west-.20,west,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(7.20,7.40,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(west,7.20,-10.20,-10.00,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(west,7.20,8.80,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT)]);
@@ -130,34 +136,45 @@ export function ceilingVolumes(map='classroom'){return mapKind(map)==='dorm'?[..
 // lid bounds avoid treating the air above its keyboard as a solid monitor.
 const laptopVolumes=Object.freeze([V(-1.175,-.515,7.395,7.825,1.1475,1.1975),V(-1.175,-.515,7.354,7.429,1.1835,1.570)]);
 export function specialFurnitureVolumes(map='classroom'){
- const kind=mapKind(map);return kind==='hotpot'?HOTPOT_SOLIDS:kind==='toilet'?TOILET_SOLIDS:kind==='dorm'?DORM_SOLIDS:kind==='playground'?PLAYGROUND_SOLIDS.filter(s=>!s.id.includes('-wall')):[];
+ const kind=mapKind(map);return kind==='cafeteria'?SERVING_SOLIDS:kind==='hotpot'?HOTPOT_SOLIDS:kind==='toilet'?TOILET_SOLIDS:kind==='dorm'?DORM_SOLIDS:kind==='playground'?PLAYGROUND_SOLIDS.filter(s=>!s.id.includes('-wall')):[];
 }
 function specialWalkSolids(map){const kind=mapKind(map);return kind==='dorm'?DORM_WALK_SOLIDS:kind==='hotpot'?HOTPOT_WALK_SOLIDS:kind==='toilet'?TOILET_WALK_SOLIDS:specialFurnitureVolumes(map).filter(s=>!s.walkable);}
 // Keep the office, lift and right corridor enclosed. The replaced classroom
 // has only its actual outdoor perimeter and gate, never an invisible roof.
-const outdoorFixedWalls=Object.freeze(boundaries.filter(w=>!(w.maxX<=CLASSROOM.minX||w.maxZ<=CLASSROOM.minZ&&w.minX<CLASSROOM.maxX)).map(w=>w.minZ===CLASSROOM.maxZ&&w.maxZ===OFFICE.minZ&&w.minX<CLASSROOM.maxX?V(CLASSROOM.maxX,w.maxX,w.minZ,w.maxZ,w.minY,w.maxY):w));
+const outdoorFixedWalls=Object.freeze([...corridorEdges,...endWalls]);
 const outdoorWalls=Object.freeze([...outdoorFixedWalls,...PLAYGROUND_SOLIDS.filter(s=>s.id.includes('-wall'))]);
 const outdoorHeaders=Object.freeze([...headers.slice(DOORS.length),V(PLAYGROUND_LAYOUT.entrance.x-.02,PLAYGROUND_LAYOUT.entrance.x+.12,PLAYGROUND_LAYOUT.entrance.minZ-.07,PLAYGROUND_LAYOUT.entrance.maxZ+.07,2.35,2.43)]);
 export function enclosureVolumes(map='classroom',context=null){
  const kind=mapKind(map),shell=context?.wallVolumes||(kind==='playground'?[...outdoorWalls,...outdoorHeaders]:kind==='dorm'?[...dormCommonWalls,...DORM_SHELL_SOLIDS,...DORM_CORRIDOR_SOLIDS,...sealedLift,...headers.slice(2)]:WALL_VOLUMES);
- const furniture=context?.furnitureVolumes||[...specialFurnitureVolumes(map),...specialFurnitureDoors(map)];
+ const furniture=context?.furnitureVolumes||[...specialFurnitureVolumes(map),...specialFurnitureDoors(map),...(kind==='computer'?labDividers(createSeatLayout(73,null,map)):[])];
  return [...shell,...furniture,...(kind==='tiered'?raisedUpperWalls:[]),...ceilingVolumes(map),...(kind==='computer'?laptopVolumes:[]),...(context?.dynamicSolids||[])];
 }
 export const OFFICE_SOLIDS=Object.freeze([
- V(OFFICE.minX+.04,OFFICE.minX+.68,10.10,20.08,0,2.78),
- ...OFFICE_DESKS.map(d=>V(d.x-d.width/2,d.x+d.width/2,d.z-d.depth/2,d.z+d.depth/2,0,.985)),
- // Monitor shells and books sit above each physical desk, so thrown items
- // cannot pass straight through their visible screens.
- ...OFFICE_DESKS.map(d=>V(d.x-.75,d.x-.09,d.z+.15,d.z+.23,1.105,1.482)),
- V(OFFICE.maxX-.68,OFFICE.maxX-.02,11.075,14.925,0,1.065),V(ROLE_LOCKER.x-.37,ROLE_LOCKER.x+.35,5.75,7.55,0,2.28),V(OFFICE_BOARD.x-1.35,OFFICE_BOARD.x+1.35,OFFICE_BOARD.z-.37,OFFICE_BOARD.z+.37,0,2.48),V(CORRIDOR.maxX-.75,CORRIDOR.maxX-.02,CORRIDOR.minZ+.25,CORRIDOR.minZ+1.08,0,1.72)
+ ...[
+  V(officePlan.minX+.04,officePlan.minX+.68,10.10,20.08,0,2.78),
+  ...officeDeskPlans.map(d=>V(d.x-d.width/2,d.x+d.width/2,d.z-d.depth/2,d.z+d.depth/2,0,.985)),
+  ...officeDeskPlans.map(d=>V(d.x-.75,d.x-.09,d.z+.15,d.z+.23,1.105,1.482)),
+  V(officePlan.maxX-.68,officePlan.maxX-.02,11.075,14.925,0,1.065),
+  V(officeBoardPlan.x-1.35,officeBoardPlan.x+1.35,officeBoardPlan.z-.37,officeBoardPlan.z+.37,0,2.48)
+ ].map(endBounds),
+ V(ROLE_LOCKER.x-.37,ROLE_LOCKER.x+.35,ROLE_LOCKER.z-.90,ROLE_LOCKER.z+.90,0,2.28),
+ V(CORRIDOR.maxX-.75,CORRIDOR.maxX-.02,CORRIDOR.minZ+.25,CORRIDOR.minZ+1.08,0,1.72)
 ]);
+export const PODIUM=Object.freeze({halfWidth:3.15,front:6.50,back:CLASSROOM.maxZ,height:.16,tread:.17});
+const TIER_Z=Object.freeze([CLASSROOM.minZ,...[-5.90,-2.30,1.30].flatMap(z=>[0,.07,.14,.21].map(d=>Number((z+d).toFixed(2))))]);
+const TIER_X=Object.freeze([CLASSROOM.minX,...Array.from({length:13},(_,i)=>Number((CLASSROOM.maxX-(12-i)*.10).toFixed(2)))]);
 export function floorHeight(x,z,map='classroom'){
  if(mapKind(map)==='playground')return playgroundFloorHeight(x,z);
  if(mapKind(map)==='toilet'||mapKind(map)==='dorm')return 0;
- if(Math.abs(x)<=3.15&&z>=6.50&&z<=8.80)return .16;
- if(mapKind(map)!=='tiered'||x>=7.20||x<CLASSROOM.minX||z< -10.00||z>=1.50)return 0;
- let h=0;for(const edge of [1.30,-2.30,-5.90])h+=z<edge?.24:z<edge+.20?.12:0;
- return Math.min(h,Math.max(0,Math.floor((7.20-x+1e-8)/.20))*.12);
+ if(z<=PODIUM.back&&z>=PODIUM.front-PODIUM.tread&&Math.abs(x)<=PODIUM.halfWidth+PODIUM.tread){
+  return Math.abs(x)<=PODIUM.halfWidth&&z>=PODIUM.front?PODIUM.height:PODIUM.height/2;
+ }
+ if(mapKind(map)!=='tiered'||x>=CLASSROOM.maxX||x<CLASSROOM.minX||z<CLASSROOM.minZ||z>=TIER_Z.at(-1))return 0;
+ // Four shallow risers reach each desk platform. The side aisle breaks the
+ // same change in elevation into individual steps from the corridor door.
+ const rowSteps=TIER_Z.slice(1).reduce((count,edge)=>count+Number(z<edge),0);
+ const aisleSteps=Math.max(0,Math.floor((CLASSROOM.maxX-x+1e-8)/.10));
+ return Math.min(rowSteps,aisleSteps)*.105;
 }
 export function actorFloorHeight(actor,map='classroom',carrier=null){if(actor.mapActivity?.kind==='hang'&&mapKind(map)==='playground'){const bar=PLAYGROUND_LAYOUT.bars.find(b=>b.id===actor.mapActivity.id);if(bar)return Math.max(0,bar.height-1.65);}const carried=actor.captivity==='carried'&&carrier,support=carried?carrier:actor;if(!carried&&mapKind(map)==='dorm'&&actor.seated&&!actor._officeChair&&!actor.officeChair){const bed=DORM_SEATS.find(s=>s.id===(actor.bedId??actor.seatId));if(bed)return bed.supportHeight;}return floorHeight(support.x,support.z,map);}
 // Heights are relative to the actor's support surface. A bunk's mattress
@@ -176,13 +193,13 @@ export function actorBodyVolume(actor,map='classroom'){
 export function floorTiles(map='tiered'){
  if(mapKind(map)==='playground')return PLAYGROUND_LAYOUT.steps.map(s=>({minX:s.x-s.width/2,maxX:s.x+s.width/2,minZ:s.z-s.depth/2,maxZ:s.z+s.depth/2,height:s.top}));
  if(mapKind(map)!=='tiered')return [];
- const xs=[CLASSROOM.minX,6.00,6.20,6.40,6.60,6.80,7.00,7.20],zs=[-10.00,-5.90,-5.70,-2.30,-2.10,1.30,1.50],out=[];
+ const xs=TIER_X,zs=TIER_Z,out=[];
  for(let i=0;i<xs.length-1;i++)for(let j=0;j<zs.length-1;j++){const h=floorHeight((xs[i]+xs[i+1])/2,(zs[j]+zs[j+1])/2,map);if(h>0)out.push({minX:xs[i],maxX:xs[i+1],minZ:zs[j],maxZ:zs[j+1],height:h});}return out;
 }
 export function walkableFootprint(x,z,r=.18,context=null){
  const kind=mapKind(context?.map);if(kind==='playground'&&playgroundWalkable(x,z,r))return true;
  const room=kind==='dorm'?DORM_ROOM_RECTS.some(b=>x>=b.minX+r&&x<=b.maxX-r&&z>=b.minZ+r&&z<=b.maxZ-r):(x>=CLASSROOM.minX+r&&x<=CORRIDOR.maxX-r&&z>=CLASSROOM.minZ+r&&z<=CLASSROOM.maxZ-r);
- return room||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=CLASSROOM.maxZ-r&&z<=OFFICE.maxZ-r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=LIFT.minZ+r&&z<=CORRIDOR.minZ+.40);
+ return room||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=OFFICE.minZ+r&&z<=CORRIDOR.minZ+r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=CORRIDOR.maxZ-r&&z<=LIFT.maxZ-r);
 }
 export function clearWallSegment(a,b,context=null){
  for(const w of context?.walls||WALLS){let lo=0,hi=1;for(const axis of ['X','Z']){const k=axis.toLowerCase(),d=b[k]-a[k];if(Math.abs(d)<1e-8){if(a[k]<w['min'+axis]||a[k]>w['max'+axis]){lo=2;break;}}else{let u=(w['min'+axis]-a[k])/d,v=(w['max'+axis]-a[k])/d;if(u>v)[u,v]=[v,u];lo=Math.max(lo,u);hi=Math.min(hi,v);}}if(lo<=hi&&hi>=0&&lo<=1)return false;}return true;
@@ -193,11 +210,21 @@ export function orientedVolume(x,z,yaw,width,depth,minY=0,maxY=.875){
  const c=Math.abs(Math.cos(yaw||0)),s=Math.abs(Math.sin(yaw||0)),hx=(width*c+depth*s)/2,hz=(width*s+depth*c)/2;
  return V(x-hx,x+hx,z-hz,z+hz,minY,maxY);
 }
+// Shared by the visible lab screens, thrown objects and camera sight lines.
+export const LAB_DIVIDER=Object.freeze({side:.593,depth:.80,thickness:.026,bottom:.864,top:1.515});
+function labDividers(seats){
+ if(mapKind(seats[0]?.map)!=='computer')return [];
+ const d=LAB_DIVIDER;
+ return seats.flatMap(s=>[-1,1].map(side=>{
+  const offset=side*d.side,yaw=s.yaw||0;
+  return {...orientedVolume(s.deskX+Math.cos(yaw)*offset,s.deskZ-Math.sin(yaw)*offset,yaw,d.thickness,d.depth,d.bottom,d.top),id:'lab-divider-'+s.id+'-'+side};
+ }));
+}
 export function deskSolids(seats=SEATS){
  if(['hotpot','toilet','dorm','playground'].includes(mapKind(seats[0]?.map)))return [];
  return seats.map(s=>orientedVolume(s.deskX,s.deskZ,s.yaw,mapKind(s.map)==='computer'?1.22:1.20,.85,0,.875));
 }
-export function chairBackSolids(seats=SEATS){const noChairs=['toilet','dorm','playground'].includes(mapKind(seats[0]?.map));return [...(noChairs?[]:seats.map(s=>orientedVolume(s.x-Math.sin(s.yaw||0)*.325,s.z-Math.cos(s.yaw||0)*.325,s.yaw,.562,.114,.42,.99))),...OFFICE_CHAIRS.map(c=>orientedVolume(c.x,c.z-.30,c.yaw,.70,.12,.45,1.13))];}
+export function chairBackSolids(seats=SEATS){const noChairs=['toilet','dorm','playground'].includes(mapKind(seats[0]?.map));return [...(noChairs?[]:seats.map(s=>orientedVolume(s.x-Math.sin(s.yaw||0)*.325,s.z-Math.cos(s.yaw||0)*.325,s.yaw,.562,.114,.42,.99))),...OFFICE_CHAIRS.map(c=>orientedVolume(c.x,c.z-Math.cos(c.yaw)*.30,c.yaw,.70,.12,.45,1.13))];}
 export const DESKS=Object.freeze(deskSolids());
 export function createLayoutContext(seats=SEATS,doorState={}){
  const map=doorState.map||seats[0]?.map||'classroom',context={map,seats,desks:deskSolids(seats),chairBacks:chairBackSolids(seats),furnitureVolumes:specialFurnitureVolumes(map),furnitureWalkSolids:specialWalkSolids(map),routeGrids:new Map(),officeLocked:undefined,rearDoorClosed:undefined,elevatorClosed:undefined};updateLayoutDoors(context,doorState);updateSpecialFurnitureCollisions(context,doorState);return context;
@@ -227,7 +254,7 @@ export function updateSpecialFurnitureCollisions(context,state={}){
  const signature=JSON.stringify([kind,...doorKeys.map(key=>(key==='dormDoors'?DORM_ROOMS:ids).map(s=>key==='dormDoors'?(current[key]?.[s.id]??1):furnitureAmount(current[key],s.id)))]);
  if(context._furnitureCollisionSignature===signature)return false;
  context._furnitureCollisionSignature=signature;context.furnitureDynamicSolids=specialFurnitureDoors(context.map,current);
- context.furnitureVolumes=[...specialFurnitureVolumes(context.map),...context.furnitureDynamicSolids];
+ context.furnitureVolumes=[...specialFurnitureVolumes(context.map),...labDividers(context.seats),...context.furnitureDynamicSolids];
  context.furnitureWalkSolids=[...specialWalkSolids(context.map),...context.furnitureDynamicSolids];
  rebuildWalkCollisions(context);return true;
 }
@@ -252,7 +279,7 @@ function rebuildDoorCollisions(context){
  const kind=mapKind(context.map),outdoor=kind==='playground';
  const signature=JSON.stringify([kind,context.elevatorClosed,...SCHOOL_DOOR_IDS.map(id=>context.doorMotion[id].amount)]);if(context._doorCollisionSignature===signature)return context;context._doorCollisionSignature=signature;
  const leaves=SCHOOL_DOOR_IDS.filter(id=>(!outdoor||id==='office')&&(kind!=='dorm'||id==='office')).flatMap(id=>schoolDoorSegments(id,context.doorMotion[id].amount,{doors:DOORS,office:OFFICE}));
- if(context.elevatorClosed)leaves.push(V(LIFT.minX,LIFT.maxX,portalZ-.22,portalZ+.02,.02,3.12));
+ if(context.elevatorClosed)leaves.push(liftThreshold());
  const walls=outdoor?outdoorWalls:kind==='dorm'?[...dormCommonWalls,...DORM_CORRIDOR_SOLIDS.filter(s=>s.minY===0),...DORM_SHELL_SOLIDS.filter(s=>s.minY===0)]:baseWalls;
  context._buildingWalls=[...walls,...leaves];
  context.wallVolumes=[...walls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...leaves,...(outdoor?outdoorHeaders:kind==='dorm'?headers.slice(2):headers),...(kind==='dorm'?[...DORM_SHELL_SOLIDS,...DORM_CORRIDOR_SOLIDS].filter(s=>s.minY>0):[])];

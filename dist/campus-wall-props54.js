@@ -1,3 +1,4 @@
+import {START_BELL_POSITION} from './classroom-layout.js?v=campus-85';
 import * as T from './vendor/three.module.js';
 
 // Locally modelled from the user's classroom door/front-wall screenshots.
@@ -5,7 +6,7 @@ import * as T from './vendor/three.module.js';
 export function createCampusWallProps({parent,mat,box,rounded,mesh,assets}){
  const root=new T.Group();root.name='classroom-wall-fixtures54';parent.add(root);
  const plastic=mat('#e7e9de',{roughness:.58}),recess=mat('#899b99',{roughness:.76}),ink=mat('#344b4c',{roughness:.68}),display=mat('#a8bcb0',{roughness:.69});
- const controls=new T.Group();controls.name='classroom-switch-control-cluster';controls.position.set(7.199,1.42,3.15);controls.rotation.y=-Math.PI/2;root.add(controls);
+ const controls=new T.Group();controls.name='classroom-switch-control-cluster';controls.position.set(7.199,1.42,START_BELL_POSITION.z);controls.rotation.y=-Math.PI/2;root.add(controls);
  // Mounting backs end 1mm in front of the actual plaster face, with real bevels,
  // recessed rocker sockets and separate hinged rocker surfaces.
  rounded(recess,[0,0,.012],[.282,.282,.024],.012,null,controls);
@@ -22,7 +23,7 @@ export function createCampusWallProps({parent,mat,box,rounded,mesh,assets}){
  for(const [x,y,w,h]of[[-.055,.452,.034,.003],[-.025,.438,.003,.030],[-.055,.425,.034,.003],[.020,.452,.034,.003],[.004,.438,.003,.030],[.020,.425,.034,.003]])box(ink,[x,y,.046],[w,h,.001],null,controls);
  for(const x of[-.074,0,.074])rounded(plastic,[x,.346,.043],[.046,.030,.008],.004,null,controls);
 
- const clock=new T.Group();clock.name='classroom-wall-clock';clock.position.set(0,4.22,8.785);clock.rotation.y=Math.PI;root.add(clock);
+ const clock=new T.Group();clock.name='classroom-wall-clock';clock.position.set(0,3.73,8.785);clock.rotation.y=Math.PI;root.add(clock);
  const backing=new T.CylinderGeometry(.228,.228,.038,48);assets.add(backing);mesh(backing,ink,[0,0,.019],[1,1,1],[Math.PI/2,0,0],clock);
  const dial=new T.CircleGeometry(.208,48);assets.add(dial);mesh(dial,plastic,[0,0,.039],[1,1,1],null,clock);
  const bezel=new T.TorusGeometry(.218,.012,8,48);assets.add(bezel);mesh(bezel,recess,[0,0,.039],[1,1,1],null,clock);

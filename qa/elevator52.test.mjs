@@ -32,12 +32,16 @@ test('solo pause freezes cabin and an edge-standing passenger cannot close doors
 });
 
 test('the solo player can walk from the real gathering spawn into the cabin without teleporting',()=>{
- const r=createSoloRound({seed:22});r.start({gathering:true});r.setLook(Math.PI,0);
- // Follow the outside half of the corridor around the open rear door leaf.
- r.setMovement(1,0);for(let i=0;i<6;i++)r.step(.1);r.setMovement(0,-1);
- const walkSeconds=Math.abs(r.player.z-LIFT.z)/1.8;for(let i=0;i<Math.ceil(walkSeconds/.1);i++)r.step(.1);r.setMovement(0,0);
- assert.ok(r.player.z<LIFT.maxZ-.18);assert.ok(r.player.z>LIFT.minZ);assert.equal(r.snapshot().elevator.canTravel,true);
- assert.equal(r.travelFloor('night'),true);r.step(3);r.setMovement(0,1);for(let i=0;i<25;i++)r.step(.1);assert.ok(r.player.z>LIFT.maxZ+.20,'arrival opens a walkable exit');
+ const r=createSoloRound({seed:22});r.start({gathering:true});r.setLook(0,0);
+ // Navigate the clear aisle around the open front door and through the actual lift aperture.
+ const walkTo=(x,z)=>{for(let frame=0;frame<750;frame++){
+  const dx=x-r.player.x,dz=z-r.player.z,len=Math.hypot(dx,dz);
+  if(len<.04){r.setMovement(0,0);return;}
+  r.setMovement(dx/len,dz/len);r.step(1/60);
+ }assert.fail('walking input did not reach '+[x,z]);};
+ walkTo(LIFT.x,r.player.z);walkTo(LIFT.x,LIFT.z);
+ assert.equal(r.snapshot().elevator.canTravel,true);assert.equal(r.travelFloor('night'),true);
+ r.step(3);walkTo(LIFT.x,LIFT.minZ-.4);assert.ok(r.player.z<LIFT.minZ-.20,'arrival opens a walkable exit');
 });
 
 test('network authority: every human boards; AI, look, blocked actions, joining, disconnect and repeated commands',()=>{

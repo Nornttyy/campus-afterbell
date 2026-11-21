@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SEATS,CLASSROOM,OFFICE,LIFT,BOARD,TEACHER_SPAWN,OFFICE_CHAIR,OFFICE_CHAIRS,OFFICE_DESKS,DETENTION,DOORS,DOOR_LEAVES,CORRIDOR,CAMPUS_MAPS,LAYOUT_PATTERNS,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,createSeatLayout,createLayoutContext,updateLayoutDoors,mapKind,ceilingVolumes,enclosureVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight,floorTiles} from '../dist/classroom-layout.js';
+import {SEATS,CLASSROOM,START_BELL_POSITION,OFFICE,LIFT,BOARD,TEACHER_SPAWN,OFFICE_CHAIR,OFFICE_CHAIRS,OFFICE_DESKS,DETENTION,DOORS,DOOR_LEAVES,CORRIDOR,CAMPUS_MAPS,LAYOUT_PATTERNS,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,createSeatLayout,createLayoutContext,updateLayoutDoors,mapKind,ceilingVolumes,enclosureVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight,floorTiles} from '../dist/classroom-layout.js';
 import {DORM_BOUNDS} from '../dist/dorm-layout70.js';
 import {chalkHit} from '../dist/teacher-rules.js';
 import {createSmokeProjectile,stepSmokeProjectile} from '../dist/smoke-physics.js';
@@ -34,7 +34,7 @@ test('both classroom door apertures open onto the long corridor, while partition
 });
 
 test('closed office door prevents preparation-phase escape, then clears navigation when opened',()=>{
- const ctx=createLayoutContext(SEATS,{officeLocked:true}),inside={x:OFFICE.doorX,z:10},outside={x:OFFICE.doorX,z:8};assert.equal(clearWallSegment(inside,outside,ctx),false);assert.deepEqual(walkRoute(inside,outside,.23,ctx),[]);assert.ok(moveInRoom(inside,0,-3,.23,ctx).z>=OFFICE.minZ-.22+.23);updateLayoutDoors(ctx,{officeLocked:false});validRoute(inside,outside,.23,ctx);assert.ok(moveInRoom(inside,0,-3,.23,ctx).z<8);
+ const ctx=createLayoutContext(SEATS,{officeLocked:true}),inside={x:OFFICE.doorX,z:OFFICE.doorZ-1.1},outside={x:OFFICE.doorX,z:OFFICE.doorZ+.9};assert.equal(clearWallSegment(inside,outside,ctx),false);assert.deepEqual(walkRoute(inside,outside,.23,ctx),[]);assert.ok(moveInRoom(inside,0,3,.23,ctx).z<=OFFICE.doorZ-.23);updateLayoutDoors(ctx,{officeLocked:false});validRoute(inside,outside,.23,ctx);assert.ok(moveInRoom(inside,0,3,.23,ctx).z>outside.z);
 });
 
 test('rear door closes the local opening but leaves the front door available',()=>{
@@ -42,7 +42,7 @@ test('rear door closes the local opening but leaves the front door available',()
 });
 
 test('office, both classroom entrances and elevator form one continuous walkable school',()=>{
- const ctx=createLayoutContext(SEATS);for(const end of [TEACHER_SPAWN,OFFICE_CHAIR,...DOORS.map(d=>({x:6.8,z:d.center})),SEATS[9]])validRoute(LIFT,end,.23,ctx);assert.equal(blocked(OFFICE.minX-.3,12,.2,ctx),true);assert.equal(blocked(0,12,.2,ctx),false);assert.equal(blocked(0,-12,.2,ctx),true);assert.equal(blocked(LIFT.x,LIFT.z,.2,ctx),false);assert.equal(blocked(TEACHER_SPAWN.x,TEACHER_SPAWN.z,.6,ctx),false);
+ const ctx=createLayoutContext(SEATS);for(const end of [TEACHER_SPAWN,OFFICE_CHAIR,...DOORS.map(d=>({x:6.8,z:d.center})),SEATS[9]])validRoute(LIFT,end,.23,ctx);assert.equal(blocked(OFFICE.minX-.3,TEACHER_SPAWN.z,.2,ctx),true);assert.equal(blocked(TEACHER_SPAWN.x,TEACHER_SPAWN.z,.2,ctx),false);assert.equal(blocked(0,-12,.2,ctx),true);assert.equal(blocked(LIFT.x,LIFT.z,.2,ctx),false);assert.equal(blocked(TEACHER_SPAWN.x,TEACHER_SPAWN.z,.6,ctx),false);
 });
 
 test('cached navigation preserves caller endpoints and cannot be corrupted by consuming a route',()=>{
@@ -61,8 +61,8 @@ test('chalk geometry follows the enlarged partitions, open door headers, lectern
  const ctx=createLayoutContext(SEATS),a={x:6.7,y:1.4,z:0},b={x:9.3,y:1.4,z:0};assert.equal(chalkHit(a,b,[],[],'classroom',ctx).kind,'wall');for(const door of DOORS){const student={id:1,x:9.1,z:door.center,seated:false};assert.equal(chalkHit({...a,z:door.center},{...b,z:door.center},[student],[],'classroom',ctx).kind,'student');assert.equal(chalkHit({...a,y:3.4,z:door.center},{...b,y:3.4,z:door.center},[],[],'classroom',ctx).kind,'wall');}updateLayoutDoors(ctx,{rearDoorClosed:true});assert.equal(chalkHit({...a,z:DOORS[0].center},{...b,z:DOORS[0].center},[],[],'classroom',ctx).kind,'wall');
 });
 
-test('eight distinct maps preserve corridor/office roofs and give the outdoor playground open sky',()=>{
- assert.deepEqual(CAMPUS_MAPS,['classroom','night','tiered','computer','hotpot','toilet','dorm','playground']);for(const map of CAMPUS_MAPS){const expected=map==='dorm'?DORM_BOUNDS.height:mapKind(map)==='tiered'?TIERED_CEILING_HEIGHT:CEILING_HEIGHT;for(const [x,z,height]of[[map==='dorm'?4.1:0,0,expected],[9.2,0,CEILING_HEIGHT],[6.5,12,CEILING_HEIGHT]]){const roof=ceilingVolumes(map).find(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ&&v.minY===height);assert.equal(Boolean(roof),map!=='playground'||x!==0);if(roof)assert.ok(enclosureVolumes(map).includes(roof));}}
+test('ten distinct maps preserve corridor/office roofs and give the outdoor playground open sky',()=>{
+ assert.deepEqual(CAMPUS_MAPS,['classroom','night','tiered','computer','hotpot','toilet','dorm','playground','cafeteria','exam']);for(const map of CAMPUS_MAPS){const expected=map==='dorm'?DORM_BOUNDS.height:mapKind(map)==='tiered'?TIERED_CEILING_HEIGHT:CEILING_HEIGHT;for(const [x,z,height]of[[map==='dorm'?4.1:0,0,expected],[9.2,0,CEILING_HEIGHT],[TEACHER_SPAWN.x,TEACHER_SPAWN.z,CEILING_HEIGHT]]){const roof=ceilingVolumes(map).find(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ&&v.minY===height);assert.equal(Boolean(roof),map!=='playground'||x!==0);if(roof)assert.ok(enclosureVolumes(map).includes(roof));}}
 });
 
 test('each floor variant supports a whole table and chair on the same local elevation',()=>{
@@ -75,18 +75,18 @@ test('throws collide with each room layout and update when that room closes a do
  const seat=ctx.seats[0],p=createSmokeProjectile({id:0,x:seat.x,z:seat.z,yaw:seat.yaw,pitch:0,seated:true},2,0,'tiered',ctx);for(let i=0;i<240;i++){stepSmokeProjectile(p,1/120,ctx);assert.ok(p.y>=floorHeight(p.x,p.z,'tiered')+.07499);}assert.ok(p.bounces>0);
 });
 
-test('rendered walls, floors, eight-floor controls and interactive furniture agree with collision coordinates',async()=>{
+test('rendered walls, floors, ten-floor controls and interactive furniture agree with collision coordinates',async()=>{
  const T=await import('../dist/vendor/three.module.js'),{buildReferenceCampus}=await import('../dist/reference-campus.js'),scene=new T.Scene(),room=new T.Group();scene.add(room);const assets=new Set(),materials=new Set();
  const mat=(color,o={})=>{const m=new T.MeshStandardMaterial({color,...o});materials.add(m);return m;},mesh=(g,m,p,s=[1,1,1],r=null,parent=room)=>{const o=new T.Mesh(g,m);o.position.set(...p);o.scale.set(...s);if(r)o.rotation.set(...r);parent.add(o);return o;},box=(m,p,s,r=null,parent=room)=>mesh(new T.BoxGeometry(...s),m,p,[1,1,1],r,parent),rounded=(m,p,s,rad,r=null,parent=room)=>box(m,p,s,r,parent),cylinder=(m,p,s,r=null,parent=room)=>mesh(new T.CylinderGeometry(s[0],s[2],s[1],8),m,p,[1,1,1],r,parent),texture=()=>new T.Texture(),base=mat('#fff'),M=new Proxy({},{get:()=>base});
  const campus=buildReferenceCampus({scene,room,M,mat,mesh,box,rounded,cylinder,texture,assets,materials,floorMat:base});campus.enclosure.visible=true;campus.attachUpperArchitecture();scene.updateMatrixWorld(true);
  const hit=(p,d,filter=o=>!o.material.transparent)=>new T.Raycaster(new T.Vector3(...p),new T.Vector3(...d),0,3).intersectObject(scene,true).find(h=>h.object.material&&filter(h.object));
- for(const z of[-9.9,-8.1,-7.4,0,6,8.5])assert.ok(Math.abs(hit([10,3.25,z],[1,0,0]).point.x-CORRIDOR.maxX)<.12,`outer wall hole at ${z}`);
- assert.ok(Math.abs(hit([8,1.52,3.15],[-1,0,0]).point.x-7.40)<1e-5);assert.ok(hit([8,2,0],[-1,0,0],o=>o.material.transparent&&o.material.opacity>.50&&o.material.opacity<.75));
+ for(const z of[-9.9,-8.1,-7.4,0,3.2,8.5])assert.ok(Math.abs(hit([10,3.25,z],[1,0,0]).point.x-CORRIDOR.maxX)<.12,`outer wall hole at ${z}`);
+ assert.ok(Math.abs(hit([8,1.52,START_BELL_POSITION.z],[-1,0,0]).point.x-7.40)<1e-5);assert.ok(hit([8,2,-.46],[-1,0,0],o=>o.material.transparent&&o.material.opacity>.50&&o.material.opacity<.75));
  const floor=hit([9.2,.8,0],[0,-1,0],o=>o.material===base);assert.ok(Math.abs(floor.point.y)<1e-6);assert.ok(Math.abs(floor.uv.x-floor.point.x/1.6)<1e-6);assert.ok(Math.abs(floor.uv.y-floor.point.z/1.6)<1e-6);
  const planarOverlap=(a,b)=>Math.min(a.max.x,b.max.x)-Math.max(a.min.x,b.min.x)>1e-6&&Math.min(a.max.z,b.max.z)-Math.max(a.min.z,b.min.z)>1e-6;
  for(const [objects,count] of [[scene.getObjectsByProperty('name','campus-continuous-floor'),5],[['classroom','corridor','office'].map(part=>scene.getObjectByName('campus-ceiling-'+part)),3]]){assert.equal(objects.length,count);assert.ok(objects.every(Boolean));const boxes=objects.map(o=>new T.Box3().setFromObject(o,true));for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++)assert.equal(planarOverlap(boxes[i],boxes[j]),false,'coplanar school slabs overlap and flicker at the room seam');}
- assert.equal(campus.liftPanel.children.filter(o=>o.userData.floorMap).length,8);const t=campus.getTargets();assert.equal(t.doors.length,4);assert.deepEqual([...new Set(t.doors.map(d=>d.id))].sort(),['front','office','rear']);assert.equal(t.officeDesks.length,OFFICE_DESKS.length);assert.equal(t.officeChairs.length,OFFICE_CHAIRS.length);assert.equal(t.lockers.length,1);for(const target of[...t.doors,...t.officeDesks,...t.officeChairs,...t.lockers])target.object.traverse(o=>{if(o.isMesh&&o.userData.campusTarget)assert.equal(o.userData.animated,true);});
- const liftRay=new T.Raycaster(new T.Vector3(9.30,1.6,CORRIDOR.minZ+.6),new T.Vector3(0,0,-1),0,1.4),closed={elevator:{doorClosed:true}},opened={elevator:{doorClosed:false}};
+ assert.equal(campus.liftPanel.children.filter(o=>o.userData.floorMap).length,10);const t=campus.getTargets();assert.equal(t.doors.length,4);assert.deepEqual([...new Set(t.doors.map(d=>d.id))].sort(),['front','office','rear']);assert.equal(t.officeDesks.length,OFFICE_DESKS.length);assert.equal(t.officeChairs.length,OFFICE_CHAIRS.length);assert.equal(t.lockers.length,1);for(const target of[...t.doors,...t.officeDesks,...t.officeChairs,...t.lockers])target.object.traverse(o=>{if(o.isMesh&&o.userData.campusTarget)assert.equal(o.userData.animated,true);});
+ const liftRay=new T.Raycaster(new T.Vector3(LIFT.x,1.6,CORRIDOR.maxZ-.6),new T.Vector3(0,0,1),0,1.4),closed={elevator:{doorClosed:true}},opened={elevator:{doorClosed:false}};
  assert.equal(campus.liftDoors.length,2);assert.equal(liftRay.intersectObjects(campus.liftDoors,true).length,0);
  campus.update(closed,.1);assert.ok(campus.liftDoors[0].userData.openAmount>0&&campus.liftDoors[0].userData.openAmount<1,'door begins sliding rather than snapping');
  for(let i=0;i<4;i++)campus.update(closed,.1);scene.updateMatrixWorld(true);assert.equal(campus.liftDoors[0].userData.openAmount,0);assert.ok(liftRay.intersectObjects(campus.liftDoors,true).length>0,'closed door fills the real doorway');
