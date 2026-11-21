@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {createServingDish} from './game-actors.js?v=campus-85';
-import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-85';
+import {createServingDish} from './game-actors.js?v=campus-86';
+import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-86';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {SERVING_BELTS,SERVING_MENU,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-85';
 

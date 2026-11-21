@@ -1,7 +1,7 @@
-import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-85';
+import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-86';
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-83';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-85';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-86';
 import {applyNetworkDelta} from './network-state65.js?v=campus-83';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
@@ -128,8 +128,8 @@ export class NetworkRound{
   if(!this._predictionLayout||previous.map!==state.map||previous.seats!==state.seats)this._predictionLayout=createLayoutContext(state.seats,state);
   if(previous.dormDoors!==state.dormDoors||previous.toiletDoors!==state.toiletDoors||previous.dormCabinets!==state.dormCabinets||previous.toiletCabinets!==state.toiletCabinets)updateSpecialFurnitureCollisions(this._predictionLayout,state);
   updateLayoutDoors(this._predictionLayout,{...state,elevatorClosed:state.elevator?.phase==='travel'});
-  const p=state.player,old=previous.player,discontinuity=previous.map!==state.map||previous.stage!==state.stage||p.id!==old.id||p.seated!==old.seated||p.seatId!==old.seatId||p.mapActivity?.id!==old.mapActivity?.id||p.mapActivity?.kind!==old.mapActivity?.kind||p.captivity!==old.captivity||previous.elevator?.phase!==state.elevator?.phase;
-  if(!this._visualPosition||discontinuity||!this._canPredict(state)||Math.hypot(p.x-this._visualPosition.x,p.z-this._visualPosition.z)>1){this._visualPosition={x:p.x,z:p.z};this._correction={x:0,z:0};if(discontinuity)this._localMotion={x:0,z:0};return;}
+  const p=state.player,old=previous.player,discontinuity=previous.map!==state.map||previous.stage!==state.stage||p.id!==old.id||p.seated!==old.seated||p.seatId!==old.seatId||p.busDeck!==old.busDeck&&this._visualPosition?.busDeck!==p.busDeck||p.mapActivity?.id!==old.mapActivity?.id||p.mapActivity?.kind!==old.mapActivity?.kind||p.captivity!==old.captivity||previous.elevator?.phase!==state.elevator?.phase;
+  if(!this._visualPosition||discontinuity||!this._canPredict(state)||Math.hypot(p.x-this._visualPosition.x,p.z-this._visualPosition.z)>1){this._visualPosition={x:p.x,z:p.z,...(p.busDeck!=null?{busDeck:p.busDeck}:{})};this._correction={x:0,z:0};if(discontinuity)this._localMotion={x:0,z:0};return;}
   // Never reconcile a newly reversed/released input against a snapshot that
   // has not applied it yet. Prediction remains bounded during connection loss.
   if((state.inputAck?.move||0)<this._moveSeq)return;

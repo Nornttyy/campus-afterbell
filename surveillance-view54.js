@@ -1,6 +1,6 @@
 import * as THREE from './vendor/three.module.js';
-import {SURVEILLANCE_MOUNTS} from './surveillance54.js?v=campus-85';
-import {floorHeight} from './classroom-layout.js?v=campus-85';
+import {SURVEILLANCE_MOUNTS,surveillanceMounts} from './surveillance54.js?v=campus-86';
+import {floorHeight} from './classroom-layout.js?v=campus-86';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-83';
 
 export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
@@ -24,7 +24,7 @@ export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
   // Panel-local negative Z is always toward its wall. A closed mounting
   // box bridges the measured 19.5 cm gap and stops the control hovering.
   box(panel,cases,0,0,-.12,.19,.27,.195);
-  return{mount,device,panel};
+  return{mount,device,panel,pivot};
  });
  const width=384,height=216,target=new THREE.WebGLRenderTarget(width,height,{depthBuffer:false}),linear=new THREE.WebGLRenderTarget(width,height,{type:THREE.HalfFloatType,depthBuffer:true}),camera=new THREE.PerspectiveCamera(79,width/height,.1,55),pixels=new Uint8Array(width*height*4),view=document.createElement('aside');
  const monitorSmoke=createSmokeEffects(renderer,{width,height,samples:0}),frustum=new THREE.Frustum(),projectionView=new THREE.Matrix4(),outputScene=new THREE.Scene(),outputCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
@@ -41,7 +41,7 @@ export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
  const cooldownLabel=document.createElement('div');cooldownLabel.id='surveillance-countdown';cooldownLabel.hidden=true;cooldownLabel.style.cssText='position:fixed;right:2vw;top:18vh;z-index:10;color:#fffce9;text-shadow:0 1px 3px #24353a;font:16px sans-serif;pointer-events:none';document.body.append(cooldownLabel);
  const update=s=>{
   state=s;const live=s?.status==='playing'&&s.stage==='class',info=s?.surveillance,ids=new Set(info?.devices?.map(m=>m.id)||[]);
-  for(const record of records){record.device.visible=live&&ids.has(record.mount.id);record.panel.visible=live&&(s.role==='teacher'||ids.has(record.mount.id));if(s?.map!==lastMap){const y=floorHeight(record.mount.x,record.mount.z,s?.map);record.device.position.y=record.mount.y+y;record.panel.position.y=1.65+y;}}
+  for(const record of records){record.device.visible=live&&ids.has(record.mount.id);record.panel.visible=live&&(s.role==='teacher'||ids.has(record.mount.id));if(s?.map!==lastMap){const m=surveillanceMounts(s?.map).find(m=>m.id===record.mount.id);record.mount=m;const y=floorHeight(m.x,m.z,s?.map,m.busDeck),dir=m.target.z<m.z?1:-1;record.device.position.set(m.x,m.y+y,m.z-dir*.08);record.panel.position.set(m.x,1.65+y,m.z);record.panel.rotation.y=dir>0?Math.PI:0;record.pivot.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(m.target.x-m.x,m.target.y-m.y,m.target.z-m.z).normalize());}}
   lastMap=s?.map;view.hidden=!(live&&!s.paused&&s.role==='teacher'&&info?.viewing&&ids.has(info.viewing));if(view.hidden)pending=null;
   cooldownLabel.hidden=!(live&&!s.paused&&s.role==='teacher'&&ids.size>0&&info?.remaining>0);
   cooldownLabel.textContent=info?.unlockIn>0?'下一个监控 · '+Math.ceil(info.unlockIn)+' 秒':'下一个监控可开启';
@@ -51,7 +51,7 @@ export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
  function prepare(s,now){
   update(s);pending=null;if(disposed||view.hidden||now-last<125)return;
   const record=records.find(r=>r.mount.id===state.surveillance.viewing);if(!record)return;
-  camera.position.copy(record.device.position);camera.lookAt(record.mount.target.x,record.mount.target.y+floorHeight(record.mount.target.x,record.mount.target.z,state.map),record.mount.target.z);camera.updateMatrixWorld();
+  camera.position.copy(record.device.position);camera.lookAt(record.mount.target.x,record.mount.target.y+floorHeight(record.mount.target.x,record.mount.target.z,state.map,record.mount.busDeck),record.mount.target.z);camera.updateMatrixWorld();
   frustum.setFromProjectionMatrix(projectionView.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));pending=record;
  }
  function render(now){

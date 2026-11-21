@@ -1,14 +1,16 @@
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-85';
+import {createBusRoom} from './bus-room86.js?v=campus-86';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-86';
 import {createToiletRoom} from './toilet-room70.js?v=campus-84';
 import {createDormRoom} from './dorm-room70.js?v=campus-85';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-85';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-86';
 import {createHotpotRoom} from './hotpot-room70.js?v=campus-85';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-83';
 import * as T from './vendor/three.module.js';
 import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-83';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-85';
+import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-86';
 
-export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,drawerRecords=null,screenContent=null,officeScreens=new Map()}){
+export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor,drawerRecords=null,screenContent=null,officeScreens=new Map()}){
+ const bus=createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor});
  const upper=createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords});
  const hotpot=createHotpotRoom({parent:scene,box,rounded,mat,texture,bakeStatic});hotpot.group.visible=false;
  const toilet=createToiletRoom({parent:scene,box,rounded,mat,texture,bakeStatic}),dorm=createDormRoom({parent:scene,box,rounded,mat,texture,bakeStatic}),playground=createPlaygroundRoom({parent:scene});
@@ -60,16 +62,17 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,dra
    drawer.group.position.z=-drawer.travel*drawer.open;
   }
  }
- return{group,upper,hotpot,toilet,dorm,playground,vendingTargets,specialRoots:[upper.root,hotpot.group,toilet.group,dorm.group,playground.group],
-  cabinetFor(id){return mapKind(currentMap)==='toilet'?toilet.cabinets.get(id):mapKind(currentMap)==='dorm'?dorm.cabinets.get(id):null;},
-  seatTarget(id){return mapKind(currentMap)==='toilet'?toilet.seats.get(id)?.target:mapKind(currentMap)==='dorm'?dorm.beds.get(id)?.target:null;},screens,stations,drawers,hardwareRoots,teacherScreen,light,setSeats,updateDrawers,
-  setMap(map){currentMap=map;upper.setMap(map);hotpot.group.visible=mapKind(map)==='hotpot';toilet.group.visible=mapKind(map)==='toilet';dorm.group.visible=mapKind(map)==='dorm';playground.group.visible=mapKind(map)==='playground';group.visible=mapKind(map)==='computer';light.visible=['night','dorm'].includes(mapKind(map));setSeats(seats);},
+ return{group,bus,upper,hotpot,toilet,dorm,playground,vendingTargets,specialRoots:[bus.group,upper.root,hotpot.group,toilet.group,dorm.group,playground.group],
+  cabinetFor(id){if(currentMap==='bus')return bus.cabinets.get(id);return mapKind(currentMap)==='toilet'?toilet.cabinets.get(id):mapKind(currentMap)==='dorm'?dorm.cabinets.get(id):null;},
+  seatTarget(id){if(currentMap==='bus')return bus.chairs.get(id);return mapKind(currentMap)==='toilet'?toilet.seats.get(id)?.target:mapKind(currentMap)==='dorm'?dorm.beds.get(id)?.target:null;},screens,stations,drawers,hardwareRoots,teacherScreen,light,setSeats,updateDrawers,
+  setMap(map){currentMap=map;bus.setActive(map==='bus');upper.setMap(map);hotpot.group.visible=mapKind(map)==='hotpot';toilet.group.visible=mapKind(map)==='toilet';dorm.group.visible=mapKind(map)==='dorm';playground.group.visible=mapKind(map)==='playground';group.visible=mapKind(map)==='computer';light.visible=['night','dorm'].includes(mapKind(map));setSeats(seats);},
   update(state,dt=0){
+   if(bus.group.visible)bus.update(state||{},dt);
    if(upper.root.visible)upper.update(state,dt);
    if(toilet.group.visible)toilet.update(state||{},dt);if(dorm.group.visible)dorm.update(state||{},dt);if(playground.group.visible)playground.update(state?.sceneElapsed??state?.elapsed??0,state?.vendingStock);
    if(hotpot.group.visible)hotpot.update(state?.elapsed||0);
    screenContent?.update(state,group.visible?new Map([...screens].filter(([id])=>stations.get(id)?.visible)):new Map(),group.visible?teacherScreen:null,officeScreens);
    if(light.visible){const t=state?.teacher||{x:BOARD.x,z:BOARD.z,yaw:Math.PI},pitch=state?.role==='teacher'?state.player.pitch:(t.pitch??.08),height=TEACHER_EYE_HEIGHT+floorHeight(t.x,t.z,state?.map);light.position.set(t.x,height,t.z);light.target.position.set(t.x+Math.sin(t.yaw)*6,height-Math.tan(pitch)*6,t.z+Math.cos(t.yaw)*6);}
-  },dispose(){upper.dispose();hotpot.dispose();toilet.dispose();dorm.dispose();playground.dispose();screenContent?.dispose();screenGeo.dispose();laptop.screen.geometry.dispose();light.shadow.map?.dispose();}
+  },dispose(){bus.dispose();upper.dispose();hotpot.dispose();toilet.dispose();dorm.dispose();playground.dispose();screenContent?.dispose();screenGeo.dispose();laptop.screen.geometry.dispose();light.shadow.map?.dispose();}
  };
 }

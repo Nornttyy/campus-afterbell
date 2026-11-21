@@ -1,3 +1,4 @@
+import {BUS,BUS_SEATS,BUS_POSTS,BUS_WALLS,BUS_FURNITURE,BUS_DECK_SLABS,busSight,busBlocked,busFootprint,busFloorHeight,busRoute,moveOnBus} from './bus-layout86.js?v=campus-86';
 import {SERVING_SOLIDS,CAFETERIA_SEATS} from './upper-floors85.js?v=campus-85';
 import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-83';
 import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-85';
@@ -19,6 +20,7 @@ export const LIFT=Object.freeze({...endBounds(liftPlan),...endPoint(liftPlan.x,l
 export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:CORRIDOR.maxZ-.65});
 export const ROOM=Object.freeze({minX:CLASSROOM.minX,maxX:OFFICE.maxX,minZ:OFFICE.minZ,maxZ:LIFT.maxZ});
 export function mapBounds(map='classroom'){
+ if(map==='bus')return {minX:BUS.apron.minX,maxX:BUS.apron.maxX,minZ:BUS.apron.minZ,maxZ:BUS.lift.maxZ};
  if(mapKind(map)==='dorm')return{...ROOM,maxX:DORM_BOUNDS.maxX,minX:Math.min(ROOM.minX,DORM_BOUNDS.minX)};
  if(mapKind(map)!=='playground')return ROOM;
  const b=PLAYGROUND_LAYOUT.bounds;
@@ -40,13 +42,14 @@ export function mapKind(map='classroom'){const kind=String(map).replace(/[0-9]+$
 // Saved pre-expansion sessions used names such as computer7 and tiered8.
 // Preserve those names and their floor number, while new lobbies use the
 // canonical names above. Invalid suffixes cannot create extra floors.
-export function isCampusMap(map){return typeof map==='string'&&(CAMPUS_MAPS.includes(map)||/^(classroom|night|tiered|computer)[1-8]$/.test(map));}
+export function isCampusMap(map){return typeof map==='string'&&(map==='bus'||CAMPUS_MAPS.includes(map)||/^(classroom|night|tiered|computer)[1-8]$/.test(map));}
 export function campusFloor(map){if(!isCampusMap(map))return 0;const legacy=String(map).match(/([1-8])$/);return legacy?Number(legacy[1]):CAMPUS_MAPS.indexOf(map)+1;}
 export const LAYOUT_PATTERNS=Object.freeze(['single','pairs','quads','mixed','rows-wide','rows-long']);
 function layoutRandom(seed){let n=Number(seed)>>>0;return()=>{n=(Math.imul(n,1664525)+1013904223)>>>0;return n/4294967296;};}
 // Pure per-room data. Never replace the exported default array: a server can
 // run rooms with different layouts in the same JavaScript process safely.
 export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
+ if(map==='bus')return BUS_SEATS;
  if(mapKind(map)==='cafeteria')return CAFETERIA_SEATS;
  if(mapKind(map)==='exam')arrangement=(Number(seed)>>>0)%2?'rows-wide':'rows-long';
  if(mapKind(map)==='hotpot')return HOTPOT_SEATS;
@@ -94,8 +97,9 @@ export const COVERED_SEATS=Object.freeze([PLAYER_SEAT,...FRIEND_SEATS,0,5,10,15,
 export const AISLES=Object.freeze([CLASSROOM.minX+.27,-3.35,1.14,6.84]);
 export const BOARD=Object.freeze({x:1.25,z:7.45});
 export const DETENTION=Object.freeze([-5.85,-5.00,-4.15,4.60,5.45,6.30].map((x,id)=>Object.freeze({id,x,z:8.08})));
-export function boardForMap(map='classroom'){return mapKind(map)==='playground'?PLAYGROUND_BOARD.writePosition:mapKind(map)==='dorm'?DORM_WATCH:BOARD;}
-export function detentionForMap(map='classroom'){return mapKind(map)==='playground'?PLAYGROUND_POSTS:mapKind(map)==='dorm'?DORM_POSTS:DETENTION;}
+export const teacherSpawnFor=map=>map==='bus'?{...BUS.driver,busDeck:0}:TEACHER_SPAWN;
+export function boardForMap(map='classroom'){if(map==='bus')return BUS.board;return mapKind(map)==='playground'?PLAYGROUND_BOARD.writePosition:mapKind(map)==='dorm'?DORM_WATCH:BOARD;}
+export function detentionForMap(map='classroom'){if(map==='bus')return BUS_POSTS;return mapKind(map)==='playground'?PLAYGROUND_POSTS:mapKind(map)==='dorm'?DORM_POSTS:DETENTION;}
 export const DOORS=Object.freeze([-8.00,7.00].map((center,i)=>Object.freeze({id:i===0?'rear':'front',center,minZ:center-.80,maxZ:center+.80})));
 export const PARTITIONS=Object.freeze([{minX:7.20,maxX:7.40,minZ:-10.20,maxZ:DOORS[0].minZ},{minX:7.20,maxX:7.40,minZ:DOORS[0].maxZ,maxZ:DOORS[1].minZ},{minX:7.20,maxX:7.40,minZ:DOORS[1].maxZ,maxZ:9.02}]);
 export const LECTERN=Object.freeze({minX:-1.240,maxX:-.450,minZ:7.3215,maxZ:7.8985});
@@ -145,6 +149,7 @@ const outdoorFixedWalls=Object.freeze([...corridorEdges,...endWalls]);
 const outdoorWalls=Object.freeze([...outdoorFixedWalls,...PLAYGROUND_SOLIDS.filter(s=>s.id.includes('-wall'))]);
 const outdoorHeaders=Object.freeze([...headers.slice(DOORS.length),V(PLAYGROUND_LAYOUT.entrance.x-.02,PLAYGROUND_LAYOUT.entrance.x+.12,PLAYGROUND_LAYOUT.entrance.minZ-.07,PLAYGROUND_LAYOUT.entrance.maxZ+.07,2.35,2.43)]);
 export function enclosureVolumes(map='classroom',context=null){
+ if(map==='bus')return [...BUS_WALLS,...BUS_FURNITURE,...BUS_DECK_SLABS];
  const kind=mapKind(map),shell=context?.wallVolumes||(kind==='playground'?[...outdoorWalls,...outdoorHeaders]:kind==='dorm'?[...dormCommonWalls,...DORM_SHELL_SOLIDS,...DORM_CORRIDOR_SOLIDS,...sealedLift,...headers.slice(2)]:WALL_VOLUMES);
  const furniture=context?.furnitureVolumes||[...specialFurnitureVolumes(map),...specialFurnitureDoors(map),...(kind==='computer'?labDividers(createSeatLayout(73,null,map)):[])];
  return [...shell,...furniture,...(kind==='tiered'?raisedUpperWalls:[]),...ceilingVolumes(map),...(kind==='computer'?laptopVolumes:[]),...(context?.dynamicSolids||[])];
@@ -163,7 +168,8 @@ export const OFFICE_SOLIDS=Object.freeze([
 export const PODIUM=Object.freeze({halfWidth:3.15,front:6.50,back:CLASSROOM.maxZ,height:.16,tread:.17});
 const TIER_Z=Object.freeze([CLASSROOM.minZ,...[-5.90,-2.30,1.30].flatMap(z=>[0,.07,.14,.21].map(d=>Number((z+d).toFixed(2))))]);
 const TIER_X=Object.freeze([CLASSROOM.minX,...Array.from({length:13},(_,i)=>Number((CLASSROOM.maxX-(12-i)*.10).toFixed(2)))]);
-export function floorHeight(x,z,map='classroom'){
+export function floorHeight(x,z,map='classroom',deck=0){
+ if(map==='bus')return busFloorHeight(x,z,deck);
  if(mapKind(map)==='playground')return playgroundFloorHeight(x,z);
  if(mapKind(map)==='toilet'||mapKind(map)==='dorm')return 0;
  if(z<=PODIUM.back&&z>=PODIUM.front-PODIUM.tread&&Math.abs(x)<=PODIUM.halfWidth+PODIUM.tread){
@@ -176,7 +182,7 @@ export function floorHeight(x,z,map='classroom'){
  const aisleSteps=Math.max(0,Math.floor((CLASSROOM.maxX-x+1e-8)/.10));
  return Math.min(rowSteps,aisleSteps)*.105;
 }
-export function actorFloorHeight(actor,map='classroom',carrier=null){if(actor.mapActivity?.kind==='hang'&&mapKind(map)==='playground'){const bar=PLAYGROUND_LAYOUT.bars.find(b=>b.id===actor.mapActivity.id);if(bar)return Math.max(0,bar.height-1.65);}const carried=actor.captivity==='carried'&&carrier,support=carried?carrier:actor;if(!carried&&mapKind(map)==='dorm'&&actor.seated&&!actor._officeChair&&!actor.officeChair){const bed=DORM_SEATS.find(s=>s.id===(actor.bedId??actor.seatId));if(bed)return bed.supportHeight;}return floorHeight(support.x,support.z,map);}
+export function actorFloorHeight(actor,map='classroom',carrier=null){if(actor.mapActivity?.kind==='hang'&&mapKind(map)==='playground'){const bar=PLAYGROUND_LAYOUT.bars.find(b=>b.id===actor.mapActivity.id);if(bar)return Math.max(0,bar.height-1.65);}const carried=actor.captivity==='carried'&&carrier,support=carried?carrier:actor;if(!carried&&mapKind(map)==='dorm'&&actor.seated&&!actor._officeChair&&!actor.officeChair){const bed=DORM_SEATS.find(s=>s.id===(actor.bedId??actor.seatId));if(bed)return bed.supportHeight;}return floorHeight(support.x,support.z,map,support.busDeck);}
 // Heights are relative to the actor's support surface. A bunk's mattress
 // replaces the floor origin; using the school-chair height adds it twice.
 export function actorEyeHeight(actor,map='classroom'){
@@ -197,11 +203,13 @@ export function floorTiles(map='tiered'){
  for(let i=0;i<xs.length-1;i++)for(let j=0;j<zs.length-1;j++){const h=floorHeight((xs[i]+xs[i+1])/2,(zs[j]+zs[j+1])/2,map);if(h>0)out.push({minX:xs[i],maxX:xs[i+1],minZ:zs[j],maxZ:zs[j+1],height:h});}return out;
 }
 export function walkableFootprint(x,z,r=.18,context=null){
+ if(context?.map==='bus')return busFootprint(x,z,r);
  const kind=mapKind(context?.map);if(kind==='playground'&&playgroundWalkable(x,z,r))return true;
  const room=kind==='dorm'?DORM_ROOM_RECTS.some(b=>x>=b.minX+r&&x<=b.maxX-r&&z>=b.minZ+r&&z<=b.maxZ-r):(x>=CLASSROOM.minX+r&&x<=CORRIDOR.maxX-r&&z>=CLASSROOM.minZ+r&&z<=CLASSROOM.maxZ-r);
  return room||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=OFFICE.minZ+r&&z<=CORRIDOR.minZ+r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=CORRIDOR.maxZ-r&&z<=LIFT.maxZ-r);
 }
 export function clearWallSegment(a,b,context=null){
+ if(context?.map==='bus')return busSight(a,b,context);
  for(const w of context?.walls||WALLS){let lo=0,hi=1;for(const axis of ['X','Z']){const k=axis.toLowerCase(),d=b[k]-a[k];if(Math.abs(d)<1e-8){if(a[k]<w['min'+axis]||a[k]>w['max'+axis]){lo=2;break;}}else{let u=(w['min'+axis]-a[k])/d,v=(w['max'+axis]-a[k])/d;if(u>v)[u,v]=[v,u];lo=Math.max(lo,u);hi=Math.min(hi,v);}}if(lo<=hi&&hi>=0&&lo<=1)return false;}return true;
 }
 // The shipped Tripo top is 1.200 × .849m, with its top at .875m.
@@ -221,10 +229,11 @@ function labDividers(seats){
  }));
 }
 export function deskSolids(seats=SEATS){
+ if(seats[0]?.map==='bus')return [];
  if(['hotpot','toilet','dorm','playground'].includes(mapKind(seats[0]?.map)))return [];
  return seats.map(s=>orientedVolume(s.deskX,s.deskZ,s.yaw,mapKind(s.map)==='computer'?1.22:1.20,.85,0,.875));
 }
-export function chairBackSolids(seats=SEATS){const noChairs=['toilet','dorm','playground'].includes(mapKind(seats[0]?.map));return [...(noChairs?[]:seats.map(s=>orientedVolume(s.x-Math.sin(s.yaw||0)*.325,s.z-Math.cos(s.yaw||0)*.325,s.yaw,.562,.114,.42,.99))),...OFFICE_CHAIRS.map(c=>orientedVolume(c.x,c.z-Math.cos(c.yaw)*.30,c.yaw,.70,.12,.45,1.13))];}
+export function chairBackSolids(seats=SEATS){if(seats[0]?.map==='bus')return [];const noChairs=['toilet','dorm','playground'].includes(mapKind(seats[0]?.map));return [...(noChairs?[]:seats.map(s=>orientedVolume(s.x-Math.sin(s.yaw||0)*.325,s.z-Math.cos(s.yaw||0)*.325,s.yaw,.562,.114,.42,.99))),...OFFICE_CHAIRS.map(c=>orientedVolume(c.x,c.z-Math.cos(c.yaw)*.30,c.yaw,.70,.12,.45,1.13))];}
 export const DESKS=Object.freeze(deskSolids());
 export function createLayoutContext(seats=SEATS,doorState={}){
  const map=doorState.map||seats[0]?.map||'classroom',context={map,seats,desks:deskSolids(seats),chairBacks:chairBackSolids(seats),furnitureVolumes:specialFurnitureVolumes(map),furnitureWalkSolids:specialWalkSolids(map),routeGrids:new Map(),officeLocked:undefined,rearDoorClosed:undefined,elevatorClosed:undefined};updateLayoutDoors(context,doorState);updateSpecialFurnitureCollisions(context,doorState);return context;
@@ -240,6 +249,7 @@ function specialFurnitureDoors(map,state={}){
  return[];
 }
 function rebuildWalkCollisions(context){
+ if(context.map==='bus'){context.walls=BUS_WALLS;context.walkSolids=[...BUS_WALLS,...BUS_FURNITURE];context.routeGrids.clear();context.projectileColliderCache?.clear();return context;}
  const kind=mapKind(context.map),sightFurniture=context.furnitureVolumes.filter(s=>/^dorm-room-door-|^hotpot-screen-|^toilet-(left|right|rear|hinge|latch|door)-/.test(s.id||''));
  context.walls=[...(context._buildingWalls||[]),...sightFurniture];
  context.walkSolids=[...context.desks,...context.chairBacks,...(context._buildingWalls||[]),...context.furnitureWalkSolids,...(['toilet','dorm','playground'].includes(kind)?[]:[LECTERN]),...OFFICE_SOLIDS,...(context.dynamicSolids||[])];
@@ -259,6 +269,7 @@ export function updateSpecialFurnitureCollisions(context,state={}){
  rebuildWalkCollisions(context);return true;
 }
 export function updateLayoutDoors(context,state={}){
+ if(context.map==='bus'&&Object.hasOwn(state,'busDeparted'))context.busDeparted=!!state.busDeparted;
  const {officeLocked=context.officeLocked??false,rearDoorClosed=context.rearDoorClosed??false,frontDoorClosed=context.frontDoorClosed??false,officeDoorClosed=Object.hasOwn(state,'officeLocked')?officeLocked:context.officeDoorClosed??officeLocked,elevatorClosed=context.elevatorClosed??false}=state;
  context.officeLocked=!!officeLocked;context.rearDoorClosed=!!rearDoorClosed;context.frontDoorClosed=!!frontDoorClosed;context.officeDoorClosed=!!officeDoorClosed;context.elevatorClosed=!ELEVATOR_ENABLED||!!elevatorClosed;
  const closed={rear:context.rearDoorClosed,front:context.frontDoorClosed,office:context.officeDoorClosed};
@@ -286,7 +297,7 @@ function rebuildDoorCollisions(context){
  return rebuildWalkCollisions(context);
 }
 const defaultLayout=createLayoutContext();
-export function blocked(x,z,radius=.18,context=defaultLayout){return !walkableFootprint(x,z,radius,context)||(context?.walkSolids||defaultLayout.walkSolids).some(d=>x>d.minX-radius+1e-9&&x<d.maxX+radius-1e-9&&z>d.minZ-radius+1e-9&&z<d.maxZ+radius-1e-9);}
+export function blocked(x,z,radius=.18,context=defaultLayout,deck=0){if(context?.map==='bus')return busBlocked(x,z,radius,deck,context);return !walkableFootprint(x,z,radius,context)||(context?.walkSolids||defaultLayout.walkSolids).some(d=>x>d.minX-radius+1e-9&&x<d.maxX+radius-1e-9&&z>d.minZ-radius+1e-9&&z<d.maxZ+radius-1e-9);}
 export function chairExit(seat,radius=.18,context=defaultLayout){
   // Stand beside the chair, not inside the seat/backrest. Facing islands use
   // their own chair axes; never move a player across a wall to find a free spot.
@@ -326,6 +337,7 @@ function movementStepClear(x,z,nextX,nextZ,radius,context){
 export function moveInRoom(pos,dx,dz,radius=.18,context=defaultLayout){
   // Swept substeps prevent crossing a thin desk when a frame arrives late.
   context??=defaultLayout;
+  if(context.map==='bus')return moveOnBus(pos,dx,dz,radius,context);
   const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.08));
   let x=pos.x,z=pos.z;
   for(let i=0;i<steps;i++){if(dx&&movementStepClear(x,z,x+dx/steps,z,radius,context))x+=dx/steps;if(dz&&movementStepClear(x,z,x,z+dz/steps,radius,context))z+=dz/steps;}
@@ -424,6 +436,7 @@ class RouteHeap{
   get size(){return this.items.length;}
 }
 export function walkRoute(start,end,radius=.2,context=defaultLayout){
+  if(context?.map==='bus')return busRoute(start,end,radius,context);
   if(!Number.isFinite(radius)||radius<0||![start?.x,start?.z,end?.x,end?.z].every(Number.isFinite)||blocked(start.x,start.z,radius,context)||blocked(end.x,end.z,radius,context))return [];
   const grid=routeGrid(radius,context);if(!grid)return [];
   const {w,points,edges}=grid,a=nearestRouteCell(start,grid),b=nearestRouteCell(end,grid);if(a<0||b<0)return [];

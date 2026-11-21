@@ -1,4 +1,4 @@
-import {LIFT,CAMPUS_MAPS,isCampusMap,campusFloor,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-85';
+import {LIFT,CAMPUS_MAPS,isCampusMap,campusFloor,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-86';
 
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-83';
 
@@ -6,7 +6,7 @@ import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-83';
 export const ELEVATOR_SECONDS=3;
 export function elevatorDuration(fromMap,toMap){
  const from=campusFloor(fromMap),to=campusFloor(toMap);
- return from===0||to===0?ELEVATOR_SECONDS:2+Math.abs(to-from);
+ return !isCampusMap(fromMap)||!isCampusMap(toMap)?ELEVATOR_SECONDS:2+Math.abs(to-from);
 }
 // Cabin motion stays live during transit, but no passenger can walk through
 // the doors (including the brief visual closing/opening transition).

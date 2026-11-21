@@ -1,15 +1,15 @@
 import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-85';
-import {reachesSchoolDoor} from './door-interaction54.js?v=campus-85';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-85';
+import {reachesSchoolDoor} from './door-interaction54.js?v=campus-86';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-86';
 import {validComputerPlayback} from './computer-rules55.js?v=campus-83';
 import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-83';
 import {movementScale} from './movement55.js?v=campus-83';
 const randomUUID=()=>globalThis.crypto.randomUUID();
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-85';
-import {TeacherRound} from './teacher-rules.js?v=campus-85';
-import * as Layout from './classroom-layout.js?v=campus-85';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-85';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-86';
+import {TeacherRound} from './teacher-rules.js?v=campus-86';
+import * as Layout from './classroom-layout.js?v=campus-86';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-86';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
@@ -37,7 +37,7 @@ class SharedRound extends TeacherRound{
     if(Date.now()-member.lastInput>500)this._movement={x:0,z:0};
     const speed=(p.crouched?DEVELOPMENT_TUNING.crouchSpeed:DEVELOPMENT_TUNING.walkSpeed)*movementScale(p,this._movement);
     const next=Layout.moveInRoom(p,this._movement.x*speed*dt,this._movement.z*speed*dt,.18,this.layout);
-    p.x=next.x;p.z=next.z;
+    Object.assign(p,next);
    });
   }
  }
@@ -80,7 +80,7 @@ export class CampusRoom{
  constructor({code,seed=Date.now()>>>0,map='classroom',floor,maxPlayers=MAX_ROOM_PLAYERS,settings=DEFAULT_ROUND_SETTINGS}={}){
   if(!Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>MAX_ROOM_PLAYERS)throw new RoomError(400,'人数上限须为2–8人');
   if(!validRoundSettings(settings))throw new RoomError(400,'时长须为5–20分钟，捣蛋目标须为20–160，粉笔耗体力须为开或关');this.settings={...settings};
-  this.code=code;this.seed=seed;this.map=Layout.isCampusMap(map)?map:'classroom';this.floor=Math.max(1,Math.min(Layout.CAMPUS_MAPS.length,Number(floor)||Layout.campusFloor(this.map)||1));this.maxPlayers=maxPlayers;this.members=new Map();this.hostId=null;this.sequence=0;this.events=[];this.createdAt=Date.now();this.updatedAt=this.createdAt;
+  this.code=code;this.seed=seed;this.map=Layout.isCampusMap(map)?map:'classroom';this.floor=this.map==='bus'?0:Math.max(1,Math.min(Layout.CAMPUS_MAPS.length,Number(floor)||Layout.campusFloor(this.map)||1));this.maxPlayers=maxPlayers;this.members=new Map();this.hostId=null;this.sequence=0;this.events=[];this.createdAt=Date.now();this.updatedAt=this.createdAt;
   this.elevator=createElevator();
   this.sim=new SharedRound({seed,map:this.map,...this.settings});this.sim.room=this;this.teacherActor=this.sim.player;this.teacherContext=context(this.teacherActor);this.sim.start({gathering:true});
   // Only connected humans are the hidden mischievous students. Remaining
@@ -103,7 +103,7 @@ export class CampusRoom{
   const id=randomUUID(),member={id,token:randomToken(),name:cleanName(name),character:variants.has(character)?character:'boy',rolePreference:rolePreference==='teacher'?'teacher':'student',role:'student',studentId:actor.id,connected:true,lastInput:Date.now(),lastSeen:Date.now(),lastSequence:0};
   this._prepareHuman(member,actor);member.context=context(actor);this.members.set(id,member);if(!this.hostId)this.hostId=id;this.sim._team.add(actor.id);this.updatedAt=Date.now();this.sequence++;return member;
  }
- _prepareHuman(member,actor,i=this.members.size){this._restoreDecoy(actor);Object.assign(actor,{visible:true,networkHuman:true,isPlayer:false,isTeammate:false,name:member.name,character:member.character,variant:member.character,_profile:null,_decisionAt:Infinity,_speed:1,seated:false,seatId:null,x:Layout.CORRIDOR.minX+1.86+(i%3)*.66,z:Layout.CORRIDOR.maxZ-2.5-Math.floor(i/3)*.85,yaw:Math.PI,pitch:0,caught:false,captivity:'free',holding:false,_drawnSlot:null,_drawerOpen:false});
+ _prepareHuman(member,actor,i=this.members.size){this._restoreDecoy(actor);Object.assign(actor,{...(this.map==='bus'?{busDeck:0}:{}),visible:true,networkHuman:true,isPlayer:false,isTeammate:false,name:member.name,character:member.character,variant:member.character,_profile:null,_decisionAt:Infinity,_speed:1,seated:false,seatId:null,x:Layout.CORRIDOR.minX+1.86+(i%3)*.66,z:Layout.CORRIDOR.maxZ-2.5-Math.floor(i/3)*.85,yaw:Math.PI,pitch:0,caught:false,captivity:'free',holding:false,_drawnSlot:null,_drawerOpen:false});
   actor._slots=Array.from({length:this.map==='exam'?0:Layout.mapKind(this.map)==='computer'?1:3},(_,id)=>({id,action:this.sim._drawItem(),readyAt:0,progress:0}));actor._selectedSlot=0;actor.action=actor._slots[0]?.action||'snack';
  }
  findToken(token){return [...this.members.values()].find(m=>m.token===token)||null;}
@@ -120,7 +120,7 @@ export class CampusRoom{
   this.sim._team.clear();
   for(const p of this.members.values()){
    p.role=p===chosen?'teacher':'student';
-   if(p===chosen){this._restoreDecoy(this.sim.students[p.studentId]);p.context=this.teacherContext;Object.assign(this.teacherActor,Layout.TEACHER_SPAWN,{seated:false,crouched:false});}
+   if(p===chosen){this._restoreDecoy(this.sim.students[p.studentId]);p.context=this.teacherContext;Object.assign(this.teacherActor,Layout.teacherSpawnFor(this.map),{seated:false,crouched:false});}
    else this.sim._team.add(p.studentId);
   }
   this.teacherMember=chosen;

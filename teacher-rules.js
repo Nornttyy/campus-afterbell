@@ -1,11 +1,11 @@
 import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-83';
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-85';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-85';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-86';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-86';
 import {teacherViewHeight} from './camera-height58.js?v=campus-83';
-import {DETENTION,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-85';
+import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-86';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-85';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-86';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
@@ -21,10 +21,10 @@ export class TeacherRound extends ClassroomRound{
       s._decisionAt=this._range(1,6);s._chalkUntil=0;
     }
     this.classSlotsBySeat=new Map(this.students.filter(a=>a._slots.length).map(a=>[a.seatId,a._slots]));
-    this.player={id:-1,...TEACHER_SPAWN,seated:false,crouched:false,caught:false,captivity:'free',seatId:null,holding:false,
+    this.player={id:-1,...teacherSpawnFor(this.map),seated:false,crouched:false,caught:false,captivity:'free',seatId:null,holding:false,
       _slots:[],_selectedSlot:0,_drawnSlot:null,_drawerOpen:false};
     this.selected='chalk';this.chalks=[];this._chalkId=0;this._nextThrow=0;this._lastThrow=-100;this.wrongGrabs=0;this._writing=false;this._writeTime=0;
-    Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw,phase:'watching',intent:'player',warning:false,stamina:100,writing:false,writeProgress:0});
+    Object.assign(this.teacher,{...(this.map==='bus'?{busDeck:this.player.busDeck||0}:{}),x:this.player.x,z:this.player.z,yaw:this.player.yaw,phase:'watching',intent:'player',warning:false,stamina:100,writing:false,writeProgress:0});
     return this.snapshot();
   }
   snapshot(){
@@ -50,12 +50,12 @@ export class TeacherRound extends ClassroomRound{
     if(this._restrained(this.player))return false;
     if(!canThrowWithStamina(this)){this._events.push({type:'stamina-low'});return false;}
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
-    this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map)+teacherViewHeight(p),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
+    this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map,p.busDeck)+teacherViewHeight(p),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
     this.teacher.stamina=Math.max(0,this.teacher.stamina-chalkStaminaCost(this));this._lastThrow=this._sessionElapsed;this._nextThrow=this._sessionElapsed+.72;this._events.push({type:'chalk-throw',x:this.player.x,z:this.player.z});return true;
   }
   aimedStudent(range=9){
     if(this.stage!=='class')return null;
-    const p=this.player,a={x:p.x,y:floorHeight(p.x,p.z,this.map)+teacherViewHeight(p),z:p.z},cp=Math.cos(p.pitch);
+    const p=this.player,a={x:p.x,y:floorHeight(p.x,p.z,this.map,p.busDeck)+teacherViewHeight(p),z:p.z},cp=Math.cos(p.pitch);
     const rayRange=Math.hypot(range,teacherViewHeight(p));
     const b={x:a.x+Math.sin(p.yaw)*cp*rayRange,y:a.y-Math.sin(p.pitch)*rayRange,z:a.z+Math.cos(p.yaw)*cp*rayRange};
     const hit=chalkHit(a,b,this.students,this.books,this.map,this.layout);
@@ -73,7 +73,7 @@ export class TeacherRound extends ClassroomRound{
   grabStudent(){
     if(!this._classInputAllowed()||this.player.seated||this._restrained(this.player)||this._writing||this.teacher.carriedId!==null)return false;
     const s=this.aimedStudent(1.55);if(!s||s.captivity!=='stunned')return false;
-    Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw});const grabbed=this._grab(s);if(grabbed)this.player.crouched=false;return grabbed;
+    Object.assign(this.teacher,{...(this.map==='bus'?{busDeck:this.player.busDeck||0}:{}),x:this.player.x,z:this.player.z,yaw:this.player.yaw});const grabbed=this._grab(s);if(grabbed)this.player.crouched=false;return grabbed;
   }
   bindStudent(){const post=this.bindTarget();if(!this._classInputAllowed()||!post)return false;return this._bind(post.id);}
   dropStudent(){if(!this._classInputAllowed())return false;const s=this.students[this.teacher.carriedId];if(!s)return false;this._release(s);return true;}
@@ -86,6 +86,7 @@ export class TeacherRound extends ClassroomRound{
   releaseBoundStudent(){const s=this.releaseTarget();if(!this._classInputAllowed()||!s)return false;return this._release(s);}
   canWriteBoard(){
     const p=this.player,yaw=Math.atan2(Math.sin(p.yaw),Math.cos(p.yaw));
+    if(this.map==='bus')return this._classInputAllowed()&&!p.seated&&!p.crouched&&!p.busDeck&&this.teacher.carriedId===null&&Math.abs(p.x-this.board.x)<1.25&&Math.abs(p.z-this.board.z)<1.25&&Math.abs(yaw)>Math.PI-.85&&Math.abs(p.pitch)<.72;
     return this.stage==='class'&&!p.crouched&&this.teacher.carriedId===null&&Math.abs(p.x-this.board.x)<3.5&&p.z>this.board.z-1&&p.z<this.board.z+.65&&Math.abs(yaw)<.85&&p.pitch<.45&&p.pitch>-.85;
   }
   setWriting(value){
@@ -102,6 +103,6 @@ export class TeacherRound extends ClassroomRound{
     // once in the shared step, including network-controlled teachers.
     if(this._writing)t.stamina=Math.min(100,t.stamina+dt*10);
     if(this._writing)this._writeTime+=dt;
-    Object.assign(t,{x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,sprinting:Boolean(p.sprinting),phase:this._writing?'board':'watching',intent:this._writing?'write':'player',warning:false,looking:!this._writing,castProgress:0,writing:this._writing,writeProgress:this._writing?this._writeTime%1:0});
+    Object.assign(t,{...(this.map==='bus'?{busDeck:p.busDeck||0}:{}),x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,sprinting:Boolean(p.sprinting),phase:this._writing?'board':'watching',intent:this._writing?'write':'player',warning:false,looking:!this._writing,castProgress:0,writing:this._writing,writeProgress:this._writing?this._writeTime%1:0});
   }
 }
