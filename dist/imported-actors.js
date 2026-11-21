@@ -6,9 +6,9 @@ import * as THREE from './vendor/three.module.js';
 import {normalWalkCycleRate} from './movement55.js?v=campus-83';
 import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-83';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-87';
+import {createCrawlPose} from './crawl-pose.js?v=campus-88';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-87';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-88';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-83';
 
 export async function loadTeacherModel(){

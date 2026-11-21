@@ -1,9 +1,9 @@
 import * as THREE from './vendor/three.module.js';
 import {SURVEILLANCE_MOUNTS,surveillanceMounts} from './surveillance54.js?v=campus-87';
 import {floorHeight} from './classroom-layout.js?v=campus-87';
-import {createSmokeEffects} from './smoke-effects.js?v=campus-83';
+import {createSmokeEffects} from './smoke-effects.js?v=campus-88';
 
-export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
+export function createSurveillanceView(scene,renderer,{beforeRender=null,glassInView=null}={}){
  const root=new THREE.Group();root.name='classroom-surveillance';scene.add(root);
  const cases=new THREE.MeshStandardMaterial({color:0xd9ded9,roughness:.48}),trim=new THREE.MeshStandardMaterial({color:0x3e5355,roughness:.58}),lens=new THREE.MeshStandardMaterial({color:0x172c38,metalness:.48,roughness:.16}),led=new THREE.MeshBasicMaterial({color:0x9ed96c});
  const owned=[],box=(parent,material,x,y,z,w,h,d)=>{const geo=new THREE.BoxGeometry(w,h,d),mesh=new THREE.Mesh(geo,material);owned.push(geo);mesh.position.set(x,y,z);parent.add(mesh);return mesh;};
@@ -27,7 +27,7 @@ export function createSurveillanceView(scene,renderer,{beforeRender=null}={}){
   return{mount,device,panel,pivot};
  });
  const width=384,height=216,target=new THREE.WebGLRenderTarget(width,height,{depthBuffer:false}),linear=new THREE.WebGLRenderTarget(width,height,{type:THREE.HalfFloatType,depthBuffer:true}),camera=new THREE.PerspectiveCamera(79,width/height,.1,55),pixels=new Uint8Array(width*height*4),view=document.createElement('aside');
- const monitorSmoke=createSmokeEffects(renderer,{width,height,samples:0}),frustum=new THREE.Frustum(),projectionView=new THREE.Matrix4(),outputScene=new THREE.Scene(),outputCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+ const monitorSmoke=createSmokeEffects(renderer,{width,height,samples:0,glassInView}),frustum=new THREE.Frustum(),projectionView=new THREE.Matrix4(),outputScene=new THREE.Scene(),outputCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
  // Render targets contain linear HDR values. Canvas pixels need the same
  // Neutral tone curve and sRGB encoding as the game's main framebuffer.
  const outputMaterial=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,toneMapped:false,uniforms:{image:{value:linear.texture},exposure:{value:1}},vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=vec4(position.xy,0.,1.);}',fragmentShader:`uniform sampler2D image;uniform float exposure;varying vec2 v;

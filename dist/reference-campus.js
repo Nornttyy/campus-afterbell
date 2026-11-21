@@ -1,10 +1,11 @@
 import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campus-83';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-87';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-88';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-85';
 import * as T from './vendor/three.module.js';
 import {createCampusWallProps} from './campus-wall-props54.js?v=campus-87';
 import {buildDesktop55} from './computer-hardware55.js?v=campus-83';
-import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-83';
+import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-88';
+import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-88';
 import {PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-87';
 import {END_ORIGIN,endPoint,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD} from './campus-ends.js?v=campus-85';
 const [OFFICE_DESK]=OFFICE_DESKS,[OFFICE_CHAIR]=OFFICE_CHAIRS;
@@ -21,7 +22,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  const seal=mat('#455c5a',{roughness:.8}),recess=mat('#879b95',{roughness:.82}),doorPaint=mat('#c6d3d1',{roughness:.62}),skirting=mat('#547b70',{roughness:.72});
  const wallGreen=mat('#e3e2d3',{roughness:.78});addWallContact(cream);addWallContact(wallGreen);
  const ceilingMaterial=new T.MeshStandardMaterial({color:'#deded5',roughness:.93});materials.add(ceilingMaterial);
- const curtains=[],sky=new T.MeshBasicMaterial({color:'#c9e8f5'});materials.add(sky);
+ const curtains=[],openings=[],hallLampCenters=[],sky=new T.MeshBasicMaterial({color:'#c9e8f5'});materials.add(sky);
  const facades=[new T.Group(),new T.Group(),new T.Group(),new T.Group()];facades[0].name='high-classroom-windows';facades[1].name='tiered-low-classroom-windows';scene.add(...facades);facades[2].name='toilet-clerestory-windows';facades[3].name='hotpot-window-piers';for(const facade of facades.slice(1))facade.visible=false;
  // Kept detached until the caller has baked the common enclosure. They are
  // baked separately, then attached back to it so its menu cutaway still works.
@@ -66,6 +67,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  }
  function buildWindow(side,z,width,parent,top=3.83,bottom=1.10){
   const x=side===-1?westWallX:side===1?7.30:CORRIDOR.maxX+.10;
+  if(parent===facades[0]||side===2)openings.push({side,x,minZ:z-width/2,maxZ:z+width/2,bottom,top});
   const height=top-bottom,mid=(bottom+top)/2,inward=side===-1?1:-1,transom=top-.50;
   if(bottom>1.2){B(cream,[x,bottom/2,z],[.16,bottom,width],parent);}else B(wallGreen,[x,.54,z],[.16,1.08,width],parent);
   B(cream,[x,(top+CEILING_HEIGHT)/2,z],[.16,CEILING_HEIGHT-top,width],parent);
@@ -287,19 +289,20 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  // Only the section beside the lift is glazed. The remaining wall is solid,
  // as in the supplied walkthrough; its physical outer boundary never opens.
  const corridorSkin=new T.Group();corridorSkin.name='ordinary-corridor-skin';
+ const corridorLowerPanels=new T.Group();corridorLowerPanels.name='corridor-lower-wall-panels';
  const corridorWallX=CORRIDOR.maxX+.10,outerWindowZ=CORRIDOR.maxZ-3.7;
  for(const [lo,hi]of [[CORRIDOR.minZ-.20,outerWindowZ-1.59],[outerWindowZ+1.59,CORRIDOR.maxZ+.20]]){
   const length=hi-lo,z=(lo+hi)/2;
   B(cream,[corridorWallX,wallY,z],[.20,wallHeight,length],corridorSkin).name='corridor-solid-outer-wall';
-  B(wallGreen,[CORRIDOR.maxX-.014,.57,z],[.025,1.14,length],corridorSkin);
-  B(edge,[CORRIDOR.maxX-.032,1.145,z],[.030,.025,length],corridorSkin);
+  B(wallGreen,[CORRIDOR.maxX-.014,.57,z],[.025,1.14,length],corridorLowerPanels);
+  B(edge,[CORRIDOR.maxX-.032,1.145,z],[.030,.025,length],corridorLowerPanels);
  }
  window(2,outerWindowZ,2.95,corridorSkin);
  for(const z of[outerWindowZ-1.5325,outerWindowZ+1.5325])B(cream,[corridorWallX,wallY,z],[.20,wallHeight,.115],corridorSkin);
  strip(CORRIDOR.maxX-.025,corridorMidZ,.05,corridorLength,corridorSkin);
  const extensionLength=CLASSROOM.minZ-CORRIDOR.minZ,extensionZ=(CLASSROOM.minZ-.20+CORRIDOR.minZ-.20)/2;
  B(cream,[7.30,wallY,extensionZ],[.20,wallHeight,extensionLength],corridorSkin).name='corridor-extension-inner-wall';
- B(wallGreen,[7.415,.57,extensionZ],[.025,1.14,extensionLength],corridorSkin);B(edge,[7.432,1.145,extensionZ],[.030,.025,extensionLength],corridorSkin);
+ B(wallGreen,[7.415,.57,extensionZ],[.025,1.14,extensionLength],corridorLowerPanels);B(edge,[7.432,1.145,extensionZ],[.030,.025,extensionLength],corridorLowerPanels);
  strip(7.425,extensionZ,.05,extensionLength,corridorSkin);
  B(cream,[(OFFICE.doorMaxX+CORRIDOR.maxX)/2,wallY,8.91],[CORRIDOR.maxX-OFFICE.doorMaxX,wallHeight,.22],ends).name='office-entry-right-pier';
  B(cream,[(CORRIDOR.minX+LIFT.minX)/2,wallY,CORRIDOR.minZ-.10],[LIFT.minX-CORRIDOR.minX,wallHeight,.20],ends).name='lift-entry-left-pier';
@@ -448,7 +451,31 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  function fluorescent(x,z,parent){for(const xx of [x-.45,x+.45])B(edge,[xx,4.35,z],[.012,.30,.012],parent);rounded(edge,[x,4.19,z],[1.36,.055,.27],.008,null,parent);B(seal,[x,4.158,z],[1.22,.012,.20],parent);for(const zz of [z-.065,z+.065])cylinder(lamp,[x,4.142,zz],[.018,1.17,.018],[0,0,Math.PI/2],parent);}
  // The observed classroom has a plain plaster ceiling. The old dense tile
  // grid added visual noise and was not supported by the reference.
- for(const x of [-4.1,0,4.1])for(const z of [-7,-1.2,4.6])fluorescent(x,z,ceilingRig);for(let z=CORRIDOR.minZ+3;z<CORRIDOR.maxZ-1;z+=4.5)fluorescent(corridorMidX,z,enclosure);for(const x of[2.1,7.5])for(const z of[11.2,15,18.8])fluorescent(x,z,office);
+ const extraClassFixtures=new T.Group(),singleHallFixtures=new T.Group(),dayHallFixtures=new T.Group();
+ dayHallFixtures.name='daytime-paired-hall-lights';singleHallFixtures.name='single-row-hall-lights';
+ for(const x of [-4.1,0,4.1])for(const z of [-7,-1.2,4.6])fluorescent(x,z,extraClassFixtures);
+ for(let z=CORRIDOR.minZ+3;z<CORRIDOR.maxZ-1;z+=4.5){
+  fluorescent(corridorMidX,z,singleHallFixtures);
+  for(const x of [corridorMidX-1.16,corridorMidX+1.16]){
+   const fitting=new T.Group();fitting.position.set(x,0,z);fitting.rotation.y=Math.PI/2;
+   dayHallFixtures.add(fitting);fluorescent(0,0,fitting);hallLampCenters.push({x,z});
+  }
+ }
+ // A short return at the upper edge of each long wall catches the light
+ // above the tubes. It stops at the hall wall, clear of every door opening.
+ for(const wallX of [CORRIDOR.minX,CORRIDOR.maxX]){
+  const inward=wallX===CORRIDOR.minX?1:-1;
+  B(skirting,[wallX+inward*.033,4.395,corridorMidZ],[.066,.17,corridorLength],dayHallFixtures);
+  B(recess,[wallX+inward*.056,4.475,corridorMidZ],[.111,.025,corridorLength],dayHallFixtures);
+ }
+ for(const x of[2.1,7.5])for(const z of[11.2,15,18.8])fluorescent(x,z,office);
+ const daylight=createClassroomDaylight(openings,hallLampCenters);
+ assets.add(daylight.map);assets.add(daylight.sky);
+ for(const m of [cream,wallGreen,doorPaint])daylight.bind(m,'wall');
+ for(const m of [blue,frameLip,frameGroove,skirting])daylight.bind(m,'frame');
+ for(const m of [frostedGlass,upperGlass])daylight.bind(m,'glass');
+ daylight.bind(floorMat,'floor');daylight.bind(ceilingMaterial,'ceiling');
+ dayHallFixtures.visible=false;
  const officeLight=new T.PointLight('#fff5dc',6.5,17,1.6);officeLight.position.set(officeMidX,3.7,15);office.add(officeLight);
  // Keep the courtyard visible through genuinely transparent exterior panes.
  const yard=mat('#bebcad',{roughness:.93}),grass=mat('#96a47d',{roughness:.97}),curb=mat('#b7c0b0',{roughness:.88});B(yard,[1.25,-.21,6],[58,.20,58]);
@@ -550,7 +577,14 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  for(const child of enclosure.children)collectIndoor(child);
  for(const object of indoorObjects)indoorEnclosure.attach(object);
  return{enclosure,indoorEnclosure,corridorSkin,ceilingMaterial,ceilingRig,upperWalls,curtains,tiered,liftPanel,liftDoors,facades,doors,officeDoors,officeDrawer,officeDrawers,officeScreens,
-  attachUpperArchitecture(){enclosure.add(ceilingRig,upperWalls,indoorEnclosure,corridorSkin);},
+  attachUpperArchitecture(){
+   for(const group of [extraClassFixtures,singleHallFixtures,dayHallFixtures,corridorLowerPanels])bakeStatic(group);
+   corridorSkin.add(corridorLowerPanels);
+   ceilingRig.add(extraClassFixtures);enclosure.add(singleHallFixtures,dayHallFixtures,ceilingRig,upperWalls,indoorEnclosure,corridorSkin);
+  },
+  daylight,setDaylight(active){
+   daylight.setActive(active);dayHallFixtures.visible=active;extraClassFixtures.visible=singleHallFixtures.visible=corridorLowerPanels.visible=!active;
+  },
   getTargets(){return targets;},setDoors,getDoorMotion:()=>schoolDoorSnapshot(schoolDoorMotion),
   setOfficeDrawer(open){drawerOpen=!!open;},
   setMap(map){if(studentTutorial)studentTutorial.visible=!['bus','cafeteria'].includes(mapKind(map));const raised=mapKind(map)==='tiered',outdoor=mapKind(map)==='playground',dorm=mapKind(map)==='dorm';room.visible=!outdoor&&!dorm;indoorEnclosure.visible=!outdoor&&!dorm;ceilingRig.visible=!outdoor&&!dorm;doors.get('front').visible=!dorm;doors.get('rear').visible=!dorm;dormDoorNumber.visible=false;corridorSkin.visible=!dorm;tiered.visible=raised;const variant=mapKind(map);facades[0].visible=!raised&&!outdoor&&!dorm&&variant!=='toilet'&&variant!=='hotpot';facades[1].visible=raised;facades[2].visible=variant==='toilet';facades[3].visible=variant==='hotpot';ceilingRig.position.y=raised?TIERED_CEILING_HEIGHT-CEILING_HEIGHT:mapKind(map)==='classroom'?-.38:0;upperWalls.visible=raised;},
