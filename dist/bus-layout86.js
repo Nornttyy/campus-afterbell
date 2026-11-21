@@ -10,6 +10,11 @@ export const BUS=Object.freeze({
  board:{x:9.15,z:-14.98}, lockerZ:-5.02
 });
 const {low,high,body,stairs}=BUS;
+// Heights are above each deck. The lip ends behind the passenger's shins.
+export const COACH_CUSHION=Object.freeze({
+ 'bus-seat':Object.freeze({top:.410,depth:.55,centerZ:-.030}),
+ 'bus-table':Object.freeze({top:.343,depth:.46,centerZ:-.052})
+});
 const within=(r,x,z,p=0)=>x>=r.minX+p&&x<=r.maxX-p&&z>=r.minZ+p&&z<=r.maxZ-p;
 const wall=(id,x1,x2,z1,z2,d=0,h=2.59)=>volume(id,x1,x2,z1,z2,d?high:low,(d?high:low)+h);
 export const BUS_POSTS=Object.freeze([-.90,-1.72,-2.54,-3.36,-4.18,-5].map((x,id)=>({x,z:-15.35,id,busDeck:1})));

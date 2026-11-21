@@ -6,7 +6,7 @@ import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
 import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-83';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-86';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-87';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -527,10 +527,10 @@ export function createDeskHands({createHand}={}){
   for(const kind of DESK_ITEM_KINDS){const fit=wholeGrips[0].fit(kind);if(fit){grips[kind].position.fromArray(fit.position);grips[kind].rotation.setFromEuler(new THREE.Euler(...fit.rotation));}}
   let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0,using=0,throwCharge=0,releaseCharge=0,wasReleasing=false,foodAge=0,foodAmount=0,foodWasUsing=false,foodPhase=0;
   const foodPose={turn:0,reach:0,bob:0,chewing:0};
-  let penWriteBlend=0,penAge=0,bookBlend=0,drawerBlend=0,lowCarry=0,previousHandPositions=null,previousFood=null;
+  let penWriteBlend=0,penAge=0,bookBlend=0,drawerBlend=0,lapBlend=0,lowCarry=0,previousHandPositions=null,previousFood=null;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
-  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,examPen=null,mealDish=null,bookAmount=0,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,animationPose=null}={}){
+  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,examPen=null,mealDish=null,bookAmount=0,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,coachSeat=null,animationPose=null}={}){
     const authored=isHandAnimationPose(animationPose)&&!seated&&!carrying&&!holding&&!caught&&!computer&&!typing&&!bookAmount;
     function applyAuthored(weight){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
@@ -549,7 +549,7 @@ export function createDeskHands({createHand}={}){
     }
     group.userData.authoredAnimation=false;
     articulation.forEach(rig=>rig.restore());
-    if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=using=throwCharge=releaseCharge=foodAge=foodAmount=foodPhase=penWriteBlend=penAge=bookBlend=drawerBlend=lowCarry=0,previousHandPositions=null,previousFood=null;wasReleasing=foodWasUsing=false;for(const key of Object.keys(foodPose))foodPose[key]=0;}
+    if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=using=throwCharge=releaseCharge=foodAge=foodAmount=foodPhase=penWriteBlend=penAge=bookBlend=drawerBlend=lapBlend=lowCarry=0,previousHandPositions=null,previousFood=null;wasReleasing=foodWasUsing=false;for(const key of Object.keys(foodPose))foodPose[key]=0;}
     const dt=lastTime===null?1/60:clamp(time-lastTime,0,.08);lastTime=time;
     const requested=DESK_ITEM_KINDS.includes(action)?action:'snack';
     const dish=requested==='burger'&&['chickenBucket','layerCake'].includes(mealDish)?mealDish:null;
@@ -798,6 +798,22 @@ export function createDeskHands({createHand}={}){
     // Desk/keyboard contacts are solved after all viewmodel offsets. Each
     // fingertip bends at its own phalanges; the cached skin support cannot
     // enter the keys or desktop when the hand changes pose.
+    lapBlend=smooth(lapBlend,coachSeat&&seated&&!caught?1:0,dt,12);
+    if(lapBlend>.001){
+      group.updateMatrix();
+      const inverse=group.matrix.clone().invert(),rotation=group.quaternion.clone().invert();
+      for(let i=0;i<arms.length;i++){
+        const free=i===0?1-ease(extension,0,.28):active==='phone'||active==='pen'?1-ease(extension,0,.28):1;
+        const weight=lapBlend*free*(1-drawerBlend)*(1-bookBlend);
+        if(weight<.001)continue;
+        const sign=i?1:-1,hand=arms[i].hand;
+        const lapHeight=coachSeat==='bus-table'?.52:.585;
+        const target=v(sign*.174,lapHeight-eyeHeight,-.24-sign*.018).applyMatrix4(inverse);
+        const palm=rotation.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-1.30,-sign*.13,sign*.09)));
+        hand.group.position.lerp(target,weight);hand.group.quaternion.slerp(palm,weight);
+        if(extension<.001||i===1&&free===1)hand.setCurl(.23);
+      }
+    }
     if(deskSurface&&standing<.999&&!caught){
       const deskFree=extension<.001,keyboard=computerBlend>.001;
       for(let i=0;i<2;i++){

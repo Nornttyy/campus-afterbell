@@ -56,7 +56,7 @@ test('student controls use the cabinet on the chosen deck and wait for passenger
 });
 test('lower passengers look around, upper pupils can read, and camera control stays on its own deck',()=>{
  const top={id:3,busDeck:1,seatYaw:0,x:0,z:-13},low={...top,busDeck:0};
- assert.ok(Array.from({length:40},(_,i)=>ordinaryStudyState(low,null,i,0,'bus')).every(s=>s.mood==='listening'&&!s.studyBookHeld));
+ assert.ok(Array.from({length:40},(_,i)=>ordinaryStudyState(low,null,i,0,'bus')).every(s=>s.mood==='riding'&&!s.studyBookHeld));
  assert.ok(Array.from({length:40},(_,i)=>ordinaryStudyState(top,null,i,0,'bus')).some(s=>s.studyBookHeld));
  const r=createSoloRound({map:'bus',role:'teacher'});r.start();const mounts=surveillanceMounts('bus');assert.deepEqual(mounts.map(m=>m.busDeck),[0,1]);
  for(const m of mounts){Object.assign(r.player,{x:m.x,z:m.z+(m.busDeck?-.7:.7),busDeck:m.busDeck,yaw:m.busDeck?0:Math.PI,pitch:.64});assert.ok(reachesSurveillance(r,m.id));r.player.busDeck=1-m.busDeck;assert.equal(reachesSurveillance(r,m.id),false);}
