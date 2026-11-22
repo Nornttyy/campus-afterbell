@@ -165,11 +165,13 @@ function ensureWorld(){
   if(disposed)return Promise.resolve(null);
   if(sceneReady)return Promise.resolve(scene);
   if(worldPromise)return worldPromise;
+  const hints=$('#world-imports')?.content;
+  if(hints?.childElementCount)document.head.append(hints);
   $('#room-enter').disabled=true;$('#room-enter').textContent='准备中…';$('#room-load').dataset.state='loading';loadStep(12,'正在准备教室');
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-93'),import('./classroom-game.js?v=campus-93')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-93&entry=2'),import('./classroom-game.js?v=campus-93')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true,onProgress:(fraction,label)=>loadStep(38+Math.round(55*fraction),label)});
       if(disposed){prepared.dispose();return null;}
