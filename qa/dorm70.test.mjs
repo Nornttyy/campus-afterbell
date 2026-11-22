@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import * as T from '../dist/vendor/three.module.js';
-import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_BOUNDS,DORM_SHELL_SOLIDS,dormBodyOffset,dormCabinetDoorPose,dormCabinetDoorSolids} from '../dist/dorm-layout70.js';
+import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_PILLOW,DORM_CABINET,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_BOUNDS,DORM_SHELL_SOLIDS,dormBodyOffset,dormCabinetDoorPose,dormCabinetDoorSolids} from '../dist/dorm-layout70.js';
 import {createDormRoom} from '../dist/dorm-room70.js';
 import {createLayoutContext,walkRoute,blocked,moveInRoom,enclosureVolumes,clearWallSegment,ceilingVolumes} from '../dist/classroom-layout.js';
 import {hotpotHelpers} from './hotpot70-helpers.mjs';
@@ -21,11 +21,15 @@ test('four independent narrow dorm rooms connect to one corridor and every bunk 
  assert.equal(ceilingVolumes('dorm')[0].minY,DORM_BOUNDS.height);
  const all=enclosureVolumes('dorm',c);for(const v of DORM_SHELL_SOLIDS)assert.ok(all.some(w=>w.minX===v.minX&&w.maxX===v.maxX&&w.minZ===v.minZ&&w.maxZ===v.maxZ));
 });
-test('bunk and cupboard geometry uses actual rails, ladder, volume bedding and stays below 8000 triangles per frame',()=>{
+test('bunk and cupboard geometry uses actual rails, ladder, a bare mattress and pillow and stays below 8000 triangles per frame',()=>{
  const parent=new T.Group(),helpers=hotpotHelpers(parent),room=createDormRoom(helpers);parent.updateMatrixWorld(true);
  assert.equal(room.beds.size,DORM_BEDS.length);assert.equal(room.cabinets.size,DORM_BEDS.length);
  for(const b of DORM_BUNKS){const frame=room.group.getObjectByName('dorm-bunk-'+b.id);let tris=0;frame.traverse(o=>{if(o.isMesh){tris+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;assert.ok(o.geometry.attributes.normal);assert.ok(o.geometry.attributes.position.array.every(Number.isFinite));}});assert.ok(tris<8000,'bunk '+b.id+' has '+tris+' triangles');}
- for(const b of DORM_BEDS){const anchor=room.beds.get(b.id).seatTarget;assert.equal(anchor.position.y,b.supportHeight);const blanket=room.group.getObjectByName('dorm-plaid-blanket-'+b.id);assert.ok(blanket.geometry.attributes.position.count>200);const cupboard=room.cabinets.get(b.id);assert.equal(cupboard.foodAnchor.position.y,b.foodY);assert.ok(cupboard.door.children.every(o=>o.userData.animated));assert.equal(cupboard.target.userData.cabinetId,b.id);}
+ for(const b of DORM_BEDS){const anchor=room.beds.get(b.id).seatTarget;assert.equal(anchor.position.y,b.supportHeight);const mattress=room.group.getObjectByName('dorm-mattress-'+b.id),pillow=room.group.getObjectByName('dorm-pillow-'+b.id);
+  assert.ok(mattress&&pillow);assert.equal(room.group.getObjectByName('dorm-plaid-blanket-'+b.id),undefined);
+  const head=pillow.getWorldPosition(new T.Vector3());assert.ok(Math.hypot(head.x-b.headX,head.z-b.headZ)<1e-6);
+  assert.ok(Math.abs(head.y-b.supportHeight-DORM_PILLOW.aboveMattress)<1e-6);
+  const cupboard=room.cabinets.get(b.id);assert.equal(cupboard.foodAnchor.position.y,b.foodY);assert.ok(cupboard.door.children.every(o=>o.userData.animated));assert.equal(cupboard.target.userData.cabinetId,b.id);}
  room.dispose();helpers.dispose();
 });
 test('cabinet doors open outward smoothly with synchronized collider geometry and no bunk overlap over the full travel',()=>{
@@ -49,7 +53,7 @@ test('every upper bunk has a reachable ladder target ahead of its solid frame',(
  room.dispose();helpers.dispose();
 });
 test('disposing a dormant map releases owned resources once without freeing shared helper geometries',()=>{
- const parent=new T.Group(),helpers=hotpotHelpers(parent),room=createDormRoom(helpers);let borrowedDisposed=0,quiltDisposed=0;for(const g of helpers.sharedGeometries)g.addEventListener('dispose',()=>borrowedDisposed++);room.group.getObjectByName('dorm-plaid-blanket-0').geometry.addEventListener('dispose',()=>quiltDisposed++);room.dispose();room.dispose();room.update({},1);assert.equal(parent.children.length,0);assert.equal(borrowedDisposed,0);assert.equal(quiltDisposed,1);helpers.dispose();
+ const parent=new T.Group(),helpers=hotpotHelpers(parent),room=createDormRoom(helpers);let borrowedDisposed=0,targetDisposed=0;for(const g of helpers.sharedGeometries)g.addEventListener('dispose',()=>borrowedDisposed++);room.beds.get(0).target.children[0].geometry.addEventListener('dispose',()=>targetDisposed++);room.dispose();room.dispose();room.update({},1);assert.equal(parent.children.length,0);assert.equal(borrowedDisposed,0);assert.equal(targetDisposed,1);helpers.dispose();
 });
 
 test('sleeping pupils lie lengthwise with their heads on the pillow in both wall rows',()=>{

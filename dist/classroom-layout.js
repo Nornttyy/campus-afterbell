@@ -3,7 +3,7 @@ import {SERVING_SOLIDS,CAFETERIA_SEATS} from './upper-floors85.js?v=campus-92';
 import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-83';
 import {hotpotLayout,diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
 import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-94';
-import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-94';
+import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-95';
 import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-92';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-92';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
@@ -242,9 +242,16 @@ export function actorEyeHeight(actor,map='classroom'){
  if(actor.crouched&&!actor.seated)return CRAWL_TUNING.eyeHeight;
  return actor.id===-1?TEACHER_EYE_HEIGHT:actor.seated?1.43:STUDENT_PROPORTIONS.eyeHeight;
 }
+export function actorEyePosition(actor,map='classroom'){
+ const bed=mapKind(map)==='dorm'&&actor.seated&&!actor.officeChair&&!actor._officeChair?DORM_SEATS[actor.bedId??actor.seatId]:null;
+ return {x:bed?.headX??actor.x,y:actorFloorHeight(actor,map)+actorEyeHeight(actor,map),z:bed?.headZ??actor.z};
+}
 export function actorBodyVolume(actor,map='classroom'){
  const base=actorFloorHeight(actor,map),bed=mapKind(map)==='dorm'&&actor.seated&&!actor._officeChair&&!actor.officeChair;
- if(bed)return orientedVolume(actor.x-Math.cos(actor.yaw||0)*.12,actor.z+Math.sin(actor.yaw||0)*.12,actor.yaw||0,1.90,.72,base+.01,base+.76);
+ if(bed){
+  const heading=DORM_SEATS[actor.bedId??actor.seatId]?.lieYaw??actor.seatYaw??actor.yaw??0;
+  return orientedVolume(actor.x-Math.cos(heading)*.12,actor.z+Math.sin(heading)*.12,heading,1.90,.72,base+.01,base+.76);
+ }
  const height=bed?1.13:actor.crouched&&!actor.seated?CRAWL_TUNING.bodyMaxY:actor.id===-1?TEACHER_PROPORTIONS.bodyHeight:actor.seated?1.64:STUDENT_PROPORTIONS.bodyHeight;
  return{minX:actor.x-.32,maxX:actor.x+.32,minZ:actor.z-.29,maxZ:actor.z+.29,minY:base+.08,maxY:base+height};
 }

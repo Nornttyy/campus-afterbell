@@ -1,17 +1,9 @@
 import * as T from './vendor/three.module.js';
-import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_CABINET,DORM_ROOM_BOUNDS,DORM_ROOMS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,DORM_HALL_CABINETS,DORM_TABLES,dormDoorPose,dormDoorSolids,dormBodyOffset,dormPoint,dormCabinetDoorPose,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-94';
-export * from './dorm-layout70.js?v=campus-94';
+import {DORM_BUNKS,DORM_BEDS,DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_PILLOW,DORM_CABINET,DORM_ROOM_BOUNDS,DORM_ROOMS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,DORM_HALL_CABINETS,DORM_TABLES,dormDoorPose,dormDoorSolids,dormPoint,dormCabinetDoorPose,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-95';
+export * from './dorm-layout70.js?v=campus-95';
 
 const stateValue=(source,id,fallback)=>{const entry=source instanceof Map?source.get(id):source?.[id];return entry==null?fallback:typeof entry==='number'?Math.max(0,Math.min(1,entry)):typeof entry==='object'?!!entry.open:!!entry;};
 const damp=(a,b,dt)=>a+(b-a)*(1-Math.exp(-10*Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0))));
-function quiltGeometry(){
- const g=new T.PlaneGeometry(1.30,1.25,24,16);g.rotateX(-Math.PI/2);const p=g.attributes.position;
- for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),edge=Math.pow(Math.abs(z)/.625,8);const shoulder=Math.exp(-Math.pow((x+.51)/.14,2));
-  const crease=.016*Math.sin(z*12+x*2.8)*shoulder+.010*Math.sin(x*13.4+.7*z)*Math.cos(z*3.1);
-  p.setY(i,.007*Math.sin(z*15+x*3)+crease-.061*edge);}
- g.computeVertexNormals();return g;
-}
-
 export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic,finishes={}}){
  const group=new T.Group();group.name='dorm-classroom-furniture';parent.add(group);
  const fixed=new T.Group();fixed.name='dorm-fixed-furniture';group.add(fixed);
@@ -20,7 +12,7 @@ export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic,finish
  const render=(g,m,p,root=fixed,r=null)=>{const o=new T.Mesh(g,m);o.position.set(...p);if(r)o.rotation.set(...r);o.castShadow=o.receiveShadow=true;root.add(o);return o;};
  const woodMap=texture(256,512,(c,w,h)=>{c.fillStyle='#b2a17b';c.fillRect(0,0,w,h);for(let i=0;i<96;i++){const x=(i*37.71)%w;c.strokeStyle=i%4?'rgba(74,44,21,.10)':'rgba(246,211,150,.15)';c.lineWidth=.7+(i%3)*.4;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x+Math.sin(i)*4,h*.3,x+Math.cos(i)*5,h*.7,x,h);c.stroke();}});textures.add(woodMap);
  const plaidMap=finishes.cloth||texture(512,512,(c,w,h)=>{c.fillStyle='#839699';c.fillRect(0,0,w,h);for(let i=0;i<4;i++){const n=i*128;c.fillStyle='rgba(204,204,180,.42)';c.fillRect(n+8,0,49,h);c.fillRect(0,n+8,w,49);c.fillStyle='rgba(25,46,53,.68)';c.fillRect(n+72,0,24,h);c.fillRect(0,n+72,w,24);c.fillStyle='rgba(9,27,36,.80)';c.fillRect(n+101,0,5,h);c.fillRect(0,n+101,w,5);c.fillStyle='rgba(220,221,198,.72)';c.fillRect(n+111,0,3,h);c.fillRect(0,n+111,w,3);}for(let y=0;y<h;y+=4){c.fillStyle=y%8?'rgba(230,230,213,.045)':'rgba(15,34,38,.055)';c.fillRect(0,y,w,1);}});if(!finishes.cloth)textures.add(plaidMap);
- const wood=material(finishes.veneer?'#bfab93':'#fff',{map:finishes.veneer||woodMap,roughness:.62}),endWood=material('#95886b',{roughness:.71}),recess=material('#594a36',{roughness:.82}),bracket=material('#55594f',{metalness:.38,roughness:.55}),cloth=material('#fff',{map:plaidMap,roughness:.96,side:T.DoubleSide}),mattressMat=material('#9baca9',{map:plaidMap,roughness:.94}),pillowMat=material('#c1c3b8',{roughness:.98}),pipingMat=material('#516268',{roughness:.91});
+ const wood=material(finishes.veneer?'#bfab93':'#fff',{map:finishes.veneer||woodMap,roughness:.62}),endWood=material('#95886b',{roughness:.71}),recess=material('#594a36',{roughness:.82}),bracket=material('#55594f',{metalness:.38,roughness:.55}),mattressMat=material('#9baca9',{map:plaidMap,roughness:.94}),pillowMat=material('#c1c3b8',{roughness:.98}),pipingMat=material('#516268',{roughness:.91});
  // A separate enclosed dormitory, not the classroom shell with beds pasted in.
  const floorMap=texture(512,512,(c,w,h)=>{c.fillStyle='#929d9e';c.fillRect(0,0,w,h);let seed=801;const rand=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);for(let i=0;i<2400;i++){const x=rand()*w,y=rand()*h,size=1+rand()*3;c.fillStyle=['#b7bdb8','#748282','#c4c6bc','#818d8b'][i%4];c.beginPath();c.moveTo(x,y);c.lineTo(x+size,y+.4);c.lineTo(x+size*.4,y+size);c.closePath();c.fill();}c.strokeStyle='#7e8988';c.lineWidth=1;c.strokeRect(.5,.5,w-1,h-1);});textures.add(floorMap);floorMap.wrapS=floorMap.wrapT=T.RepeatWrapping;floorMap.repeat.set(4,9);
  const plasterMap=texture(256,256,(c,w,h)=>{c.fillStyle='#dfdaca';c.fillRect(0,0,w,h);for(let i=0;i<1800;i++){c.fillStyle=i%2?'rgba(95,95,81,.035)':'rgba(255,255,245,.05)';c.fillRect((i*83.7)%w,(i*37.41)%h,1+i%3,1);}});textures.add(plasterMap);
@@ -95,8 +87,8 @@ export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic,finish
   hinge.traverse(o=>{o.userData.animated=true;o.userData.interaction='dorm-door';o.userData.roomId=room.id;});
   doors.set(room.id,{group:hinge,panel,target:hinge,open:1});
  }
- const quilt=own(quiltGeometry()),screwGeo=own(new T.CylinderGeometry(.018,.018,.008,8)),pickGeo=own(new T.BoxGeometry(2.27,.10,1.18)),pickMaterial=new T.MeshBasicMaterial({visible:false});materials.add(pickMaterial);
- const beds=new Map(),cabinets=new Map(),covers=new Map();
+ const screwGeo=own(new T.CylinderGeometry(.018,.018,.008,8)),pickGeo=own(new T.BoxGeometry(2.27,.10,1.18)),pickMaterial=new T.MeshBasicMaterial({visible:false});materials.add(pickMaterial);
+ const beds=new Map(),cabinets=new Map();
  for(const b of DORM_BUNKS){
   const frame=new T.Group();frame.name='dorm-bunk-'+b.id;frame.position.set(b.x,0,b.z);frame.rotation.y=b.yaw;fixed.add(frame);
   // Stack the two personal cupboards on a continuous wooden pedestal, as
@@ -109,14 +101,11 @@ export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic,finish
    for(const z of[-.65,.65])box(wood,[0,.445+base,z],[2.46,.15,.075],null,frame);
    for(const x of[-1.22,1.22]){box(wood,[x,.445+base,0],[.10,.15,1.30],null,frame);box(wood,[x,.955+base,0],[.10,.11,1.30],null,frame);box(endWood,[x,.76+base,0],[.065,.07,1.25],null,frame);}
    box(endWood,[0,.402+base,0],[2.34,.04,1.23],null,frame);
-   rounded(mattressMat,[0,.55+base,0],[2.34,.18,1.23],.025,null,frame);
-   const cover=render(own(quilt.clone()),cloth,[.45,.652+base,0],frame);cover.userData.animated=true;cover.userData.baseY=Float32Array.from(cover.geometry.attributes.position.array);cover.userData.sleep=0;cover.name='dorm-plaid-blanket-'+bed.id;covers.set(bed.id,cover);
-   rounded(pillowMat,[-.83,.668+base,0],[.49,.135,.94],.06,null,frame);
-   // Sewn end hems stop just inside the pillow's round shoulder.
-   for(const end of [-1,1])rounded(pipingMat,[-.83,.666+base,end*.455],[.419,.011,.012],.004,null,frame);
-   rounded(pipingMat,[-.83,.621+base,0],[.50,.022,.945],.01,null,frame);
-   // A folded edge at the shoulder rather than a flat plaid texture alone.
-   rounded(cloth,[-.24,.648+base,0],[.13,.038,1.23],.014,null,frame);
+   rounded(mattressMat,[0,.55+base,0],[2.34,.18,1.23],.025,null,frame).name='dorm-mattress-'+bed.id;
+   const p=DORM_PILLOW,cy=bed.supportHeight+p.aboveMattress;
+   rounded(pillowMat,[p.x,cy,p.z],[p.width,p.height,p.depth],.06,null,frame).name='dorm-pillow-'+bed.id;
+   for(const end of [-1,1])rounded(pipingMat,[p.x,cy-.002,p.z+end*.455],[.419,.011,.012],.004,null,frame);
+   rounded(pipingMat,[p.x,cy-.047,p.z],[.50,.022,.945],.01,null,frame);
    const target=new T.Group();target.name='dorm-bed-target-'+bed.id;target.userData={animated:true,bedId:bed.id,seatId:bed.id,interaction:'bed',kind:'dorm'};group.add(target);
    const mattressTarget=render(pickGeo,pickMaterial,[b.x,bed.supportHeight-.05,b.z],target);mattressTarget.rotation.y=b.yaw;
    // The visible ladder provides aisle access to the upper bunk; the solid
@@ -156,7 +145,6 @@ export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic,finish
  return{group,beds,seats:beds,cabinets,doors,solids:DORM_SOLIDS,walkSolids:DORM_WALK_SOLIDS,
   update(state={},dt=0){
    if(disposed)return;const people=[...(state.students||[]),...(state.player?[state.player]:[])];
-   for(const bed of DORM_BEDS){const cover=covers.get(bed.id);if(!cover)continue;const person=people.find(p=>(p.bedId??p.seatId)===bed.id&&p.seated&&p.lying),amount=damp(cover.userData.sleep,person?1:0,dt);if(Math.abs(amount-cover.userData.sleep)<.00001&&cover.userData.character===person?.character)continue;cover.userData.character=person?.character;cover.userData.sleep=amount;const attr=cover.geometry.attributes.position,base=cover.userData.baseY,height=person?(cover.userData.bodyHeight=dormBodyOffset(0,true,person.character).y+.30):(cover.userData.bodyHeight||.53);for(let i=0;i<attr.count;i++){const x=attr.getX(i)+.45,z=attr.getZ(i),side=Math.exp(-Math.pow(Math.abs(z)/.41,3)),end=1-T.MathUtils.smoothstep(x,.86,1.12);attr.setY(i,base[i*3+1]+amount*(height-.035+.035*Math.exp(-Math.pow((x+.10)/.38,2))+.07*Math.exp(-Math.pow((x-.67)/.19,2)))*side*end);}attr.needsUpdate=true;cover.geometry.computeVertexNormals();cover.geometry.computeBoundingSphere();}
    for(const[id,door]of doors){door.open=stateValue(state.dormDoors,id,1);door.group.rotation.y=dormDoorPose(id,door.open).angle;}
    for(const[id,c]of cabinets){const local=(state.player?.bedId??state.player?.seatId)===id&&state.player?.seated&&state.drawer?.open,remote=people.some(p=>(p.bedId??p.seatId)===id&&p.seated&&(p.drawerOpen??p.drawer?.open));const cabinetState=stateValue(state.dormCabinets,id,!!(local||remote));c.open=typeof cabinetState==='number'?cabinetState:damp(c.open,cabinetState?1:0,dt);c.openness=c.open;c.door.rotation.y=dormCabinetDoorPose(id,c.open).angle;}
   },

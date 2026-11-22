@@ -1,4 +1,4 @@
-import {mapBounds,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight,actorFloorHeight,actorEyeHeight,mapKind} from './classroom-layout.js?v=campus-94';
+import {mapBounds,DESKS,enclosureVolumes,LECTERN,OFFICE_SOLIDS,floorTiles,floorHeight,actorEyePosition,mapKind} from './classroom-layout.js?v=campus-95';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -39,10 +39,10 @@ export function createSmokeProjectile(actor,id,charge=0,map='classroom',layout=n
   const yaw=actor.yaw||0,pitch=actor.pitch||0,elevation=clamp(.66-pitch,-.8,1.2),speed=5.2+2.8*charge;
   // Release from the left palm, in the same look basis as the first-person camera.
   // Horizontal aim adds an upward lob; looking down still permits a close throw.
-  const eye=actorFloorHeight(actor,map)+actorEyeHeight(actor,map);
+  const eye=actorEyePosition(actor,map);
   const forward=.55*Math.cos(pitch)-.06*Math.sin(pitch);
-  const release=safeRelease({x:actor.x,y:eye,z:actor.z},{x:actor.x+Math.sin(yaw)*forward+Math.cos(yaw)*.14,
-    y:eye-.55*Math.sin(pitch)-.06*Math.cos(pitch),z:actor.z+Math.cos(yaw)*forward-Math.sin(yaw)*.14},map,layout);
+  const release=safeRelease(eye,{x:eye.x+Math.sin(yaw)*forward+Math.cos(yaw)*.14,
+    y:eye.y-.55*Math.sin(pitch)-.06*Math.cos(pitch),z:eye.z+Math.cos(yaw)*forward-Math.sin(yaw)*.14},map,layout);
   return{id,ownerId:actor.id,charge,map,...release,
     vx:Math.sin(yaw)*Math.cos(elevation)*speed,vy:Math.sin(elevation)*speed,
     vz:Math.cos(yaw)*Math.cos(elevation)*speed,age:0,firstImpact:null,bounces:0,

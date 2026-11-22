@@ -64,8 +64,9 @@ test('throws collide with the current cubicle door leaf instead of an ordinary .
 test('lower and upper bunk eyes and ink hit boxes stay horizontal both awake and asleep above the mattress',()=>{
  for(const bed of DORM_BEDS.slice(0,2))for(const lying of[false,true]){
   const actor={id:1,x:bed.x,z:bed.z,yaw:bed.lieYaw,seated:true,seatId:bed.id,bedId:bed.id,lying};
-  near(actorFloorHeight(actor,'dorm'),bed.supportHeight);near(actorEyeHeight(actor,'dorm'),.23);near(effectEye(actor,'dorm').y,bed.supportHeight+(.23));
-  const body=actorBodyVolume(actor,'dorm');near(body.maxY,bed.supportHeight+(.76));assert.ok(contains(body,actor.x,effectEye(actor,'dorm').y,actor.z));
+  near(actorFloorHeight(actor,'dorm'),bed.supportHeight);near(actorEyeHeight(actor,'dorm'),.23);const eye=effectEye(actor,'dorm');near(eye.y,bed.supportHeight+.23);near(eye.x,bed.headX);near(eye.z,bed.headZ);
+  const body=actorBodyVolume(actor,'dorm');near(body.maxY,bed.supportHeight+(.76));assert.ok(contains(body,actor.x,eye.y,actor.z));
+  actor.yaw+=Math.PI/2;assert.deepEqual(actorBodyVolume(actor,'dorm'),body);assert.deepEqual(effectEye(actor,'dorm'),eye);
   const p=projectile('dorm',null,{kind:'ink',ownerId:9,x:actor.x,z:actor.z-.6,y:bed.supportHeight+.90,vx:0,vy:0,vz:15,retired:false});
   // Empty geometry isolates swept actor contact from the physical bunk frame.
   const empty={desks:[],furnitureVolumes:[],wallVolumes:[],dynamicSolids:[]};

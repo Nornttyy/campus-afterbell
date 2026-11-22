@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
+import {DORM_CORRIDOR_SOLIDS,DORM_ROOMS,dormDoorSolids} from '../dist/dorm-layout70.js';
 import {campusScene} from './campus-geometry54-helpers.mjs';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {createRoomVariants} from '../dist/room-variants.js';
@@ -67,4 +68,22 @@ test('actual pitched surveillance housings and hoods remain inside the classroom
  try{for(const map of['classroom','tiered']){view.update({map,status:'playing',stage:'class',role:'teacher',surveillance:{devices:[{id:'front'},{id:'back'}]}});scene.updateMatrixWorld(true);
   for(const object of scene.getObjectByName('classroom-surveillance').children){const b=bounds(object);assert.ok(b.min.x>=CLASSROOM.minX&&b.max.x<=CLASSROOM.maxX);assert.ok(b.min.z>=-10&&b.max.z<=8.8,`${object.name||'camera hood'} crosses wall at ${b.min.z}…${b.max.z}`);}
  }}finally{view.dispose();globalThis.document=original;}
+});
+
+
+test('the dorm chalk tutorial fits entirely on a fixed wall through every door angle and map change',()=>{
+ const {scene,campus,dispose}=campusScene();
+ try{
+  const drawing=scene.getObjectByName('corridor-student-tutorial'),ordinary=bounds(drawing);
+  campus.setMap('dorm');const ink=bounds(drawing);
+  const wall=DORM_CORRIDOR_SOLIDS.find(w=>w.id==='dorm-hall-left-1');
+  assert.ok(ink.min.x>wall.maxX&&ink.max.x<wall.maxX+.025);
+  assert.ok(ink.min.z>wall.minZ+.2&&ink.max.z<wall.maxZ-.2);
+  assert.ok(ink.min.y>1.34&&ink.max.y<wall.maxY);
+  for(const room of DORM_ROOMS)for(const t of [0,.25,.5,.75,1]){
+   for(const part of dormDoorSolids(room.id,t))assert.ok(part.maxZ<ink.min.z||part.minZ>ink.max.z);
+  }
+  campus.setMap('classroom');assert.ok(bounds(drawing).equals(ordinary));
+  campus.setMap('dorm');assert.ok(bounds(drawing).equals(ink));
+ }finally{dispose();}
 });

@@ -1,3 +1,4 @@
+import {interactionIntent} from '../dist/interaction-intent54.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound,chalkHit,ROOM_INTERACTION_TUNING} from '../dist/classroom-rules.js';
@@ -48,6 +49,34 @@ test('both bunks stay reclined awake and asleep, with stable support height and 
 
 test('a stunned pupil stays supported by the bunk until actually grabbed, without falling through its solid frame',()=>{
  const r=quiet('dorm'),p=r.player,bed=r.seats[p.seatId];r.toggleBedLie();assert.equal(r._stun(p),true);assert.equal(actorFloorHeight(p,r.map),bed.supportHeight);assert.equal(actorEyeHeight(p,r.map),.23);assert.equal(r.toggleBedLie(),false);r.step(5.1);assert.equal(p.captivity,'free');assert.equal(r.interact(),'stood');
+});
+
+test('boarding a bunk replaces the downward ladder gaze with a view toward the foot and aisle',()=>{
+ const r=quiet('dorm'),p=r.player;
+ r.interact();
+ for(const id of [2,5]){
+  const bed=r.seats[id];
+  clearSeat(r,id);
+  Object.assign(p,{x:bed.exitX,z:bed.exitZ});
+  r.setLook(1.2,1.1);
+  assert.equal(r.interact(id),'seated');
+  const yawOffset=Math.atan2(Math.sin(p.yaw-bed.lieYaw),Math.cos(p.yaw-bed.lieYaw));
+  assert.ok(yawOffset>.35&&yawOffset<.70);
+  assert.ok(Math.abs(p.pitch)<.12);
+  assert.equal(p.seatYaw,bed.lieYaw);
+  assert.equal(r.interact(),'stood');
+ }
+});
+
+test('Q first closes the bedside cupboard, then gets up while still looking at its closed door',()=>{
+ const r=quiet('dorm'),target={kind:'desk',id:r.player.bedId};
+ assert.equal(r.setDrawerOpen(true),true);
+ const close=interactionIntent(r.snapshot(),target,'Q');
+ assert.equal(close.method,'setDrawerOpen');
+ r[close.method](...close.args);
+ assert.ok(r.player.lying);
+ const leave=interactionIntent(r.snapshot(),target,'Q');
+ assert.equal(r[leave.method](...leave.args),'stood');
 });
 
 test('waking and using the bedside cupboard preserve the player look direction and side-lying body heading',()=>{

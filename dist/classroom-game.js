@@ -1,13 +1,14 @@
+import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
 import {createReferenceHUD} from './reference-hud54.js?v=campus-93';
-import {interactionIntent} from './interaction-intent54.js?v=campus-94';
+import {interactionIntent} from './interaction-intent54.js?v=campus-95';
 import {createSessionUI} from './session-ui.js?v=campus-94';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-94';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-95';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -57,7 +58,15 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     $('#student-controls').hidden=role==='teacher';$('#teacher-controls').hidden=role!=='teacher';render(next.snapshot());return true;
   }
   async function toggleMic(){try{await round.toggleMicrophone?.();session.setMicrophoneError?.('');}catch(e){session.setMicrophoneError?.(e.message);}}
-  function look(dx,dy){if(!canInput()||session.computer)return;yaw=(round.player.yaw||0)-dx*.0024;pitch=clamp((round.player.pitch||0)+dy*.0021,-1.15,1.3);round.setLook(yaw,pitch);}
+  function look(dx,dy){
+    if(!canInput()||session.computer)return;
+    const p=round.player;
+    if(p.seated&&p.lying){
+      const c=Math.cos(DORM_REST_VIEW.roll),s=Math.sin(DORM_REST_VIEW.roll);
+      [dx,dy]=[dx*c+dy*s,dy*c-dx*s];
+    }
+    yaw=(p.yaw||0)-dx*.0024;pitch=clamp((p.pitch||0)+dy*.0021,-1.15,1.3);round.setLook(yaw,pitch);
+  }
   function fx(kind){audio.effect?.(kind);scene.playFeedback?.(kind);}
   function feedback(text,kind='good',duration=1900){
     clearTimeout(feedbackTimer);const box=$('#round-feedback');box.textContent=text;box.dataset.kind=kind;box.classList.add('pop');
@@ -226,7 +235,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function putBack(){return applyIntent('Q');}
   const heldInput=bindHeldUseInput({canvas,document,window,canInput:()=>canInput()&&controls.keys.use==='Mouse0',onHold:value=>hold('pointer',value),onRelease:release,onLock:lock});
   canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('pointerdown',e=>{if(e.button===2&&canInput()){release();dragLook=true;dragX=e.clientX;dragY=e.clientY;}});window.addEventListener('pointerup',e=>{if(e.button===2)dragLook=false;});
-  document.addEventListener('mousemove',e=>{if(session.computer||!canInput()||(!dragLook&&document.pointerLockElement!==canvas))return;const locked=document.pointerLockElement===canvas,dx=locked?e.movementX:e.clientX-dragX,dy=locked?e.movementY:e.clientY-dragY;dragX=e.clientX;dragY=e.clientY;yaw=(round.player.yaw||0)-dx*.0024;pitch=clamp((round.player.pitch||0)+dy*.0021,-1.15,1.3);round.setLook(yaw,pitch);});
+  document.addEventListener('mousemove',e=>{if(session.computer||!canInput()||(!dragLook&&document.pointerLockElement!==canvas))return;const locked=document.pointerLockElement===canvas,dx=locked?e.movementX:e.clientX-dragX,dy=locked?e.movementY:e.clientY-dragY;dragX=e.clientX;dragY=e.clientY;look(dx,dy);});
   document.addEventListener('pointerlockchange',()=>{document.body.classList.toggle('mouse-locked',document.pointerLockElement===canvas);});
   $('#pause-game').addEventListener('click',()=>pause());$('#resume-game').addEventListener('click',()=>pause(false));
   $('#restart-game').addEventListener('click',start);$('#retry-game').addEventListener('click',async()=>{const button=$('#retry-game');if(button.disabled)return;button.disabled=true;

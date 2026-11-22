@@ -10,6 +10,9 @@ export function dormPoint(b,x,z){const c=Math.cos(b.yaw),s=Math.sin(b.yaw);retur
 export function dormRoomPoint(id,x,z){const room=DORM_ROOMS.find(r=>r.id===Number(id));return room?dormPoint(room,x,z):null;}
 export const DORM_BOUNDS=Object.freeze({minX:7.2-DORM_ROOM_BOUNDS.maxZ,maxX:12.64+DORM_ROOM_BOUNDS.maxZ,minZ:-11.1,maxZ:5.9,height:3.45});
 export const DORM_BED_SIZE=Object.freeze({length:2.46,width:1.32,lower:.64,upper:2.08,frameTop:2.63});
+export const DORM_PILLOW=Object.freeze({x:-.84,z:0,width:.49,depth:.94,height:.135,aboveMattress:.028});
+// The head rests on its side facing across the aisle and slightly towards the feet.
+export const DORM_REST_VIEW=Object.freeze({yawOffset:Math.PI/6,pitch:.055,roll:-Math.PI/4});
 export const DORM_CABINET=Object.freeze({x:-1.65,z:.10,width:.66,depth:.58,height:.90,bottom:1.04,levelStep:1.44,yaw:Math.PI/2,doorAngle:-Math.PI*.48});
 export const DORM_TABLES=Object.freeze(DORM_ROOMS.map(r=>Object.freeze({id:r.id,...dormPoint(r,0,1.9),yaw:r.yaw,width:1.02,depth:1.44,height:.78})));
 export const DORM_TABLE=DORM_TABLES[0];
@@ -19,7 +22,7 @@ export const DORM_BUNK_ROWS=Object.freeze([3.88,7.12]);
 export const DORM_BUNKS=Object.freeze(DORM_ROOMS.flatMap((room,ri)=>DORM_BUNK_ROWS.flatMap((z,row)=>[-2.3,2.3].map((x,col)=>Object.freeze({id:ri*4+row*2+col,roomId:room.id,row,col,...dormPoint(room,x,z),yaw:room.yaw+(col?-Math.PI/2:Math.PI/2)})))));
 export const DORM_BEDS=Object.freeze(DORM_BUNKS.flatMap(b=>[0,1].map(level=>{
  const id=b.id*2+level,supportHeight=level?DORM_BED_SIZE.upper:DORM_BED_SIZE.lower;
- const sit=dormPoint(b,.15,.22),head=dormPoint(b,-.84,0),desk=dormPoint(b,DORM_CABINET.x+DORM_CABINET.depth/2+.1,DORM_CABINET.z),cab=dormPoint(b,DORM_CABINET.x,DORM_CABINET.z),exit=dormPoint(b,.20,1.12),ladder=dormPoint(b,.92,.79);
+ const sit=dormPoint(b,.15,.22),head=dormPoint(b,DORM_PILLOW.x,DORM_PILLOW.z),desk=dormPoint(b,DORM_CABINET.x+DORM_CABINET.depth/2+.1,DORM_CABINET.z),cab=dormPoint(b,DORM_CABINET.x,DORM_CABINET.z),exit=dormPoint(b,.20,1.12),ladder=dormPoint(b,.92,.79);
  return Object.freeze({id,bedId:id,seatId:id,bunkId:b.id,roomId:b.roomId,row:b.row,col:b.col,level,...sit,y:supportHeight,supportHeight,yaw:b.yaw+Math.PI,bunkYaw:b.yaw,
  lieX:b.x,lieZ:b.z,lieYaw:b.yaw,headX:head.x,headZ:head.z,
  deskX:desk.x,deskZ:desk.z,cabinetYaw:b.yaw+DORM_CABINET.yaw,cabinetId:id,cabinetX:cab.x,cabinetZ:cab.z,cabinetY:DORM_CABINET.bottom+level*DORM_CABINET.levelStep,
@@ -76,7 +79,8 @@ export const DORM_SOLIDS=Object.freeze([...DORM_HALL_CABINETS,...DORM_BUNKS.flat
   const y=level*1.44;
   volumes.push(volume(`dorm-platform-${b.id}-${level}`,b.x-1.23,b.x+1.23,b.z-.66,b.z+.66,.37+y,.64+y));
   for(const sx of[-1,1]){volumes.push(volume(`dorm-endrail-${b.id}-${level}-${sx}`,b.x+sx*1.22-.05,b.x+sx*1.22+.05,b.z-.65,b.z+.65,.90+y,1.01+y));volumes.push(volume(`dorm-midrail-${b.id}-${level}-${sx}`,b.x+sx*1.22-.0325,b.x+sx*1.22+.0325,b.z-.625,b.z+.625,.725+y,.795+y));}
-  volumes.push(volume(`dorm-pillow-${b.id}-${level}`,b.x-1.075,b.x-.585,b.z-.47,b.z+.47,.6005+y,.7355+y));
+  const p=DORM_PILLOW,centerY=DORM_BED_SIZE.lower+y+p.aboveMattress;
+  volumes.push(volume(`dorm-pillow-${b.id}-${level}`,p.x-p.width/2,p.x+p.width/2,p.z-p.depth/2,p.z+p.depth/2,centerY-p.height/2,centerY+p.height/2));
  }
  volumes.push(volume('dorm-upper-backrail-'+b.id,b.x-1.22,b.x+1.22,b.z-.685,b.z-.615,2.35,2.46));
  volumes.push(volume('dorm-upper-frontrail-'+b.id,b.x-1.22,b.x+.54,b.z+.615,b.z+.685,2.35,2.46));

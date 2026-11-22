@@ -1,32 +1,32 @@
-import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-94';
+import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-95';
 import {radioSong,reachesRadio} from './campus-radio93.js?v=campus-94';
 import {expandTuning} from './round-tuning93.js?v=campus-93';
 import {SOCIAL_ACTIONS,canEmote,actorEmote} from './social-actions93.js?v=campus-93';
-import {beginDismissal,advanceDismissal,returnPose} from './class-dismissal92.js?v=campus-94';
+import {beginDismissal,advanceDismissal,returnPose} from './class-dismissal92.js?v=campus-95';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-94';
-import {takeMeal,canReturnMeal,examMode,examUse,examSnapshot,advanceExams} from './upper-floor-rules85.js?v=campus-94';
-import {advancePlaygroundPupil,inspectionPoints} from './new-map-ai83.js?v=campus-94';
-import {DORM_ROOMS,dormDoorPose,dormDoorSolids,dormRoomPoint} from './dorm-layout70.js?v=campus-94';
-import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-94';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-95';
+import {takeMeal,canReturnMeal,examMode,examUse,examSnapshot,advanceExams} from './upper-floor-rules85.js?v=campus-95';
+import {advancePlaygroundPupil,inspectionPoints} from './new-map-ai83.js?v=campus-95';
+import {DORM_ROOMS,DORM_REST_VIEW,dormDoorPose,dormDoorSolids,dormRoomPoint} from './dorm-layout70.js?v=campus-95';
+import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-95';
 import {TOILET_STALLS,TOILET_DOOR,toiletDoorPose,toiletDoorSolids,toiletDoorReach} from './toilet-layout70.js?v=campus-94';
 import {PLAYGROUND_LAYOUT,PLAYGROUND_BOARD,PLAYGROUND_POSTS,vendingPoint,canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-92';
 import {floatingBubblePosition,bubbleTouchesHead} from './bubble-flight69.js?v=campus-83';
-import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-94';
+import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-95';
 import {ordinaryStudyState} from './npc-study58.js?v=campus-87';
 import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-93';
-import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-94';
-import {INTERACTION_SECONDS,ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-94';
+import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-95';
+import {INTERACTION_SECONDS,ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-95';
 import {validRoundSettings,chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-93';
 import {advanceBoard} from './board-lesson93.js?v=campus-93';
 import {createArcade,advanceArcade,arcadeInput,arcadeSnapshot} from './classroom-arcade93.js?v=campus-93';
 import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-93';
-import {smokeEnvelope} from './smoke-physics.js?v=campus-94';
+import {smokeEnvelope} from './smoke-physics.js?v=campus-95';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-94';
+import {createThrowableProjectile,stepThrowableProjectile,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-95';
 import {BUS} from './bus-layout86.js?v=campus-94';
 import {coachDistanceAt,COACH_BRAKE_SECONDS} from './excursion-journey91.js?v=campus-93';
-import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-94';
+import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorEyePosition, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-95';
 
 /** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:NORMAL_WALK_SPEEDS.student, teacherWalkSpeed:NORMAL_WALK_SPEEDS.teacher, crouchSpeed:CRAWL_TUNING.speed, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
@@ -95,9 +95,7 @@ export function canSee(observer,target,smokes=[],layout=null){
   if(layout?.map==='bus'&&!clearWallSegment(observer,target,layout))return false;
   const solidVision=layout&&['dorm','toilet','hotpot','computer','cafeteria'].includes(mapKind(layout.map));
   if(solidVision){
-    const map=layout.map,bed=mapKind(map)==='dorm'&&target.seated?layout.seats.find(s=>s.id===(target.bedId??target.seatId)):null;
-    const from={x:observer.x,z:observer.z,y:actorFloorHeight(observer,map)+actorEyeHeight(observer,map)};
-    const to={x:bed?.headX??target.x,z:bed?.headZ??target.z,y:actorFloorHeight(target,map)+actorEyeHeight(target,map)};
+    const map=layout.map,from=actorEyePosition(observer,map),to=actorEyePosition(target,map);
     if(enclosureVolumes(map,layout).some(box=>{const hit=segmentBox(from,to,box);return hit!==null&&hit>.001&&hit<.999;}))return false;
   }
   return (solidVision||clearWallSegment(observer,target,layout))&&!smokes.some(s=>s.remaining>0&&(s.density??1)>.3&&(layout?.map!=='bus'||Math.abs((s.y??0)-actorFloorHeight(target,'bus'))<2.2)&&segmentDistance(s,observer,target)<s.radius);
@@ -190,7 +188,16 @@ export class ClassroomRound{
   _seatApproach(seat){return Number.isFinite(seat?.exitX)?{...(seat.busDeck!=null?{busDeck:seat.busDeck}:{}),x:seat.exitX,z:seat.exitZ+(seat.surface==='toilet'?1.18:0)}:seat;}
   // The arrival waypoint keeps the shared cross-aisle clear of the door swing.
   _seatInteractionPoint(seat){return Number.isFinite(seat?.exitX)?{...(seat.busDeck!=null?{busDeck:seat.busDeck}:{}),x:seat.exitX,z:seat.exitZ}:seat;}
-  _setBedPose(actor,sleeping){const seat=this.seats[actor.bedId??actor.seatId];if(!seat||!this._onBed(actor))return;const entering=!actor.lying;actor.lying=true;actor.sleeping=Boolean(sleeping);actor.x=seat.lieX;actor.z=seat.lieZ;if(entering)actor.yaw=seat.lieYaw;actor.seatYaw=seat.lieYaw;}
+  _setBedPose(actor,sleeping){
+    const seat=this.seats[actor.bedId??actor.seatId];
+    if(!seat||!this._onBed(actor))return;
+    if(!actor.lying){
+      actor.yaw=angle(seat.lieYaw+DORM_REST_VIEW.yawOffset);
+      actor.pitch=DORM_REST_VIEW.pitch;
+    }
+    actor.lying=true;actor.sleeping=Boolean(sleeping);
+    actor.x=seat.lieX;actor.z=seat.lieZ;actor.seatYaw=seat.lieYaw;
+  }
   _onBed(actor=this.player){return mapKind(this.map)==='dorm'&&actor.seated&&!actor._officeChair&&this.seats[actor.bedId??actor.seatId]?.surface==='bed';}
   _storageState(){return{toiletDoors:this.toiletDoors,toiletCabinets:this.toiletCabinets,dormCabinets:this.dormCabinets,dormDoors:this.dormDoors};}
   _advanceFurniture(dt){

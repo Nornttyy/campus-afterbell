@@ -19,7 +19,10 @@ export function interactionIntent(s,target,key){
   if(target?.kind==='toilet-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&target.open?intent('toggleToiletDoor',[target.id],'关门'):null;
   if(target?.kind==='rear-door')return null;
   if(target?.kind==='book')return p.bookRaised?intent('setBookRaised',[false],'放下书本'):null;
-  if(['desk','office-desk'].includes(target?.kind))return d.open?intent(p.officeChair?'setOfficeDrawerOpen':'setDrawerOpen',[false],storageDoor?'关闭柜门':'关闭抽屉'):null;
+  if(['desk','office-desk'].includes(target?.kind)){
+   if(d.open)return intent(p.officeChair?'setOfficeDrawerOpen':'setDrawerOpen',[false],storageDoor?'关闭柜门':'关闭抽屉');
+   if(!p.onBed)return null;
+  }
   if(p.bookRaised)return intent('setBookRaised',[false],'放下书本');
   if(d.open)return intent(p.officeChair?'setOfficeDrawerOpen':'setDrawerOpen',[false],storageDoor?'关闭柜门':'关闭抽屉');
   if(p.seated)return intent('interact',[],p.onBed?'下床':'起身');
