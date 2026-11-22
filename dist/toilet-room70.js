@@ -10,15 +10,19 @@ function ellipseRing(outerX,outerZ,innerX,innerZ,height){
 const getState=(source,id,fallback=false)=>{const entry=source instanceof Map?source.get(id):source?.[id];return entry==null?fallback:typeof entry==='number'?Math.max(0,Math.min(1,entry)):typeof entry==='object'?!!entry.open:!!entry;};
 const damp=(from,to,dt)=>from+(to-from)*(1-Math.exp(-10*Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0))));
 
-export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic}){
+export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,finishes={}}){
  const group=new T.Group();group.name='toilet-classroom-furniture';parent.add(group);
  const fixed=new T.Group();fixed.name='toilet-fixed-partitions';group.add(fixed);
  const geometries=new Set(),materials=new Set(),textures=new Set(),borrowedGeometry=new Set();
  const own=g=>(geometries.add(g),g),material=(c,o={})=>{const m=mat(c,o);materials.add(m);return m;};
  const render=(g,m,p,root=fixed,r=null)=>{const mesh=new T.Mesh(g,m);mesh.position.set(...p);if(r)mesh.rotation.set(...r);mesh.castShadow=mesh.receiveShadow=true;root.add(mesh);return mesh;};
- const panel=material('#e2e5df',{roughness:.52}),edge=material('#303a3a',{roughness:.58}),feet=material('#bd352e',{roughness:.56}),porcelain=material('#e7e7db',{roughness:.24}),seatMat=material('#f4f2e5',{roughness:.31}),inside=material('#afb5a7',{roughness:.36}),water=material('#8fa79a',{roughness:.18,metalness:.06}),steel=material('#a3aaa5',{metalness:.56,roughness:.31});
+ const compactLaminate=texture(64,256,(c,w,h)=>{
+  const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#dedfda');g.addColorStop(.14,'#d4d7d4');g.addColorStop(.79,'#cdd2d1');g.addColorStop(1,'#b5bfbe');c.fillStyle=g;c.fillRect(0,0,w,h);
+ });textures.add(compactLaminate);
+ const panel=material('#fff',{map:compactLaminate,roughness:.46}),edge=material('#303a3a',{roughness:.58}),feet=material('#784d47',{roughness:.56}),porcelain=material('#e7e7db',{roughness:.24}),seatMat=material('#f4f2e5',{roughness:.31}),inside=material('#afb5a7',{roughness:.36}),water=material('#8fa79a',{roughness:.18,metalness:.06}),steel=material('#a3aaa5',{metalness:.56,roughness:.31});
  const woodMap=texture(256,512,(c,w,h)=>{c.fillStyle='#bdb088';c.fillRect(0,0,w,h);for(let i=0;i<85;i++){const x=(i*43.271)%w;c.strokeStyle=i%3?'rgba(101,77,45,.08)':'rgba(255,241,196,.13)';c.lineWidth=.5+(i%3)*.35;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x+Math.sin(i)*3,h*.3,x+Math.cos(i)*3,h*.7,x,h);c.stroke();}});textures.add(woodMap);const wood=material('#fff',{map:woodMap,bumpMap:woodMap,bumpScale:.0014,roughness:.60}),shelf=material('#786443',{roughness:.76});
- const floorMap=texture(512,512,(c,w,h)=>{c.fillStyle='#b3c1c3';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=128)for(let x=0;x<w;x+=128){c.fillStyle=((x+y)/128)%2?'#adbdc1':'#b8c6c8';c.fillRect(x+1,y+1,126,126);c.strokeStyle='#9aaeb3';c.lineWidth=1.5;c.strokeRect(x+.5,y+.5,127,127);}});textures.add(floorMap);floorMap.wrapS=floorMap.wrapT=T.RepeatWrapping;floorMap.repeat.set(6.75,8);const floor=material('#fff',{map:floorMap,roughness:.65});
+ const floorMap=finishes.tile?.clone()||texture(512,512,(c,w,h)=>{c.fillStyle='#b3c1c3';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=128)for(let x=0;x<w;x+=128){c.fillStyle=((x+y)/128)%2?'#adbdc1':'#b8c6c8';c.fillRect(x+1,y+1,126,126);c.strokeStyle='#9aaeb3';c.lineWidth=1.5;c.strokeRect(x+.5,y+.5,127,127);}});textures.add(floorMap);floorMap.wrapS=floorMap.wrapT=T.RepeatWrapping;floorMap.repeat.set(finishes.tile?11:6.75,finishes.tile?13:8);floorMap.needsUpdate=true;
+ const floor=material('#e3ebee',{map:floorMap,roughness:.43});
  const floorMesh=render(own(new T.PlaneGeometry(13.75,16.25)),floor,[.275,.007,-1.825],fixed,[-Math.PI/2,0,0]);floorMesh.name='toilet-tiled-floor';floorMesh.castShadow=false;
  const wallMap=texture(256,256,(c,w,h)=>{c.fillStyle='#e3e5de';c.fillRect(0,0,w,h);c.strokeStyle='#b8c1bb';c.lineWidth=1.2;for(let p=0;p<=256;p+=64){c.beginPath();c.moveTo(p,0);c.lineTo(p,h);c.moveTo(0,p);c.lineTo(w,p);c.stroke();}});textures.add(wallMap);wallMap.wrapS=wallMap.wrapT=T.RepeatWrapping;wallMap.repeat.set(3.6,.32);const wallTile=material('#fff',{map:wallMap,roughness:.58});
  // Low tile wainscot only; the host retains existing exterior walls/windows.
@@ -54,6 +58,7 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic}){
   seats.set(s.id,{group:stall,toilet:pick,target:pick,fixture,seatTarget,exitTarget,...TOILET_SEATS[s.id]});
   const hinge=new T.Group();hinge.name='toilet-door-hinge-'+s.id;hinge.position.set(s.x+TOILET_DOOR.hingeX,0,s.z+TOILET_DOOR.hingeZ);group.add(hinge);
   const door=box(panel,[TOILET_DOOR.width/2,TOILET_DOOR.bottom+TOILET_DOOR.height/2,0],[TOILET_DOOR.width,TOILET_DOOR.height,TOILET_DOOR.depth],null,hinge);door.name='toilet-door-'+s.id;door.userData={animated:true,seatId:s.id,doorId:s.id,interaction:'cubicle-door'};
+  box(steel,[1.70,.91,0],[.098,.148,.057],null,hinge);
   for(const y of[.49,1.55])render(hingeGeo,steel,[.004,y,0],hinge);
   for(const side of[-1,1]){render(knobGeo,edge,[1.70,.91,side*.048],hinge);const plaque=render(signGeo,signMaps[0],[1.04,1.59,side*.027],hinge,[0,side<0?Math.PI:0,0]);plaque.name='toilet-occupancy-'+s.id+'-'+side;}
   render(posterGeo,posterMat,[.77,.91,-.026],hinge,[0,Math.PI,0]);

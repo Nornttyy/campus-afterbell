@@ -75,6 +75,7 @@ export const BUS_DECK_SLABS=Object.freeze([
 const decks=[0,1].map(deck=>[...BUS_WALLS,...BUS_FURNITURE].filter(s=>deck?s.minY>=high:s.minY<high));
 const touches=(s,x,z,r)=>x>s.minX-r&&x<s.maxX+r&&z>s.minZ-r&&z<s.maxZ+r;
 export function busBlocked(x,z,r=.18,deck=0,ctx={}){
+ if(ctx.busDeparted&&!within(body,x,z,r))return true;
  if(!busFootprint(x,z,r,deck))return true;
  if(!deck&&ctx.elevatorClosed&&x>9.48-r&&x<11.5+r&&Math.abs(z-8.80)<r+.06)return true;
  if(!deck&&ctx.officeLocked&&x>11.03-r&&x<11.20+r&&z>=-13.52-r&&z<=body.maxZ)return true;

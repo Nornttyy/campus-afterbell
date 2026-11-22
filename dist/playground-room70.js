@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
-import {createDeskItem} from './game-actors.js?v=campus-90';
+import {createDeskItem} from './game-actors.js?v=campus-91';
 import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-84';
 export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-84';
 
@@ -41,9 +41,9 @@ function surfaceTexture(type){
 }
 function paintedTexture(kind){
  if(typeof document==='undefined')return null;
- if(kind==='sports'||kind==='vending-shelf'){
-  const url=kind==='sports'?new URL('./assets/posters/playground-sports73.png',import.meta.url):new URL('./assets/materials/playground-vending84.webp',import.meta.url);
-  const map=new T.TextureLoader().load(url.href);
+ const printFile={sports:'./assets/posters/playground-sports73.png','vending-shelf':'./assets/materials/playground-vending84.webp',campaigns:'./assets/posters/athletics-meet91.webp'}[kind];
+ if(printFile){
+  const map=new T.TextureLoader().load(new URL(printFile,import.meta.url).href);
   if(map){map.colorSpace=T.SRGBColorSpace;map.anisotropy=4;}
   return map||null;
  }
@@ -65,30 +65,30 @@ function paintedTexture(kind){
   }
   c.font='bold 125px "PingFang SC", sans-serif';c.textAlign='center';c.strokeStyle='#fff4d2';c.lineWidth=8;c.strokeText('奋进',470,187);c.fillStyle='#193b79';c.fillText('奋进',470,187);
  }else if(kind==='fence'){
-  canvas.height=512;c.clearRect(0,0,512,512);c.strokeStyle='#46534d';c.lineWidth=3;
-  for(let x=-512;x<1024;x+=128){c.beginPath();c.moveTo(x,0);c.lineTo(x+512,512);c.stroke();c.beginPath();c.moveTo(x,0);c.lineTo(x-512,512);c.stroke();}
- }else{
-  const blue=kind==='blue';c.fillStyle=blue?'#1378b8':'#f2a21e';c.fillRect(0,0,512,256);
-  c.fillStyle=blue?'#b9d9e5':'#fff3cc';c.fillRect(15,14,482,228);
-  c.fillStyle=blue?'#167bb6':'#ee8220';c.beginPath();c.moveTo(190,14);c.lineTo(497,14);c.lineTo(497,242);c.lineTo(276,242);c.closePath();c.fill();
-  c.fillStyle='#fff7d9';c.font='bold 34px sans-serif';c.textAlign='center';c.fillText(blue?'健康成长':'文明校园',365,60);
-  c.fillStyle=blue?'#184d77':'#a54c16';c.font='bold 22px sans-serif';c.fillText(blue?'一起运动':'爱护公物',360,100);
-  // Simple flat school-poster illustration, not a frame ripped from the video.
-  c.strokeStyle='#e9633c';c.lineWidth=15;c.lineCap='round';c.beginPath();c.moveTo(118,112);c.lineTo(147,152);c.lineTo(195,137);c.moveTo(147,152);c.lineTo(129,203);c.moveTo(147,152);c.lineTo(174,203);c.moveTo(122,120);c.lineTo(81,139);c.stroke();
-  c.fillStyle='#f3c38c';c.beginPath();c.arc(107,80,25,0,Math.PI*2);c.fill();c.fillStyle='#25383a';c.beginPath();c.arc(106,72,24,Math.PI,0);c.fill();
-  c.fillStyle='#fff8df';for(let i=0;i<3;i++)c.fillRect(300,137+i*27,158-(i%2)*30,7);
+  canvas.width=480;canvas.height=480;c.clearRect(0,0,480,480);c.lineCap='round';
+  for(const direction of [-1,1])for(let x=-512;x<1024;x+=80){
+   c.lineWidth=5.6;c.strokeStyle='#435657';c.beginPath();c.moveTo(x,0);c.lineTo(x+direction*400,480);c.stroke();
+   c.lineWidth=1.5;c.strokeStyle='#83908a';c.beginPath();c.moveTo(x-1,0);c.lineTo(x-1+direction*400,480);c.stroke();
+  }
  }
  const map=new T.CanvasTexture(canvas);map.colorSpace=T.SRGBColorSpace;map.wrapS=map.wrapT=T.RepeatWrapping;map.anisotropy=4;return map;
 }
 function rectangleUV(geometry,width,height,scale){const uv=geometry.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*width/scale,uv.getY(i)*height/scale);return geometry;}
 
-export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width,length,includeBackground=true,includeSky=true}={}){
+export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width,length,includeBackground=true,includeSky=true,finishes={}}={}){
  if(width!==undefined||length!==undefined)layout=createPlaygroundLayout({width,length});
  const group=new T.Group();group.name='playground70-independent-outdoor';if(parent)parent.add(group);
  const geometries=new Set(),materials=new Set(),textures=new Set(),batches=new Map(),referenceObjects=[];
  const ownGeo=g=>(geometries.add(g),g),ownTexture=t=>(t&&textures.add(t),t);
  const mat=(color,extra={})=>{const m=new T.MeshStandardMaterial({color,roughness:.77,...extra});materials.add(m);return m;};
- const grass=mat('#ffffff',{map:ownTexture(surfaceTexture('grass')),roughness:.94}),track=mat('#ffffff',{map:ownTexture(surfaceTexture('track')),roughness:.86});
+ const grass=mat('#ffffff',{map:finishes.turf||ownTexture(surfaceTexture('grass')),roughness:.94}),track=mat('#ffffff',{map:finishes.track||ownTexture(surfaceTexture('track')),roughness:.86});
+ grass.onBeforeCompile=shader=>{
+  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+  vec2 turfMetres=vMapUv*1.6;
+  float mowing=.5+.5*sin(turfMetres.y*1.27+.16*sin(turfMetres.x*.81));
+  float patches=sin(turfMetres.x*.73+turfMetres.y*.20)*sin(turfMetres.y*.94);
+  diffuseColor.rgb*=vec3(.79,.82,.62)*(.88+.12*mowing+.074*patches);`);
+ };grass.customProgramCacheKey=()=> 'mown-school-field91';
  const concrete=mat('#ffffff',{map:ownTexture(surfaceTexture('concrete')),roughness:.86}),wall=mat('#e9e4d3'),cap=mat('#c9cabc'),steel=mat('#516d6a',{metalness:.27,roughness:.6}),white=mat('#f0efdc'),wood=mat('#ffffff',{map:ownTexture(surfaceTexture('wood')),roughness:.75}),chalk=mat('#113f33'),frame=mat('#84958a',{metalness:.45,roughness:.42});
  const fenceMap=ownTexture(paintedTexture('fence')),fence=mat('#ffffff',{map:fenceMap,side:T.DoubleSide,alphaTest:.25,roughness:.72,metalness:.12});
  const machineColors=[mat('#265b81',{roughness:.4}),mat('#e0ddd0',{roughness:.4}),mat('#c44631',{roughness:.4})],dark=mat('#263d46'),glass=mat('#7bb8be',{roughness:.25}),lightGlass=mat('#d3e5d6',{roughness:.28}),amber=mat('#e8b649'),blue=mat('#2799b7'),red=mat('#d84532'),yellow=mat('#d9bd3b');
@@ -100,14 +100,19 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  }
  const box=(m,p,size,rotation)=>add(unitBox,m,p,rotation||[0,0,0],size);
  function panel(m,p,w,h,yaw=0,uvScale=null,bucket='static'){
-  const g=new T.PlaneGeometry(w,h);if(uvScale)rectangleUV(g,w,h,uvScale);add(g,m,p,[0,yaw,0],[1,1,1],bucket);g.dispose();
+  const g=new T.PlaneGeometry(w,h);if(uvScale)rectangleUV(g,w,h,uvScale);const surface=add(g,m,p,[0,yaw,0],[1,1,1],bucket);g.dispose();return surface;
+ }
+ function setPrintBand(surface,band){
+  const uv=surface.attributes.uv,pad=4/960;
+  for(let i=0;i<uv.count;i++)uv.setXY(i,pad+uv.getX(i)*(1-2*pad),(2-band)/3+pad+uv.getY(i)*(1/3-2*pad));
  }
  function uprightBoard(x,z,yaw,width,height,material){
   const root=new T.Group();root.position.set(x,0,z);root.rotation.y=yaw;root.updateMatrixWorld(true);
   const pt=(a,b,c)=>new T.Vector3(a,b,c).applyMatrix4(root.matrixWorld).toArray();
   for(const xx of[-width/2+.08,width/2-.08])box(steel,pt(xx,1.12,0),[.07,2.24,.07]);
-  box(frame,pt(0,1.62,0),[width+.12,height+.12,.12],[0,yaw,0]);panel(material,pt(0,1.62,.067),width,height,yaw);
+  box(frame,pt(0,1.62,0),[width+.12,height+.12,.12],[0,yaw,0]);
   box(cap,pt(0,2.43,.01),[width+.40,.08,.64],[0,yaw,0]);
+  return panel(material,pt(0,1.62,.067),width,height,yaw);
  }
  const b=layout.bounds,t=layout.track;
  // All seams share the same coordinates as the pure collider layout.
@@ -174,17 +179,19 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  panel(chalk,[board.x,board.y,board.z-.056],board.width,board.height,Math.PI);
  box(frame,[board.x,board.y-board.height/2-.04,board.z-.10],[board.width+.12,.04,.16]);
  const boardTarget=new T.Mesh(ownGeo(new T.PlaneGeometry(board.width,board.height)),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));materials.add(boardTarget.material);boardTarget.name='playground-teacher-writing-board';boardTarget.position.set(board.x,board.y,board.z-.061);boardTarget.rotation.y=Math.PI;boardTarget.userData.interaction='board';group.add(boardTarget);referenceObjects.push(boardTarget);
- const posterBlue=mat('#ffffff',{map:ownTexture(paintedTexture('blue')),roughness:.85}),posterOrange=mat('#ffffff',{map:ownTexture(paintedTexture('orange')),roughness:.85});
+ const campaigns=mat('#ffffff',{map:ownTexture(paintedTexture('campaigns')),roughness:.85});
  const sportsPoster=mat('#ffffff',{map:ownTexture(paintedTexture('sports')),roughness:.85});
- for(const [i,n]of layout.notices.entries())uprightBoard(n.x,n.z,n.yaw,n.width,n.height,i===0?sportsPoster:i%2?posterOrange:posterBlue);
+ for(const [i,n]of layout.notices.entries()){
+  const face=uprightBoard(n.x,n.z,n.yaw,n.width,n.height,i===0?sportsPoster:campaigns);
+  if(i>0)setPrintBand(face,(i-1)%3);
+ }
  const sportsBanner=mat('#ffffff',{map:ownTexture(paintedTexture('track-banner')),roughness:.85});
  const bannerZ=layout.vending[0].z-2.3;
  panel(sportsBanner,[b.minX+.023,1.30,bannerZ],4.55,1.35,Math.PI/2);
- // A mixture of blue/orange school banners is visible along the real walls.
  for(let i=0;i<12;i++){
   const z=b.minZ+3.2+i*(b.length-6.4)/11;
-  if(z+1.7<layout.entrance.minZ||z-1.7>layout.entrance.maxZ)panel(i%2?posterBlue:posterOrange,[b.maxX-.011,1.30,z],3.4,1.34,-Math.PI/2);
-  if(Math.abs(z+1.1-bannerZ)>3.9)panel(i%2?posterOrange:posterBlue,[b.minX+.011,1.30,z+1.1],3.2,1.34,Math.PI/2);
+  if(z+1.7<layout.entrance.minZ||z-1.7>layout.entrance.maxZ)setPrintBand(panel(campaigns,[b.maxX-.011,1.30,z],3.4,1.34,-Math.PI/2),i%3);
+  if(Math.abs(z+1.1-bannerZ)>3.9)setPrintBand(panel(campaigns,[b.minX+.011,1.30,z+1.1],3.2,1.34,Math.PI/2),(i+1)%3);
  }
  panel(sportsPoster,[t.cx,1.30,b.minZ+.011],5.4,1.8,0);
  const vendingTargets=new Map();
@@ -222,6 +229,7 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
   // Continuous exterior ground prevents the arena looking like a floating box.
   box(concrete,[t.cx,-.14,t.cz],[115,.12,115]);
 
+  const glazing=finishes.facade?mat('#f5f4ed',{map:finishes.facade,roughness:.69}):null;
   const city=[mat('#b6bfae'),mat('#d4d2bd'),mat('#b3c5c5'),mat('#b5af93')],window=mat('#617f7c',{roughness:.4,metalness:.12}),windowLight=mat('#b3d1c9',{roughness:.4});
   // Three residential clusters leave the long elevations open to the sky.
   const buildings=[
@@ -236,6 +244,14 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
    for(let level=3;level<a.h-1;level+=3.5)box(cap,[a.x,level,a.z],[a.w+.08,.10,a.d+.08]);
    for(const side of[-1,1])box(cm,[a.x+side*(a.w/2-.11),a.h/2-1,a.z],[.22,a.h+.1,a.d+.13]);
    const rows=Math.floor(a.h/.93),cols=Math.max(2,Math.floor(a.w/.66));
+   if(glazing){
+    for(const side of [-1,1]){
+     panel(glazing,[a.x,(a.h-1)*.5,a.z+side*(a.d/2+.022)],a.w-.28,a.h-.98,side===1?0:Math.PI,3.65,'city-window');
+     panel(glazing,[a.x+side*(a.w/2+.018),(a.h-1)*.5,a.z],a.d-.29,a.h-.98,side*Math.PI/2,3.65,'city-window');
+    }
+    for(const dx of [-.32,0,.32])box(cap,[a.x+a.w*dx,a.h*.5-1,a.z+a.d*.5+.050],[.085,a.h,.095]);
+    continue;
+   }
    for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
     const y=.20+row*.93,x=a.x+(col-(cols-1)/2)*.66,wm=(row+col+a.seed)%7===0?windowLight:window;
     // Exterior panes are single outward faces: hidden back/side box faces do
@@ -249,7 +265,12 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
   const skyMaterial=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,uniforms:{},vertexShader:'varying vec3 localP; void main(){localP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 localP;
    float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
    float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.)),f.x),f.y);}
-   void main(){vec3 n=normalize(localP);float h=max(n.y,0.);vec3 color=mix(vec3(.70,.87,.88),vec3(.16,.74,.84),smoothstep(0.,.8,h));vec2 p=n.xz/max(.23,n.y)*1.8;float f=noise(p)+noise(p*2.)*.35;float cloud=smoothstep(.78,.90,f)*smoothstep(.08,.30,h);color=mix(color,vec3(.95,.96,.90),cloud*.92);gl_FragColor=vec4(color,1.);}`});materials.add(skyMaterial);
+   void main(){vec3 n=normalize(localP);float h=max(n.y,0.);vec3 color=mix(vec3(.70,.87,.88),vec3(.16,.74,.84),smoothstep(0.,.8,h));vec2 p=n.xz/(.20+n.y*.78)*2.15;
+    float coarse=noise(p), detail=noise(p*2.7+.43), f=coarse*.62+detail*.26+noise(p*6.5)*.12;
+    float bank=smoothstep(.47,.64,f)*smoothstep(.025,.22,h);
+    float sunward=smoothstep(.41,.72,noise(p+vec2(.09,.15))*.70+.30*detail);
+    vec3 cloud=mix(vec3(.72,.83,.86),vec3(1.,.986,.94),sunward);
+    color=mix(color,cloud,bank*.97);gl_FragColor=vec4(color,1.);}`});materials.add(skyMaterial);
   const sky=new T.Mesh(ownGeo(new T.SphereGeometry(90,32,16)),skyMaterial);sky.position.set(t.cx,0,t.cz);sky.name='playground-outdoor-sky';sky.renderOrder=-10;group.add(sky);
  }
  unitBox.dispose();

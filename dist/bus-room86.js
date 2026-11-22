@@ -2,15 +2,19 @@
 // seat originate from the same measurements used by both room authorities.
 import * as T from './vendor/three.module.js';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
-import {BUS,BUS_SEATS,BUS_DECK_SLABS,COACH_CUSHION} from './bus-layout86.js?v=campus-87';
+import {coachDistanceAt} from './excursion-journey91.js?v=campus-91';
+import {createExcursionRoad} from './excursion-road91.js?v=campus-91';
+import {BUS,BUS_SEATS,BUS_DECK_SLABS,COACH_CUSHION} from './bus-layout86.js?v=campus-91';
 
-export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor}){
+export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor,finishes={}}){
  const group=new T.Group();group.name='excursion-ground-floor';scene.add(group);group.visible=false;
- const shells=[],chairs=new Map(),cabinets=new Map(),lockers=[],owned=[],ownedTextures=[],leaves=[],cityMoving=new T.Group();
+ const shells=[],chairs=new Map(),cabinets=new Map(),lockers=[],owned=[],ownedTextures=[],leaves=[],wheels=[];
+ const world=new T.Group(),vehicle=new T.Group();world.name='excursion-route-world';vehicle.name='excursion-moving-coach';group.add(world);world.add(vehicle);
+ let road=null;
  let stop=null,batches=null,built=false,bell=null,driverGate=null,liftCopy=null,sky=null,doorAmount=1,liftAmount=1,driverAmount=1,disposed=false;
  function build(){
   if(built)return;built=true;
-  const coach=new T.Group(),city=new T.Group();stop=new T.Group();group.add(stop,coach,city,cityMoving);shells.push(stop,coach);let fixed=stop;
+  const coach=new T.Group();stop=new T.Group();stop.name='excursion-origin-station';world.add(stop);vehicle.add(coach);shells.push(stop,coach);let fixed=stop;
   const C=(color,rough=.75,extra={})=>mat(color,{roughness:rough,...extra});
   const paint=C('#f4ab12',.52),edge=C('#e8bb37'),night=C('#293442',.55),tire=C('#28272c',.93),iron=C('#727d7f',.46),cream=C('#eee4cc'),plaster=C('#eee7d4'),lip=C('#637879'),amber=C('#be5b26'),red=C('#b43d32',.43),white=C('#f0eedd'),oak=C('#bb814c'),cab=C('#ded4bf'),rubber=C('#525e68'),glass=C('#72a6d5',.24,{transparent:true,opacity:.22,depthWrite:false}),lit=C('#fff7d6',.38,{emissive:'#ffefb2',emissiveIntensity:.5});
   const B=(m,x,y,z,w,h,d,parent=fixed,rot=null)=>box(m,[x,y,z],[w,h,d],rot,parent);
@@ -20,7 +24,14 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   function label(words,bg,ink,size=80){return C('#ffffff',.85,{map:texture(640,256,(c,w,h)=>{if(bg){c.fillStyle=bg;c.fillRect(0,0,w,h);}c.fillStyle=ink;c.textAlign='center';c.textBaseline='middle';c.font='bold '+size+'px "PingFang SC","Microsoft YaHei",sans-serif';c.fillText(words,w/2,h/2,w*.94);}),transparent:!bg,depthWrite:!!bg});}
   function sign(m,x,y,z,w,h,angle=0,parent=fixed){const face=shape(new T.PlaneGeometry(w,h),m,x,y,z,parent);face.rotation.y=angle;face.castShadow=false;return face;}
   function patterned(base,dot,scale){const tex=texture(256,256,(c,w,h)=>{c.fillStyle=base;c.fillRect(0,0,w,h);let n=86;for(let i=0;i<1250;i++){n=(Math.imul(n,1664525)+1013904223)>>>0;const x=n%256,y=n>>>11&255;c.fillStyle=i%4?dot:'#ffffff24';c.fillRect(x,y,1+(i%4),1+(i%2));}});tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(...scale);return C('#ffffff',.94,{map:tex});}
-  const felt=patterned('#c97a36','#af673331',[2,2]),asphalt=patterned('#494d50','#737773a0',[12,6]),floor=patterned('#74838e','#53606e72',[9,3]);
+  const felt=finishes.upholstery?C('#ffffff',.85,{map:finishes.upholstery}):patterned('#ab6036','#af673331',[2,2]),asphalt=patterned('#494d50','#737773a0',[12,6]),floor=C('#ffffff',.83);
+  const tread=texture(192,192,(c,w,h)=>{
+   c.fillStyle='#656e73';c.fillRect(0,0,w,h);
+   for(let y=-12;y<h+12;y+=24)for(let x=-12;x<w+12;x+=24){
+    const dx=x+(y%48===12?12:0);c.fillStyle='#566067';c.beginPath();c.ellipse(dx,y,5.4,2.7,-.61,0,Math.PI*2);c.fill();
+    c.strokeStyle='#829094';c.lineWidth=1;c.beginPath();c.ellipse(dx,y-.35,5.1,2.6,-.61,Math.PI,Math.PI*1.87);c.stroke();
+   }
+  });tread.wrapS=tread.wrapT=T.RepeatWrapping;tread.repeat.set(30,8);floor.map=tread;
   const body=BUS.body,S=BUS.stairs,L=BUS.low,U=BUS.high;
   // Station, painted skirting, glazed bays and triangular paper garlands.
   B(stationFloor||plaster,9.82,-.08,1.02,5.24,.16,15.85);B(plaster,9.82,3.63,1.02,5.34,.13,15.97);
@@ -59,31 +70,10 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   for(const x of [-7.99,-3.75,.51,4.75])R(iron,x+.2,.17,3.22,2.03,.35,.44,.052);
   sign(label('候车区','#f9e79c','#385a46',103),-7.77,1.88,-6.20,.99,.38);
   rod(iron,[-7.77,0,-6.23],[-7.77,1.99,-6.23],.043);
-  B(plaster,7.092,1.78,.95,.07,3.60,15.82);B(asphalt,1,-.13,-22.9,178,.17,8.8,city);B(asphalt,0,-.20,-12.15,178,.16,12.85,city);
+  B(plaster,7.092,1.78,.95,.07,3.60,15.82);
   for(let x=-10;x<17;x+=2.2)B(cream,x,.006,-10.03,1.16,.011,.10);
-  const lawn=C('#81a854');
-  // Both flanks and the horizon need ground from the exposed top deck.
-  B(C('#91ab70'),0,-.47,-2,195,.35,178,city);
-  B(asphalt,0,-.16,12,172,.16,8.45,city);
-  B(C('#d4ccb7'),0,-.10,17.15,172,.15,2.2,city);B(lawn,2,-.22,-33,135,.24,18,city);const concrete=C('#cbc6b4');B(concrete,1,-.06,-27.54,135,.15,1.55,city);
-  const building=[C('#ccd2c9'),C('#c3d4da'),C('#d8c8b6')],cityGlass=C('#768f96'),leaf=C('#59864d'),leafLight=C('#75974f');
-  for(let i=0;i<29;i++){const x=-108+i*8.1,z=-43-(i%3)*3.1,h=6+((i%6)*11%10),wall=building[i%3];B(wall,x,h/2,z,6.3,h,5,cityMoving);B(cream,x,h+.08,z,6.5,.17,5.2,cityMoving);for(let row=1;row<h/1.65;row++)for(let k=-2;k<=2;k++)B(cityGlass,x+k*1.10,row*1.55,z+2.52,.71,.83,.045,cityMoving);
-   if(i%2===0){rod(oak,[x,0,-30],[x,2.45,-30],.14,cityMoving);for(let j=0;j<3;j++)shape(new T.IcosahedronGeometry(1.37-j*.12,1),j===1?leafLight:leaf,x+j*.53-.5,2.8+j*.15,-30+(j%2)*.44,cityMoving);}
-   rod(iron,[x,0,-26.9],[x,4.4,-26.9],.055,cityMoving);rod(iron,[x,4.4,-26.9],[x+.61,4.67,-26.9],.046,cityMoving);B(night,x+.68,4.67,-26.9,.46,.10,.15,cityMoving);
-  }
-  const facadeTex=texture(256,384,(c,w,h)=>{c.fillStyle='#c3cabc';c.fillRect(0,0,w,h);for(let row=0;row<6;row++){const y=row*64;c.fillStyle='#d9dacd';c.fillRect(0,y,w,6);for(let j=0;j<4;j++){const x=9+j*64;c.fillStyle='#5d7782';c.fillRect(x,y+13,46,36);const shade=c.createLinearGradient(0,y+13,0,y+49);shade.addColorStop(0,'#a1bbc5');shade.addColorStop(1,'#71949e');c.fillStyle=shade;c.fillRect(x+2,y+15,42,32);c.fillStyle='#c6cbbb';c.fillRect(x+21,y+14,2,35);c.fillRect(x+1,y+24,44,2);c.fillRect(x-2,y+49,50,3);}}});
-  const glazedFacade=C('#ffffff',.69,{map:facadeTex}),shadowWall=C('#a4aaa2'),tealTrim=C('#758d89'),roof=C('#899a9b'),pavement=C('#b9b4a5'),trunk=C('#786452');
-  for(let i=0;i<27;i++){const k=i%6,x=-95+i*8.1,z=25+(k%3)*3,h=4.8+(k%4)*1.9;
-   B(building[k%3],x,h/2,z,6.76,h,5.4,cityMoving);
-   sign(glazedFacade,x,h*.52,z-2.714,6.57,h*.90,Math.PI,cityMoving);
-   B(roof,x,h+.10,z,6.91,.23,5.61,cityMoving);B(tealTrim,x,h*.13,z-2.79,6.78,.14,.18,cityMoving);
-   if(k%2===0){B(shadowWall,x+.8,h+.52,z+.3,1.85,.88,1.35,cityMoving);B(roof,x+.8,h+.99,z+.3,2,.11,1.49,cityMoving);}
-   if(k!==2){B(pavement,x,.04,17.6,1.43,.11,1.27,cityMoving);rod(trunk,[x,.10,17.6],[x,2.48,17.6],.13,cityMoving);for(const [dx,dy,dz,rad]of [[-.45,2.9,0,1.14],[.45,3.02,.16,1.01],[0,3.72,.1,1.08]])shape(new T.IcosahedronGeometry(rad,1),k%2?leaf:leafLight,x+dx,dy,17.6+dz,cityMoving);}
-   for(const zRail of [8.0,-18.7]){B(iron,x,1.03,zRail,8.1,.07,.065,cityMoving);B(iron,x,.57,zRail,8.1,.045,.045,cityMoving);for(const dx of [-3.8,0])B(iron,x+dx,.54,zRail,.068,1.08,.068,cityMoving);}
-  }
-  // Rounded hills close the long sightline at either end of the street.
-  for(let i=0;i<26;i++){const a=i*Math.PI*2/26,x=76*Math.sin(a),z=64*Math.cos(a)-5;const hill=shape(new T.IcosahedronGeometry(1,2),i%2?lawn:leafLight,x,-1.1,z,city);hill.scale.set(14+i%4*2,4+i%5,12);}
-  for(let i=0;i<44;i++)B(white,-76+i*4.05,.002,-23,1.76,.012,.11,cityMoving);
+  road=createExcursionRoad(world,{asphalt,facade:finishes.facade});
+  road.update(0,0);
   fixed=coach;
   // Wheel arches, laminated glass, sloping cab windscreen and double belt line.
   const min=body.minX,max=body.maxX,near=body.maxZ,far=body.minZ,midZ=(near+far)/2;
@@ -93,7 +83,13 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
    for(const [a,b]of (dir>0?[[min,9.15],[10.95,12.58]]:[[min,12.58]])){const n=Math.ceil((b-a)/2.65);B(night,(a+b)/2,1.75,z,b-a,.12,.15);B(night,(a+b)/2,3.055,z,b-a,.12,.15);
     for(let i=0;i<n;i++){const x0=a+(b-a)*i/n,x1=a+(b-a)*(i+1)/n;B(night,x0+.039,2.4,z,.084,1.35,.15);B(glass,(x0+x1)/2,2.41,z,x1-x0-.08,1.23,.035);}B(night,b-.037,2.4,z,.075,1.34,.15);}
    B(paint,3.18,3.22,z,19.70,.31,.18);
-   for(const wheelX of [-4.83,11.72]){const ay=.55;rod(tire,[wheelX,ay,z-dir*.18],[wheelX,ay,z+dir*.16],.60,fixed,24);rod(red,[wheelX,ay,z+dir*.17],[wheelX,ay,z+dir*.19],.38,fixed,20);rod(iron,[wheelX,ay,z+dir*.19],[wheelX,ay,z+dir*.205],.165,fixed,16);for(let k=0;k<6;k++){const a=k*Math.PI/3;rod(night,[wheelX+.257*Math.sin(a),ay+.257*Math.cos(a),z+dir*.19],[wheelX+.257*Math.sin(a),ay+.257*Math.cos(a),z+dir*.207],.035);}}
+   for(const wheelX of [-4.83,11.72]){
+    const hub=new T.Group();hub.position.set(wheelX,.55,z);vehicle.add(hub);wheels.push(hub);
+    rod(tire,[0,0,-dir*.18],[0,0,dir*.16],.60,hub,24);rod(red,[0,0,dir*.17],[0,0,dir*.19],.38,hub,20);
+    rod(iron,[0,0,dir*.19],[0,0,dir*.205],.165,hub,16);
+    for(let k=0;k<6;k++){const a=k*Math.PI/3,dx=.257*Math.sin(a),dy=.257*Math.cos(a);rod(night,[dx,dy,dir*.19],[dx,dy,dir*.207],.035,hub);}
+    bakeStatic(hub);
+   }
   }
   B(paint,min+.03,1.25,midZ,.12,1.40,5.03);B(glass,min+.04,2.36,midZ,.08,1.28,4.72);B(cream,min+.13,2.42,midZ,.10,1.42,1.05);
   B(paint,max-.04,1.19,midZ,.13,1.0,4.98);B(night,max+.031,.76,midZ,.04,.16,4.72);
@@ -106,6 +102,32 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   B(paint,max-.17,1.72,midZ,.53,.15,4.93);B(night,max+.04,1.18,midZ,.07,.28,1.49);B(edge,max+.09,.92,midZ,.025,.17,.51);
   for(const z of [far-.19,near+.19]){rod(night,[max-.91,2.89,z],[max-.54,2.92,z+(z<midZ?-.18:.18)],.035);R(night,max-.53,2.80,z+(z<midZ?-.19:.19),.25,.29,.12,.035);}
   for(const v of BUS_DECK_SLABS){B(cream,(v.minX+v.maxX)/2,(v.minY+v.maxY)/2,(v.minZ+v.maxZ)/2,v.maxX-v.minX,v.maxY-v.minY,v.maxZ-v.minZ);B(floor,(v.minX+v.maxX)/2,U+.005,(v.minZ+v.maxZ)/2,v.maxX-v.minX,.012,v.maxZ-v.minZ);}
+  const linerPrint=texture(512,256,(c,w,h)=>{
+   const arch=c.createLinearGradient(0,0,0,h);
+   for(const [stop,color] of [[0,'#8e8c83'],[.055,'#c6beaf'],[.16,'#e5ddcd'],[.38,'#f2ebdc'],[.62,'#f2ebdc'],[.84,'#e5ddcd'],[.945,'#c6beaf'],[1,'#8e8c83']])arch.addColorStop(stop,color);
+   c.fillStyle=arch;c.fillRect(0,0,w,h);
+   for(const y of [h*.145,h*.855]){
+    c.fillStyle='#8e887a';c.fillRect(0,y-1,w,1.5);c.fillStyle='#f5efe2';c.fillRect(0,y+1,w,2.5);
+   }
+   c.fillStyle='#b4ac9f';c.fillRect(0,0,2,h);c.fillStyle='#f8f1e6';c.fillRect(2,0,2,h);
+  });
+  linerPrint.wrapS=T.RepeatWrapping;
+  const liner=C('#fffaf2',.71,{map:linerPrint,emissive:'#c5bdad',emissiveMap:linerPrint,emissiveIntensity:.42});
+  const seam=C('#b8b1a1',.7),hatch=C('#e4ddce',.71,{emissive:'#c6beaf',emissiveIntensity:.28});
+  for(const slab of BUS_DECK_SLABS){
+   const x=(slab.minX+slab.maxX)*.5,z=(slab.minZ+slab.maxZ)*.5,w=slab.maxX-slab.minX,d=slab.maxZ-slab.minZ,ceiling=slab.minY-.008;
+   const skin=new T.PlaneGeometry(w,d).rotateX(Math.PI*.5),pos=skin.attributes.position,uv=skin.attributes.uv;
+   for(let i=0;i<pos.count;i++)uv.setXY(i,(x+pos.getX(i)-min)/2.2,(z+pos.getZ(i)-far)/(near-far));
+   shape(skin,liner,x,ceiling,z).castShadow=false;
+   for(const bayX of [-3.55,.85,5.25,9.65]){
+    if(bayX-.32<slab.minX||bayX+.32>slab.maxX||midZ-.20<slab.minZ||midZ+.20>slab.maxZ)continue;
+    B(seam,bayX,ceiling-.014,midZ,.61,.021,.37);B(hatch,bayX,ceiling-.026,midZ,.585,.010,.343);
+    B(seam,bayX+.18,ceiling-.032,midZ,.058,.004,.013);
+   }
+   for(const sideZ of [far+.76,near-.76])if(sideZ>slab.minZ+.09&&sideZ<slab.maxZ-.09){
+    B(iron,x,ceiling-.028,sideZ,w-.02,.046,.145);B(lit,x,ceiling-.051,sideZ,w-.038,.013,.093);
+   }
+  }
   for(const z of [far+.13,near-.13]){for(let i=0;i<10;i++){const x=min+.28+i*1.96;rod(red,[x,U,z],[x,U+.80,z],.049);rod(red,[x,U+.80,z],[x+1.87,U+.80,z],.049);rod(red,[x+1.87,U+.80,z],[x+1.87,U,z],.049);}B(edge,3.33,U+.12,z,19.8,.25,.12);}
   for(const x of [min+.15,max-.16])for(const h of [.34,.79])rod(red,[x,U+h,far+.13],[x,U+h,near-.13],.05);
   // Every visible tread rests on the ramp used for foot and camera support.
@@ -113,9 +135,9 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
    B(rubber,x,h-.08,(S.minZ+S.maxZ)/2,(S.maxX-S.minX)/totalSteps+.003,.16,S.maxZ-S.minZ);B(edge,x+(S.maxX-S.minX)/totalSteps*.46,h+.006,(S.minZ+S.maxZ)/2,.044,.013,S.maxZ-S.minZ);}
   for(const z of [S.minZ-.03,S.maxZ+.03]){rod(iron,[S.maxX,L+.75,z],[S.minX,U+.75,z],.05);for(let i=0;i<5;i++){const q=i/4,x=S.maxX+(S.minX-S.maxX)*q,h=L+(U-L)*q;rod(iron,[x,h,z],[x,h+.74,z],.039);}}
   for(let i=0;i<4;i++){const z=-9.82-i*.24;B(rubber,10.05,.081+i*.087,z,1.74,.16+i*.175,.25);B(edge,10.05,.163+i*.174,z+.10,1.70,.014,.037);}
-  for(const side of [-1,1]){const g=new T.Group();g.position.set(10.05+side*1.28,L,near);group.add(g);B(paint,0,.38,0,.86,.74,.09,g);for(const sideX of [-.393,.393])B(night,sideX,1.49,0,.066,1.55,.10,g);for(const h of [.75,2.24])B(night,0,h,0,.86,.066,.10,g);B(glass,0,1.51,0,.74,1.41,.035,g);leaves.push({o:g,side});}
+  for(const side of [-1,1]){const g=new T.Group();g.position.set(10.05+side*1.28,L,near);vehicle.add(g);B(paint,0,.38,0,.86,.74,.09,g);for(const sideX of [-.393,.393])B(night,sideX,1.49,0,.066,1.55,.10,g);for(const h of [.75,2.24])B(night,0,h,0,.86,.066,.10,g);B(glass,0,1.51,0,.74,1.41,.035,g);leaves.push({o:g,side});}
   // Driver and bathroom are real separate spaces on the lower deck.
-  B(cream,11.12,L+1.24,-14.66,.11,2.43,2.27);driverGate=B(cream,11.13,L+1.16,-12.12,.11,2.30,2.70,group);
+  B(cream,11.12,L+1.24,-14.66,.11,2.43,2.27);driverGate=B(cream,11.13,L+1.16,-12.12,.11,2.30,2.70,vehicle);
   sign(label('驾驶室','#f3eedb','#3c4546',100),11.046,L+1.80,-14.57,1.12,.45,-Math.PI/2);
   R(night,12.62,L+.47,-14.89,.55,.22,.63);R(night,12.43,L+.84,-14.89,.15,.69,.64);
   B(night,13.02,L+.83,-14.60,.47,.26,1.66);const steering=shape(new T.TorusGeometry(.235,.032,8,22),night,12.80,L+1.02,-14.80);steering.rotation.y=Math.PI/2-.38;
@@ -125,15 +147,21 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   rod(oak,[-4.15,L+.11,-15.51],[-4.15,L+.82,-15.51],.024);shape(new T.ConeGeometry(.13,.13,14),red,-4.15,L+.10,-15.51);B(iron,-4.72,L+1.02,-15.70,.28,.13,.18);rod(white,[-4.81,L+.97,-15.58],[-4.62,L+.97,-15.58],.10);
   const boardFace=label('秋 游 班 会','#285647','#e8ead8',66);B(iron,9.15,L+1.36,far+.14,2.12,1.09,.07);sign(boardFace,9.15,L+1.36,far+.19,2.04,1.01);
   const speaker=C('#deaa39');for(const x of [-5.85,8.85]){R(night,x,L+2.18,far+.13,.37,.47,.16);rod(speaker,[x,L+2.18,far+.20],[x,L+2.18,far+.25],.127);rod(night,[x,L+2.18,far+.25],[x,L+2.18,far+.26],.061);}
-  for(const s of BUS_SEATS){const h=s.busDeck?U:L,dir=Math.sign(Math.sin(s.yaw)),g=new T.Group();g.position.set(s.x,h,s.z);g.rotation.y=s.yaw;group.add(g);chairs.set(s.id,g);
+  for(const s of BUS_SEATS){const h=s.busDeck?U:L,dir=Math.sign(Math.sin(s.yaw)),g=new T.Group();g.position.set(s.x,h,s.z);g.rotation.y=s.yaw;vehicle.add(g);chairs.set(s.id,g);
    const wood=s.busDeck?oak:felt,cushion=COACH_CUSHION[s.surface],pad=s.busDeck?.075:.12;
    R(wood,0,cushion.top-pad/2,cushion.centerZ,.71,pad,cushion.depth,.038,g);
    const backTop=s.busDeck?1.03:1.20;R(wood,0,(backTop+cushion.top)/2,-.26,.71,backTop-cushion.top,.16,.058,g,[-.09,0,0]);
-   if(!s.busDeck){R(felt,0,1.22,-.295,.62,.21,.195,.055,g);R(cream,0,1.265,-.293,.376,.13,.207,.024,g);for(const sx of [-.20,.20])B(amber,sx,.877,-.167,.012,.38,.008,g);for(const side of [-1,1]){B(cream,side*.342,.82,-.259,.030,.78,.16,g);B(amber,side*.34,.54,-.04,.062,.075,.42,g);}B(iron,0,(cushion.top-pad)/2,.005,.22,cushion.top-pad,.26,g);}
+   if(!s.busDeck){
+    R(cream,0,1.26,-.295,.57,.27,.16,.042,g);
+    R(felt,0,1.265,-.293,.53,.263,.178,.044,g);
+    for(const sx of [-.20,.20])B(amber,sx,.877,-.167,.012,.38,.008,g);
+    for(const side of [-1,1]){B(cream,side*.342,.82,-.259,.030,.78,.16,g);B(amber,side*.34,.54,-.04,.062,.075,.42,g);}
+    B(iron,0,(cushion.top-pad)/2,.005,.22,cushion.top-pad,.26,g);
+   }
    else for(const side of [-1,1])for(const z of [-.21,.14])B(iron,side*.265,cushion.top/2,z,.033,cushion.top,.035,g);
    for(const side of [-1,1])B(iron,side*.24,(.62+cushion.top)/2,-.26,.03,.64-cushion.top,.035,g);
    bakeStatic(g);
-   const boxX=s.busDeck?s.deskX-dir*.37:s.deskX;const cabinet=new T.Group();cabinet.position.set(boxX,h,s.z);cabinet.rotation.y=s.yaw;group.add(cabinet);
+   const boxX=s.busDeck?s.deskX-dir*.37:s.deskX;const cabinet=new T.Group();cabinet.position.set(boxX,h,s.z);cabinet.rotation.y=s.yaw;vehicle.add(cabinet);
    const height=s.busDeck?.42:.83,bottom=s.busDeck?.33:.05,top=bottom+height;
    for(const side of [-1,1])B(cab,side*.267,(bottom+top)/2,0,.042,height,.39,cabinet);
    B(cab,0,top,0,.57,.045,.39,cabinet);B(cab,0,bottom,0,.57,.04,.39,cabinet);B(cab,0,(top+bottom)/2,.185,.57,height,.035,cabinet);
@@ -147,14 +175,15 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   for(const x of [-.05,3.95,7.95]){
    R(oak,x,U+.868,-14.205,1.11,.098,2.03,.035);for(const a of [-.41,.41])for(const b of [-.84,.84])B(iron,x+a,U+.42,-14.205+b,.043,.83,.043);
   }
+  fixed=stop;
   for(const [x,z] of [[-7.45,-10.38],[-7.45,-9.63],[13.93,-10.03]]){B(tire,x,.031,z,.33,.06,.33);shape(new T.ConeGeometry(.121,.60,12),red,x,.36,z);rod(white,[x,.33,z],[x,.39,z],.067);}
   // A blue zenith, bright horizon and sparse summer clouds stay outside all
   // shadow casters. Distant buildings drift only after the door actually closes.
   const skyTex=texture(1024,512,(c,w,h)=>{const g=c.createLinearGradient(0,0,0,h*.60);g.addColorStop(0,'#3095cc');g.addColorStop(.62,'#58c1ee');g.addColorStop(1,'#c3e8f1');c.fillStyle=g;c.fillRect(0,0,w,h);for(let i=0;i<45;i++){const x=(i*227)%w,y=124+i*113%107;c.fillStyle='rgba(255,255,250,.75)';for(let j=0;j<5;j++){c.beginPath();c.ellipse(x+j*5,y-Math.sin(j)*3,9,3.7+j%2,0,0,7);c.fill();}}});
-  const skyM=new T.MeshBasicMaterial({map:skyTex,side:T.BackSide,fog:false,depthWrite:false});sky=shape(new T.SphereGeometry(103,40,20),skyM,2,0,-10);sky.castShadow=false;sky.receiveShadow=false;sky.renderOrder=-100;group.attach(sky);
-  bakeStatic(stop);bakeStatic(coach);bakeStatic(city);bakeStatic(cityMoving);
+  const skyM=new T.MeshBasicMaterial({map:skyTex,side:T.BackSide,fog:false,depthWrite:false});sky=shape(new T.SphereGeometry(103,40,20),skyM,2,0,-10,group);sky.castShadow=false;sky.receiveShadow=false;sky.renderOrder=-100;
+  bakeStatic(stop);bakeStatic(coach);
   const furniture=[...chairs.values(),...[...cabinets.values()].map(c=>c.target)];
-  shells.push(...furniture);batches=instanceRigidProps(furniture,group);
+  shells.push(...furniture);batches=instanceRigidProps(furniture,vehicle);
  }
  function setActive(active){if(active)build();group.visible=active;if(active)batches?.sync();}
  function update(state,dt){
@@ -163,14 +192,20 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   doorAmount=approach(doorAmount,state.busDeparted?0:1,8);liftAmount=approach(liftAmount,state.elevator?.doorClosed?0:1,9);driverAmount=approach(driverAmount,state.officeLocked?0:1,8);
   for(const {o,side,lift}of leaves)o.position.x=lift?10.49+side*(.49+liftAmount*.95):10.05+side*(.445+doorAmount*.89);
   driverGate.position.z=-12.12-driverAmount*2.71;
-  if(state.busDeparted){const t=Math.max(0,(state.sceneElapsed??0)-(state.busDepartureAt??0)-.45),distance=2.85*(t-(1-Math.exp(-t)));
-   cityMoving.position.x=-(distance%48.6);stop.position.x=-Math.min(130,distance);stop.visible=distance<95;
-  }else{cityMoving.position.x=0;stop.position.x=0;stop.visible=true;}
+  // The station and road have fixed route coordinates; the coach and all its
+  // furniture travel on +X. The render origin follows the coach so interaction
+  // rays, remote players and cameras keep metre precision on long journeys.
+  const distance=coachDistanceAt(state.sceneElapsed,state.busDepartureAt);
+  vehicle.position.x=distance;
+  world.position.x=-distance;
+  for(const wheel of wheels)wheel.rotation.z=-(distance/.60)%(2*Math.PI);
+  stop.visible=distance<150;
+  road.update(distance,state.busRouteSeed??state.layoutSeed??0);
   const openIds=new Set((state.students||[]).filter(p=>p.drawerOpen&&p.seated).map(p=>p.seatId));if(state.drawer?.open&&state.player?.seated)openIds.add(state.player.seatId);
   let movingDrawer=false;
   for(const [id,rec]of cabinets){const target=openIds.has(id)?1:0;if(rec.open===target)continue;const next=approach(rec.open,target,13);rec.open=Math.abs(target-next)<.001?target:next;rec.drawer.rotation.x=-rec.open*Math.PI*.49;rec.foodAnchor.position.z=-.058-rec.open*.15;movingDrawer=true;}
   if(movingDrawer)batches.sync();
  }
- function dispose(){disposed=true;batches?.dispose();for(const geo of owned)geo.dispose();for(const t of ownedTextures)t.dispose();sky?.material.dispose();group.removeFromParent();}
+ function dispose(){disposed=true;road?.dispose();batches?.dispose();for(const geo of owned)geo.dispose();for(const t of ownedTextures)t.dispose();sky?.material.dispose();group.removeFromParent();}
  return {group,setActive,update,dispose,chairs,cabinets,lockers,shells,get bell(){return bell;},get liftPanel(){return liftCopy;}};
 }

@@ -6,19 +6,21 @@ const stateValue=(source,id,fallback)=>{const entry=source instanceof Map?source
 const damp=(a,b,dt)=>a+(b-a)*(1-Math.exp(-10*Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0))));
 function quiltGeometry(){
  const g=new T.PlaneGeometry(1.30,1.25,24,16);g.rotateX(-Math.PI/2);const p=g.attributes.position;
- for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),edge=Math.pow(Math.abs(z)/.625,8);p.setY(i,.010*Math.sin(x*9+.7)*Math.cos(z*3)+.006*Math.sin(z*15+x*3)-.044*edge);}
+ for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),edge=Math.pow(Math.abs(z)/.625,8);const shoulder=Math.exp(-Math.pow((x+.51)/.14,2));
+  const crease=.016*Math.sin(z*12+x*2.8)*shoulder+.010*Math.sin(x*13.4+.7*z)*Math.cos(z*3.1);
+  p.setY(i,.007*Math.sin(z*15+x*3)+crease-.061*edge);}
  g.computeVertexNormals();return g;
 }
 
-export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic}){
+export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic,finishes={}}){
  const group=new T.Group();group.name='dorm-classroom-furniture';parent.add(group);
  const fixed=new T.Group();fixed.name='dorm-fixed-furniture';group.add(fixed);
  const geometries=new Set(),materials=new Set(),textures=new Set(),borrowed=new Set();
  const own=g=>(geometries.add(g),g),material=(c,o={})=>{const m=mat(c,o);materials.add(m);return m;};
  const render=(g,m,p,root=fixed,r=null)=>{const o=new T.Mesh(g,m);o.position.set(...p);if(r)o.rotation.set(...r);o.castShadow=o.receiveShadow=true;root.add(o);return o;};
  const woodMap=texture(256,512,(c,w,h)=>{c.fillStyle='#b2a17b';c.fillRect(0,0,w,h);for(let i=0;i<96;i++){const x=(i*37.71)%w;c.strokeStyle=i%4?'rgba(74,44,21,.10)':'rgba(246,211,150,.15)';c.lineWidth=.7+(i%3)*.4;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x+Math.sin(i)*4,h*.3,x+Math.cos(i)*5,h*.7,x,h);c.stroke();}});textures.add(woodMap);
- const plaidMap=texture(512,512,(c,w,h)=>{c.fillStyle='#839699';c.fillRect(0,0,w,h);for(let i=0;i<4;i++){const n=i*128;c.fillStyle='rgba(204,204,180,.42)';c.fillRect(n+8,0,49,h);c.fillRect(0,n+8,w,49);c.fillStyle='rgba(25,46,53,.68)';c.fillRect(n+72,0,24,h);c.fillRect(0,n+72,w,24);c.fillStyle='rgba(9,27,36,.80)';c.fillRect(n+101,0,5,h);c.fillRect(0,n+101,w,5);c.fillStyle='rgba(220,221,198,.72)';c.fillRect(n+111,0,3,h);c.fillRect(0,n+111,w,3);}for(let y=0;y<h;y+=4){c.fillStyle=y%8?'rgba(230,230,213,.045)':'rgba(15,34,38,.055)';c.fillRect(0,y,w,1);}});textures.add(plaidMap);
- const wood=material('#fff',{map:woodMap,bumpMap:woodMap,bumpScale:.0015,roughness:.68}),endWood=material('#95886b',{roughness:.71}),recess=material('#594a36',{roughness:.82}),bracket=material('#55594f',{metalness:.38,roughness:.55}),cloth=material('#fff',{map:plaidMap,roughness:.96,side:T.DoubleSide}),mattressMat=material('#9baca9',{map:plaidMap,roughness:.94}),pillowMat=material('#a4b3b1',{roughness:.98}),pipingMat=material('#516268',{roughness:.91});
+ const plaidMap=finishes.cloth||texture(512,512,(c,w,h)=>{c.fillStyle='#839699';c.fillRect(0,0,w,h);for(let i=0;i<4;i++){const n=i*128;c.fillStyle='rgba(204,204,180,.42)';c.fillRect(n+8,0,49,h);c.fillRect(0,n+8,w,49);c.fillStyle='rgba(25,46,53,.68)';c.fillRect(n+72,0,24,h);c.fillRect(0,n+72,w,24);c.fillStyle='rgba(9,27,36,.80)';c.fillRect(n+101,0,5,h);c.fillRect(0,n+101,w,5);c.fillStyle='rgba(220,221,198,.72)';c.fillRect(n+111,0,3,h);c.fillRect(0,n+111,w,3);}for(let y=0;y<h;y+=4){c.fillStyle=y%8?'rgba(230,230,213,.045)':'rgba(15,34,38,.055)';c.fillRect(0,y,w,1);}});if(!finishes.cloth)textures.add(plaidMap);
+ const wood=material(finishes.veneer?'#bfab93':'#fff',{map:finishes.veneer||woodMap,roughness:.62}),endWood=material('#95886b',{roughness:.71}),recess=material('#594a36',{roughness:.82}),bracket=material('#55594f',{metalness:.38,roughness:.55}),cloth=material('#fff',{map:plaidMap,roughness:.96,side:T.DoubleSide}),mattressMat=material('#9baca9',{map:plaidMap,roughness:.94}),pillowMat=material('#c1c3b8',{roughness:.98}),pipingMat=material('#516268',{roughness:.91});
  // A separate enclosed dormitory, not the classroom shell with beds pasted in.
  const floorMap=texture(512,512,(c,w,h)=>{c.fillStyle='#929d9e';c.fillRect(0,0,w,h);let seed=801;const rand=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);for(let i=0;i<2400;i++){const x=rand()*w,y=rand()*h,size=1+rand()*3;c.fillStyle=['#b7bdb8','#748282','#c4c6bc','#818d8b'][i%4];c.beginPath();c.moveTo(x,y);c.lineTo(x+size,y+.4);c.lineTo(x+size*.4,y+size);c.closePath();c.fill();}c.strokeStyle='#7e8988';c.lineWidth=1;c.strokeRect(.5,.5,w-1,h-1);});textures.add(floorMap);floorMap.wrapS=floorMap.wrapT=T.RepeatWrapping;floorMap.repeat.set(4,9);
  const plasterMap=texture(256,256,(c,w,h)=>{c.fillStyle='#dfdaca';c.fillRect(0,0,w,h);for(let i=0;i<1800;i++){c.fillStyle=i%2?'rgba(95,95,81,.035)':'rgba(255,255,245,.05)';c.fillRect((i*83.7)%w,(i*37.41)%h,1+i%3,1);}});textures.add(plasterMap);
@@ -27,6 +29,14 @@ export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic}){
  const b=DORM_ROOM_BOUNDS,w=b.maxX-b.minX,d=b.maxZ-b.minZ;
  const floorGeo=own(new T.PlaneGeometry(w,d)),floorMat=material('#fff',{map:floorMap,roughness:.88}),ceilingMat=material('#677371',{roughness:.96}),pane=material('#659098',{roughness:.54,emissive:'#344c68',emissiveIntensity:.08});
  floorMap.repeat.set(4,6);
+ floorMat.onBeforeCompile=shader=>{
+  shader.fragmentShader=shader.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
+   vec2 roomUV=vMapUv/vec2(4.,6.);
+   float lightEnd=1.-smoothstep(.04,.64,roomUV.y);
+   float sash=(1.-smoothstep(.29,.48,abs(roomUV.x-.5)))*smoothstep(.018,.07,abs(roomUV.x-.5));
+   reflectedLight.indirectDiffuse+=diffuseColor.rgb*vec3(.016,.030,.055)*lightEnd*sash;
+   reflectedLight.indirectDiffuse*=mix(.74,1.0,smoothstep(.06,.28,min(roomUV.x,1.-roomUV.x)));`);
+ };floorMat.customProgramCacheKey=()=> 'dorm-window-on-floor91';
  for(const wall of [...DORM_SHELL_SOLIDS,...DORM_CORRIDOR_SOLIDS,...DORM_CEILINGS]){
   const mesh=box(wall.id.includes('ceiling')?ceilingMat:plaster,[(wall.minX+wall.maxX)/2,(wall.minY+wall.maxY)/2,(wall.minZ+wall.maxZ)/2],[wall.maxX-wall.minX,wall.maxY-wall.minY,wall.maxZ-wall.minZ],null,fixed);mesh.name=wall.id;
  }
@@ -102,6 +112,8 @@ export function createDormRoom({parent,box,rounded,mat,texture,bakeStatic}){
    rounded(mattressMat,[0,.55+base,0],[2.34,.18,1.23],.025,null,frame);
    const cover=render(own(quilt.clone()),cloth,[.45,.652+base,0],frame);cover.userData.animated=true;cover.userData.baseY=Float32Array.from(cover.geometry.attributes.position.array);cover.userData.sleep=0;cover.name='dorm-plaid-blanket-'+bed.id;covers.set(bed.id,cover);
    rounded(pillowMat,[-.83,.668+base,0],[.49,.135,.94],.06,null,frame);
+   // Sewn end hems stop just inside the pillow's round shoulder.
+   for(const end of [-1,1])rounded(pipingMat,[-.83,.666+base,end*.455],[.419,.011,.012],.004,null,frame);
    rounded(pipingMat,[-.83,.621+base,0],[.50,.022,.945],.01,null,frame);
    // A folded edge at the shoulder rather than a flat plaid texture alone.
    rounded(cloth,[-.24,.648+base,0],[.13,.038,1.23],.014,null,frame);

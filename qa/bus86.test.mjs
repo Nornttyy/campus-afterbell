@@ -46,11 +46,12 @@ test('every seat admits an ordinary-speed arrival before the bell, with no dupli
  assert.equal(r.students.filter(s=>s.seated).length,BUS_SEATS.length);assert.equal(new Set(r.students.map(s=>s.seatId)).size,28);
  for(const s of r.students){const seat=BUS_SEATS[s.seatId];assert.equal(s.busDeck,seat.busDeck);assert.equal(actorFloorHeight(s,'bus'),seat.supportHeight);assert.equal(busBlocked(seat.exitX,seat.exitZ,.18,seat.busDeck),false);}
 });
-test('student controls use the cabinet on the chosen deck and wait for passengers before departing',()=>{
+test('the bell boards a student waiting at the station and their cabin cabinet remains usable',()=>{
  const r=createSoloRound({map:'bus',role:'student'});r.start({gathering:true});assert.ok(r.startBell());
- for(let i=0;i<31;i++)r.step(1);assert.equal(r.snapshot().busDeparted,false);
- const seat=BUS_SEATS[r.player.id],p=r.player;Object.assign(p,{x:seat.exitX,z:seat.exitZ,busDeck:1});assert.equal(r.interact(seat.id),false);
- p.busDeck=seat.busDeck;assert.equal(r.interact(seat.id),'seated');assert.equal(r.setDrawerOpen(true),true);assert.equal(r.snapshot().drawer.slots.length,3);
+ for(let i=0;i<29;i++)r.step(1);assert.equal(r.snapshot().busDeparted,false);
+ r.step(1);assert.equal(r.snapshot().busDeparted,true);
+ const seat=BUS_SEATS[r.player.seatId],p=r.player;assert.ok(p.seated);assert.equal(p.busDeck,seat.busDeck);
+ assert.equal(r.setDrawerOpen(true),true);assert.equal(r.snapshot().drawer.slots.length,3);
  assert.ok(r.setDrawerOpen(false));r.step(.25);assert.equal(r.snapshot().busDeparted,true);assert.equal(r.interact(),'stood');assert.equal(r.layout.busDeparted,true);
  const before=r.snapshot().busDepartureAt;r.step(.5);assert.equal(r.snapshot().busDepartureAt,before);
 });
