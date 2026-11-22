@@ -1,10 +1,10 @@
-import {paperQuestion} from './upper-floor-view85.js?v=campus-90';
+import {paperQuestion} from './upper-floor-view85.js?v=campus-91';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-84';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-84';
 import {loadFurniture67} from './furniture-assets67.js?v=campus-83';
 import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-83';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
-import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-90';
+import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-91';
 import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-83';
 import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-83';
 import {gameplayFov} from './view-tuning55.js?v=campus-83';
@@ -12,31 +12,31 @@ import {setCharacterNight} from './character-materials.js?v=campus-83';
 import {createStaminaVision} from './stamina-vision55.js?v=campus-83';
 import {createSoundCues} from './sound-cue55.js?v=campus-83';
 import {createChalkPowder} from './chalk-powder55.js?v=campus-83';
-import {createSurveillanceView} from './surveillance-view54.js?v=campus-90';
+import {createSurveillanceView} from './surveillance-view54.js?v=campus-91';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-83';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
 import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-83';
 import {createItemEffects50} from './item-effects50.js?v=campus-83';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-83';
-import {loadCampusArtwork} from './campus-artwork.js?v=campus-90';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-90';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-90';
-import {createRoomVariants} from './room-variants.js?v=campus-90';
+import {loadCampusArtwork} from './campus-artwork.js?v=campus-91';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-91';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-91';
+import {createRoomVariants} from './room-variants.js?v=campus-91';
 import {createComputerScreenContent} from './computer-screen55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
-import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-88';
+import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-91';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-90';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-91';
 import {dormBodyOffset} from './dorm-layout70.js?v=campus-85';
-import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-83';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-90';
-import {loadStudentAssets} from './student-assets.js?v=campus-90';
+import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-91';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-91';
+import {loadStudentAssets} from './student-assets.js?v=campus-91';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-90';
-import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-90';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-91';
+import {SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute} from './classroom-layout.js?v=campus-91';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
 
@@ -132,7 +132,8 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const itemOutline=createItemOutline(renderer),itemRay=new THREE.Raycaster(),itemPointer=new THREE.Vector2(0,0);let hoveredSlot=null,pointerPresent=false;
   const room=new THREE.Group();scene.add(room);
   const dynamic=new THREE.Group();scene.add(dynamic);
-  const [deskAsset,studentAsset,surfaceAsset,propAsset,teacherAsset,artworkAsset]=await Promise.allSettled([loadDeskModel(),loadStudentAssets(),loadCampusSurfaces(),loadPropAssets(CLASSROOM_PROP_SOURCES),loadTeacherModel(),loadCampusArtwork(),loadFurniture67()]);
+  const surfacesReady=loadCampusSurfaces();
+  const [deskAsset,studentAsset,surfaceAsset,propAsset,teacherAsset,artworkAsset]=await Promise.allSettled([loadDeskModel(surfacesReady.then(s=>s.veneer,()=>null)),loadStudentAssets(),surfacesReady,loadPropAssets(CLASSROOM_PROP_SOURCES),loadTeacherModel(),loadCampusArtwork(),loadFurniture67()]);
   // Do not silently replace a failed new character with an obsolete generated model.
   if(studentAsset.status==='rejected'||teacherAsset.status==='rejected'){
     soundCues.dispose();staminaVision.dispose();chalkPowder.dispose();surveillanceView.dispose();bubbleEffects.dispose();itemOutline.dispose();renderer.dispose();
@@ -254,7 +255,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
     // Grout belongs to the surface texture, including the elevated terrace treads.
     c.strokeStyle='#858c83';c.lineWidth=1.4;for(const q of [0,512,1024]){c.beginPath();c.moveTo(q,0);c.lineTo(q,h);c.moveTo(0,q);c.lineTo(w,q);c.stroke();}
   });
-  floorTexture.wrapS=floorTexture.wrapT=surfaces?THREE.MirroredRepeatWrapping:THREE.RepeatWrapping;floorTexture.repeat.set(surfaces?1.35:1,surfaces?1.35:1);
+  floorTexture.wrapS=floorTexture.wrapT=THREE.RepeatWrapping;floorTexture.repeat.set(surfaces?1.35:1,surfaces?1.35:1);
   const floorBump=surfaceHeight(floorTexture,assets,surfaces?1.35:1,surfaces?1.35:1);
   const floorMat=mat('#ffffff',{map:floorTexture,bumpMap:floorBump,bumpScale:surfaces?.00025:.004,roughness:.72});
   const grout=surfaces?addTerrazzoGrout(floorMat):null;
@@ -345,19 +346,29 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   }
   const fans=[];
   const lampMat=mat('#fffdf2',{emissive:'#fff9e8',emissiveIntensity:.85});
-  const fixtureMetal=mat('#698b92',{metalness:.35,roughness:.38}),fixtureInside=mat('#d9dfdc',{metalness:.12,roughness:.42});
-  for(const z of [-4.7,-.4,3.2])for(const x of [-3,2.5]){
-    for(const dx of [-.58,.58]){cylinder(fixtureMetal,[x+dx,4.37,z],[.008,.34,.008],null,campus.ceilingRig);rounded(fixtureInside,[x+dx,4.53,z],[.10,.035,.08],.004,null,campus.ceilingRig);}
-    rounded(fixtureMetal,[x,4.18,z],[1.56,.045,.26],.009,null,campus.ceilingRig);
-    for(const dz of [-.14,.14])box(fixtureMetal,[x,4.15,z+dz],[1.56,.06,.018],null,campus.ceilingRig);
-    box(fixtureInside,[x,4.149,z],[1.48,.014,.245],null,campus.ceilingRig);
-    for(const dz of [-.067,.067])cylinder(lampMat,[x,4.122,z+dz],[.014,1.39,.014],[0,0,Math.PI/2],campus.ceilingRig);
-    for(const dx of [-.72,.72])box(fixtureInside,[x+dx,4.125,z],[.035,.048,.24],null,campus.ceilingRig);
+  const fixtureMetal=mat('#829391',{metalness:.26,roughness:.43}),fixtureInside=mat('#d6d9d2',{metalness:.12,roughness:.46});
+  for(const z of [-6.40,-.70,4.58])for(const x of [-3.60,3.64]){
+    const fitting=new THREE.Group();fitting.name='longitudinal-fluorescent';fitting.position.set(x,0,z);campus.ceilingRig.add(fitting);
+    for(const dz of [-.63,.63]){
+      cylinder(fixtureMetal,[0,4.34,dz],[.007,.36,.007],null,fitting);
+      box(fixtureInside,[0,4.505,dz],[.075,.018,.095],null,fitting);
+    }
+    rounded(fixtureMetal,[0,4.149,0],[.255,.068,1.65],.011,null,fitting);
+    for(const dx of [-.119,.119])box(fixtureInside,[dx,4.114,0],[.016,.049,1.62],null,fitting);
+    box(fixtureInside,[0,4.115,0],[.23,.012,1.57],null,fitting);
+    for(const dx of [-.057,.057])cylinder(lampMat,[dx,4.090,0],[.014,1.51,.014],[Math.PI/2,0,0],fitting);
   }
-  for(const z of [-2.5,1.6]){
-    rounded(M.white,[.05,4.51,z],[.90,.055,.90],.012,null,campus.ceilingRig);
-    box(M.dark,[.05,4.469,z],[.73,.012,.73],null,campus.ceilingRig);
-    for(let i=0;i<10;i++)box(M.white,[.05,4.457,z-.34+i*.075],[.76,.014,.033],null,campus.ceilingRig);
+  const intake=mat('#767c79',{roughness:.76}),slat=mat('#c0c3bc',{roughness:.68});
+  for(const z of [-4.15,2.02])for(const x of [-1.45,1.45]){
+    const cassette=new THREE.Group();cassette.name='recessed-ceiling-cassette';cassette.position.set(x,4.51,z);campus.ceilingRig.add(cassette);
+    rounded(fixtureInside,[0,-.016,0],[1.11,.048,1.11],.024,null,cassette);
+    box(intake,[0,-.043,0],[.94,.011,.94],null,cassette);
+    for(const side of [-1,1]){
+      box(fixtureInside,[side*.427,-.058,0],[.052,.028,.88],null,cassette);
+      box(fixtureInside,[0,-.058,side*.427],[.82,.028,.052],null,cassette);
+    }
+    box(slat,[0,-.056,0],[.655,.025,.655],null,cassette);
+    for(let i=0;i<12;i++)box(fixtureInside,[0,-.073,(i-5.5)*.051],[.64,.013,.024],null,cassette);
   }
   // Near pupils are articulated. Shared instanced poses keep all thirty seats responsive.
   const pupilRecords=SEATS.map(seat=>{
@@ -416,7 +427,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   startBellModel.traverse(o=>{if(o.isMesh)o.userData.animated=true;});
   bakeStatic(room);bakeStatic(teachingEnd);for(const facade of campus.facades||[])bakeStatic(facade);bakeStatic(campus.tiered);for(const furniture of seatFurniture.values()){bakeStatic(furniture.body);bakeStatic(furniture.chair);}
   const screenContent=createComputerScreenContent();
-  const variants=createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,liftPanel:campus.liftPanel,stationFloor:mat('#f2ece0',{map:floorTexture}),drawerRecords,screenContent,officeScreens:campus.officeScreens});let mapVariant='classroom';
+  const variants=createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,finishes:surfaces||{},menus:artwork.hotpotMenus,liftPanel:campus.liftPanel,stationFloor:mat('#f2ece0',{map:floorTexture}),drawerRecords,screenContent,officeScreens:campus.officeScreens});let mapVariant='classroom';
   for(const drawer of drawerRecords.values())bakeStatic(drawer.group);
   for(const book of deskBooks.values())bakeStatic(book);
   const rigidProps=instanceRigidProps([...drawerRecords.values()].map(d=>d.group).concat([...deskBooks.values(),...deskPens.values()], [...seatFurniture.values()].flatMap(f=>[f.body,f.chair]),variants.hardwareRoots,[...variants.drawers.values()].map(d=>d.group)),scene);
@@ -455,7 +466,7 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   const teacherHands=createDeskHands({createHand:importedStudents?.createTeacherHand});teacherHands.group.visible=false;
   const firstPersonView=createFirstPersonView(renderer,camera,[hands.group,teacherHands.group]);
   const mapActivityView=createMapActivityView(scene);
-  const schoolFinish=createSchoolMaterialFinish(renderer,variants.specialRoots);
+  const schoolFinish=createSchoolMaterialFinish(renderer,[...variants.specialRoots,variants.group]);
   const customHandAnimation=createHandAnimationRuntime({fallbackDocument:PUBLISHED_HAND_ANIMATIONS});
   let firstPersonMotion=null,eyeHeight=null,firstPersonDrawer=null;
   const rightPalm=teacherHands.group.getObjectByName('right-desk-hand');
@@ -514,15 +525,20 @@ export async function createClassroom(canvas, {onReady,active=true,snapEntry=fal
   function setOrdinaryDay(active){
     campus.setDaylight(active);scene.background=active?campus.daylight.sky:baseBackground;
     contactMat.opacity=active?.80:.62;
-    if(grout)grout.value=active?.065:.18;
+    if(grout)grout.value=active?.24:.22;
   }
   function setMap(value){
     mapVariant=isCampusMap(value)?mapKind(value):'classroom';variants.setMap(mapVariant);campus.setMap(mapVariant);if(mapVariant==='bus'){room.visible=false;for(const f of campus.facades)f.visible=false;}teachingEnd.visible=mapVariant!=='bus'&&(Boolean(gameplay)||canvas.dataset.gameplay==='true');setSeats(currentSeats,true);stakes.visible=mapKind(mapVariant)!=='playground';for(const p of detentionForMap(mapVariant)){const model=postModels[p.id];if(model)model.position.set(p.x,floorHeight(p.x,p.z,mapVariant,p.busDeck),p.z);}
     const night=['night','dorm'].includes(mapKind(mapVariant));setCampusNight(night);
+    if(grout)grout.moonlight.value=mapVariant==='night'?1:0;
     setCharacterNight(scene,night);firstPersonView.setNight(night);
     scene.background=baseBackground;
     applyRoomLighting(night,{ambient,sun,fill,teachingFill,lampMat,ceilingMaterial,scene});
     setOrdinaryDay(mapVariant==='classroom'&&Boolean(gameplay));
+    if(['tiered','exam','computer','cafeteria','hotpot','toilet'].includes(mapVariant)&&gameplay){
+      campus.daylight.setActive(true);
+      ambient.intensity=mapVariant==='hotpot'?2.70:3.08;fill.intensity=.85;
+    }
     const outdoor=['playground','bus'].includes(mapVariant);
     if(outdoor){ambient.intensity=2.35;ambient.color.set('#e8f7ff');ambient.groundColor.set('#d4dab8');sun.intensity=3.4;fill.intensity=.65;teachingFill.intensity=.12;sun.position.set(-32,40,4);sun.target.position.set(-10.8,0,-21.2);}
     else{sun.position.set(-17,7.4,7);sun.target.position.set(0,.65,-2);}

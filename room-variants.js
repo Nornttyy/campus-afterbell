@@ -1,23 +1,32 @@
-import {createBusRoom} from './bus-room86.js?v=campus-87';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-90';
-import {createToiletRoom} from './toilet-room70.js?v=campus-84';
-import {createDormRoom} from './dorm-room70.js?v=campus-85';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-90';
-import {createHotpotRoom} from './hotpot-room70.js?v=campus-85';
+import {createBusRoom} from './bus-room86.js?v=campus-91';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-91';
+import {createToiletRoom} from './toilet-room70.js?v=campus-91';
+import {createDormRoom} from './dorm-room70.js?v=campus-91';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-91';
+import {createHotpotRoom} from './hotpot-room70.js?v=campus-91';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-83';
 import * as T from './vendor/three.module.js';
 import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-83';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-90';
+import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-91';
 
-export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor,drawerRecords=null,screenContent=null,officeScreens=new Map()}){
- const bus=createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor});
- const upper=createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords});
- const hotpot=createHotpotRoom({parent:scene,box,rounded,mat,texture,bakeStatic});hotpot.group.visible=false;
- const toilet=createToiletRoom({parent:scene,box,rounded,mat,texture,bakeStatic}),dorm=createDormRoom({parent:scene,box,rounded,mat,texture,bakeStatic}),playground=createPlaygroundRoom({parent:scene});
+export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor,finishes={},menus=null,drawerRecords=null,screenContent=null,officeScreens=new Map()}){
+ const bus=createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor,finishes});
+ const upper=createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords,finishes});
+ const hotpot=createHotpotRoom({parent:scene,box,rounded,mat,texture,bakeStatic,finishes,menus});hotpot.group.visible=false;
+ const toilet=createToiletRoom({parent:scene,box,rounded,mat,texture,bakeStatic,finishes}),dorm=createDormRoom({parent:scene,box,rounded,mat,texture,bakeStatic,finishes}),playground=createPlaygroundRoom({parent:scene,finishes});
  for(const variant of [toilet,dorm,playground])variant.group.visible=false;
  const vendingTargets=playground.vendingTargets;
  const group=new T.Group(),screens=new Map(),stations=new Map(),drawers=new Map(),hardwareRoots=[];group.name='computer-lab-workstations';scene.add(group);group.visible=false;
- const shell=mat('#424b59',{roughness:.48}),keys=mat('#d5d9df',{roughness:.72}),base=mat('#909ba9',{metalness:.35,roughness:.48}),top=mat('#d1d5cb',{roughness:.68}),trim=mat('#607d7b',{roughness:.62}),shadow=mat('#27353d',{roughness:.85});
+ const labTop=texture(512,336,(c,w,h)=>{
+  c.fillStyle='#b7c2bd';c.fillRect(0,0,w,h);
+  let seed=94;const rand=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
+  for(let i=0;i<21000;i++){c.fillStyle=i%2?'rgba(70,85,80,.10)':'rgba(245,246,224,.19)';c.fillRect(rand()*w,rand()*h,1.1,1);}
+  const shade=(x,y,r,dx,dy)=>{c.save();c.translate(x,y);c.scale(dx,dy);const g=c.createRadialGradient(0,0,0,0,0,r);g.addColorStop(0,'rgba(41,53,52,.26)');g.addColorStop(.66,'rgba(42,55,54,.12)');g.addColorStop(1,'rgba(50,59,51,0)');c.fillStyle=g;c.fillRect(-r,-r,2*r,2*r);c.restore();};
+  shade(w*.51,h*.70,51,1.5,.63);shade(w*.44,h*.24,58,1.85,.52);
+ });
+ const wire=mat('#343c39',{roughness:.82});
+ const cableGeometry=new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(.13,.866,.19),new T.Vector3(.23,.87,.22),new T.Vector3(.256,.869,.277),new T.Vector3(.303,.869,.328),new T.Vector3(.314,.868,.346)]),10,.004,5,false);
+ const shell=mat('#424b59',{roughness:.48}),keys=mat('#d5d9df',{roughness:.72}),base=mat('#909ba9',{metalness:.35,roughness:.48}),top=mat('#fff',{map:labTop,roughness:.55}),trim=mat('#607d7b',{roughness:.62}),shadow=mat('#27353d',{roughness:.85});
  const rail=mat('#317693',{roughness:.54}),frame=mat('#454d52',{metalness:.25,roughness:.55});
  const frost=mat('#d5d9da',{transparent:true,opacity:.92,roughness:.82,depthWrite:false});
  const stripe=mat('#a9b3b8',{transparent:true,opacity:.88,roughness:.76,depthWrite:false});
@@ -42,6 +51,8 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,lif
   rounded(shell,[0,1.22,.17],[.66,.40,.092],.018,null,hardware);box(base,[0,.966,.17],[.075,.19,.075],null,hardware);rounded(base,[0,.873,.17],[.32,.022,.20],.008,null,hardware);
   rounded(shell,[-.08,.88,-.19],[.58,.028,.16],.008,null,hardware);for(let r=0;r<3;r++)for(let k=0;k<11;k++)box(keys,[-.32+k*.046,.897,-.245+r*.045],[.035,.008,.029],null,hardware);rounded(shell,[.39,.886,-.18],[.08,.035,.12],.016,null,hardware);
   }
+  hardware.add(new T.Mesh(cableGeometry,wire));
+  rounded(wire,[.314,.864,.346],[.043,.007,.025],.003,null,hardware);
   // The screen sits in front of the bezel; it remains individually raycastable.
   const screen=new T.Mesh(screenGeo,desktopMat);screen.position.set(0,imported?.8625+MONITOR67.y:1.22,imported?.17+MONITOR67.z:.122);screen.rotation.y=Math.PI;screen.userData.seatId=s.id;screen.userData.animated=true;station.add(screen);screens.set(s.id,screen);
   drawers.set(s.id,buildComputerDrawer55({parent:station,box,rounded,mat,id:`computer-drawer-${s.id}`,bakeStatic}));
@@ -73,6 +84,6 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,lif
    if(hotpot.group.visible)hotpot.update(state?.elapsed||0);
    screenContent?.update(state,group.visible?new Map([...screens].filter(([id])=>stations.get(id)?.visible)):new Map(),group.visible?teacherScreen:null,officeScreens);
    if(light.visible){const t=state?.teacher||{x:BOARD.x,z:BOARD.z,yaw:Math.PI},pitch=state?.role==='teacher'?state.player.pitch:(t.pitch??.08),height=TEACHER_EYE_HEIGHT+floorHeight(t.x,t.z,state?.map);light.position.set(t.x,height,t.z);light.target.position.set(t.x+Math.sin(t.yaw)*6,height-Math.tan(pitch)*6,t.z+Math.cos(t.yaw)*6);}
-  },dispose(){bus.dispose();upper.dispose();hotpot.dispose();toilet.dispose();dorm.dispose();playground.dispose();screenContent?.dispose();screenGeo.dispose();laptop.screen.geometry.dispose();light.shadow.map?.dispose();}
+  },dispose(){bus.dispose();upper.dispose();hotpot.dispose();toilet.dispose();dorm.dispose();playground.dispose();screenContent?.dispose();screenGeo.dispose();cableGeometry.dispose();laptop.screen.geometry.dispose();light.shadow.map?.dispose();}
  };
 }

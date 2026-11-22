@@ -6,9 +6,9 @@ import * as THREE from './vendor/three.module.js';
 import {normalWalkCycleRate} from './movement55.js?v=campus-83';
 import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-83';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-90';
+import {createCrawlPose} from './crawl-pose.js?v=campus-91';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-90';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-91';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-90';
 
 export async function loadTeacherModel(){
@@ -19,30 +19,24 @@ export async function loadTeacherModel(){
   const actor=create();actor.createClone=create;return actor;
 }
 
-export async function loadDeskModel(){
+import {finishSchoolFurniture} from './school-furniture91.js?v=campus-91';
+
+export async function loadDeskModel(grain=null){
   const loader=new GLTFLoader();
   const [gltf,chairAsset]=await Promise.all(['desk-v2','chair-v2'].map(name=>loader.loadAsync(new URL(`./assets/models/${name}.glb?v=mesh-64`,import.meta.url).href)));
   requireModelBudget(gltf,'desk-v2');requireModelBudget(chairAsset,'chair-v2');
   const body=gltf.scene.getObjectByName('DeskBody'),drawer=gltf.scene.getObjectByName('DeskDrawer');
   const chair=chairAsset.scene.getObjectByName('ChairBody');
   if(!body||!drawer||!chair)throw new Error('Furniture must have separate body, drawer and chair');
-  const shared=new Map();
-  body.traverse(o=>{if(o.isMesh)for(const m of [o.material].flat())if(m.name==='TripoFurnitureOriginalPBR')shared.set(m.name,m);});
-  // Correct the source laminate's brown albedo to honey-yellow under the
-  // classroom light. Preserve its grain, normal/roughness maps and grey metal.
-  for(const material of shared.values()){
-    material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
-      float laminate = smoothstep(1.20,1.65,diffuseColor.r/max(diffuseColor.g,0.001))
-                     * (1.0-smoothstep(0.55,0.85,diffuseColor.b/max(diffuseColor.g,0.001)));
-      diffuseColor.rgb = mix(diffuseColor.rgb,min(diffuseColor.rgb*vec3(1.55,1.85,1.35),vec3(0.94)),laminate);
-    `);};
-    material.customProgramCacheKey=()=> 'school-laminate-55';
-  }
-  const replaced=new Set();
-  chair.traverse(o=>{if(!o.isMesh)return;const map=m=>{const same=shared.get(m.name);if(same&&same!==m){replaced.add(m);return same;}return m;};o.material=Array.isArray(o.material)?o.material.map(map):map(o.material);});
-  const discardedMaps=new Set();for(const m of replaced){for(const value of Object.values(m))if(value?.isTexture)discardedMaps.add(value);m.dispose();}for(const map of discardedMaps)map.dispose();
-  for(const scene of [gltf.scene,chairAsset.scene])scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
-  return{body,drawer,chair,source:'tripo-furniture-v2',drawerFloor:.659};
+  const finished=finishSchoolFurniture(body,drawer,chair,await grain);
+  requireModelBudget(finished.body,'school desk');requireModelBudget(finished.chair,'school chair');
+  drawer.removeFromParent();
+  const keptMaterials=new Set(),keptMaps=new Set(),oldMaterials=new Set(),oldMaps=new Set();
+  drawer.traverse(o=>{if(o.isMesh)for(const m of [o.material].flat()){keptMaterials.add(m);for(const v of Object.values(m))if(v?.isTexture)keptMaps.add(v);}});
+  for(const source of [body,chair])source.traverse(o=>{if(o.isMesh){o.geometry.dispose();for(const m of [o.material].flat())oldMaterials.add(m);}});
+  for(const m of oldMaterials)if(!keptMaterials.has(m)){for(const v of Object.values(m))if(v?.isTexture&&!keptMaps.has(v))oldMaps.add(v);m.dispose();}
+  for(const map of oldMaps)map.dispose();
+  return finished;
 }
 
 // Runtime consumes the authored skin and clips. Only root navigation is external.

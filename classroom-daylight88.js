@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-90';
+import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-91';
 
 // The three colour channels store window bounce near the floor, window bounce
 // at eye height, and diffuse light near the suspended hall tubes. One bilinear
@@ -93,7 +93,14 @@ const finishes={
   diffuseColor.rgb*=1.0-.095*(1.0-smoothstep(.06,.65,p88.y));`,
  frame:`diffuseColor.rgb*=mix(vec3(.75,.74,.66),vec3(.92,.89,.84),day88);`,
  floor:`diffuseColor.rgb*=mix(vec3(.65,.74,.73),vec3(.99,1.00,.98),day88);
-  diffuseColor.rgb*=mix(.91,1.0,field88.a);`,
+  diffuseColor.rgb*=mix(.88,1.0,field88.a);
+  // Broad penumbra beyond the sill; its footprint follows the actual six bays.
+  float reach=max(0.0,p88.x-${f(CLASSROOM.minX)});
+  float hit=p88.z+reach*(9.0/17.0);
+  float across=abs(fract((hit-${f(CLASSROOM.minZ)})/${f((CLASSROOM.maxZ-CLASSROOM.minZ)/6)})-.5);
+  float strip=smoothstep(.028,.105,across)*(1.0-smoothstep(.37,.51,across));
+  float lightPool=strip*smoothstep(2.12,3.25,reach)*(1.0-smoothstep(8.3,10.6,reach));
+  if(!hall88)diffuseColor.rgb*=mix(vec3(.95,.95,.97),vec3(1.27,1.21,1.11),lightPool);`,
  furniture:`float wood88=smoothstep(1.22,1.72,diffuseColor.r/max(.001,diffuseColor.g))*(1.0-smoothstep(.50,.86,diffuseColor.b/max(.001,diffuseColor.g)));
   diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.90,1.04,.89),wood88);`,
  ceiling:`if(hall88){
@@ -104,13 +111,15 @@ const finishes={
    diffuseColor.rgb*=vec3(.49,.62,.65)*mix(.82,1.17,.32*day88+.68*field88.b)*mix(.78,1.0,field88.a);
    diffuseColor.rgb*=1.0-.18*max(joint88.x,joint88.y);
   }else{
-   diffuseColor.rgb*=vec3(.70,.69,.74)*mix(.79,1.13,day88)*mix(.81,1.0,field88.a);
+   diffuseColor.rgb*=vec3(.82,.76,.70)*mix(.84,1.12,day88)*mix(.81,1.0,field88.a);
   }`,
  glass:`vec2 border88=min(vPaneUv88,1.0-vPaneUv88);
   float edge88=smoothstep(.015,.19,min(border88.x,border88.y));
   float grazing88=1.0-max(0.0,abs(dot(normal,normalize(vViewPosition))));
   diffuseColor.rgb*=mix(vec3(.70,.69,.70),vec3(.89,.83,.86),.52*vPaneUv88.y+.35*(1.0-edge88)+.13*day88);
-  diffuseColor.a=mix(.79,.92,clamp(.66*edge88+.34*grazing88,0.0,1.0));`
+  float overhead=smoothstep(.16,.96,vPaneUv88.y);
+  diffuseColor.rgb*=mix(vec3(.81,.88,.92),vec3(1.06,1.035,.98),overhead);
+  diffuseColor.a=mix(.77,.91,clamp(.66*edge88+.34*grazing88,0.0,1.0));`
 };
 
 export function createClassroomDaylight(openings,lamps){

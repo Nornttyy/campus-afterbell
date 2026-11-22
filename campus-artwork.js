@@ -1,5 +1,6 @@
 import * as T from './vendor/three.module.js';
 export const CAMPUS_ARTWORK_SOURCES=Object.freeze({
+ hotpotMenus:'./assets/posters/hotpot-menus91.webp',
  hotpotVegetables:'./assets/posters/hotpot-vegetables85.webp',
  classroomAward:'./assets/posters/classroom-award72.png',
  dayChalkboard:'./assets/posters/classroom-gratitude90.webp',

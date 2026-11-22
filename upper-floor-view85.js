@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {createServingDish} from './game-actors.js?v=campus-90';
-import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-90';
+import {createServingDish} from './game-actors.js?v=campus-91';
+import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-91';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {SERVING_BELTS,SERVING_MENU,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-85';
 
@@ -12,7 +12,7 @@ export function paperQuestion(u,v){
  if(x<0||x>=2*columnWidth||y<0||y>=6*rowHeight)return null;
  return Math.floor(x/columnWidth)*6+Math.floor(y/rowHeight);
 }
-export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords}){
+export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords,finishes={}}){
  const root=new T.Group();root.name='upper-floor-furnishings';root.visible=false;scene.add(root);
  const wings={},portions=[],paperSeats=new Map(),cards=[],cardPrint=new Map(),paperPrint=new Map();
  const geometry=new Set(),own=g=>(geometry.add(g),g);
@@ -27,7 +27,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
  }
  function cafeteria(){
   const group=wing('cafeteria-serving-hall'),fixed=new T.Group();group.add(fixed);
-  const orange=mat('#f0a024'),steel=mat('#afada0',{metalness:.35,roughness:.50}),cream=mat('#e4d4b5'),lip=mat('#b86e36');
+  const orange=mat('#e4a137'),steel=mat('#a6aca8',{metalness:.48,roughness:.38}),cream=mat('#c5b196',{roughness:.73}),lip=mat('#b88154',{map:finishes.veneer||null,roughness:.52});
   const runner=texture(256,512,(c,w,h)=>{
    c.fillStyle='#bf976e';c.fillRect(0,0,w,h);
    for(let y=0;y<h;y+=8){c.fillStyle=y%24?'#c29a73':'#bb936d';c.fillRect(0,y,w,1);}
@@ -41,6 +41,14 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
    box(lip,[b.x,b.top-.045,center],[b.width,.09,len],null,fixed);
    const top=surface(fixed,own(new T.PlaneGeometry(b.width-.055,len-.035)),beltMat,b.x,b.top+.001,center,true);
    if(b.id)top.rotation.z=0;
+   for(const side of [-1,1]){
+    const x=b.x+side*(b.width/2-.034);
+    for(let z=b.minZ+.57;z<b.maxZ-.45;z+=1.65){
+     box(lip,[x,.85,z],[.024,.039,1.53],null,fixed);
+     box(steel,[x+side*.013,.74,z],[.014,.023,.20],null,fixed);
+    }
+    box(steel,[x+side*.026,.18,center],[.018,.023,len-.08],null,fixed);
+   }
    for(const side of [-1,1])box(orange,[b.x+side*(b.width/2-.012),b.top-.013,center],[.024,.035,len],null,fixed);
    for(let z=b.minZ+.56;z<b.maxZ;z+=1.65)for(const side of [-1,1])box(steel,[b.x+side*(b.width/2-.034),.50,z],[.012,.77,.012],null,fixed);
   }
@@ -77,7 +85,12 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   return group;
  }
  function drawSheet(c,w,h,answered=0,hint=null){
-  c.fillStyle='#fbf9f0';c.fillRect(0,0,w,h);c.fillStyle='#29363a';c.textAlign='center';c.font='bold 40px '+paperFont;c.fillText('随 堂 测 验',w/2,h*.095);
+  c.fillStyle='#fbf9f0';c.fillRect(0,0,w,h);
+  const spine=c.createLinearGradient(w*.47,0,w*.53,0);spine.addColorStop(0,'rgba(142,119,91,0)');spine.addColorStop(.48,'rgba(121,116,100,.11)');spine.addColorStop(.54,'rgba(255,255,249,.62)');spine.addColorStop(1,'rgba(255,255,250,0)');c.fillStyle=spine;c.fillRect(w*.47,0,w*.06,h);
+  c.strokeStyle='#b8b5a7';c.lineWidth=1.4;c.strokeRect(w*.026,h*.035,w*.948,h*.921);
+  c.fillStyle='#68716b';c.font='16px '+paperFont;c.textAlign='left';c.fillText('校内试卷',w*.044,h*.081);
+  c.textAlign='right';c.fillText('第 1 页',w*.95,h*.926);
+  c.fillStyle='#29363a';c.textAlign='center';c.font='bold 40px '+paperFont;c.fillText('随 堂 测 验',w/2,h*.095);
   c.font='20px '+paperFont;c.fillText('班级 __________     姓名 __________     座号 ______',w/2,h*.151);
   c.strokeStyle='#b2b3aa';c.lineWidth=1.5;c.beginPath();c.moveTo(w*.5,h*.19);c.lineTo(w*.5,h*.935);c.stroke();
   c.textAlign='left';
@@ -96,7 +109,13 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   }return cardPrint.get(n);
  }
  function deskPaper(){
-  const group=wing('examination-room'),plane=own(new T.PlaneGeometry(paperWidth,paperDepth)),card=own(new T.PlaneGeometry(.203,.211)),clean=mat('#fff',{map:texture(1200,760,drawSheet)});
+  const group=wing('examination-room'),plane=own(new T.PlaneGeometry(paperWidth,paperDepth,12,6)),card=own(new T.PlaneGeometry(.203,.211)),clean=mat('#fff',{map:texture(1200,760,drawSheet)});
+  const leaf=plane.attributes.position;
+  for(let i=0;i<leaf.count;i++){
+   const x=leaf.getX(i)/(paperWidth*.5),y=leaf.getY(i)/(paperDepth*.5);
+   leaf.setZ(i,.001+.004*Math.abs(x)**6+.008*Math.max(0,x*y)**7);
+  }
+  plane.computeVertexNormals();
   const banner=texture(960,112,(c,w,h)=>{c.fillStyle='#9e191d';c.fillRect(0,0,w,h);c.fillStyle='#fff4dc';c.textAlign='center';c.font='bold 71px '+paperFont;c.fillText('诚 信 考 试　认 真 答 题',w/2,h*.75);});
   face(group,mat('#fff',{map:banner}),0,3.73,8.729,5.92,.57,Math.PI);
   const print=texture(1200,760,drawSheet);liveSheet=mat('#fff',{map:print});paperPrint.set('blank',clean);

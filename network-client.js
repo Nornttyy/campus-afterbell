@@ -1,8 +1,8 @@
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-90';
-import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-90';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-91';
+import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-91';
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-83';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-90';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-91';
 import {applyNetworkDelta} from './network-state65.js?v=campus-83';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
