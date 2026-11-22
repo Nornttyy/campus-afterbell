@@ -2,14 +2,14 @@ import * as T from './vendor/three.module.js';
 export const CAMPUS_ARTWORK_SOURCES=Object.freeze({
  hotpotMenus:'./assets/posters/hotpot-menus91.webp',
  hotpotVegetables:'./assets/posters/hotpot-vegetables85.webp',
- classroomAward:'./assets/posters/classroom-award72.png',
+ classroomAward:'./assets/posters/classroom-award72-lossless93.webp',
  dayChalkboard:'./assets/posters/classroom-gratitude90.webp',
- chalkNewspaper:'./assets/posters/chalk-newspaper72-ref.png',
- teacherTutorial:'./assets/posters/teacher-tutorial64.png?v=black-brush64',
- studentTutorial:'./assets/posters/student-tutorial64.png?v=black-brush64',
+ chalkNewspaper:'./assets/posters/chalk-newspaper72-ref-lossless93.webp',
+ teacherTutorial:'./assets/posters/teacher-tutorial64-lossless93.webp?v=black-brush64',
+ studentTutorial:'./assets/posters/student-tutorial64-lossless93.webp?v=black-brush64',
  classroomNotice:'./assets/posters/classroom-prints90.webp',
- graffitiSnack:'./assets/posters/graffiti-snack64.png',
- graffitiHomework:'./assets/posters/graffiti-homework64.png'
+ graffitiSnack:'./assets/posters/graffiti-snack64-lossless93.webp',
+ graffitiHomework:'./assets/posters/graffiti-homework64-lossless93.webp'
 });
 export async function loadCampusArtwork(sources=CAMPUS_ARTWORK_SOURCES,{loader=new T.TextureLoader()}={}){
  const entries=await Promise.all(Object.entries(sources).map(async([key,path])=>{

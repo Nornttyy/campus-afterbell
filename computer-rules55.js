@@ -1,6 +1,13 @@
-export const COMPUTER_APPS=Object.freeze(['photoshop','unity','snake','valorant']);
-export const COMPUTER_GAMES=Object.freeze(['snake','valorant']);
-export function nextComputerApp(index,direction){const i=Number.isInteger(index)?Math.max(0,Math.min(3,index)):0;return direction==='left'?i%2?i-1:i:direction==='right'?i%2?i:i+1:direction==='up'?i>=2?i-2:i:direction==='down'?i<2?i+2:i:i;}
+export const COMPUTER_APPS=Object.freeze(['photoshop','unity','snake','valorant','miner','tetris']);
+export const COMPUTER_GAMES=Object.freeze(['snake','valorant','miner','tetris']);
+export function nextComputerApp(index,direction){
+ const i=Number.isInteger(index)?Math.max(0,Math.min(COMPUTER_APPS.length-1,index)):0;
+ if(direction==='left'&&i%2===1)return i-1;
+ if(direction==='right'&&i%2===0&&i+1<COMPUTER_APPS.length)return i+1;
+ if(direction==='up'&&i>=2)return i-2;
+ if(direction==='down'&&i+2<COMPUTER_APPS.length)return i+2;
+ return i;
+}
 export function canonicalComputerApp(app){return app==='learning'||app==='study'?'photoshop':app;}
 
 export const VIDEO_WATCH_SECONDS=3;

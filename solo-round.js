@@ -1,7 +1,7 @@
-import {ClassroomRound} from './classroom-rules.js?v=campus-92';
-import {TeacherRound} from './teacher-rules.js?v=campus-92';
-import {updateLayoutDoors,CAMPUS_MAPS,campusFloor} from './classroom-layout.js?v=campus-92';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-92';
+import {ClassroomRound} from './classroom-rules.js?v=campus-93';
+import {TeacherRound} from './teacher-rules.js?v=campus-93';
+import {updateLayoutDoors,CAMPUS_MAPS,campusFloor} from './classroom-layout.js?v=campus-93';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-93';
 
 const elevatorRound=Base=>class extends Base{
  reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();return this.snapshot();}
@@ -56,7 +56,7 @@ export function createSoloRound(options={}){return new (options.role==='teacher'
 export function switchSoloRole(round,role){
  if(!['student','teacher'].includes(role)||round.network||round.status!=='playing'||round.stage!=='gathering'||round.elevator?.phase==='travel')return null;
  if(round.snapshot().role===role)return round;
- const next=createSoloRound({role,seed:round.seed,map:round.map,duration:round._defaultDuration,target:round.target,chalkStamina:round.chalkStamina});
+ const next=createSoloRound({role,seed:round.seed,map:round.map,duration:round._defaultDuration,target:round.target,chalkStamina:round.chalkStamina,tuning:round.customTuning});
  next.start({gathering:true});
  const p=round.player;Object.assign(next.player,{x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,character:p.character,variant:p.variant});
  if(role==='teacher')Object.assign(next.teacher,{x:p.x,z:p.z,yaw:p.yaw});

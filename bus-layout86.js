@@ -6,7 +6,7 @@ export const BUS=Object.freeze({
  body:rect(-6.7,13.4,-15.85,-10.75), station:rect(7.2,12.44,-6.9,8.8),
  lift:rect(8.96,12.02,8.68,12.28), apron:rect(-8.6,15.5,-18.1,-6.9), forecourt:rect(-8.6,7.18,-7.45,3.2),
  entry:rect(9.15,10.95,-11.20,-9.72), stairs:rect(-1.05,3.54,-12.42,-11.09),
- low:.70, high:3.28, gate:[7.76,9.46], driver:{x:12.35,z:-14.3,yaw:-Math.PI/2,pitch:0},
+ low:.70, high:3.28, gate:[7.76,9.46], driver:{x:12.29,z:-14.18,yaw:-Math.PI/2,pitch:0},
  board:{x:9.15,z:-14.98}, lockerZ:-5.02
 });
 const {low,high,body,stairs}=BUS;

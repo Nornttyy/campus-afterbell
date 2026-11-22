@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-92';
+import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-93';
 
 // The three colour channels store window bounce near the floor, window bounce
 // at eye height, and diffuse light near the suspended hall tubes. One bilinear
@@ -100,7 +100,10 @@ const finishes={
   float across=abs(fract((hit-${f(CLASSROOM.minZ)})/${f((CLASSROOM.maxZ-CLASSROOM.minZ)/6)})-.5);
   float strip=smoothstep(.028,.105,across)*(1.0-smoothstep(.37,.51,across));
   float lightPool=strip*smoothstep(2.12,3.25,reach)*(1.0-smoothstep(8.3,10.6,reach));
-  if(!hall88)diffuseColor.rgb*=mix(vec3(.95,.95,.97),vec3(1.27,1.21,1.11),lightPool);`,
+  if(!hall88){
+   // Sunlit strips retain the warm daylight. The shaded aggregate reads as grey stone.
+   diffuseColor.rgb*=mix(vec3(.87,.91,.95),vec3(1.29,1.23,1.13),lightPool);
+  }`,
  furniture:`float wood88=smoothstep(1.22,1.72,diffuseColor.r/max(.001,diffuseColor.g))*(1.0-smoothstep(.50,.86,diffuseColor.b/max(.001,diffuseColor.g)));
   diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.90,1.04,.89),wood88);`,
  ceiling:`if(hall88){
@@ -111,7 +114,8 @@ const finishes={
    diffuseColor.rgb*=vec3(.63,.73,.75)*mix(.82,1.17,.32*day88+.68*field88.b)*mix(.78,1.0,field88.a);
    diffuseColor.rgb*=1.0-.18*max(joint88.x,joint88.y);
   }else{
-   diffuseColor.rgb*=vec3(.87,.82,.76)*mix(.84,1.12,day88)*mix(.81,1.0,field88.a);
+   vec3 perimeter=mix(vec3(.80,.82,.80),vec3(.90,.83,.77),field88.a);
+   diffuseColor.rgb*=perimeter*mix(.84,1.12,day88)*mix(.78,1.0,field88.a);
   }`,
  glass:`vec2 border88=min(vPaneUv88,1.0-vPaneUv88);
   float edge88=smoothstep(.015,.19,min(border88.x,border88.y));

@@ -1,12 +1,13 @@
-import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-83';
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-92';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-92';
+import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-93';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-93';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-93';
 import {teacherViewHeight} from './camera-height58.js?v=campus-83';
-import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,actorFloorHeight} from './classroom-layout.js?v=campus-92';
+import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,actorFloorHeight} from './classroom-layout.js?v=campus-93';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-92';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-93';
 
+import {BOARD_SECONDS} from './board-lesson93.js?v=campus-93';
 export class TeacherRound extends ClassroomRound{
   reset(seed){
     this.surveillance=createSurveillance();
@@ -30,7 +31,7 @@ export class TeacherRound extends ClassroomRound{
   snapshot(){
     const s=super.snapshot();s.surveillance=surveillanceSnapshot(this);
     if(this.player.id!==-1)return s; // Base reset calls snapshot before teacher initialization.
-    s.role='teacher';const aim=this.aimedStudent();s.teacherAim=aim?{id:aim.id,grabReady:!this.player.seated&&Math.hypot(aim.x-this.player.x,aim.z-this.player.z)<1.55&&aim.captivity==='stunned'}:null;s.bindPost=this.bindTarget()?.id??null;s.chalks=this.chalks.map(c=>({...c}));s.throwAge=this._sessionElapsed-this._lastThrow;
+    s.role='teacher';if(s.player.emote)s.teacher.emote=s.player.emote;const aim=this.aimedStudent();s.teacherAim=aim?{id:aim.id,grabReady:!this.player.seated&&Math.hypot(aim.x-this.player.x,aim.z-this.player.z)<1.55&&aim.captivity==='stunned'}:null;s.bindPost=this.bindTarget()?.id??null;s.chalks=this.chalks.map(c=>({...c}));s.throwAge=this._sessionElapsed-this._lastThrow;
     s.wrongGrabs=this.wrongGrabs;s.writeBoardAvailable=this.canWriteBoard();s.releaseStudent=this.releaseTarget()?.id??null;
     s.students=s.students.map(p=>({...p,chalked:this.elapsed<(this.students[p.id]._chalkUntil||0)}));
     return s;
@@ -51,7 +52,7 @@ export class TeacherRound extends ClassroomRound{
     if(!canThrowWithStamina(this)){this._events.push({type:'stamina-low'});return false;}
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
     this.chalks.push({id:this._chalkId++,x:p.x,y:actorFloorHeight(p,this.map)+teacherViewHeight(p),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
-    this.teacher.stamina=Math.max(0,this.teacher.stamina-chalkStaminaCost(this));this._lastThrow=this._sessionElapsed;this._nextThrow=this._sessionElapsed+.72;this._events.push({type:'chalk-throw',x:this.player.x,z:this.player.z});return true;
+    this.teacher.stamina=Math.max(0,this.teacher.stamina-chalkStaminaCost(this));this.player._emote=null;this._lastThrow=this._sessionElapsed;this._nextThrow=this._sessionElapsed+this.tuning.chalkInterval/1000;this._events.push({type:'chalk-throw',x:this.player.x,z:this.player.z});return true;
   }
   aimedStudent(range=9){
     if(this.stage!=='class')return null;
@@ -92,7 +93,8 @@ export class TeacherRound extends ClassroomRound{
   setWriting(value){
     if(!value){this._writing=false;this.teacher.writing=false;this.teacher.writeProgress=0;return false;}
     if(!this._inputAllowed()||!this.canWriteBoard())return false;
-    this._writing=true;this._writeTime=0;this.teacher.writing=true;this.holding=false;return true;
+    if(this._writing)return true;
+    this.player._emote=null;this.teacher.markingBoard=false;this._writing=true;this._writeTime=0;this.teacher.writing=true;this.holding=false;return true;
   }
   pause(value=true){if(value)this.setWriting(false);return super.pause(value);}
   _advanceTeacher(dt){
@@ -101,8 +103,8 @@ export class TeacherRound extends ClassroomRound{
     if(this._writing&&(!this.canWriteBoard()||Math.hypot(this._movement.x,this._movement.z)>.01))this.setWriting(false);
     // Resting is free. Walking fatigue is charged from actual displacement
     // once in the shared step, including network-controlled teachers.
-    if(this._writing)t.stamina=Math.min(100,t.stamina+dt*10);
-    if(this._writing)this._writeTime+=dt;
-    Object.assign(t,{...(this.map==='bus'?{busDeck:p.busDeck||0}:{}),x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,sprinting:Boolean(p.sprinting),phase:this._writing?'board':'watching',intent:this._writing?'write':'player',warning:false,looking:!this._writing,castProgress:0,writing:this._writing,writeProgress:this._writing?this._writeTime%1:0});
+    if(this._writing&&this._writeTime+1e-7>=BOARD_SECONDS)this.setWriting(false);
+    if(this._writing){const spent=Math.min(dt,BOARD_SECONDS-this._writeTime);this._writeTime+=spent;t.stamina=Math.min(100,t.stamina+spent*this.tuning.writingRegen);}
+    Object.assign(t,{...(this.map==='bus'?{busDeck:p.busDeck||0}:{}),x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,sprinting:Boolean(p.sprinting),phase:this._writing?'board':'watching',intent:this._writing?'write':'player',warning:false,looking:!this._writing,castProgress:0,writing:this._writing,writeProgress:this._writing?Math.min(1,this._writeTime/BOARD_SECONDS):0});
   }
 }

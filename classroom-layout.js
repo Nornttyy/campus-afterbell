@@ -1,4 +1,4 @@
-import {BUS,BUS_SEATS,BUS_POSTS,BUS_WALLS,BUS_FURNITURE,BUS_DECK_SLABS,busSight,busBlocked,busFootprint,busFloorHeight,busRoute,moveOnBus} from './bus-layout86.js?v=campus-92';
+import {BUS,BUS_SEATS,BUS_POSTS,BUS_WALLS,BUS_FURNITURE,BUS_DECK_SLABS,busSight,busBlocked,busFootprint,busFloorHeight,busRoute,moveOnBus} from './bus-layout86.js?v=campus-93';
 import {SERVING_SOLIDS,CAFETERIA_SEATS} from './upper-floors85.js?v=campus-92';
 import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-83';
 import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-92';
@@ -11,7 +11,7 @@ import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 export const ELEVATOR_ENABLED=true;
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
 export const TEACHER_EYE_HEIGHT=TEACHER_PROPORTIONS.eyeHeight;
-import {HALL,END_ORIGIN,officePlan,liftPlan,officeDeskPlans,officeChairPlans,officeBoardPlan,endPoint,endBounds} from './campus-ends.js?v=campus-92';
+import {HALL,END_ORIGIN,officePlan,liftPlan,officeDeskPlans,officeChairPlans,officeBoardPlan,officeBinPlan,endPoint,endBounds} from './campus-ends.js?v=campus-93';
  // In the walkthrough a player leaving the lift for the office has the classroom on the left.
 export const CLASSROOM=Object.freeze({minX:-6.65,maxX:7.20,minZ:-10.00,maxZ:8.80});
 export const CORRIDOR=HALL;
@@ -56,12 +56,21 @@ export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
  if(mapKind(map)==='toilet')return TOILET_SEATS;
  if(mapKind(map)==='dorm')return DORM_SEATS;
  if(mapKind(map)==='playground')return PLAYGROUND_SEATS;
- const random=layoutRandom(seed),pattern=LAYOUT_PATTERNS.includes(arrangement)?arrangement:LAYOUT_PATTERNS[(Number(seed)>>>0)%LAYOUT_PATTERNS.length],raw=[];
+ const ordinary=['classroom','night'].includes(mapKind(map));
+ const patterns=ordinary?[...LAYOUT_PATTERNS,'facing-aisle']:LAYOUT_PATTERNS;
+ const index=Number(seed)>>>0;
+ const pattern=patterns.includes(arrangement)?arrangement:ordinary&&index%7===6?'facing-aisle':LAYOUT_PATTERNS[index%LAYOUT_PATTERNS.length];
+ const random=layoutRandom(seed),raw=[];
  // Translate each left-hand desk cluster intact, preserving paired tops, the
  // fixed right-hand stair lane and all authored model sizes.
  const kind=mapKind(map);
  const add=(x,z,yaw=0)=>raw.push({deskX:mapKind(map)==='tiered'?(x< -3?x+.15:x):x< -3?x+.45:x,deskZ:z,yaw});
- if(pattern==='rows-wide'||pattern==='rows-long'){
+ if(pattern==='facing-aisle'){
+  // The November classroom footage shows two banks looking across the aisle,
+  // with the last row facing the lectern. The chair and drawer rotate together.
+  for(const z of [-4.26,-1.95,.36,2.67])for(const x of [-4.93,-1.84,1.84,4.93])add(x,z,x<0?Math.PI/2:-Math.PI/2);
+  for(const x of [-4.65,-1.55,1.55,4.65])add(x,-7.44);
+ }else if(pattern==='rows-wide'||pattern==='rows-long'){
   const wide=pattern==='rows-wide',xs=wide?[-5,-2.5,0,2.5,5]:[-4.8,-1.6,1.6,4.8];
   // Four rows of five or five rows of four. On terraces the front two rows
   // share the deeper zero-height platform; no desktop straddles a riser.
@@ -162,10 +171,11 @@ export function enclosureVolumes(map='classroom',context=null){
 }
 export const OFFICE_SOLIDS=Object.freeze([
  ...[
-  V(officePlan.minX+.04,officePlan.minX+.68,10.10,20.08,0,2.78),
+  V(officePlan.minX+.04,officePlan.minX+.68,10.10,19.31,0,2.78),
   ...officeDeskPlans.map(d=>V(d.x-d.width/2,d.x+d.width/2,d.z-d.depth/2,d.z+d.depth/2,0,.985)),
   ...officeDeskPlans.map(d=>V(d.x-.75,d.x-.09,d.z+.15,d.z+.23,1.105,1.482)),
   V(officePlan.maxX-.68,officePlan.maxX-.02,11.075,14.925,0,1.291),
+  V(officeBinPlan.x-.165,officeBinPlan.x+.165,officeBinPlan.z-.165,officeBinPlan.z+.165,0,.51),
   V(officeBoardPlan.x-1.35,officeBoardPlan.x+1.35,officeBoardPlan.z-.37,officeBoardPlan.z+.37,0,2.48)
  ].map(endBounds),
  V(ROLE_LOCKER.x-.37,ROLE_LOCKER.x+.35,ROLE_LOCKER.z-.90,ROLE_LOCKER.z+.90,0,2.28),

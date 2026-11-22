@@ -1,25 +1,26 @@
-import {returnPose,reachedHall} from './class-dismissal92.js?v=campus-92';
+import {actorEmote} from './social-actions93.js?v=campus-93';
+import {returnPose,reachedHall} from './class-dismissal92.js?v=campus-93';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-92';
-import {reachesSchoolDoor} from './door-interaction54.js?v=campus-92';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-92';
-import {validComputerPlayback} from './computer-rules55.js?v=campus-83';
-import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-83';
-import {movementScale} from './movement55.js?v=campus-83';
+import {reachesSchoolDoor} from './door-interaction54.js?v=campus-93';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-93';
+import {validComputerPlayback} from './computer-rules55.js?v=campus-93';
+import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-93';
+import {movementScale} from './movement55.js?v=campus-93';
 const randomUUID=()=>globalThis.crypto.randomUUID();
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-92';
-import {TeacherRound} from './teacher-rules.js?v=campus-92';
-import * as Layout from './classroom-layout.js?v=campus-92';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-92';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-93';
+import {TeacherRound} from './teacher-rules.js?v=campus-93';
+import * as Layout from './classroom-layout.js?v=campus-93';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-93';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
 const cleanName=value=>String(value||'同学').replace(/[\u0000-\u001f<>]/g,'').slice(0,16)||'同学';
 const CONTEXT=['player','selected','holding','_movement','_rescueId','_rescueProgress','completed'];
-const studentCommands=new Set(['jump','setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','pressVendingButton','collectVendingFood','takeMeal','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
-const teacherCommands=new Set(['jump','setSprint','toggleToiletDoor','toggleDormDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
-const scoringEvents=new Set(['complete','gum-score','bubble-score','snake-food','valorant-watch','exam-answer']);
+const studentCommands=new Set(['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','pressVendingButton','collectVendingFood','takeMeal','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
+const teacherCommands=new Set(['changeRadio','setEmote','jump','setSprint','toggleToiletDoor','toggleDormDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
+const scoringEvents=new Set(['complete','gum-score','bubble-score','snake-food','valorant-watch','arcade-score','exam-answer']);
 const teacherFeedbackEvents=new Set(['wrong-grab','correct-capture','stamina-low']);
 function context(actor){return{player:actor,selected:actor.id===-1?'chalk':actor.action||actor._slots?.[0]?.action||'snack',holding:false,_movement:{x:0,z:0},_rescueId:null,_rescueProgress:0,completed:actor.completed||Object.fromEntries(Object.keys(CLASSROOM_ACTIONS).map(k=>[k,0]))};}
 
@@ -160,7 +161,9 @@ export class CampusRoom{
   if(member.id!==this.hostId)throw new RoomError(403,'只有房主可以修改设置');
   if(!validRoundSettings(settings))throw new RoomError(400,'时长须为5–20分钟，捣蛋目标须为20–160，粉笔耗体力须为开或关');
   if(this.sim.stage!=='gathering')throw new RoomError(409,'开局后不能修改设置');
-  if(!this.sim.configureRound(settings))return false;this.settings={...settings};this.sequence++;return true;
+  if(settings.capacity!==undefined&&settings.capacity<this.members.size)throw new RoomError(400,'人数上限低于当前人数');
+  if(!this.sim.configureRound(settings))return false;if(settings.capacity!==undefined)this.maxPlayers=settings.capacity;
+  this.settings={...settings,...(this.sim.customTuning?{tuning:{...this.sim.customTuning}}:{})};this.sequence++;return true;
  }
  command(member,command,args=[],inputSeq=0){
   member.lastInput=Date.now();member.lastSeen=Date.now();
@@ -267,6 +270,7 @@ export class CampusRoom{
   state.inputAck={jump:member.jumpSequence||0,look:member.lookSequence||0,move:member.moveSequence||0,movement:{...member.context._movement}};state.player.name=member.name;state.player.character=member.character;
   const selfId=member.role==='teacher'?-1:member.studentId;
   state.students=state.students.map(p=>{const actor=this.sim.students[p.id],carrying=actor._drawnSlot!=null&&!this.sim._restrained(actor),heldAction=carrying?actor._slots[actor._drawnSlot]?.action||actor.action:null;return{...p,previewRole:state.stage==='gathering'?[...this.members.values()].find(m=>m.studentId===p.id)?.rolePreference:null,carrying,heldAction,drawerOpen:Boolean(actor._drawerOpen&&!actor._usingOfficeStock),penTaken:Boolean(actor._penTaken||actor._examMode==='paper'),isPlayer:p.id===selfId,isTeammate:this.sim._team.has(p.id)&&p.id!==selfId,networkHuman:Boolean(actor.networkHuman),character:actor.character||actor.variant};});
+  if(this.teacherActor._emote)state.teacher.emote=actorEmote(this.teacherActor,state.stage);
   state.teacher.networkHuman=Boolean(this.teacherMember);state.teacher.name=this.teacherMember?.name||'老师';
   state.teacher.seated=Boolean(this.teacherActor.seated);state.teacher.officeChair=Boolean(this.teacherActor._officeChair);state.teacher.officeDeskId=this.teacherActor._officeDeskId||null;
   for(const drawer of state.officeDrawers||[])if(this.teacherActor._officeDeskId===drawer.id&&this.teacherActor.seated&&this.teacherActor._drawerOpen)drawer.open=true;
@@ -279,7 +283,7 @@ export class CampusRoom{
   state.events=this.events.filter(e=>(e.recipientId==null||e.recipientId===selfId)&&(e.networkSequence||0)>member.lastSequence&&(member.role!=='teacher'||!scoringEvents.has(e.type))&&(member.role==='teacher'||!teacherFeedbackEvents.has(e.type))).map(e=>({...e,...(e.actor!==undefined?{actor:e.studentId===selfId?'player':e.actor==='player'?'peer':e.actor}:{})}));
   member.lastSequence=this.sequence;state.sequence=this.sequence;return state;
  }
- disconnect(member){this.withMember(member,sim=>{if(sim.player._examMode)sim.setExamMode('close');ClassroomRound.prototype.hold.call(sim,false);ClassroomRound.prototype.setComputerPlayback.call(sim,{playing:false,visible:false,mediaTime:0});ClassroomRound.prototype.setRescue.call(sim,null);});member.connected=false;member.context._movement={x:0,z:0};member.context.holding=false;member.context.player.holding=false;member.lastSeen=Date.now();}
+ disconnect(member){if(member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim.radio=null;this.withMember(member,sim=>{if(sim.player._examMode)sim.setExamMode('close');ClassroomRound.prototype.hold.call(sim,false);ClassroomRound.prototype.setComputerPlayback.call(sim,{playing:false,visible:false,mediaTime:0});ClassroomRound.prototype.setRescue.call(sim,null);});member.connected=false;member.context._movement={x:0,z:0};member.context.holding=false;member.context.player.holding=false;member.lastSeen=Date.now();}
  reconnect(member){member.connected=true;member.lastSeen=Date.now();}
  leave(member){
   if(!this.members.has(member.id))return;this.disconnect(member);this.members.delete(member.id);
