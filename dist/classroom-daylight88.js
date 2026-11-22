@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-87';
+import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-90';
 
 // The three colour channels store window bounce near the floor, window bounce
 // at eye height, and diffuse light near the suspended hall tubes. One bilinear
@@ -77,6 +77,7 @@ const portableSun=`
   float bay88=(hit88.x-${f(CLASSROOM.minZ)})/${f((CLASSROOM.maxZ-CLASSROOM.minZ)/6)};
   float pane88=abs(fract(bay88)-.5),soft88=.025+.004*reach88;
   float open88=smoothstep(.025-soft88,.055+soft88,pane88)*(1.0-smoothstep(.44-soft88,.48+soft88,pane88));
+  open88*=smoothstep(.43-soft88,.55+soft88,abs(hit88.x-${f(CLASSROOM.minZ+2*(CLASSROOM.maxZ-CLASSROOM.minZ)/6)}));
   open88*=smoothstep(1.1-soft88,1.23+soft88,hit88.y)*(1.0-smoothstep(3.70-soft88,3.83+soft88,hit88.y));
   open88*=smoothstep(.015,.09+soft88,abs(hit88.y-3.33))*step(0.0,bay88)*(1.0-step(6.0,bay88));
   reflectedLight.directDiffuse*=mix(.29,1.0,hall88?0.0:open88);

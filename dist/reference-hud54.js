@@ -1,11 +1,11 @@
-import {readControls,keyLabel} from './control-settings64.js?v=campus-83';
+import {readControls,keyLabel} from './control-settings64.js?v=campus-90';
 // Presentation consumes authoritative scores; names and points are never
 // invented from an animation or inferred from the number of eaten objects.
 export function hud54Model(s){
  const rows=(s.leaderboard||[]).filter(p=>Number.isFinite(p.points)&&p.points>=0).map(p=>({id:p.id,name:String(p.name||'同学'),points:p.points,caught:!!p.caught,isSelf:!!p.isSelf})).sort((a,b)=>b.points-a.points||a.id-b.id);
  return {rows,score:s.score,target:s.target,caught:s.caughtCount,total:s.teamSize,winner:s.status==='won'?'学生':'老师',reason:s.status==='won'?'捣蛋度已满':s.resultReason==='timeout'?'下课时间到':s.resultReason==='teacher-left'?'老师已离开':'捣蛋同学已被抓获',teacherName:s.teacher?.name||'老师'};
 }
-export function createReferenceHUD({document:doc=globalThis.document,root,bindings=readControls}){
+export function createReferenceHUD({document:doc=globalThis.document,root,bindings=readControls,touchMode=()=>false}){
  if(!doc?.createElement||!root?.append)return {update(){},finish(){},dispose(){}};
  const $=s=>doc.querySelector(s),make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;};
  const ranking=make('aside','live-ranking');ranking.id='live-ranking';ranking.setAttribute('aria-label','实时排名');ranking.append(make('h3',null,'实时排名'));const rankList=make('ol');ranking.append(rankList);root.append(ranking);
@@ -21,16 +21,16 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
  const table=make('div','result-ranking');table.setAttribute('aria-label','本局成绩');result.insertBefore(table,$('#retry-game'));
  let lastRank='',lastHeld='',lastPrompt='';
  const row=(p,i,teacher=false)=>{const n=make('div',teacher?'rank-row teacher-result':'rank-row');n.dataset.self=String(p.isSelf);n.append(make('span','rank-place',teacher?'师':i+1),make('span','rank-name',p.name),make('strong','rank-points',teacher?'抓捕 '+p.points:'+'+p.points));return n;};
- function keyLine(key,label){const prefs=bindings();key=key==='E'?keyLabel(prefs.keys.interact):key==='Q'?keyLabel(prefs.keys.return):key==='鼠标'?keyLabel(prefs.keys.use):key;const line=make('span','input-line');line.append(make('kbd',key==='鼠标左键'?'mouse-key':'',key),make('span',null,label));return line;}
+ function keyLine(key,label){const prefs=bindings();key=touchMode()?({'E':'交互','Q':'返回','鼠标':'使用'}[key]||key):key==='E'?keyLabel(prefs.keys.interact):key==='Q'?keyLabel(prefs.keys.return):key==='鼠标'?keyLabel(prefs.keys.use):key;const line=make('span','input-line');line.append(make('kbd',key==='鼠标左键'?'mouse-key':'',key),make('span',null,label));return line;}
  return{
   update(s){
-   const key=bindings().keys,move=[key.forward,key.left,key.back,key.right].map(keyLabel).join(' / '),use=keyLabel(key.use),e=keyLabel(key.interact),q=keyLabel(key.return);
-   $('#student-controls').textContent=`${move} 移动 · 鼠标转向\n${e} 拿取 / 打开 / 坐下\n${q} 放回 / 关闭 / 起身\n拿笔后 ${e} 切换转笔和写字\n长按 ${use} 使用 · 投掷物松开抛出\n按住 ${e} 解救 · ${keyLabel(key.crawl)} 爬行\n机房方向键控制电脑\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
-   $('#teacher-controls').textContent=`${move} 移动 · 按住 ${keyLabel(key.crawl)} 奔跑 · 鼠标转向\n${use} 投粉笔 · ${e} 抓住眩晕同学\n木桩前 ${e} 绑住 · ${q} 放下\n黑板前按住 ${e} 写字\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
+   const mobile=touchMode(),key=bindings().keys,move=[key.forward,key.left,key.back,key.right].map(keyLabel).join(' / '),use=keyLabel(key.use),e=keyLabel(key.interact),q=keyLabel(key.return);
+   $('#student-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n交互拿取或坐下，返回放回或起身\n长按使用 · 点爬行切换姿势':`${move} 移动 · 鼠标转向\n${e} 拿取 / 打开 / 坐下\n${q} 放回 / 关闭 / 起身\n拿笔后 ${e} 切换转笔和写字\n长按 ${use} 使用 · 投掷物松开抛出\n按住 ${e} 解救 · ${keyLabel(key.crawl)} 爬行 · ${keyLabel(key.jump)} 跳跃\n机房方向键控制电脑\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
+   $('#teacher-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n点奔跑切换速度 · 使用投粉笔\n交互抓住或绑住同学，返回放下':`${move} 移动 · 按住 ${keyLabel(key.crawl)} 奔跑 · 鼠标转向 · ${keyLabel(key.jump)} 跳跃\n${use} 投粉笔 · ${e} 抓住眩晕同学\n木桩前 ${e} 绑住 · ${q} 放下\n黑板前按住 ${e} 写字\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
    const model=hud54Model(s),signature=JSON.stringify(model.rows);ranking.hidden=s.stage!=='class';
    if(signature!==lastRank){lastRank=signature;rankList.replaceChildren(...model.rows.map((p,i)=>{const li=make('li');li.dataset.self=String(p.isSelf);li.append(make('span','rank-place',i+1),make('span','rank-name',p.name),make('strong','rank-points',p.points));return li;}));}
    const p=s.player,carrying=s.drawer.drawnSlot!=null,pen=carrying&&s.selected==='pen';
-   const heldKey=JSON.stringify([carrying,s.selected,p.penWriting,p.caught,p.seated,s.paused,bindings().keys]);
+   const heldKey=JSON.stringify([carrying,s.selected,p.penWriting,p.caught,p.seated,s.paused,mobile,bindings().keys]);
    if(heldKey!==lastHeld){lastHeld=heldKey;held.replaceChildren();held.hidden=!carrying||p.caught||s.paused;if(!held.hidden){if(pen)held.append(keyLine('E',p.penWriting?'转笔':'写字'));else held.append(keyLine('鼠标',['smoke','flash','ink','bananaPeel'].includes(s.selected)?'松开投掷':'使用'));held.append(keyLine('Q','放回'));}}
    const prompt=$('#interaction-prompt'),text=prompt.textContent;
    {lastPrompt=text;const match=text.match(/^(.*?)([EQ]) (.*)$/);if(match){prompt.replaceChildren();if(match[1])prompt.append(make('span',null,match[1]));prompt.append(keyLine(match[2],match[3]));}}

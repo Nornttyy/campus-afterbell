@@ -7,7 +7,7 @@
   <title>我带过最差的一届</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232d786c'/%3E%3Cpath d='M16 18h32v25H16z' fill='%23fff6dd'/%3E%3Cpath d='M25 49h14M32 43v6M24 27h16M24 34h10' stroke='%232d786c' stroke-width='4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./style.css?v=campus-83">
-  <link rel="stylesheet" href="./reference-hud54.css?v=campus-83">
+  <link rel="stylesheet" href="./reference-hud54.css?v=campus-90">
 
 </head>
 <body>
@@ -73,13 +73,14 @@
 
 
   <dialog id="settings-dialog" class="sheet settings-sheet" aria-labelledby="settings-title"><div class="sheet-top"><div><h2 id="settings-title">设置</h2></div><button class="icon-button close" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
-    <div class="settings-content"><label class="range-row" for="sfx-volume"><span>音效<output id="sfx-output">55%</output></span><input type="range" id="sfx-volume" min="0" max="100" value="55"></label>
+    <div class="settings-content"><div class="setting-row"><span id="input-mode-label">操作模式</span><div class="segmented" role="group" aria-labelledby="input-mode-label"><button type="button" data-input-mode="auto" aria-pressed="true">自动识别</button><button type="button" data-input-mode="desktop" aria-pressed="false">电脑端</button><button type="button" data-input-mode="mobile" aria-pressed="false">手机端</button></div></div>
+    <label class="range-row" for="sfx-volume"><span>音效<output id="sfx-output">55%</output></span><input type="range" id="sfx-volume" min="0" max="100" value="55"></label>
     <div class="setting-row"><span>画面质量</span><div class="segmented" role="group" aria-label="画面质量"><button data-quality="high" aria-pressed="true">精致</button><button data-quality="low" aria-pressed="false">流畅</button></div></div>
     <label class="setting-row" for="motion-toggle"><span>场景动态</span><input id="motion-toggle" type="checkbox" class="switch" checked></label>
     <label class="setting-row" for="sound-cues-toggle"><span>声纹提示</span><input id="sound-cues-toggle" type="checkbox" class="switch" checked></label>
-    <div class="setting-row"><span>手部动作</span><a class="paper-button" href="./animation-editor.html?v=campus-89" target="_blank" rel="noopener">打开编辑器</a></div>
+    <div class="setting-row"><span>手部动作</span><a class="paper-button" href="./animation-editor.html?v=campus-90" target="_blank" rel="noopener">打开编辑器</a></div>
     <div id="control-settings"></div></div><button class="primary-button compact close" id="settings-done"><span>完成</span><svg><use href="#i-check"/></svg></button>
   </dialog>
 </main>
-<script type="module" src="./app.js?v=campus-89"></script>
+<script type="module" src="./app.js?v=campus-90"></script>
 </body></html>

@@ -1,11 +1,11 @@
 import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-83';
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-87';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-89';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-90';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-90';
 import {teacherViewHeight} from './camera-height58.js?v=campus-83';
-import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,floorHeight} from './classroom-layout.js?v=campus-87';
+import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,actorFloorHeight} from './classroom-layout.js?v=campus-90';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-89';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-90';
 
 export class TeacherRound extends ClassroomRound{
   reset(seed){
@@ -50,12 +50,12 @@ export class TeacherRound extends ClassroomRound{
     if(this._restrained(this.player))return false;
     if(!canThrowWithStamina(this)){this._events.push({type:'stamina-low'});return false;}
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
-    this.chalks.push({id:this._chalkId++,x:p.x,y:floorHeight(p.x,p.z,this.map,p.busDeck)+teacherViewHeight(p),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
+    this.chalks.push({id:this._chalkId++,x:p.x,y:actorFloorHeight(p,this.map)+teacherViewHeight(p),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
     this.teacher.stamina=Math.max(0,this.teacher.stamina-chalkStaminaCost(this));this._lastThrow=this._sessionElapsed;this._nextThrow=this._sessionElapsed+.72;this._events.push({type:'chalk-throw',x:this.player.x,z:this.player.z});return true;
   }
   aimedStudent(range=9){
     if(this.stage!=='class')return null;
-    const p=this.player,a={x:p.x,y:floorHeight(p.x,p.z,this.map,p.busDeck)+teacherViewHeight(p),z:p.z},cp=Math.cos(p.pitch);
+    const p=this.player,a={x:p.x,y:actorFloorHeight(p,this.map)+teacherViewHeight(p),z:p.z},cp=Math.cos(p.pitch);
     const rayRange=Math.hypot(range,teacherViewHeight(p));
     const b={x:a.x+Math.sin(p.yaw)*cp*rayRange,y:a.y-Math.sin(p.pitch)*rayRange,z:a.z+Math.cos(p.yaw)*cp*rayRange};
     const hit=chalkHit(a,b,this.students,this.books,this.map,this.layout);

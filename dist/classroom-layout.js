@@ -182,7 +182,20 @@ export function floorHeight(x,z,map='classroom',deck=0){
  const aisleSteps=Math.max(0,Math.floor((CLASSROOM.maxX-x+1e-8)/.10));
  return Math.min(rowSteps,aisleSteps)*.105;
 }
-export function actorFloorHeight(actor,map='classroom',carrier=null){if(actor.mapActivity?.kind==='hang'&&mapKind(map)==='playground'){const bar=PLAYGROUND_LAYOUT.bars.find(b=>b.id===actor.mapActivity.id);if(bar)return Math.max(0,bar.height-1.65);}const carried=actor.captivity==='carried'&&carrier,support=carried?carrier:actor;if(!carried&&mapKind(map)==='dorm'&&actor.seated&&!actor._officeChair&&!actor.officeChair){const bed=DORM_SEATS.find(s=>s.id===(actor.bedId??actor.seatId));if(bed)return bed.supportHeight;}return floorHeight(support.x,support.z,map,support.busDeck);}
+export function jumpHeadroom(actor,map,ground){
+ const head=actor.id===-1?TEACHER_PROPORTIONS.bodyHeight:STUDENT_PROPORTIONS.bodyHeight;
+ const kind=mapKind(map),slabs=kind==='bus'?BUS_DECK_SLABS:ceilingVolumes(map);
+ let limit=Infinity;
+ function check(volumes){
+  for(const v of volumes)if(v.minY>ground+.04&&actor.x>=v.minX-.15&&actor.x<=v.maxX+.15&&actor.z>=v.minZ-.15&&actor.z<=v.maxZ+.15)limit=Math.min(limit,v.minY);
+ }
+ check(slabs);
+ if(kind==='playground')check(outdoorHeaders);
+ else if(kind==='dorm'){check(headers.slice(DOORS.length));check(DORM_SHELL_SOLIDS);check(DORM_CORRIDOR_SOLIDS);}
+ else if(kind!=='bus')check(headers);
+ return Math.max(0,limit-ground-head);
+}
+export function actorFloorHeight(actor,map='classroom',carrier=null){if(actor.mapActivity?.kind==='hang'&&mapKind(map)==='playground'){const bar=PLAYGROUND_LAYOUT.bars.find(b=>b.id===actor.mapActivity.id);if(bar)return Math.max(0,bar.height-1.65);}const carried=actor.captivity==='carried'&&carrier,support=carried?carrier:actor;if(!carried&&mapKind(map)==='dorm'&&actor.seated&&!actor._officeChair&&!actor.officeChair){const bed=DORM_SEATS.find(s=>s.id===(actor.bedId??actor.seatId));if(bed)return bed.supportHeight;}return floorHeight(support.x,support.z,map,support.busDeck)+(support.jumpHeight||0);}
 // Heights are relative to the actor's support surface. A bunk's mattress
 // replaces the floor origin; using the school-chair height adds it twice.
 export function actorEyeHeight(actor,map='classroom'){

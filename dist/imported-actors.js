@@ -6,10 +6,10 @@ import * as THREE from './vendor/three.module.js';
 import {normalWalkCycleRate} from './movement55.js?v=campus-83';
 import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-83';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-89';
+import {createCrawlPose} from './crawl-pose.js?v=campus-90';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-89';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-83';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-90';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-90';
 
 export async function loadTeacherModel(){
   const url=new URL('./assets/models/teacher-v2.glb?v=mesh-64',import.meta.url);
@@ -157,7 +157,7 @@ export function createRiggedTeacher(gltf){
     }
     group.updateMatrixWorld(true);
   }
-  function update(time,{inkLeft=0,walking=0,speed=null,look=0,lookYaw=null,lookPitch=0,phase='board',crawling=false,seated=false}={}){
+  function update(time,{jumpHeight=0,inkLeft=0,walking=0,speed=null,look=0,lookYaw=null,lookPitch=0,phase='board',crawling=false,seated=false}={}){
     // The teacher never crawls, including stale motion snapshots or editor input.
     crawling=false;
     const reset=lastTime===null||time<lastTime;
@@ -186,7 +186,7 @@ export function createRiggedTeacher(gltf){
     walkingArms?.restore();
     for(const [bone,rotation]of poseSaved)bone.quaternion.copy(rotation);poseSaved.clear();handMotion.restore();mixer.update(dt);
     handMotion.apply({time,dt,reset,seated:write>.35,mood:write>.35?'writing':'resting',moving,carrying:false});settleNeckPose(time,dt);
-    walkingArms?.apply({weight:neckContact?0:weights.Walk||0,seated,crawling,restraint:phase==='stunned'?'stunned':'free',teacher:true,walkTime:actions.Walk.time,cycleDuration:actions.Walk.getClip().duration});
+    walkingArms?.apply({jumpHeight,carrying:!!neckContact,weight:neckContact?0:weights.Walk||0,seated,crawling,restraint:phase==='stunned'?'stunned':'free',teacher:true,walkTime:actions.Walk.time,cycleDuration:actions.Walk.getClip().duration});
     sitOnOfficeChair(seated&&phase!=='stunned',dt,reset);
     // Look offset is applied after sampling, never accumulated into the bind pose.
     const yawTarget=Number.isFinite(lookYaw)?lookYaw:THREE.MathUtils.clamp(look,-.5,.5);

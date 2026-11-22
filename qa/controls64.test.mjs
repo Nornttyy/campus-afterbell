@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CONTROL_KEY,ACTION_KEYS,normalizeControls,readControls,rebindControl,actionForCode,applyTouchStyle,setupControlSettings} from '../dist/control-settings64.js';
+import {CONTROL_KEY,ACTION_KEYS,usesTouchControls,normalizeControls,readControls,rebindControl,actionForCode,applyTouchStyle,setupControlSettings} from '../dist/control-settings64.js';
 
 test('saved bindings and touch layout survive reload, reject invalid keys and constrain touch targets',()=>{
  const settings=normalizeControls();assert.equal(rebindControl(settings,'interact','KeyF'),true);settings.touch={size:86,spacing:20,edge:36,bottom:40,leftHanded:true,sensitivity:1.4};
@@ -38,6 +38,8 @@ function fixture({saved,search=''}={}){
  const host=new Element(),dialog=new Element(),section=new Element(),status=new Element(),reset=new Element(),other=new Element(),preview=new Element(),grid=new Element();
  const buttons=Object.fromEntries(Object.keys(ACTION_KEYS).map(action=>{const el=new Element();el.dataset.bind=action;return[action,el];}));
  const inputs=Object.fromEntries(['size','spacing','edge','bottom','sensitivity','leftHanded'].map(id=>{const el=new Element();el.dataset.touch=id;el.type=id==='leftHanded'?'checkbox':'range';return[id,el];}));
+ const modes=Object.fromEntries(['auto','desktop','mobile'].map(id=>{const el=new Element();el.dataset.inputMode=id;return[id,el];}));
+ doc.querySelectorAll=selector=>selector==='button[data-input-mode]'?Object.values(modes):[];
  const outputs=Object.fromEntries(Object.keys(inputs).map(id=>[id,new Element()]));
  host.querySelectorAll=selector=>selector==='[data-bind]'?Object.values(buttons):Object.values(inputs);
  host.querySelector=selector=>({'#bind-status':status,'.control-section':section,'.touch-preview':preview,'.binding-grid':grid,'#controls-reset':reset})[selector]||outputs[selector.match(/data-output="([^"]+)"/)?.[1]];
@@ -47,7 +49,7 @@ function fixture({saved,search=''}={}){
  const controls=setupControlSettings({document:doc,window:win});
  function send(target,type,values={}){const e=new Event(type,{cancelable:true});for(const[k,v]of Object.entries(values))Object.defineProperty(e,k,{value:v});target.dispatchEvent(e);return e;}
  function click(el){send(doc,'pointerdown',{target:el});el.focus();send(doc,'click',{target:el});send(el,'click');}
- return{host,dialog,section,status,buttons,inputs,other,doc,win,writes,local,session,click,send,controls,
+ return{host,dialog,section,status,buttons,inputs,modes,other,doc,win,writes,local,session,click,send,controls,
   arm(action='interact'){click(buttons[action]);assert.equal(buttons[action].attrs['aria-pressed'],'true');},
   key(code,more={}){return send(doc,'keydown',{code,...more});},
   close(){controls.dispose();for(const[k,d]of originals){if(d)Object.defineProperty(globalThis,k,d);else delete globalThis[k];}}
@@ -94,4 +96,35 @@ test('QA preview reads and writes an isolated session namespace without touching
   globalThis.location.search='?v=campus-83';assert.deepEqual(readControls(),custom,'returning to production keeps all existing preferences');
   globalThis.location.search='?qaControls=1';assert.equal(readControls().keys.interact,'KeyF','reloading this QA tab retains only its test preferences');
  }finally{f.close();}
+});
+
+test('manual input mode persists, overrides hardware and leaves saved bindings and touch sizes intact',()=>{
+ const hybrid={coarse:false,fine:true,hover:true,touchPoints:10},phone={coarse:true,touchPoints:5};
+ assert.equal(usesTouchControls('auto',hybrid),false);assert.equal(usesTouchControls('auto',phone),true);
+ assert.equal(usesTouchControls('desktop',phone),false);assert.equal(usesTouchControls('mobile',hybrid),true);
+ assert.equal(normalizeControls({inputMode:'tablet'}).inputMode,'auto');
+ const legacy={keys:{interact:'KeyF'},touch:{size:86}},f=fixture({saved:legacy});let stored;
+ try{
+  assert.equal(f.modes.auto.attrs['aria-pressed'],'true');
+  f.click(f.modes.desktop);stored=readControls();
+  assert.equal(stored.inputMode,'desktop');assert.equal(stored.keys.interact,'KeyF');assert.equal(stored.touch.size,86);
+  assert.equal(f.modes.desktop.attrs['aria-pressed'],'true');assert.equal(f.modes.auto.attrs['aria-pressed'],'false');
+ }finally{f.close();}
+ const g=fixture({saved:stored});
+ try{assert.equal(g.modes.desktop.attrs['aria-pressed'],'true');g.click(g.modes.mobile);assert.equal(readControls().inputMode,'mobile');g.click(g.modes.auto);assert.equal(readControls().inputMode,'auto');}finally{g.close();}
+});
+
+test('existing Space bindings still work after jump is added and survive saving again',()=>{
+ const old=normalizeControls({keys:{use:'Space',mic:'KeyJ'}});assert.equal(old.keys.use,'Space');assert.equal(old.keys.mic,'KeyJ');
+ assert.notEqual(old.keys.jump,'Space');assert.notEqual(old.keys.jump,'KeyJ');assert.deepEqual(normalizeControls(old),old);
+ const fresh=normalizeControls();assert.equal(rebindControl(fresh,'use','Space'),true);assert.deepEqual(normalizeControls(fresh),fresh);
+});
+
+test('a denied write keeps the manual mode when the game loads later in the same page',()=>{
+ const f=fixture();const storage=globalThis.localStorage,save=storage.setItem;
+ try{
+  storage.setItem=()=>{throw Error('disabled');};f.click(f.modes.desktop);
+  assert.equal(readControls().inputMode,'desktop');assert.equal(f.writes.length,0);
+  storage.setItem=save;f.click(f.modes.auto);assert.equal(readControls().inputMode,'auto');assert.equal(f.writes.length,1);
+ }finally{storage.setItem=save;f.close();}
 });

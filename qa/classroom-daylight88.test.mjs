@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {CLASSROOM,CORRIDOR} from '../dist/classroom-layout.js';
+import {CLASSROOM,CORRIDOR,DOORS,START_BELL_POSITION} from '../dist/classroom-layout.js';
 import {campusScene} from './campus-geometry54-helpers.mjs';
 
 test('daylight comes through real openings and follows both rows of hall fixtures',()=>{
@@ -70,4 +70,18 @@ test('a shared desk material keeps its imported shader and follows the day switc
    assert.equal(wood.customProgramCacheKey(),shaderKey);assert.equal(wood.version,version);
   }
  }finally{wood.dispose();dispose();}
+});
+
+test('ordinary classroom prints occupy opposite solid window piers and the hall notice clears the bell',()=>{
+ const {scene,campus,artwork,dispose}=campusScene();try{
+  const near=scene.getObjectByName('classroom-pillar-notice'),far=scene.getObjectByName('classroom-window-notice'),sign=scene.getObjectByName('corridor-conduct-poster');
+  assert.equal(near.material.map,artwork.classroomNotice);assert.equal(near.material,far.material);assert.equal(near.material,sign.material);
+  assert.ok(near.position.x>7&&far.position.x<-6.6&&near.rotation.y<0&&far.rotation.y>0);
+  for(const [index,print] of [near,far,sign].entries()){
+   const uv=print.geometry.attributes.uv;for(let i=0;i<uv.count;i++)assert.equal(Math.floor(uv.getX(i)*3),index);
+  }
+  const door=DOORS.find(d=>d.id==='front');assert.ok(sign.position.z-sign.geometry.parameters.width/2>door.maxZ);
+  assert.ok(Math.abs(sign.position.z-START_BELL_POSITION.z)>1);
+  campus.setMap('classroom');assert.equal(far.parent.visible,true);campus.setMap('computer');assert.equal(far.parent.visible,false);
+ }finally{dispose();}
 });
