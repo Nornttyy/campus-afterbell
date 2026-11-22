@@ -41,8 +41,13 @@ test('E carries food out of the chair; Q returns at the original desk without fo
 test('book E/Q are explicit, and holding a pen makes E change only pen mode',()=>{
  const f=fixture();try{f.target({kind:'book'});f.key('KeyE');assert.equal(f.round.snapshot().player.bookRaised,true);f.key('KeyE');assert.equal(f.round.snapshot().player.bookRaised,true);f.key('KeyQ');assert.equal(f.round.snapshot().player.bookRaised,false);f.target({kind:'pen'});f.key('KeyE');assert.equal(f.round.snapshot().player.penTwirling,true);f.target({kind:'book'});f.key('KeyE');assert.equal(f.round.snapshot().player.penWriting,true);assert.equal(f.round.snapshot().player.bookRaised,false);f.key('KeyE');assert.equal(f.round.snapshot().player.penTwirling,true);assert.equal(f.round.score,0);}finally{f.close();}
 });
-test('computer E does not close; touch return and Q share the same close path',()=>{
- const f=fixture({map:'computer'});try{f.target({kind:'computer'});f.key('KeyE');f.advance(.1);f.key('KeyE');assert.equal(f.round.player._computerActive,true);f.commands.return();assert.equal(f.round.player._computerApp,'desktop');assert.equal(f.round.player._computerActive,true);f.commands.return();assert.equal(f.round.player._computerActive,false);f.key('KeyE');f.advance(.1);f.key('KeyQ');assert.equal(f.round.player._computerActive,false);assert.equal(f.round.player._drawerOpen,false);assert.equal(f.round.player.seated,true);}finally{f.close();}
+test('monitor focus is independent of E, Q and touch return; looking away keeps the player seated',()=>{
+ const f=fixture({map:'computer'});try{
+  f.target({kind:'computer'});f.advance(.12);assert.equal(f.round.player._computerActive,true);
+  f.commands.return();f.key('KeyQ');f.key('KeyE');assert.equal(f.round.player._computerActive,true);
+  assert.equal(f.round.player._computerApp,'desktop');f.target(null);f.advance(.13);
+  assert.equal(f.round.player._computerActive,false);assert.equal(f.round.player._drawerOpen,false);assert.equal(f.round.player.seated,true);
+ }finally{f.close();}
 });
 test('Q cancels a charged throwable without throwing, consuming, closing or standing',()=>{
  const f=fixture();try{f.take('smoke');f.mouse(true);f.advance(.7);f.commands.return();assert.equal(f.round.projectiles.length,0);assert.equal(f.round.player._slots[0].action,'smoke');assert.equal(f.round.player._drawnSlot,null);assert.equal(f.round.player._drawerOpen,true);assert.equal(f.round.player.seated,true);f.mouse(false);assert.equal(f.round.projectiles.length,0);}finally{f.close();}

@@ -1,14 +1,15 @@
+import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
 import {createReferenceHUD} from './reference-hud54.js?v=campus-93';
-import {interactionIntent} from './interaction-intent54.js?v=campus-95';
-import {createSessionUI} from './session-ui.js?v=campus-94';
+import {interactionIntent} from './interaction-intent54.js?v=campus-96';
+import {createSessionUI} from './session-ui.js?v=campus-96';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-95';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-96';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -37,16 +38,53 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function setPosture(value){return round.player.id===-1?round.setSprint?.(value):round.setCrouch(value);}
   function stopMovement(){keys.clear();physicalKeys.clear();round.setMovement(0,0);setPosture(false);dragLook=false;}
   function unlock(){if(document.pointerLockElement===canvas)document.exitPointerLock();}
-  function lock(){if(session?.touch||session?.computer)return;if(document.pointerLockElement===canvas||!canvas.requestPointerLock)return;try{canvas.requestPointerLock()?.catch?.(()=>{});}catch{}}
-  let stickDirection=null,repeatAfter=0;
+  function lock(){if(session?.touch)return;if(document.pointerLockElement===canvas||!canvas.requestPointerLock)return;try{canvas.requestPointerLock()?.catch?.(()=>{});}catch{}}
+  let stickDirection=null,repeatAfter=0,computerStation=null,focusRetryAt=0;
+  let keyboardSelection=false,framedApp=null,centerMove=null;
+  function chooseComputerDirection(direction){keyboardSelection=true;return round.computerSelect?.(direction);}
+  function updateComputerFocus(state,now){
+    const p=state.player,pc=p.computer;
+    const isLab=state.map==='computer'||state.map==='computer7';
+    if(!isLab&&computerStation==null&&!framedApp&&!pc?.active)return;
+    const enabled=active&&!finished&&state.status==='playing'&&state.stage==='class'&&isLab&&state.role==='student'&&!p.caught&&(!p.captivity||p.captivity==='free')&&state.drawer?.drawnSlot==null&&!state.paused&&!session.modal&&!document.hidden;
+    const hit=enabled?(scene.getAimedComputer?scene.getAimedComputer():scene.getInteraction?.()):null;
+    const id=hit?.kind==='computer'?(hit.id??p.seatId):null;
+    const changed=id!==computerStation;
+    if(changed){computerStation=id;keyboardSelection=false;centerMove=null;}
+    const activeSeat=pc?.active?(pc.stationId??p.seatId):null;
+    if(id!==activeSeat&&(changed||now>=focusRetryAt)){
+      if(id==null)round.stopComputer?.();else round.startComputer?.(id);
+      focusRetryAt=now+400;
+    }
+    scene.setComputerHover?.(id,pc?.app==='desktop'&&!keyboardSelection?hit?.app:null);
+    const next=id!=null&&id===activeSeat&&COMPUTER_GAMES.includes(pc?.app)?pc.app:null;
+    if(next!==framedApp){
+      framedApp=next;
+      const frame=next&&scene.getComputerFrame?.(id);
+      centerMove=frame?{start:now,fromYaw:p.yaw,fromPitch:p.pitch,...frame}:null;
+    }
+    if(centerMove){
+      const m=centerMove,t=Math.min(1,(now-m.start)/190),blend=t*t*(3-2*t);
+      const delta=Math.atan2(Math.sin(m.yaw-m.fromYaw),Math.cos(m.yaw-m.fromYaw));
+      round.setLook(m.fromYaw+delta*blend,m.fromPitch+(m.pitch-m.fromPitch)*blend);
+      if(t===1)centerMove=null;
+    }
+  }
+  function computerClick(fromKey=false){
+    const target=scene.getInteraction?.(),p=round.snapshot().player,pc=p.computer;
+    if(target?.kind!=='computer'||!pc?.active)return false;
+    if(pc.app==='desktop'&&target.app&&!fromKey&&!keyboardSelection)return round.computerApp(target.app);
+    if(pc.app==='desktop'&&!fromKey&&!keyboardSelection)return false;
+    return round.computerConfirm?.();
+  }
   function computerStick(side,forward){
     if(!session.computer||round.paused||Math.max(Math.abs(side),Math.abs(forward))<.42){stickDirection=null;return;}
     const next=Math.abs(side)>Math.abs(forward)?(side>0?'right':'left'):(forward>0?'up':'down');
     const time=performance.now();
     if(next!==stickDirection){
-      stickDirection=next;repeatAfter=time+330;round.computerSelect?.(next);
+      stickDirection=next;repeatAfter=time+330;chooseComputerDirection(next);
     }else if(time>=repeatAfter&&next!=='up'&&(round.player.computer?.app||round.player._computerApp)==='tetris'){
-      repeatAfter=time+115;round.computerSelect?.(next);
+      repeatAfter=time+115;chooseComputerDirection(next);
     }
   }
   const session=sessionFactory({root:ui,commands:{computerStick,radio:id=>round.changeRadio?.(id),radioFocus:()=>{release();stopMovement();},closeRadio:()=>{if(active&&!round.paused)lock();},silent:()=>audio.muted===true,bell:settings=>{if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;return round.startBell?.(round.network?settings:undefined);},mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
@@ -59,7 +97,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   }
   async function toggleMic(){try{await round.toggleMicrophone?.();session.setMicrophoneError?.('');}catch(e){session.setMicrophoneError?.(e.message);}}
   function look(dx,dy){
-    if(!canInput()||session.computer)return;
+    if(!canInput())return;
+    if(dx||dy){centerMove=null;keyboardSelection=false;}
     const p=round.player;
     if(p.seated&&p.lying){
       const c=Math.cos(DORM_REST_VIEW.roll),s=Math.sin(DORM_REST_VIEW.roll);
@@ -73,7 +112,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     feedbackTimer=setTimeout(()=>box.classList.remove('pop'),duration);
   }
   function finish(s){
-    release();stopMovement();unlock();fx((s.role==='teacher'?s.status==='lost':s.status==='won')?'bell':'caught');
+    release();stopMovement();unlock();audio.effect?.('school-bell-out');
+    scene.playFeedback?.((s.role==='teacher'?s.status==='lost':s.status==='won')?'bell':'caught');
     $('#result-title').textContent=s.status==='won'?'学生获胜':'老师获胜';$('#result-score').textContent=Math.round(s.score);$('#result-goal').textContent='捣乱值';
     $('#result-detail').textContent=s.status==='won'?'这节课，藏住了。':'捣蛋同学都被找出来了。';
     $('#result-actions').textContent=s.role==='teacher'?`找到 ${s.caughtCount} / ${s.teamSize} 位捣蛋同学`:Object.entries(s.completed).filter(([kind,count])=>count>0&&labels[kind]).map(([kind,count])=>`${labels[kind]} ${count}`).join(' · ');
@@ -86,7 +126,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     const sound=soundForEvent(e,round.player);if(sound)audio.effect?.(sound.kind,sound.gain);
     if(e.type==='elevator-start'){release();audio.click();}
     if(e.type==='elevator-arrived'){options.map=e.map;audio.effect?.('bell',.35);}
-    if(e.type==='school-bell')fx('bell');
+    if(e.type==='school-bell'){audio.effect?.('school-bell-in');scene.playFeedback?.('bell');}
     if(e.type==='flash-burst'||e.type==='ink-splash')audio.effect?.(e.type,.6);
     if(e.type==='complete'&&e.studentId===round.player.id&&e.points>0)scene.playFeedback?.('complete');
     if(['flash-throw','ink-throw'].includes(e.type))audio.effect?.('smoke-throw',.4);
@@ -129,7 +169,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     ui.dataset.drawerOpen=String(drawer.open);ui.dataset.selectedSlot=String(drawer.selectedSlot);ui.dataset.carrying=String(carrying);
     const openIntent=interactionIntent(s,target,'E'),closeIntent=interactionIntent(s,target,'Q');session.setActionLabels?.(target?.kind==='radio'?{label:'广播'}:openIntent,closeIntent);
     let actionText='';
-    if(target?.kind==='bell')actionText='E 开始上课';
+    if(target?.kind==='computer')actionText=p.computer?.app==='desktop'?(session.touch?'使用 · 打开应用':'左键 打开应用'):p.computer?.app==='miner'?'左键 下钩':p.computer?.app==='tetris'?'左键 落底':'';
+    else if(target?.kind==='bell')actionText='E 开始上课';
     else if(target?.kind==='lift')actionText=s.elevator?.used?'本局电梯已使用':target.current?'当前楼层':s.elevator&&s.elevator.inside<s.elevator.total?`等待同学 ${s.elevator.inside}/${s.elevator.total}`:round.network&&round.room.selfId!==round.room.hostId?'等待房主选楼层':`E 前往 ${target.floor===0?'G':target.floor||''} 层${target.map==='cafeteria'?' · 自助食堂':target.map==='exam'?' · 考场':target.map==='bus'?' · 秋游大巴车':''}`;
     else if(target?.kind==='radio')actionText='E 更换音乐';
     else if(target?.kind==='locker')actionText='E 更衣柜';
@@ -155,7 +196,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     $('#drawer-hint').textContent='';
     renderUseProgress(s);
     canvas.dataset.carriedItem=carrying?drawer.slots[drawer.drawnSlot]?.action||'':'';
-    $('#crosshair').hidden=p.caught||s.paused||session.computer;session.update(s,round);referenceHUD.update(s);scene.setGameplay(s);
+    $('#crosshair').hidden=p.caught||s.paused;session.update(s,round);referenceHUD.update(s);scene.setGameplay(s);
   }
   function renderUseProgress(s){
     const ring=$('#use-progress'),rescuing=s.rescue?.id!=null,bubble=s.player.bubble,blowing=Boolean(bubble?.blowing),plunging=s.player.mapActivity?.kind==='plunge',door=s.interaction?.kind==='rear-door',cycles=Number(bubble?.cycles)||0;
@@ -179,7 +220,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function frame(now){
     // The rules already substep at 60 Hz. Preserve ordinary slow-frame time;
     // only a long foreground stall is bounded to avoid an unbounded catch-up.
-    if(!active)return;raf=requestAnimationFrame(frame);const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;movement();const s=round.step(dt);reportVideoWatching(s,now);processEvents();renderUseProgress(s);vision?.update(s);
+    if(!active)return;raf=requestAnimationFrame(frame);const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;movement();const s=round.step(dt);updateComputerFocus(s,now);reportVideoWatching(s,now);processEvents();renderUseProgress(s);vision?.update(s);
 
     playFootsteps(s);
     if(now-lastHud>80){lastHud=now;render(s);}else scene.setGameplay(s);
@@ -194,6 +235,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     else if(active)options={...options,...round.snapshot().settings};
     if(!externalRound)round=createSoloRound(options);
     cancelAnimationFrame(raf);if(pauseDialog.open)pauseDialog.close();if(resultDialog.open)resultDialog.close();release();keys.clear();session.reset();teacherFootsteps.reset();round.reset(Date.now()>>>0);if(!round.network&&options.character){round.player.character=options.character;round.player.variant=options.character;}round.start({gathering:!externalRound||nextOptions?.gathering===true});yaw=round.player.yaw||0;pitch=round.player.pitch||0;round.setLook(yaw,pitch);
+    computerStation=null;focusRetryAt=0;keyboardSelection=false;framedApp=null;centerMove=null;
     active=true;finished=false;continued=false;lastFriends='';lastTeacher=null;lastInteractionState=null;document.body.classList.add('playing');ui.hidden=false;$('#menu').inert=true;$('#menu').setAttribute('aria-hidden','true');
     $('#speech').hidden=true;$('#round-feedback').classList.remove('pop');
     $('#student-controls').hidden=round.snapshot().role==='teacher';$('#teacher-controls').hidden=round.snapshot().role!=='teacher';
@@ -204,8 +246,13 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     audio.gameplay=false;audio.apply();vision?.update(null);scene.setGameplay(null);ui.hidden=true;document.body.classList.remove('playing');$('#menu').inert=false;$('#menu').removeAttribute('aria-hidden');onExit?.();
   }
   function pause(value=true){if(!active||finished)return;release();stopMovement();round.pause(value);if(value){unlock();if(!pauseDialog.open)pauseDialog.showModal();}else{if(pauseDialog.open)pauseDialog.close();lock();}render(round.snapshot());}
-  const canInput=()=>active&&!resultDialog.open&&!session.modal&&!session.computer&&!round.paused&&(round.status==='playing'||finished&&continued);
+  const canInput=()=>active&&!resultDialog.open&&!session.modal&&!round.paused&&(round.status==='playing'||finished&&continued);
   function hold(id,value){if(!canInput())return;
+    const monitor=scene.getAimedComputer?scene.getAimedComputer():scene.getInteraction?.();
+    if(computerStation!=null||session.computer||monitor?.kind==='computer'){
+      if(value)computerClick();
+      return;
+    }
     const exam=round.snapshot().exam;
     if(exam?.mode){
       const target=scene.getInteraction?.();
@@ -225,17 +272,17 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     return result;
   }
   function take(){
-    if(session.computer){round.computerConfirm?.();return;}if(!canInput())return;lock();const s=round.snapshot(),target=scene.getInteraction?.();
+    if(!canInput()||computerStation!=null||session.computer)return;lock();const s=round.snapshot(),target=scene.getInteraction?.();
     if(target?.kind==='bell'){if(session.startBell)session.startBell();else round.startBell?.();return;}
     if(target?.kind==='lift'){if(s.elevator?.disabled!==false||s.stage!=='gathering'||target.current)return;round.travelFloor?.(target.map);processEvents();render(round.snapshot());return;}
     if(target?.kind==='radio'){session.openRadio?.(s);return;}
     if(target?.kind==='locker'){if(s.stage==='gathering')session.openLocker();return;}
     applyIntent('E');
   }
-  function putBack(){return applyIntent('Q');}
+  function putBack(){if(computerStation==null&&!session.computer)return applyIntent('Q');return false;}
   const heldInput=bindHeldUseInput({canvas,document,window,canInput:()=>canInput()&&controls.keys.use==='Mouse0',onHold:value=>hold('pointer',value),onRelease:release,onLock:lock});
   canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('pointerdown',e=>{if(e.button===2&&canInput()){release();dragLook=true;dragX=e.clientX;dragY=e.clientY;}});window.addEventListener('pointerup',e=>{if(e.button===2)dragLook=false;});
-  document.addEventListener('mousemove',e=>{if(session.computer||!canInput()||(!dragLook&&document.pointerLockElement!==canvas))return;const locked=document.pointerLockElement===canvas,dx=locked?e.movementX:e.clientX-dragX,dy=locked?e.movementY:e.clientY-dragY;dragX=e.clientX;dragY=e.clientY;look(dx,dy);});
+  document.addEventListener('mousemove',e=>{if(!canInput()||(!dragLook&&document.pointerLockElement!==canvas))return;const locked=document.pointerLockElement===canvas,dx=locked?e.movementX:e.clientX-dragX,dy=locked?e.movementY:e.clientY-dragY;dragX=e.clientX;dragY=e.clientY;look(dx,dy);});
   document.addEventListener('pointerlockchange',()=>{document.body.classList.toggle('mouse-locked',document.pointerLockElement===canvas);});
   $('#pause-game').addEventListener('click',()=>pause());$('#resume-game').addEventListener('click',()=>pause(false));
   $('#restart-game').addEventListener('click',start);$('#retry-game').addEventListener('click',async()=>{const button=$('#retry-game');if(button.disabled)return;button.disabled=true;
@@ -248,7 +295,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     if(action==='pause'){e.preventDefault();pause();return;}
     if(action==='emote'&&!e.repeat){e.preventDefault();session.openActions?.();return;}
     if(action==='mic'&&!e.repeat){e.preventDefault();toggleMic();return;}
-    if(session.computer){const dirs={forward:'up',back:'down',left:'left',right:'right'},direction=dirs[action]||({ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'})[e.code];if(direction){e.preventDefault();round.computerSelect?.(direction);return;}if(action==='interact'&&!e.repeat){e.preventDefault();round.computerConfirm?.();}if(action==='return'&&!e.repeat){e.preventDefault();putBack();}return;}
+    if(computerStation!=null||session.computer){const dirs={forward:'up',back:'down',left:'left',right:'right'},direction=dirs[action]||({ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'})[e.code];if(direction){e.preventDefault();chooseComputerDirection(direction);return;}if(e.code==='Enter'||e.code==='NumpadEnter'||action==='use'){e.preventDefault();if(!e.repeat)computerClick(true);}return;}
     if(action){e.preventDefault();physicalKeys.set(e.code,action);keys.add(action);if(e.repeat)return;if(action==='jump')round.jump();else if(action==='interact')take();else if(action==='return')putBack();else if(action==='use'){lock();hold('keyboard',true);}}
   });
   document.addEventListener('keyup',e=>{const action=physicalKeys.get(e.code)||actionForCode(e.code,controls);physicalKeys.delete(e.code);if(![...physicalKeys.values()].includes(action))keys.delete(action);if(action==='crawl')setPosture(keys.has('crawl'));if(action==='use')hold('keyboard',false);if(action==='return')round.setDoorUse?.(false);if(action==='interact'){if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setWriting?.(false);round.setDoorUse?.(false);}});

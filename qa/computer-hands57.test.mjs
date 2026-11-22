@@ -68,7 +68,9 @@ test('solo computer idle retains computer mood; ordinary classroom pupils contin
 
 test('network peers and teacher receive computer pose even when the player is not holding a mouse button',()=>{
  const r=new CampusRoom({code:'570057',seed:73,map:'computer'}),teacher=r.join({name:'teacher',rolePreference:'teacher'}),student=r.join({name:'student'}),peer=r.join({name:'peer'});r.begin(teacher);for(let n=0;n<1801;n++)r.tick(1/60);
- const p=student.context.player;Object.assign(p,{seated:true,seatId:0,_drawnSlot:null});assert.equal(r.command(student,'startComputer'),true);r.tick(1/60);
+ const p=student.context.player,seat=r.sim.seats.find(s=>!r.sim.students.some(a=>a!==p&&a.seated&&a.seatId===s.id));
+ Object.assign(p,{x:seat.x,z:seat.z,seated:false,seatId:null,_drawnSlot:null});
+ assert.ok(r.command(student,'interact',[seat.id]));assert.equal(r.command(student,'startComputer'),true);r.tick(1/60);
  for(const who of [teacher,student,peer]){const s=r.snapshot(who).students.find(s=>s.id===student.studentId);assert.equal(s.computerActive,true);assert.equal(s.mood,'computer');assert.equal(s.holding,false);}
  r.command(student,'stopComputer');r.tick(1/60);assert.equal(r.snapshot(peer).students.find(s=>s.id===student.studentId).mood,'computer-idle');
 });

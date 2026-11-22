@@ -69,3 +69,16 @@ test('private inflation cues fire once per 1.5-second circle and public item cue
  const r=quiet();take(r,'gum');r.hold(true);tick(r,6);const events=r.drainEvents(),inflate=events.filter(e=>e.type==='gum-inflate');assert.deepEqual(inflate.map(e=>e.cycle),[1,2,3,4]);assert.ok(inflate.every(e=>e.recipientId===r.player.id));const pop=events.find(e=>e.type==='gum-pop');assert.ok([pop.x,pop.y,pop.z].every(Number.isFinite));
  take(r,'garlic');r.hold(true);tick(r,3);r.burp();const finish=r.drainEvents();for(const kind of['food-complete','burp']){const event=finish.find(e=>e.type===kind);assert.ok(event);assert.ok([event.x,event.y,event.z].every(Number.isFinite));assert.equal(event.recipientId,undefined);}
 });
+
+test('a standing pupil can use a free monitor from the keyboard side and counts on the teacher laptop',()=>{
+ const r=quiet('computer'),p=r.player,seat=r.seats[p.seatId],other=r.students.find(s=>s!==p);
+ Object.assign(p,{x:seat.x,z:seat.z,seated:false,seatId:null});
+ assert.equal(r.startComputer(seat.id),true);assert.equal(r.snapshot().player.computer.stationId,seat.id);
+ assert.equal(r.computerApp('snake'),true);r.step(.65);assert.equal(r.score,1);assert.equal(r.snapshot().computerGamingCount,1);
+ p.x+=3;r.step(.1);assert.equal(r.snapshot().computerGamingCount,0);assert.equal(r.snapshot().player.computerActive,false);
+ assert.equal(r.snapshot().player.computer.stationId,null);p.x=seat.x;
+ Object.assign(other,{seated:true,seatId:seat.id});assert.equal(r.startComputer(seat.id),false);
+ other.seated=false;other._computerActive=true;other._computerSeatId=seat.id;assert.equal(r.startComputer(seat.id),false);assert.equal(r.interact(seat.id),false);
+ other._computerActive=false;Object.assign(p,{x:seat.deskX+Math.sin(seat.yaw)*.65,z:seat.deskZ+Math.cos(seat.yaw)*.65});assert.equal(r.startComputer(seat.id),false);
+ p.x+=20;assert.equal(r.startComputer(seat.id),false);
+});

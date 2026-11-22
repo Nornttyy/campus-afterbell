@@ -9,7 +9,7 @@ import {BUS, busBlocked, busRoute} from '../dist/bus-layout86.js';
 import * as T from '../dist/vendor/three.module.js';
 import {createExcursionRoad} from '../dist/excursion-road91.js';
 import {createSeatLayout} from '../dist/classroom-layout.js';
-import {RADIO_SONGS,radioAnchor,reachesRadio} from '../dist/campus-radio93.js';
+import {RADIO_SONGS,radioSong,radioPlayerUrl,radioAnchor,reachesRadio} from '../dist/campus-radio93.js';
 
 test('miner collects only the intersected ore on return and scores once per gold or gem',()=>{
  const s=createArcade('miner',24);
@@ -87,6 +87,8 @@ test('the driver can reach both decks and the ordinary classroom retains its cen
 
 test('the campus radio awards one tenth per full playing second, including after a pause, on both excursion maps',()=>{
  assert.deepEqual(RADIO_SONGS.map(s=>s.id),['champions26','rain','friends']);
+ const dj=radioSong('friends');assert.equal(dj.bvid,'BV1kFar6KE4t');assert.equal(dj.duration,42*60+54);
+ const player=new URL(radioPlayerUrl(dj,1400.8));assert.equal(player.searchParams.get('bvid'),dj.bvid);assert.equal(player.searchParams.get('t'),'1400');
  for(const map of ['bus','playground']){
   const r=createSoloRound({role:'student',map,seed:7});r.start();
   const anchor=radioAnchor(map);Object.assign(r.player,{x:anchor.x,z:anchor.z+Math.cos(anchor.yaw)*.8,seated:false,busDeck:0,seatId:null,captivity:'free'});

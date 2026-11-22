@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
-import {FOLEY_KINDS,createFoleySamples,playCampusFoley} from '../dist/foley-audio54.js';
+import {FOLEY_KINDS,createFoleySamples,playCampusFoley,warmCampusFoley} from '../dist/foley-audio54.js';
 
 class Parameter{constructor(){this.value=0;this.targets=[];}setTargetAtTime(v,t,d){this.value=v;this.targets.push([v,t,d]);}}
 class Node{constructor(){this.gain=new Parameter();this.frequency=new Parameter();this.connections=[];}connect(n){this.connections.push(n);return n;}disconnect(){this.disconnected=true;}}
@@ -40,4 +40,33 @@ test('opening or resuming audio never schedules music, while sound volume and mu
  audio.click('tap');assert.equal(audio.context.sources.length,1);assert.ok(Math.abs(audio.fx.gain.value-.55*.55)<1e-9);settings.muted=true;audio.apply();audio.effect('step');assert.equal(audio.context.sources.length,1);assert.equal(audio.fx.gain.value,0);
  settings.muted=false;settings.sfx=20;audio.apply();assert.ok(Math.abs(audio.fx.gain.value-.11)<1e-9);await audio.pause();await audio.start();assert.equal(audio.context.sources.length,1);audio.dispose();assert.equal(audio.context.state,'closed');
  const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');assert.doesNotMatch(html,/music-volume|music-output/);assert.doesNotMatch(source,/settings\.music|saved\.music|melody|this\.schedule\(/);assert.match(html,/sfx-volume/);
+});
+
+test('bells and the five confirmations use real, distinct files even if the first event arrives during decoding',async t=>{
+ const origin=new URL('../dist/assets/audio/',import.meta.url),manifest=JSON.parse(await readFile(new URL('sources96.json',origin)));
+ const kinds=['school-bell-in','school-bell-out',...Array.from({length:5},(_,i)=>'game-kill-'+(i+1))];
+ const files=[...manifest.schoolBells.files,...manifest.computerStreak.files],lengths=new Map(),calls=new Map();
+ assert.equal(files.length,7);
+ for(const file of files){
+  const wav=await readFile(new URL(file,origin));
+  assert.equal(wav.toString('ascii',0,4),'RIFF');assert.equal(wav.readUInt32LE(24),22050);
+  let energy=0,peak=0;for(let i=44;i<wav.length;i+=2){const s=wav.readInt16LE(i)/32768;energy+=s*s;peak=Math.max(peak,Math.abs(s));}
+  assert.ok(Math.sqrt(energy/((wav.length-44)/2))>.02,file);assert.ok(peak<.85,file);
+  lengths.set(file,wav.length);
+ }
+ const ctx=new AudioContextFake();ctx.state='running';
+ ctx.decodeAudioData=async b=>({recordedBytes:b.byteLength});
+ const bus={context:ctx,fx:ctx.createGain()};
+ t.mock.method(globalThis,'fetch',async url=>{
+  const name=new URL(url).pathname.split('/').at(-1);calls.set(name,(calls.get(name)||0)+1);
+  const wav=await readFile(url);return {ok:true,arrayBuffer:async()=>wav.buffer.slice(wav.byteOffset,wav.byteOffset+wav.byteLength)};
+ });
+ playCampusFoley(bus,kinds[0]);const ready=warmCampusFoley(bus);
+ assert.equal(ctx.sources.length,0);assert.equal(await ready,true);
+ assert.equal(ctx.sources.length,1);
+ for(const kind of kinds.slice(1)){ctx.currentTime+=.2;assert.ok(playCampusFoley(bus,kind));}
+ assert.equal(ctx.sources.length,kinds.length);
+ assert.deepEqual(ctx.sources.map(s=>s.buffer.recordedBytes),files.map(file=>lengths.get(file)));
+ assert.equal(new Set(ctx.sources.map(s=>s.buffer)).size,7);
+ await warmCampusFoley(bus);assert.ok([...calls.values()].every(n=>n===1));
 });

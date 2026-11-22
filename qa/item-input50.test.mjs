@@ -51,8 +51,15 @@ test('E takes a harmless twirling pen, toggles writing, and Q returns without op
   f.key('KeyQ');f.advance(.1);assert.equal(f.rendered.player.penTaken,false);assert.equal(f.rendered.player.penWriting,false);assert.equal(f.rendered.drawer.drawnSlot,null);assert.equal(f.rendered.drawer.open,false);
  }finally{f.close();}
 });
-test('computer E entry, app command and arrow keys score real snake food and preserve one three-second slot',()=>{
- const f=fixture({map:'computer7'});try{f.target({kind:'computer'});f.key('KeyE');f.advance(.1);assert.equal(f.rendered.player.computerActive,true);assert.equal(f.rendered.player.computer.app,'desktop');f.commands.app('snake');f.advance(.65);assert.equal(f.round.score,1);assert.equal(f.rendered.player.computer.snake.score,1);f.key('ArrowUp');f.advance(.16);assert.equal(f.rendered.player.computer.snake.direction,'up');f.key('KeyQ');f.advance(.1);assert.equal(f.rendered.player.computer.app,'desktop');assert.equal(f.rendered.player.computerActive,true);f.key('KeyQ');f.advance(.1);assert.equal(f.rendered.player.computerActive,false);
+test('aim selects the lab monitor, clicking snake scores food, looking away releases the station and drawer',()=>{
+ const f=fixture({map:'computer7'});try{
+  f.target({kind:'computer',app:'snake'});f.advance(.11);
+  assert.equal(f.rendered.player.computerActive,true);assert.equal(f.rendered.player.computer.app,'desktop');
+  f.key('KeyE');f.key('KeyQ');assert.equal(f.round.player._computerApp,'desktop');
+  f.mouse(true);f.mouse(false);f.advance(.65);assert.equal(f.round.score,1);assert.equal(f.rendered.player.computer.snake.score,1);
+  f.key('ArrowUp');f.advance(.16);assert.equal(f.rendered.player.computer.snake.direction,'up');
+  f.key('KeyQ');assert.equal(f.round.player._computerApp,'snake');f.target(null);f.advance(.13);
+  assert.equal(f.rendered.player.computerActive,false);assert.equal(f.rendered.player.computer.app,'desktop');assert.equal(f.rendered.player.seated,true);
   f.take('burger');f.mouse(true);f.advance(2);f.mouse(false);assert.equal(f.rendered.drawer.slots.length,1);assert.equal(f.rendered.drawer.slots[0].readyIn,3);f.advance(3-1/60);assert.equal(f.rendered.drawer.slots[0].action,null);f.advance(1/60);assert.ok(f.rendered.drawer.slots[0].action);
  }finally{f.close();}
 });
@@ -65,8 +72,17 @@ test('teacher production left click requires but does not consume stamina and is
 test('production mouse release clears a partly eaten meal, raised head pauses, and low head resumes only while held',()=>{
  const f=fixture();try{f.take('burger');f.round.setLook(0,0);f.mouse(true);f.advance(1);assert.equal(f.rendered.actionProgress,0);assert.equal(f.rendered.player.eating,false);f.round.setLook(0,.55);f.advance(1);assert.ok(f.rendered.actionProgress>.30);f.round.setLook(0,.1);const before=f.round.snapshot().actionProgress;f.advance(.5);assert.equal(f.rendered.actionProgress,before);f.mouse(false);assert.equal(f.round.snapshot().actionProgress,0);f.round.setLook(0,.55);f.mouse(true);f.advance(3);assert.equal(f.round.score,1);f.mouse(false);assert.equal(f.sounds.filter(([kind])=>kind==='food-complete').length,1);assert.equal(f.worldEffects.filter(e=>e.type==='food-complete').length,1);}finally{f.close();}
 });
-test('production WASD and touch stick choose desktop apps without moving the seated player, E opens and Q goes back',()=>{
- const f=fixture({map:'computer'});try{f.target({kind:'computer'});f.key('KeyE');f.advance(.1);const before={x:f.round.player.x,z:f.round.player.z};f.key('KeyD');f.key('KeyE');assert.equal(f.round.snapshot().player.computer.app,'unity');f.key('KeyQ');assert.equal(f.round.snapshot().player.computer.app,'desktop');f.setAxes({forward:-1});f.advance(.1);f.setAxes({forward:0});f.key('KeyE');assert.equal(f.round.snapshot().player.computer.app,'valorant');f.advance(1);assert.equal(f.round.score,0);assert.deepEqual({x:f.round.player.x,z:f.round.player.z},before);f.key('KeyQ');f.key('KeyQ');assert.equal(f.round.player._computerActive,false);}finally{f.close();}
+test('WASD, Enter and the touch stick operate a focused monitor without moving the player',()=>{
+ const f=fixture({map:'computer'});try{
+  const screen={kind:'computer'};f.target(screen);f.advance(.12);const before={x:f.round.player.x,z:f.round.player.z};
+  f.key('KeyD');f.key('Enter');assert.equal(f.round.snapshot().player.computer.app,'unity');
+  f.key('KeyQ');assert.equal(f.round.player._computerApp,'unity');
+  f.target(null);f.advance(.12);f.target(screen);f.advance(.12);
+  f.setAxes({forward:-1});f.advance(.12);f.setAxes({forward:0});f.advance(.12);f.key('KeyD');
+  f.commands.hold(true);f.commands.hold(false);assert.equal(f.round.snapshot().player.computer.app,'valorant');
+  f.advance(1);assert.equal(f.round.score,0);assert.deepEqual({x:f.round.player.x,z:f.round.player.z},before);
+  f.target(null);f.advance(.12);assert.equal(f.round.player._computerActive,false);
+ }finally{f.close();}
 });
 test('production audio dispatch keeps private chewing local and world sound markers public only',()=>{
  const f=fixture();try{const id=f.round.player.id;f.round._events.push({type:'use-crunch',studentId:id,recipientId:id},{type:'use-gulp',studentId:id+1,recipientId:id+1},{type:'gum-inflate',studentId:id,recipientId:id},{type:'food-complete',studentId:id+1,x:f.round.player.x,y:1.4,z:f.round.player.z},{type:'chalk-hit',x:1,y:1,z:1});f.advance(.1);assert.equal(f.sounds.filter(([kind])=>kind==='use-crunch').length,1);assert.equal(f.sounds.filter(([kind])=>kind==='use-gulp').length,0);assert.equal(f.sounds.filter(([kind])=>kind==='gum-inflate').length,1);assert.deepEqual(f.worldEffects.map(e=>e.type),['food-complete','chalk-hit']);}finally{f.close();}
@@ -85,13 +101,13 @@ test('teacher subtitles only show reference-verified capture and recovery notice
  }finally{f.close();}
 });
 
-test('production computer controller scores only visible advancing playback and stops on buffer, hide or Q',()=>{
+test('production computer controller scores only visible advancing playback and stops on buffering, hidden video or looking away',()=>{
  const f=fixture({map:'computer'});try{
-  f.target({kind:'computer'});f.key('KeyE');f.commands.app('valorant');f.setPlayback(time=>({playing:true,visible:true,mediaTime:time}));f.advance(3.35);assert.equal(f.round.score,1);
+  f.target({kind:'computer',app:'valorant'});f.advance(.13);f.mouse(true);f.mouse(false);f.setPlayback(time=>({playing:true,visible:true,mediaTime:time}));f.advance(3.35);assert.equal(f.round.score,1);
   f.setPlayback(time=>({playing:false,visible:true,mediaTime:time}));f.advance(6);assert.equal(f.round.score,1);
   f.setPlayback(time=>({playing:true,visible:false,mediaTime:time}));f.advance(6);assert.equal(f.round.score,1);
   f.setPlayback(time=>({playing:true,visible:true,mediaTime:time}));f.advance(3.35);assert.equal(f.round.score,2);
-  f.key('KeyQ');f.advance(6);assert.equal(f.round.score,2);assert.equal(f.rendered.player.computer.app,'desktop');assert.equal(f.round.player._computerProgress,0);
+  f.target(null);f.advance(6);assert.equal(f.round.score,2);assert.equal(f.rendered.player.computer.app,'desktop');assert.equal(f.round.player._computerProgress,0);
  }finally{f.close();}
 });
 
@@ -183,4 +199,14 @@ test('production Shift holds teacher sprint, keyup restores walk, and students s
   f.send('keyup',{code:'ShiftLeft'});f.advance(.05);assert.equal(Boolean(p.sprinting),false);assert.equal(p.crouched,false);
   f.send('keyup',{code:'KeyW'});
  }finally{f.close();}}
+});
+
+test('each role hears the two different school bells exactly once at their corresponding events',()=>{
+ for(const teacher of [false,true]){
+  const f=fixture({teacher});try{
+   f.round._events.push({type:'school-bell'});f.advance(.12);
+   f.round._finish('lost','timeout');f.advance(.22);
+   assert.deepEqual(f.sounds.filter(([id])=>id.startsWith('school-bell')).map(([id])=>id),['school-bell-in','school-bell-out']);
+  }finally{f.close();}
+ }
 });

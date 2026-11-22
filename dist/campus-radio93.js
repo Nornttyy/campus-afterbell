@@ -6,7 +6,7 @@ import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-92';
 export const RADIO_SONGS=Object.freeze([
  {id:'champions26',title:'炽日将烬',artist:'VCT 2026 全球冠军赛',duration:235,bvid:'BV1rtew6hEnF',source:'https://www.bilibili.com/video/BV1rtew6hEnF/'},
  {id:'rain',title:'雨爱',artist:'司凤版 · 古岛斐',duration:280,bvid:'BV117HW6eE9Z',source:'https://y.qq.com/n/ryqq/songDetail/000FKMIu2SVEZE'},
- {id:'friends',title:'朋友的酒',artist:'李晓杰',duration:280,bvid:'BV1Zc411N7ZL',source:'https://www.bilibili.com/video/BV1Zc411N7ZL/'}
+ {id:'friends',title:'朋友的酒',artist:'DJ 循环版 · 陌轩音乐',duration:2574,bvid:'BV1kFar6KE4t',source:'https://www.bilibili.com/video/BV1kFar6KE4t/'}
 ].map(Object.freeze));
 export const radioSong=id=>RADIO_SONGS.find(s=>s.id===id);
 export function radioAnchor(map){
