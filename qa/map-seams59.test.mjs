@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {campusScene} from './campus-geometry54-helpers.mjs';
-import {createLayoutContext,createSeatLayout,moveInRoom,LIFT,CLASSROOM,CORRIDOR,OFFICE} from '../dist/classroom-layout.js';
+import {createLayoutContext,createSeatLayout,moveInRoom,LIFT,CLASSROOM,CORRIDOR,OFFICE,TIERED_CEILING_HEIGHT} from '../dist/classroom-layout.js';
 
 function visible(object){for(;object;object=object.parent)if(!object.visible)return false;return true;}
 function cast(scene,origin,direction,far=1){return new T.Raycaster(new T.Vector3(...origin),new T.Vector3(...direction),0,far).intersectObject(scene,true).filter(h=>visible(h.object));}
@@ -15,7 +15,7 @@ test('exterior end piers and raised classroom wall have closed, actual triangle 
   assert.ok(hit,`${map}: open west end at y=${y}, z=${z}`);
   assert.ok(Math.abs(hit.point.x-CLASSROOM.minX)<1e-5,'rendering follows the shared inner wall face');
  }
- if(map==='tiered')for(const z of [-10.19,9.015])for(const y of [4.6,5.1,5.54])assert.ok(cast(scene,[CLASSROOM.minX+.20,y,z],[-1,0,0],.5).length,`raised end cap open at ${y}, ${z}`);
+ if(map==='tiered')for(const z of [-10.19,9.015])for(const y of [4.6,5.1,TIERED_CEILING_HEIGHT-.01])assert.ok(cast(scene,[CLASSROOM.minX+.20,y,z],[-1,0,0],.5).length,`raised end cap open at ${y}, ${z}`);
 }));
 
 test('lift jamb triangles leave the same clear opening as authoritative actor collision',()=>maps(({scene},map)=>{

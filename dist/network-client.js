@@ -1,8 +1,8 @@
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-91';
-import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-91';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-92';
+import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-92';
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-83';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-91';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-92';
 import {applyNetworkDelta} from './network-state65.js?v=campus-83';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
@@ -40,7 +40,7 @@ async function requestJSON(url,options={},schema={}){
 }
 function validRoom(room){return object(room)&&/^\d{6}$/.test(room.code)&&typeof room.selfId==='string'&&typeof room.hostId==='string'&&Array.isArray(room.members)&&room.members.length>0&&room.members.length<=8&&room.members.every(m=>object(m)&&typeof m.id==='string'&&typeof m.connected==='boolean'&&['student','teacher'].includes(m.role))&&room.members.some(m=>m.id===room.selfId)&&room.members.some(m=>m.id===room.hostId);}
 function validActor(actor){return object(actor)&&Number.isInteger(actor.id)&&['x','z','yaw'].every(k=>finite(actor[k]));}
-function validState(state,room=null){return object(state)&&validRoom(state.room)&&(!room||state.room.code===room.code&&state.room.selfId===room.selfId)&&['student','teacher'].includes(state.role)&&['ready','playing','won','lost'].includes(state.status)&&['gathering','seating','class'].includes(state.stage)&&typeof state.map==='string'&&validActor(state.player)&&validActor(state.teacher)&&Array.isArray(state.students)&&state.students.every(validActor)&&object(state.drawer)&&Array.isArray(state.drawer.slots)&&state.drawer.slots.every(s=>object(s)&&Number.isInteger(s.id))&&Array.isArray(state.seats)&&Array.isArray(state.books)&&object(state.completed)&&finite(state.score)&&finite(state.target)&&finite(state.elapsed)&&Number.isSafeInteger(state.sequence)&&Array.isArray(state.events)&&state.events.every(e=>object(e)&&typeof e.type==='string');}
+function validState(state,room=null){return object(state)&&validRoom(state.room)&&(!room||state.room.code===room.code&&state.room.selfId===room.selfId)&&['student','teacher'].includes(state.role)&&['ready','playing','won','lost'].includes(state.status)&&['gathering','seating','class','dismissal'].includes(state.stage)&&typeof state.map==='string'&&validActor(state.player)&&validActor(state.teacher)&&Array.isArray(state.students)&&state.students.every(validActor)&&object(state.drawer)&&Array.isArray(state.drawer.slots)&&state.drawer.slots.every(s=>object(s)&&Number.isInteger(s.id))&&Array.isArray(state.seats)&&Array.isArray(state.books)&&object(state.completed)&&finite(state.score)&&finite(state.target)&&finite(state.elapsed)&&Number.isSafeInteger(state.sequence)&&Array.isArray(state.events)&&state.events.every(e=>object(e)&&typeof e.type==='string');}
 function validSession(result){return object(result)&&typeof result.token==='string'&&result.token.length>=16&&validRoom(result.room)&&validState(result.state,result.room);}
 export function readEvent(data,type,room,previous){
  let message;try{message=JSON.parse(data);}catch{throw protocolError();}
@@ -138,7 +138,7 @@ export class NetworkRound{
   if(!this._closed&&!this._terminalError)this._retry=setTimeout(()=>this._listen(),1500);
  }
  _receiveState(message){this._connected=true;const before=this.room,previous=this._state;this._state=message;this._reconcileLocal(previous,message);const actorChanged=previous.player.id!==message.player.id||previous.player.seated!==message.player.seated||previous.map!==message.map;if(actorChanged||previous.stage!==message.stage||previous.elevator?.phase!==message.elevator?.phase||!freeToJump(message.player)||(message.inputAck?.jump||0)>=(this._pendingJump?.sequence??Infinity))this._pendingJump=null;if(actorChanged)this._look=null;else if(this._look&&(message.inputAck?.look||0)>=this._look.sequence)this._look=null;if(previous.map!==message.map||previous.stage!==message.stage)this._frames=[];this._frames.push({time:performance.now(),state:message,students:new Map(message.students.map(p=>[p.id,p]))});if(this._frames.length>5)this._frames.shift();this.room=message.room;this._events.push(...message.events.filter(event=>!Number.isSafeInteger(event.networkSequence)||event.networkSequence>this._sequence));this._sequence=message.sequence;this.voice.sync(this.room);if(JSON.stringify(before)!==JSON.stringify(this.room))this._onRoom(this.room,this._state);}
- _canPredict(state=this._state){const p=state.player;return this._connected&&!this._localPaused&&state.status==='playing'&&!p.seated&&!p.mapActivity&&!p.caught&&(!p.captivity||p.captivity==='free')&&!(p.stunLeft>0);}
+ _canPredict(state=this._state){const p=state.player;return this._connected&&!this._localPaused&&(state.status==='playing'||state.stage==='dismissal'&&state.continued)&&!p.seated&&!p.mapActivity&&!p.caught&&(!p.captivity||p.captivity==='free')&&!(p.stunLeft>0);}
  _moveVisual(position,movement,dt){
   const actor={...this._state.player,...position,...(this._look?{yaw:this._look.yaw}:{})};
   if(this._state.elevator?.phase==='travel'){moveElevatorPassenger(actor,movement,dt,this._predictionLayout);return{x:actor.x,z:actor.z};}
@@ -160,7 +160,7 @@ export class NetworkRound{
   this._correction={x:target.x-this._visualPosition.x,z:target.z-this._visualPosition.z};
  }
  _advanceLocal(dt){
-  if(finite(dt)&&dt>0&&this._connected&&!this._localPaused&&this._state.status==='playing'&&performance.now()-this._receivedAt<=250){const step=Math.min(.1,dt),adjust=Math.max(-step*.25,Math.min(step*.25,(this._clockCorrection||0)*(1-Math.exp(-8*step))));this._visualTime=(this._visualTime??this._state.sceneElapsed)+step+adjust;this._clockCorrection=(this._clockCorrection||0)-adjust;}
+  if(finite(dt)&&dt>0&&this._connected&&!this._localPaused&&this._state.status!=='ready'&&performance.now()-this._receivedAt<=250){const step=Math.min(.1,dt),adjust=Math.max(-step*.25,Math.min(step*.25,(this._clockCorrection||0)*(1-Math.exp(-8*step))));this._visualTime=(this._visualTime??this._state.sceneElapsed)+step+adjust;this._clockCorrection=(this._clockCorrection||0)-adjust;}
   if(!finite(dt)||dt<=0||!this._canPredict()||performance.now()-this._receivedAt>250)return;
   if(!this._predictionLayout)this._predictionLayout=createLayoutContext(this._state.seats,this._state);
   if(!this._visualPosition)this._visualPosition={x:this._state.player.x,z:this._state.player.z};
@@ -176,7 +176,8 @@ export class NetworkRound{
  pause(value=true){this._localPaused=Boolean(value);if(value){this.command('setComputerPlayback',{playing:false,visible:false,mediaTime:0});this.command('setMovement',0,0);this.command('hold',false);this.command(this.player?.id===-1||this._state?.role==='teacher'?'setSprint':'setCrouch',false);this.command('setRescue',null);}return this.snapshot();}
  setPreference(rolePreference,character){return this.command('setPreference',{rolePreference,character});}
  travelFloor(map){return this.command('travelFloor',map);}
- async rematch(){const before=this._state.sequence;await this._post('/api/command',{name:'rematch',args:[]});for(let i=0;i<100;i++){if(this._state.stage==='gathering'&&this._state.sequence>before)return this.snapshot();await new Promise(r=>setTimeout(r,50));}throw new Error('房间已重置，正在重新连接');}
+ async continueAfterClass(){const r=await this._post('/api/command',{name:'continueAfterClass',args:[]});return r.results?.[0]!==false;}
+ async rematch(){return this.continueAfterClass();}
  toggleMicrophone(){return this.voice.toggle();}
  async leave(){if(this._closed)return;this._closed=true;this._disconnected();clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this.voice.close();this._controller?.abort();try{await this._post('/api/leave',{});}catch{}}
  dispose(){return this.leave();}

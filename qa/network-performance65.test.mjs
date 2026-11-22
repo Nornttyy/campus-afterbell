@@ -6,7 +6,7 @@ import {NetworkRound} from '../dist/network-client.js';
 import {diffNetworkState,applyNetworkDelta} from '../dist/network-state65.js';
 import {dormDoorSolids} from '../dist/dorm-layout70.js';
 import {toiletDoorSolids} from '../dist/toilet-layout70.js';
-import {blocked,OFFICE} from '../dist/classroom-layout.js';
+import {blocked,updateLayoutDoors,OFFICE} from '../dist/classroom-layout.js';
 
 const wait=async(check,timeout=2500)=>{const start=performance.now();while(performance.now()-start<timeout){if(check())return;await new Promise(r=>setTimeout(r,10));}throw new Error('Room did not synchronize');};
 async function post(base,path,data,token){const response=await fetch(base+path,{method:'POST',headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},body:JSON.stringify(data)});return{status:response.status,data:await response.json()};}
@@ -57,23 +57,27 @@ test('visual scene time advances every render frame while seated and stops on pa
  round._localPaused=false;round._receivedAt=performance.now()-300;round.step(1/60);assert.equal(round.snapshot().sceneElapsed,paused);
 });
 
-test('front and office network hold progress use the shared HUD interaction kind and retain door identity',()=>{
- for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:OFFICE.doorX,z:OFFICE.doorZ+1.5,yaw:Math.PI}]]){
-  const room=new CampusRoom({code:'650066',seed:73}),member=room.join();for(let i=0;i<20;i++)room.tick(.1);Object.assign(member.context.player,p,{seated:false});assert.equal(room.command(member,'setDoorUse',[true,false,id]),true);room.tick(.5);const state=room.snapshot(member);assert.equal(state.interaction.kind,'rear-door');assert.equal(state.interaction.doorId,id);assert.equal(state.doorUse.id,id);assert.ok(state.interaction.progress>0&&state.interaction.progress<1);assert.equal(state.doorUse.progress,state.interaction.progress);
- }
+test('a network classroom door hold reports progress and door identity, while the office has no manual action',()=>{
+ const room=new CampusRoom({code:'650066',seed:73}),host=room.join({rolePreference:'teacher'}),member=room.join();
+ room.begin(host);for(let i=0;i<310;i++)room.tick(.1);
+ updateLayoutDoors(room.sim.layout,{frontDoorClosed:true});Object.assign(member.context.player,{x:6.2,z:7,yaw:Math.PI/2,seated:false});
+ assert.equal(room.command(member,'setDoorUse',[true,false,'front']),true);room.tick(.5);const state=room.snapshot(member);
+ assert.equal(state.interaction.kind,'rear-door');assert.equal(state.doorUse.id,'front');assert.equal(state.interaction.doorId,'front');
+ assert.ok(state.interaction.progress>0&&state.interaction.progress<1);assert.equal(state.doorUse.progress,state.interaction.progress);
+ Object.assign(member.context.player,{x:OFFICE.doorX,z:OFFICE.doorZ+1.5,yaw:Math.PI});
+ assert.equal(room.command(member,'setDoorUse',[true,false,'office']),false);
 });
-
 test('local prediction follows anchored activities and changing special doors on delta snapshots',()=>{
  const room=new CampusRoom({code:'840065',map:'dorm'}),member=room.join(),frame=room.snapshot(member);
  const round=Object.create(NetworkRound.prototype);
  Object.assign(round,{_connected:true,_state:frame,_localPaused:false,_visualTime:0,_rtt:60,_moveSeq:0,_localMotion:{x:1,z:0},_correction:{x:0,z:0},_frames:[]});
  round._reconcileLocal(frame,frame);
  const leaf=dormDoorSolids(1,0)[7],point=[(leaf.minX+leaf.maxX)/2,(leaf.minZ+leaf.maxZ)/2];
- assert.equal(blocked(...point,.15,round._predictionLayout),false);
- const changed={...frame,dormDoors:{...frame.dormDoors,1:0}};
+ assert.equal(blocked(...point,.15,round._predictionLayout),true);
+ const changed={...frame,dormDoors:{...frame.dormDoors,1:1}};
  round._state=changed;round._reconcileLocal(frame,changed);
  assert.equal(changed.seats,frame.seats);
- assert.equal(blocked(...point,.15,round._predictionLayout),true);
+ assert.equal(blocked(...point,.15,round._predictionLayout),false);
  const anchored={...changed,player:{...changed.player,seated:false,captivity:'free',mapActivity:{kind:'plunge',id:2}}};
  round._state=anchored;round._reconcileLocal(changed,anchored);
  round._localMotion={x:1,z:0};

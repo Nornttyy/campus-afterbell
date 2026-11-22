@@ -1,7 +1,7 @@
 // A fixed pool of street sections sits in station/world coordinates. Only a
 // section that has left the camera's range is redressed for the road ahead.
 import * as T from './vendor/three.module.js';
-import {ROAD_SECTION_LENGTH as LENGTH,ROAD_RADIUS,roadSectionAt,sectionRandom} from './excursion-journey91.js?v=campus-91';
+import {ROAD_SECTION_LENGTH as LENGTH,ROAD_RADIUS,roadSectionAt,sectionRandom} from './excursion-journey91.js?v=campus-92';
 
 const PLASTER=['#d9c6a7','#b5c8c7','#c7b0a0','#c0b5a4'];
 const TREE=['#82965f','#9c9a53','#6e925b','#ac9254','#718a57'];

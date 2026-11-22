@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SEATS,CLASSROOM,START_BELL_POSITION,OFFICE,LIFT,BOARD,TEACHER_SPAWN,OFFICE_CHAIR,OFFICE_CHAIRS,OFFICE_DESKS,DETENTION,DOORS,DOOR_LEAVES,CORRIDOR,CAMPUS_MAPS,LAYOUT_PATTERNS,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,createSeatLayout,createLayoutContext,updateLayoutDoors,mapKind,ceilingVolumes,enclosureVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight,floorTiles} from '../dist/classroom-layout.js';
+import {SEATS,CLASSROOM,START_BELL_POSITION,OFFICE,LIFT,BOARD,TEACHER_SPAWN,OFFICE_CHAIR,OFFICE_CHAIRS,OFFICE_DESKS,DETENTION,DOORS,DOOR_LEAVES,CORRIDOR,CAMPUS_MAPS,LAYOUT_PATTERNS,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,createSeatLayout,createLayoutContext,updateLayoutDoors,mapKind,teachingRoomHeight,ceilingVolumes,enclosureVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight,floorTiles} from '../dist/classroom-layout.js';
 import {DORM_BOUNDS} from '../dist/dorm-layout70.js';
 import {chalkHit} from '../dist/teacher-rules.js';
 import {createSmokeProjectile,stepSmokeProjectile} from '../dist/smoke-physics.js';
@@ -62,7 +62,7 @@ test('chalk geometry follows the enlarged partitions, open door headers, lectern
 });
 
 test('ten distinct maps preserve corridor/office roofs and give the outdoor playground open sky',()=>{
- assert.deepEqual(CAMPUS_MAPS,['classroom','night','tiered','computer','hotpot','toilet','dorm','playground','cafeteria','exam']);for(const map of CAMPUS_MAPS){const expected=map==='dorm'?DORM_BOUNDS.height:mapKind(map)==='tiered'?TIERED_CEILING_HEIGHT:CEILING_HEIGHT;for(const [x,z,height]of[[map==='dorm'?4.1:0,0,expected],[9.2,0,CEILING_HEIGHT],[TEACHER_SPAWN.x,TEACHER_SPAWN.z,CEILING_HEIGHT]]){const roof=ceilingVolumes(map).find(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ&&v.minY===height);assert.equal(Boolean(roof),map!=='playground'||x!==0);if(roof)assert.ok(enclosureVolumes(map).includes(roof));}}
+ assert.deepEqual(CAMPUS_MAPS,['classroom','night','tiered','computer','hotpot','toilet','dorm','playground','cafeteria','exam']);for(const map of CAMPUS_MAPS){const expected=map==='dorm'?DORM_BOUNDS.height:teachingRoomHeight(map);for(const [x,z,height]of[[map==='dorm'?4.1:0,0,expected],[9.2,0,CEILING_HEIGHT],[TEACHER_SPAWN.x,TEACHER_SPAWN.z,OFFICE.height]]){const roof=ceilingVolumes(map).find(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ&&v.minY===height);assert.equal(Boolean(roof),map!=='playground'||x!==0);if(roof)assert.ok(enclosureVolumes(map).includes(roof));}}
 });
 
 test('each floor variant supports a whole table and chair on the same local elevation',()=>{

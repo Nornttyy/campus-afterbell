@@ -1,17 +1,17 @@
-import {BUS,BUS_SEATS,BUS_POSTS,BUS_WALLS,BUS_FURNITURE,BUS_DECK_SLABS,busSight,busBlocked,busFootprint,busFloorHeight,busRoute,moveOnBus} from './bus-layout86.js?v=campus-91';
-import {SERVING_SOLIDS,CAFETERIA_SEATS} from './upper-floors85.js?v=campus-85';
+import {BUS,BUS_SEATS,BUS_POSTS,BUS_WALLS,BUS_FURNITURE,BUS_DECK_SLABS,busSight,busBlocked,busFootprint,busFloorHeight,busRoute,moveOnBus} from './bus-layout86.js?v=campus-92';
+import {SERVING_SOLIDS,CAFETERIA_SEATS} from './upper-floors85.js?v=campus-92';
 import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-83';
-import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-85';
-import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-84';
-import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-85';
-import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-84';
-import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-85';
+import {HOTPOT_SEATS,HOTPOT_SOLIDS,HOTPOT_WALK_SOLIDS} from './hotpot-layout70.js?v=campus-92';
+import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-92';
+import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-92';
+import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-92';
+import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-92';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 // Elevator operation is enabled; boarding and per-round limits are authoritative.
 export const ELEVATOR_ENABLED=true;
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
 export const TEACHER_EYE_HEIGHT=TEACHER_PROPORTIONS.eyeHeight;
-import {HALL,END_ORIGIN,officePlan,liftPlan,officeDeskPlans,officeChairPlans,officeBoardPlan,endPoint,endBounds} from './campus-ends.js?v=campus-85';
+import {HALL,END_ORIGIN,officePlan,liftPlan,officeDeskPlans,officeChairPlans,officeBoardPlan,endPoint,endBounds} from './campus-ends.js?v=campus-92';
  // In the walkthrough a player leaving the lift for the office has the classroom on the left.
 export const CLASSROOM=Object.freeze({minX:-6.65,maxX:7.20,minZ:-10.00,maxZ:8.80});
 export const CORRIDOR=HALL;
@@ -26,7 +26,7 @@ export function mapBounds(map='classroom'){
  const b=PLAYGROUND_LAYOUT.bounds;
  return {minX:Math.min(ROOM.minX,b.minX),maxX:Math.max(ROOM.maxX,b.maxX),minZ:Math.min(ROOM.minZ,b.minZ),maxZ:Math.max(ROOM.maxZ,b.maxZ)};
 }
-export const CEILING_HEIGHT=4.51,TIERED_CEILING_HEIGHT=5.55;
+export const CEILING_HEIGHT=4.51,TIERED_CEILING_HEIGHT=5.36;
 export const TEACHER_SPAWN=Object.freeze({...endPoint(9.20,12.00),yaw:0,pitch:.025});
 export const OFFICE_DESKS=Object.freeze(officeDeskPlans.map(d=>{
  const drawer=endPoint(d.drawerX,d.drawerZ);
@@ -59,12 +59,13 @@ export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
  const random=layoutRandom(seed),pattern=LAYOUT_PATTERNS.includes(arrangement)?arrangement:LAYOUT_PATTERNS[(Number(seed)>>>0)%LAYOUT_PATTERNS.length],raw=[];
  // Translate each left-hand desk cluster intact, preserving paired tops, the
  // fixed right-hand stair lane and all authored model sizes.
+ const kind=mapKind(map);
  const add=(x,z,yaw=0)=>raw.push({deskX:mapKind(map)==='tiered'?(x< -3?x+.15:x):x< -3?x+.45:x,deskZ:z,yaw});
  if(pattern==='rows-wide'||pattern==='rows-long'){
   const wide=pattern==='rows-wide',xs=wide?[-5,-2.5,0,2.5,5]:[-4.8,-1.6,1.6,4.8];
   // Four rows of five or five rows of four. On terraces the front two rows
   // share the deeper zero-height platform; no desktop straddles a riser.
-  const zs=mapKind(map)==='tiered'?(wide?[-7.67,-4.07,-.47,3.13]:[-7.67,-4.07,-.47,2.75,4.65]):wide?[-7.2,-3.45,.3,4.05]:[-7.3,-4.45,-1.6,1.25,4.1];
+  const zs=mapKind(map)==='tiered'?(wide?[-7.67,-4.07,-.47,3.13]:[-7.67,-4.07,-.47,2.75,4.65]):kind==='exam'?(wide?[-7.32,-3.60,.12,3.84]:[-7.42,-4.55,-1.68,1.19,4.06]):kind==='computer'?(wide?[-7.40,-3.64,.12,3.88]:[-7.44,-4.49,-1.54,1.41,4.36]):wide?[-7.05,-3.50,.05,3.60]:[-7.10,-4.42,-1.74,.94,3.62];
   for(const z of zs)for(const x of xs)add(x,z);
  }else if(mapKind(map)==='tiered'){
   // Four full-depth terraces leave enough space for the real desk AND its
@@ -77,9 +78,11 @@ export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
   }
  }else if(pattern==='single'||pattern==='pairs'){
   const xs=pattern==='single'?[-5.90,-3.55,-1.20,1.20,3.55,5.90]:[-5.80,-4.52,-.64,.64,4.07,5.35];
-  for(const z of [-7.30,-4.45,-1.60,1.25,4.10])for(const x of xs)add(x,z);
+  const rowDepths=kind==='computer'?[-7.44,-4.49,-1.54,1.41,4.36]:[-7.10,-4.42,-1.74,.94,3.62];
+  for(const z of rowDepths)for(const x of xs)add(x,z);
  }else{
-  const blocks=[-6.40,-1.65,3.10].flatMap(z=>[-4.75,0,4.75].map(x=>({x,z})));
+  const blockRows=kind==='computer'?[-6.50,-1.65,3.20]:[-6.22,-1.65,2.92];
+  const blocks=blockRows.flatMap(z=>[-4.75,0,4.75].map(x=>({x,z})));
   // 7 four-seat islands + one pair, or 6 islands + three pairs = 30 places.
   const counts=pattern==='quads'?[4,4,4,4,4,4,4,2,0]:[4,2,4,2,4,4,4,2,4];
   if(pattern==='mixed')for(let i=counts.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[counts[i],counts[j]]=[counts[j],counts[i]];}
@@ -131,11 +134,14 @@ const liftThreshold=()=>V(LIFT.minX,LIFT.maxX,portalZ-.02,portalZ+.22,.02,3.12);
 const sealedLift=ELEVATOR_ENABLED?[]:[liftThreshold()];
 export const WALLS=Object.freeze([...baseWalls,...DOOR_LEAVES,...sealedLift]);
 export const WALL_VOLUMES=Object.freeze([...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...DOOR_LEAVES,...sealedLift,...headers]);
-const fixedCeilings=Object.freeze([V(CORRIDOR.minX-.20,CORRIDOR.maxX+.20,CORRIDOR.minZ-.22,portalZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(LIFT.minX-.20,LIFT.maxX+.20,portalZ+.20,LIFT.maxZ+.20,3.12,3.28)]);
-const flatCeilings=Object.freeze([V(west-.20,7.40,-10.20,9.02,CEILING_HEIGHT,CEILING_HEIGHT+.16),...fixedCeilings]);
-const raisedCeilings=Object.freeze([V(west-.20,7.40,-10.20,9.02,TIERED_CEILING_HEIGHT,TIERED_CEILING_HEIGHT+.16),...fixedCeilings]);
+const fixedCeilings=Object.freeze([V(CORRIDOR.minX-.20,CORRIDOR.maxX+.20,CORRIDOR.minZ-.22,portalZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ,OFFICE.height,OFFICE.height+.16),V(LIFT.minX-.20,LIFT.maxX+.20,portalZ+.20,LIFT.maxZ+.20,3.12,3.28)]);
+// Height to underside of each room ceiling. The hallway and office have their own slabs.
+const teachingHeights=Object.freeze({classroom:4.10,night:4.10,computer:4.08,hotpot:4.18,toilet:4.04,cafeteria:4.25,exam:4.14,tiered:TIERED_CEILING_HEIGHT});
+export function teachingRoomHeight(map){return teachingHeights[mapKind(map)]??CEILING_HEIGHT;}
+const roomCeilings=Object.fromEntries(Object.entries(teachingHeights).map(([map,h])=>[map,Object.freeze([V(west-.20,7.40,-10.20,9.02,h,h+.16),...fixedCeilings])]));
+const dormCeilings=Object.freeze([...DORM_CEILINGS,...fixedCeilings]);
 const raisedUpperWalls=Object.freeze([V(west-.20,west,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(7.20,7.40,-10.20,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(west,7.20,-10.20,-10.00,CEILING_HEIGHT,TIERED_CEILING_HEIGHT),V(west,7.20,8.80,9.02,CEILING_HEIGHT,TIERED_CEILING_HEIGHT)]);
-export function ceilingVolumes(map='classroom'){return mapKind(map)==='dorm'?[...DORM_CEILINGS,...fixedCeilings]:mapKind(map)==='playground'?fixedCeilings:mapKind(map)==='tiered'?raisedCeilings:flatCeilings;}
+export function ceilingVolumes(map='classroom'){const kind=mapKind(map);return kind==='dorm'?dormCeilings:roomCeilings[kind]||fixedCeilings;}
 // The teacher laptop is only present on computer floors. Separate base and
 // lid bounds avoid treating the air above its keyboard as a solid monitor.
 const laptopVolumes=Object.freeze([V(-1.175,-.515,7.395,7.825,1.1475,1.1975),V(-1.175,-.515,7.354,7.429,1.1835,1.570)]);
@@ -159,7 +165,7 @@ export const OFFICE_SOLIDS=Object.freeze([
   V(officePlan.minX+.04,officePlan.minX+.68,10.10,20.08,0,2.78),
   ...officeDeskPlans.map(d=>V(d.x-d.width/2,d.x+d.width/2,d.z-d.depth/2,d.z+d.depth/2,0,.985)),
   ...officeDeskPlans.map(d=>V(d.x-.75,d.x-.09,d.z+.15,d.z+.23,1.105,1.482)),
-  V(officePlan.maxX-.68,officePlan.maxX-.02,11.075,14.925,0,1.065),
+  V(officePlan.maxX-.68,officePlan.maxX-.02,11.075,14.925,0,1.291),
   V(officeBoardPlan.x-1.35,officeBoardPlan.x+1.35,officeBoardPlan.z-.37,officeBoardPlan.z+.37,0,2.48)
  ].map(endBounds),
  V(ROLE_LOCKER.x-.37,ROLE_LOCKER.x+.35,ROLE_LOCKER.z-.90,ROLE_LOCKER.z+.90,0,2.28),
@@ -232,7 +238,7 @@ export function orientedVolume(x,z,yaw,width,depth,minY=0,maxY=.875){
  return V(x-hx,x+hx,z-hz,z+hz,minY,maxY);
 }
 // Shared by the visible lab screens, thrown objects and camera sight lines.
-export const LAB_DIVIDER=Object.freeze({side:.593,depth:.80,thickness:.026,bottom:.864,top:1.515});
+export const LAB_DIVIDER=Object.freeze({side:.593,depth:.80,thickness:.026,bottom:.864,top:1.46});
 function labDividers(seats){
  if(mapKind(seats[0]?.map)!=='computer')return [];
  const d=LAB_DIVIDER;

@@ -4,7 +4,7 @@ import * as T from './vendor/three.module.js';
 export async function loadCampusSurfaces(){
  const loader=new T.TextureLoader();
  const root='./assets/materials/';
- const files={floor:root+'classroom-aggregate91.webp',wall:root+'paint-plaster-34.png',board:root+'chalkboard-34.png',veneer:root+'maple-veneer91.webp',
+ const files={officeOak:root+'office-oak92.webp',floor:root+'classroom-aggregate91.webp',wall:root+'paint-plaster-34.png',board:root+'chalkboard-34.png',veneer:root+'maple-veneer91.webp',
   turf:root+'field-turf91.webp',track:root+'track-granules91.webp',tile:root+'washroom-tile91.webp',cloth:root+'dorm-flannel91.webp',facade:root+'school-facade91.webp',upholstery:root+'coach-upholstery91.webp',broth:root+'hotpot-broth91.webp'};
  const entries=await Promise.all(Object.entries(files).map(async([key,file])=>{
   const map=await loader.loadAsync(new URL(file,import.meta.url).href);

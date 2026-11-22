@@ -3,10 +3,10 @@
 // Twelve cubicles are this reconstruction's capacity. Occlusion in the source
 // does not establish an exact original cubicle count. No desks or school chairs.
 export const TOILET_BOUNDS=Object.freeze({minX:-6.65,maxX:7.2,minZ:-10,maxZ:8.8});
-export const TOILET_STALL_SIZE=Object.freeze({width:2.10,depth:2.38,height:1.87,bottom:.18});
+export const TOILET_STALL_SIZE=Object.freeze({width:2.10,depth:2.38,height:1.83,bottom:.18});
 export const TOILET_DOOR=Object.freeze({width:1.86,depth:.045,height:1.57,bottom:.24,hingeX:-.93,hingeZ:1.19,angle:-Math.PI*.475});
 export const TOILET_CABINET=Object.freeze({x:.68,z:-.52,width:.43,depth:.35,height:1.12,bottom:.10,doorAngle:-Math.PI*.48});
-export const TOILET_STALLS=Object.freeze([-7.75,-3.45,.85].flatMap((z,row)=>[-5.05,-1.95,1.15,4.25].map((x,col)=>Object.freeze({id:row*4+col,row,col,x,z,yaw:0}))));
+export const TOILET_STALLS=Object.freeze([-7.50,-3.54,.42].flatMap((z,row)=>[-5.05,-1.95,1.15,4.25].map((x,col)=>Object.freeze({id:row*4+col,row,col,x,z,yaw:0}))));
 export const TOILET_SEATS=Object.freeze(TOILET_STALLS.map(s=>Object.freeze({
  id:s.id,row:s.row,col:s.col,x:s.x-.18,z:s.z-.48,y:.36,yaw:0,
  // Existing interaction callers use deskX/Z; these are CABINET anchors.
@@ -16,9 +16,9 @@ export const TOILET_SEATS=Object.freeze(TOILET_STALLS.map(s=>Object.freeze({
 })));
 const volume=(id,minX,maxX,minZ,maxZ,minY,maxY)=>Object.freeze({id,minX,maxX,minZ,maxZ,minY,maxY});
 const fixedFixtures=Object.freeze(TOILET_STALLS.flatMap(s=>[
- volume('toilet-left-'+s.id,s.x-1.08,s.x-1.02,s.z-1.22,s.z+1.22,.16,1.92),
- volume('toilet-right-'+s.id,s.x+1.02,s.x+1.08,s.z-1.22,s.z+1.22,.16,1.92),
- volume('toilet-rear-'+s.id,s.x-1.08,s.x+1.08,s.z-1.22,s.z-1.16,.16,1.92),
+ volume('toilet-left-'+s.id,s.x-1.08,s.x-1.02,s.z-1.22,s.z+1.22,TOILET_STALL_SIZE.bottom,TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height),
+ volume('toilet-right-'+s.id,s.x+1.02,s.x+1.08,s.z-1.22,s.z+1.22,TOILET_STALL_SIZE.bottom,TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height),
+ volume('toilet-rear-'+s.id,s.x-1.08,s.x+1.08,s.z-1.22,s.z-1.16,TOILET_STALL_SIZE.bottom,TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height),
  volume('toilet-hinge-'+s.id,s.x-1.06,s.x-.93,s.z+1.15,s.z+1.23,.18,1.89),
  volume('toilet-latch-'+s.id,s.x+.93,s.x+1.06,s.z+1.15,s.z+1.23,.18,1.89),
  volume('toilet-bowl-'+s.id,s.x-.39,s.x+.03,s.z-.76,s.z-.23,0,.365),

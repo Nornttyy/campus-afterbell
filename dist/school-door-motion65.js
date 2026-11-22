@@ -1,5 +1,9 @@
 // Shared door poses: 0 = shut, 1 = open. School doors are independent of the lift.
 export const SCHOOL_DOOR_IDS=Object.freeze(['rear','front','office']);
+// The office and bell animations are driven by the round, never a player's key.
+export function canOpenSchoolDoor(stage,state,id,close=false){
+ return (stage==='seating'||stage==='class') && (id==='front'||id==='rear') && close===false && state[id+'DoorClosed']===true;
+}
 const clamp=n=>Math.max(0,Math.min(1,Number(n)||0));
 export function createSchoolDoorMotion(closed={}){return Object.fromEntries(SCHOOL_DOOR_IDS.map(id=>[id,{amount:closed[id]?0:1,target:closed[id]?0:1}]));}
 export function schoolDoorSnapshot(motion){return Object.fromEntries(SCHOOL_DOOR_IDS.map(id=>[id,{amount:motion[id].amount,target:motion[id].target,blocked:!!motion[id].blocked}]));}

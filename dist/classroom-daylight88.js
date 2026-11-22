@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-91';
+import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-92';
 
 // The three colour channels store window bounce near the floor, window bounce
 // at eye height, and diffuse light near the suspended hall tubes. One bilinear
@@ -108,10 +108,10 @@ const finishes={
    course88.y+=.5*mod(floor(course88.x),2.0);
    vec2 cell88=abs(fract(course88+.5)-.5),aa88=max(fwidth(course88),vec2(.00025));
    vec2 joint88=(1.0-smoothstep(vec2(0.0),aa88+vec2(.0045,.0012),cell88))*min(vec2(1.0),vec2(.015,.005)/aa88);
-   diffuseColor.rgb*=vec3(.49,.62,.65)*mix(.82,1.17,.32*day88+.68*field88.b)*mix(.78,1.0,field88.a);
+   diffuseColor.rgb*=vec3(.63,.73,.75)*mix(.82,1.17,.32*day88+.68*field88.b)*mix(.78,1.0,field88.a);
    diffuseColor.rgb*=1.0-.18*max(joint88.x,joint88.y);
   }else{
-   diffuseColor.rgb*=vec3(.82,.76,.70)*mix(.84,1.12,day88)*mix(.81,1.0,field88.a);
+   diffuseColor.rgb*=vec3(.87,.82,.76)*mix(.84,1.12,day88)*mix(.81,1.0,field88.a);
   }`,
  glass:`vec2 border88=min(vPaneUv88,1.0-vPaneUv88);
   float edge88=smoothstep(.015,.19,min(border88.x,border88.y));
@@ -160,7 +160,7 @@ export function createClassroomDaylight(openings,lamps){
      }`)
     .replace('#include <aomap_fragment>',`#include <aomap_fragment>
      if(campusDay88&&inside88){
-      reflectedLight.indirectDiffuse*=mix(vec3(.73,.78,.77),vec3(1.13,1.10,1.06),day88);
+      reflectedLight.indirectDiffuse*=mix(vec3(.86,.89,.87),vec3(1.14,1.11,1.07),day88);
       ${portableSun}
      }`);
   };

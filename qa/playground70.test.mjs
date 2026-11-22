@@ -6,12 +6,12 @@ import {createPlaygroundRoom,playgroundTrackRing} from '../dist/playground-room7
 
 test('outdoor footprint joins the existing right corridor without a wall across its entrance',()=>{
  const p=PLAYGROUND_LAYOUT,b=p.bounds,e=p.entrance;
- for(const [actual,expected]of [[b.minX,-28.8],[b.maxX,7.2],[b.minZ,-51.2],[b.maxZ,8.8]])assert.ok(Math.abs(actual-expected)<1e-9);
+ for(const [actual,expected]of [[b.minX,-32.8],[b.maxX,7.2],[b.minZ,-59.2],[b.maxZ,8.8]])assert.ok(Math.abs(actual-expected)<1e-9);
  for(let x=e.x-.4;x<=p.connector.maxX+.15;x+=.05){assert.ok(playgroundWalkable(x,e.z,.18,p));assert.equal(p.colliders.filter(c=>!c.walkable).some(c=>x>=c.minX&&x<=c.maxX&&e.z>=c.minZ&&e.z<=c.maxZ),false,'door opening is blocked');}
  for(const side of[[b.minX-.2,0],[b.maxX+.4,0],[0,b.minZ-.2],[0,b.maxZ+.2]])assert.equal(playgroundWalkable(...side),false);
 });
 test('larger dimensions rebuild geometry and retain the fixed right corridor anchor',()=>{
- const p=createPlaygroundLayout({width:42,length:70});assert.equal(p.bounds.maxX,PLAYGROUND_LAYOUT.bounds.maxX);assert.equal(p.bounds.width,42);assert.equal(p.bounds.length,70);assert.equal(p.entrance.x,7.2);assert.ok(p.track.outerRadius>PLAYGROUND_LAYOUT.track.outerRadius);assert.ok(p.track.straightHalf>PLAYGROUND_LAYOUT.track.straightHalf);
+ const p=createPlaygroundLayout({width:42,length:74});assert.equal(p.bounds.maxX,PLAYGROUND_LAYOUT.bounds.maxX);assert.equal(p.bounds.width,42);assert.equal(p.bounds.length,74);assert.equal(p.entrance.x,7.2);assert.ok(p.track.outerRadius>PLAYGROUND_LAYOUT.track.outerRadius);assert.ok(p.track.straightHalf>PLAYGROUND_LAYOUT.track.straightHalf);
 });
 test('three separate walkable steps and seven binding posts are grounded in the inner field',()=>{
  const p=PLAYGROUND_LAYOUT;assert.equal(p.steps.length,3);assert.equal(p.posts.length,7);

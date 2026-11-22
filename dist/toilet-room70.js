@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {placeFurniture67} from './furniture-assets67.js?v=campus-83';
-import {TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-84';
-export * from './toilet-layout70.js?v=campus-84';
+import {TOILET_STALL_SIZE,TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-92';
+export * from './toilet-layout70.js?v=campus-92';
 
 function ellipseRing(outerX,outerZ,innerX,innerZ,height){
  const shape=new T.Shape();shape.absellipse(0,0,outerX,outerZ,0,Math.PI*2,false);const hole=new T.Path();hole.absellipse(0,0,innerX,innerZ,0,Math.PI*2,true);shape.holes.push(hole);
@@ -37,8 +37,9 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,fini
  const seats=new Map(),cabinets=new Map(),doors=new Map();
  for(const s of TOILET_STALLS){
   const stall=new T.Group();stall.name='toilet-stall-'+s.id;stall.position.set(s.x,0,s.z);fixed.add(stall);
-  for(const x of[-1.05,1.05]){box(panel,[x,1.04,0],[.045,1.72,2.38],null,stall);for(const z of[-1.19,1.19]){box(edge,[x,1.04,z],[.06,1.76,.055],null,stall);box(feet,[x,.115,z],[.065,.18,.07],null,stall);}box(edge,[x,1.92,0],[.06,.045,2.43],null,stall);}
-  box(panel,[0,1.04,-1.19],[2.10,1.72,.045],null,stall);box(edge,[0,1.92,-1.19],[2.15,.045,.055],null,stall);
+  const sideTop=TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height,sideMiddle=TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height/2;
+  for(const x of[-1.05,1.05]){box(panel,[x,sideMiddle,0],[.045,TOILET_STALL_SIZE.height,2.38],null,stall);for(const z of[-1.19,1.19]){box(edge,[x,sideMiddle,z],[.06,TOILET_STALL_SIZE.height,.055],null,stall);box(feet,[x,.115,z],[.065,.18,.07],null,stall);}box(edge,[x,sideTop-.0225,0],[.06,.045,2.43],null,stall);}
+  box(panel,[0,sideMiddle,-1.19],[2.10,TOILET_STALL_SIZE.height,.045],null,stall);box(edge,[0,sideTop-.0225,-1.19],[2.15,.045,.055],null,stall);
   for(const x of[-.99,.99])box(panel,[x,1.035,1.19],[.12,1.71,.045],null,stall);
   const fixture=new T.Group();fixture.name='toilet-fixture-'+s.id;fixture.position.set(-.18,0,-.48);stall.add(fixture);
   const supplied=placeFurniture67(fixture,'toilet');

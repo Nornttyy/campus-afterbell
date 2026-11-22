@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {sampleActorMotion} from '../dist/classroom.js';
 import {ClassroomRound,AI_WALK_SPEEDS} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
-import {CORRIDOR,blocked,walkRoute} from '../dist/classroom-layout.js';
+import {CORRIDOR,blocked,walkRoute,advanceLayoutDoors} from '../dist/classroom-layout.js';
 
 const DT=1/60;
 const corridorX=(CORRIDOR.minX+CORRIDOR.maxX)/2;
@@ -58,6 +58,7 @@ test('real classroom arrivals yield physical walk speed and zero speed after sit
 
 test('returning students and teacher entry follow their distinct ordinary movement speeds',()=>{
   const round=new ClassroomRound({seed:73});round.start({gathering:true});
+  round.startBell();advanceLayoutDoors(round.layout,2,[]);
   const pupil=round.students.find(s=>!s.isPlayer);
   pupil._returnRoute=walkRoute(pupil,round.seats[pupil.id],.2,round.layout);assert.ok(pupil._returnRoute.length);
   let peak=0;

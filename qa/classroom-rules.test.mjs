@@ -167,7 +167,7 @@ test('teacher victory requires all five team members, with one terminal event',(
     assert.equal(r.snapshot().status,index===4?'lost':'playing');
   }
   const s=r.snapshot();assert.equal(s.caughtCount,5);assert.equal(s.resultReason,'all-caught');
-  assert.equal(r.drainEvents().filter(e=>e.type==='finish').length,1);r.step(30);r.start();takeAndUse(r);assert.deepEqual(r.snapshot(),s);assert.deepEqual(r.drainEvents(),[]);
+  assert.equal(r.drainEvents().filter(e=>e.type==='finish').length,1);r.step(30);r.start();takeAndUse(r);const live=r.snapshot();assert.ok(live.sceneElapsed>s.sceneElapsed);for(const key of ['status','resultReason','score','caughtCount','timeLeft','elapsed','leaderboard'])assert.deepEqual(live[key],s[key],key);assert.equal(r.drainEvents().filter(e=>e.type==='finish').length,0);
 });
 
 test('a live cooperative session can fill the mischief meter without a task checklist',()=>{

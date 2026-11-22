@@ -8,12 +8,15 @@ import {reachesSchoolDoor} from '../dist/door-interaction54.js';
 import {interactionIntent} from '../dist/interaction-intent54.js';
 const geometry={doors:DOORS,office:OFFICE};
 
-test('all school doors default closed in break, but front/rear/office remain individually operable',()=>{
- for(const Round of[ClassroomRound,TeacherRound]){
-  const r=new Round();r.start({gathering:true});r.step(2);
-  for(const id of['rear','front','office'])assert.equal(r.layout.doorMotion[id].amount,0);
-  assert.equal(r.layout.officeLocked,false);
-  const start=layoutDoorSnapshot(r.layout);assert.equal(r.setSchoolDoor('front',false),true);assert.deepEqual(layoutDoorSnapshot(r.layout).rear,start.rear);assert.equal(r.layout.doorMotion.front.amount,0,'command cannot instantly jump the leaf');r.step(.10);assert.ok(r.layout.doorMotion.front.amount>0&&r.layout.doorMotion.front.amount<1);r.step(2);assert.equal(r.layout.doorMotion.front.amount,1);assert.equal(r.layout.doorMotion.rear.amount,0);assert.equal(r.setSchoolDoor('office',false),true);r.step(2);assert.equal(r.layout.doorMotion.office.amount,1);
+test('break starts with all school doors physically closed and forbids manual operation',()=>{
+ for(const Round of [ClassroomRound,TeacherRound]){
+  const r=new Round();r.start({gathering:true});
+  for(const id of ['rear','front','office']){
+   assert.equal(r.layout.doorMotion[id].amount,0);
+   assert.equal(r.setSchoolDoor(id,false),false);
+   assert.equal(r.setSchoolDoor(id,true),false);
+  }
+  r.step(2);assert.ok(Object.values(r.layout.doorMotion).every(d=>d.amount===0));
  }
 });
 
@@ -35,18 +38,31 @@ test('moving door waits for an actor entering its next swept segment, then conti
  const ctx=createLayoutContext();queueLayoutDoors(ctx,{rearDoorClosed:true});const actor={x:8.45,z:-7.32,visible:true},original={...actor};advanceLayoutDoors(ctx,.10,[actor]);assert.equal(ctx.doorMotion.rear.amount,1);assert.equal(ctx.doorMotion.rear.blocked,true);assert.deepEqual(actor,original,'never teleport a trapped player');advanceLayoutDoors(ctx,2,[]);assert.equal(ctx.doorMotion.rear.amount,0);assert.equal(ctx.doorMotion.rear.blocked,false);
 });
 
-test('front and office use actual aiming and E/Q commands, office lock only applies during seating',()=>{
- const r=new ClassroomRound();r.start({gathering:true});r.step(2);for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:OFFICE.doorX,z:OFFICE.doorZ+1.5,yaw:Math.PI}]]){Object.assign(r.player,p);assert.equal(reachesSchoolDoor(r.player,r.layout,id),true);const intent=interactionIntent(r.snapshot(),{kind:'rear-door',doorId:id},'E');assert.deepEqual(intent.args,[true,false,id]);assert.equal(r.setDoorUse(...intent.args),true);r.step(3);assert.equal(r.layout.doorMotion[id].target,1);r.step(2);const close=interactionIntent(r.snapshot(),{kind:'rear-door',doorId:id},'Q');assert.deepEqual(close.args,[true,true,id]);}
- Object.assign(r.player,{x:START_BELL_POSITION.x+1.17,z:START_BELL_POSITION.z+.35,yaw:Math.atan2(-1.17,-.35)});assert.equal(r.startBell(),true);assert.equal(r.layout.officeLocked,true);assert.equal(r.setSchoolDoor('office',false),false);r.step(30);assert.equal(r.layout.officeLocked,false);assert.equal(r.layout.doorMotion.office.target,1);
+test('the bell opens both classroom entrances and releases the office after the countdown',()=>{
+ const r=new ClassroomRound();r.start({gathering:true});
+ Object.assign(r.player,{x:START_BELL_POSITION.x+1.17,z:START_BELL_POSITION.z+.35,yaw:Math.atan2(-1.17,-.35)});
+ assert.equal(r.startBell(),true);r.step(.1);
+ for(const id of ['front','rear']){assert.ok(r.layout.doorMotion[id].amount>0&&r.layout.doorMotion[id].amount<1);assert.equal(r.setSchoolDoor(id,true),false);}
+ assert.equal(r.layout.doorMotion.office.amount,0);assert.equal(r.layout.officeLocked,true);assert.equal(r.setSchoolDoor('office',false),false);
+ r.step(30);assert.equal(r.layout.officeLocked,false);assert.equal(r.layout.doorMotion.office.target,1);
+ r.step(2);assert.equal(r.layout.doorMotion.office.amount,1);assert.equal(r.setSchoolDoor('office',true),false);
+ for(const key of ['E','Q'])assert.equal(interactionIntent(r.snapshot(),{kind:'rear-door',doorId:'office'},key),null);
 });
 
-test('two authenticated room members share front and office opening, independent from the lift',async()=>{
- const {CampusRoom}=await import('../server/room-simulation.js');const room=new CampusRoom({code:'650065',seed:73}),a=room.join({name:'甲'}),b=room.join({name:'乙'});for(let i=0;i<20;i++)room.tick(.1);
- for(const [id,p]of[['front',{x:6.2,z:7,yaw:Math.PI/2}],['office',{x:OFFICE.doorX,z:OFFICE.doorZ+1.5,yaw:Math.PI}]]){
-  Object.assign(a.context.player,p,{seated:false});Object.assign(b.context.player,{x:11.5,z:2,seated:false});
-  assert.equal(room.command(a,'setDoorUse',[true,false,id]),true);for(let i=0;i<21;i++)room.tick(.1);
-  assert.equal(room.snapshot(a).doorMotion[id].target,1);assert.deepEqual(room.snapshot(a).doorMotion,room.snapshot(b).doorMotion);
-  const before=room.snapshot(a).doorMotion[id].amount;room.tick(.1);const after=room.snapshot(a).doorMotion[id].amount;assert.ok(after>before&&after<1);assert.deepEqual(room.snapshot(a).doorMotion,room.snapshot(b).doorMotion);
-  for(let i=0;i<20;i++)room.tick(.1);assert.equal(room.snapshot(b).doorMotion[id].amount,1);assert.equal(room.elevator.phase,'idle');assert.equal(room.sim.layout.elevatorClosed,false);
- }
+test('two room members see the same eased opening and cannot close classroom or office manually',async()=>{
+ const {CampusRoom}=await import('../server/room-simulation.js');
+ const room=new CampusRoom({code:'650065',seed:73}),a=room.join({rolePreference:'teacher'}),b=room.join();
+ room.begin(a);for(let i=0;i<310;i++)room.tick(.1);
+ updateLayoutDoors(room.sim.layout,{frontDoorClosed:true});
+ Object.assign(b.context.player,{x:6.2,z:7,yaw:Math.PI/2,seated:false});
+ assert.equal(reachesSchoolDoor(b.context.player,room.sim.layout,'front'),true);
+ assert.equal(room.command(b,'setDoorUse',[true,false,'front']),true);
+ for(let i=0;i<21;i++)room.tick(.1);
+ const leaf=room.snapshot(b).doorMotion.front;
+ assert.equal(leaf.target,1);assert.ok(leaf.amount>0&&leaf.amount<1);
+ assert.deepEqual(room.snapshot(a).doorMotion,room.snapshot(b).doorMotion);
+ for(let i=0;i<20;i++)room.tick(.1);
+ assert.equal(room.snapshot(a).doorMotion.front.amount,1);
+ for(const id of ['front','office'])assert.equal(room.command(a,'setDoorUse',[true,true,id]),false);
+ assert.equal(room.elevator.phase,'idle');
 });

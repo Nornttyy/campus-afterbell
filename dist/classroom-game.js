@@ -1,12 +1,12 @@
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-90';
-import {createReferenceHUD} from './reference-hud54.js?v=campus-90';
-import {interactionIntent} from './interaction-intent54.js?v=campus-85';
+import {createReferenceHUD} from './reference-hud54.js?v=campus-92';
+import {interactionIntent} from './interaction-intent54.js?v=campus-92';
 import {createSessionUI} from './session-ui.js?v=campus-90';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-91';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-92';
 import {referenceNotice} from './reference-notices55.js?v=campus-83';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -20,7 +20,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   const referenceHUD=createReferenceHUD({document,root:ui,bindings:()=>controls,touchMode:()=>session.touch});
   const labels={snack:'零食',drink:'饮料',burger:'汉堡',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡糖',banana:'香蕉',bananaPeel:'香蕉皮',garlic:'大蒜',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set(),physicalKeys=new Map();
   const throwables=new Set(['smoke','flash','ink','bananaPeel']),vision=canvas.parentElement&&document.createElement?createVisionEffects(canvas.parentElement):null;
-  let active=false,finished=false,raf=0,last=0,lastHud=0,lastEffect=0;
+  let active=false,finished=false,continued=false,raf=0,last=0,lastHud=0,lastEffect=0;
   const teacherFootsteps=createTeacherFootsteps();
   let yaw=0,pitch=0,dragLook=false,dragX=0,dragY=0,feedbackTimer=0,lastFriends='',lastTeacher=null,lastInteractionState=null,lastComputerStick=0,computerStickDirection=null;
   let lastVideoReport=-Infinity,lastVideoPlaying=false;
@@ -52,11 +52,11 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     feedbackTimer=setTimeout(()=>box.classList.remove('pop'),duration);
   }
   function finish(s){
-    release();stopMovement();unlock();audio.gameplay=false;audio.apply();fx((s.role==='teacher'?s.status==='lost':s.status==='won')?'bell':'caught');
+    release();stopMovement();unlock();fx((s.role==='teacher'?s.status==='lost':s.status==='won')?'bell':'caught');
     $('#result-title').textContent=s.status==='won'?'学生获胜':'老师获胜';$('#result-score').textContent=Math.round(s.score);$('#result-goal').textContent='捣乱值';
     $('#result-detail').textContent=s.status==='won'?'这节课，藏住了。':'捣蛋同学都被找出来了。';
     $('#result-actions').textContent=s.role==='teacher'?`找到 ${s.caughtCount} / ${s.teamSize} 位捣蛋同学`:Object.entries(s.completed).filter(([kind,count])=>count>0&&labels[kind]).map(([kind,count])=>`${labels[kind]} ${count}`).join(' · ');
-    const retry=$('#retry-game');retry.textContent=round.network&&round.room.selfId!==round.room.hostId?'等待房主再开一局':'再来一局';retry.disabled=Boolean(round.network&&round.room.selfId!==round.room.hostId);referenceHUD.finish(s);if(!resultDialog.open)resultDialog.showModal();
+    const retry=$('#retry-game');retry.textContent='继续';retry.disabled=false;referenceHUD.finish(s);if(!resultDialog.open)resultDialog.showModal();
   }
   function processEvents(){const events=round.drainEvents();if(!events.length)return;const role=round.snapshot().role;for(const e of events){
     if(e.recipientId!=null&&e.recipientId!==round.player.id)continue;
@@ -96,7 +96,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     ui.dataset.elevatorPhase=s.elevator?.phase||'idle';ui.dataset.elevatorUsed=String(!!s.elevator?.used);ui.dataset.elevatorRemaining=String(s.elevator?.remaining||0);
     ui.dataset.status=s.status;ui.dataset.phase=s.teacher.phase;ui.dataset.holding=String(s.holding);ui.dataset.score=String(s.score);
     ui.dataset.seated=String(p.seated);ui.dataset.crawling=String(Boolean(p.crouched&&!p.seated));ui.dataset.caught=String(p.caught);ui.dataset.position=`${p.x.toFixed(2)},${p.z.toFixed(2)}`;
-    $('#round-clock').textContent=beforeClass?(s.stage==='seating'?'入座 '+formatTime(s.stageTimeLeft):'课前集合'):'已抓捕 '+s.caughtCount+' / '+s.teamSize;
+    $('#round-clock').textContent=beforeClass?(s.stage==='seating'?'入座 '+formatTime(s.stageTimeLeft):s.stage==='dismissal'?'课间休息':'课前集合'):'已抓捕 '+s.caughtCount+' / '+s.teamSize;
     if(s.elevator?.phase==='travel')$('#round-clock').textContent='';
     const lessonTime=$('#lesson-time');if(lessonTime){lessonTime.hidden=beforeClass;lessonTime.textContent='距离下课 '+formatTime(s.timeLeft||0);}
     const staminaTeacher=(s.stage==='gathering'?(s.lobbyRole||s.role):s.role)==='teacher';
@@ -151,24 +151,28 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
         const app=round.snapshot().player.computer?.app;if(app==='desktop')round.computerSelect?.(direction);else if(app==='snake')round.snakeDirection?.(direction);lastComputerStick=now;
       }computerStickDirection=direction;
     }else computerStickDirection=null;
-    let side=touch.side+(keys.has('right')?1:0)-(keys.has('left')?1:0),forward=touch.forward+(keys.has('forward')?1:0)-(keys.has('back')?1:0);if(session.computer||session.modal||round.paused)side=forward=0;const len=Math.hypot(side,forward)||1;side/=len;forward/=len;
+    let side=touch.side+(keys.has('right')?1:0)-(keys.has('left')?1:0),forward=touch.forward+(keys.has('forward')?1:0)-(keys.has('back')?1:0);if(session.computer||session.modal||resultDialog.open||round.paused)side=forward=0;const len=Math.hypot(side,forward)||1;side/=len;forward/=len;
     round.setMovement(Math.sin(yaw)*forward-Math.cos(yaw)*side,Math.cos(yaw)*forward+Math.sin(yaw)*side);setPosture(touch.crawl||keys.has('crawl'));
   }
   function frame(now){
     // The rules already substep at 60 Hz. Preserve ordinary slow-frame time;
     // only a long foreground stall is bounded to avoid an unbounded catch-up.
-    if(!active)return;if(round.network&&finished&&round.status==='playing'&&round.snapshot().stage==='gathering'){start(options);return;}raf=requestAnimationFrame(frame);const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;movement();const s=round.step(dt);reportVideoWatching(s,now);processEvents();renderUseProgress(s);vision?.update(s);
+    if(!active)return;raf=requestAnimationFrame(frame);const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;movement();const s=round.step(dt);reportVideoWatching(s,now);processEvents();renderUseProgress(s);vision?.update(s);
 
     playFootsteps(s);
     if(now-lastHud>80){lastHud=now;render(s);}else scene.setGameplay(s);
-    if(s.status!=='playing'&&!finished){finished=true;render(s);finish(s);}
+    if(s.stage==='gathering'&&s.status==='playing'&&finished){
+      finished=false;continued=false;if(resultDialog.open)resultDialog.close();session.reset();teacherFootsteps.reset();render(s);
+    }else if((s.status==='won'||s.status==='lost')&&!finished){
+      finished=true;continued=!!s.continued;render(s);if(!continued)finish(s);
+    }
   }
   function start(nextOptions){
     if(nextOptions?.role)options={role:nextOptions.role==='teacher'?'teacher':'student',map:nextOptions.map||'classroom',duration:nextOptions.duration||600,target:nextOptions.target||120,character:nextOptions.character||options.character};
     else if(active)options={...options,...round.snapshot().settings};
     if(!externalRound)round=createSoloRound(options);
     cancelAnimationFrame(raf);if(pauseDialog.open)pauseDialog.close();if(resultDialog.open)resultDialog.close();release();keys.clear();session.reset();teacherFootsteps.reset();round.reset(Date.now()>>>0);if(!round.network&&options.character){round.player.character=options.character;round.player.variant=options.character;}round.start({gathering:!externalRound||nextOptions?.gathering===true});yaw=round.player.yaw||0;pitch=round.player.pitch||0;round.setLook(yaw,pitch);
-    active=true;finished=false;lastFriends='';lastTeacher=null;lastInteractionState=null;document.body.classList.add('playing');ui.hidden=false;$('#menu').inert=true;$('#menu').setAttribute('aria-hidden','true');
+    active=true;finished=false;continued=false;lastFriends='';lastTeacher=null;lastInteractionState=null;document.body.classList.add('playing');ui.hidden=false;$('#menu').inert=true;$('#menu').setAttribute('aria-hidden','true');
     $('#speech').hidden=true;$('#round-feedback').classList.remove('pop');
     $('#student-controls').hidden=round.snapshot().role==='teacher';$('#teacher-controls').hidden=round.snapshot().role!=='teacher';
     audio.gameplay=true;audio.apply();audio.start();render(round.snapshot());last=performance.now();raf=requestAnimationFrame(frame);canvas.focus({preventScroll:true});lock();
@@ -178,7 +182,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     audio.gameplay=false;audio.apply();vision?.update(null);scene.setGameplay(null);ui.hidden=true;document.body.classList.remove('playing');$('#menu').inert=false;$('#menu').removeAttribute('aria-hidden');onExit?.();
   }
   function pause(value=true){if(!active||finished)return;release();stopMovement();round.pause(value);if(value){unlock();if(!pauseDialog.open)pauseDialog.showModal();}else{if(pauseDialog.open)pauseDialog.close();lock();}render(round.snapshot());}
-  const canInput=()=>active&&!finished&&!session.modal&&!session.computer&&!round.paused&&round.status==='playing';
+  const canInput=()=>active&&!resultDialog.open&&!session.modal&&!session.computer&&!round.paused&&(round.status==='playing'||finished&&continued);
   function hold(id,value){if(!canInput())return;
     const exam=round.snapshot().exam;
     if(exam?.mode){
@@ -211,7 +215,9 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   document.addEventListener('mousemove',e=>{if(session.computer||!canInput()||(!dragLook&&document.pointerLockElement!==canvas))return;const locked=document.pointerLockElement===canvas,dx=locked?e.movementX:e.clientX-dragX,dy=locked?e.movementY:e.clientY-dragY;dragX=e.clientX;dragY=e.clientY;yaw=(round.player.yaw||0)-dx*.0024;pitch=clamp((round.player.pitch||0)+dy*.0021,-1.15,1.3);round.setLook(yaw,pitch);});
   document.addEventListener('pointerlockchange',()=>{document.body.classList.toggle('mouse-locked',document.pointerLockElement===canvas);});
   $('#pause-game').addEventListener('click',()=>pause());$('#resume-game').addEventListener('click',()=>pause(false));
-  $('#restart-game').addEventListener('click',start);$('#retry-game').addEventListener('click',async()=>{if(!round.network){start();return;}if(round.room.selfId!==round.room.hostId)return;try{await round.rematch();start(options);}catch(e){$('#result-detail').textContent=e.message;}});$('#leave-game').addEventListener('click',exit);$('#result-menu').addEventListener('click',exit);
+  $('#restart-game').addEventListener('click',start);$('#retry-game').addEventListener('click',async()=>{const button=$('#retry-game');if(button.disabled)return;button.disabled=true;
+    try{const accepted=await round.continueAfterClass();if(accepted){continued=true;resultDialog.close();keys.clear();canvas.focus({preventScroll:true});lock();}}
+    catch(e){$('#result-detail').textContent=e.message;}finally{button.disabled=false;}});$('#leave-game').addEventListener('click',exit);$('#result-menu').addEventListener('click',exit);
   pauseDialog.addEventListener('cancel',e=>{e.preventDefault();pause(false);});resultDialog.addEventListener('cancel',e=>{e.preventDefault();exit();});
   document.addEventListener('keydown',e=>{
     if(!active||pauseDialog.open||resultDialog.open||session.modal||document.querySelector('#settings-dialog')?.open)return;

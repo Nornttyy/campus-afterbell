@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
 
-import {CORRIDOR,PARTITIONS} from './classroom-layout.js?v=campus-91';
-import {HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-85';
-export {HOTPOT_TABLE_SIZE,HOTPOT_TABLE_HEIGHT,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-85';
+import {CORRIDOR,PARTITIONS} from './classroom-layout.js?v=campus-92';
+import {HOTPOT_TABLE_SIZE,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-92';
+export {HOTPOT_TABLE_SIZE,HOTPOT_TABLE_HEIGHT,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-92';
 
 function chamferedSlab(width,depth,height,cut){
  const x=width/2,z=depth/2,s=new T.Shape();s.moveTo(-x+cut,-z);s.lineTo(x-cut,-z);s.lineTo(x,-z+cut);s.lineTo(x,z-cut);s.lineTo(x-cut,z);s.lineTo(-x+cut,z);s.lineTo(-x,z-cut);s.lineTo(-x,-z+cut);s.closePath();
@@ -23,7 +23,7 @@ export function createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,fini
  const grain=texture(512,256,(c,w,h)=>{c.fillStyle='#dda63e';c.fillRect(0,0,w,h);for(let i=0;i<112;i++){const y=(i*37.71)%h;c.strokeStyle=i%3?'rgba(126,64,19,.085)':'rgba(255,226,142,.16)';c.lineWidth=.5+(i%4)*.36;c.beginPath();c.moveTo(0,y);c.bezierCurveTo(w*.25,y+Math.sin(i)*4,w*.7,y+Math.cos(i)*5,w,y+Math.sin(i*.7)*3);c.stroke();}});ownedTextures.add(grain);grain.wrapS=grain.wrapT=T.RepeatWrapping;
  const wood=material(finishes.veneer?'#d3b49a':'#ffffff',{map:finishes.veneer||grain,roughness:.46}),edge=material('#a35d21',{roughness:.56}),pedestal=material('#8d391f',{roughness:.61}),screenWood=material('#985723',{roughness:.58}),screenLight=material('#bb7830',{roughness:.57}),steel=material('#b4afa0',{metalness:.62,roughness:.34}),silver=material('#d3cfc0',{metalness:.68,roughness:.29}),broth=material(finishes.broth?'#ffffff':'#a61713',{map:finishes.broth||null,roughness:.31,metalness:.03}),oil=material('#c77c35',{roughness:.24}),cabbage=material('#e8d9a0',{roughness:.67}),greens=material('#6e8d38',{roughness:.68});
  const soupTime={value:0};broth.onBeforeCompile=shader=>{shader.uniforms.hotpotTime=soupTime;shader.vertexShader='uniform float hotpotTime;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n transformed.z += .0016 * sin(uv.x*19. + hotpotTime*1.5) * cos(uv.y*17. - hotpotTime);');};broth.customProgramCacheKey=()=> 'hotpot-broth70';
- const topGeo=ownGeometry(chamferedSlab(2.634,2.634,.040,.13)),footGeo=ownGeometry(chamferedSlab(1.40,1.40,.10,.24)),capGeo=ownGeometry(chamferedSlab(1.10,1.10,.14,.17)),neckGeo=ownGeometry(new T.CylinderGeometry(.49,.64,.54,8)),bowlGeo=ownGeometry(new T.LatheGeometry([[0,0],[.58,0],[.65,.027],[.72,.13],[.765,.245],[.761,.265],[.735,.265],[.705,.135],[.63,.055],[.56,.028],[0,.028]].map(([x,y])=>new T.Vector2(x,y)),48)),rimGeo=ownGeometry(new T.TorusGeometry(.748,.015,6,48)),soupGeo=ownGeometry(new T.CircleGeometry(.719,48)),oilGeo=ownGeometry(new T.CircleGeometry(.028,8));
+ const topGeo=ownGeometry(chamferedSlab(HOTPOT_TABLE_SIZE-.016,HOTPOT_TABLE_SIZE-.016,.040,.13)),footGeo=ownGeometry(chamferedSlab(1.40,1.40,.10,.24)),capGeo=ownGeometry(chamferedSlab(.98,.98,.14,.17)),neckGeo=ownGeometry(new T.CylinderGeometry(.49,.64,.54,8)),bowlGeo=ownGeometry(new T.LatheGeometry([[0,0],[.58,0],[.65,.027],[.72,.13],[.765,.245],[.761,.265],[.735,.265],[.705,.135],[.63,.055],[.56,.028],[0,.028]].map(([x,y])=>new T.Vector2(x,y)),48)),rimGeo=ownGeometry(new T.TorusGeometry(.748,.015,6,48)),soupGeo=ownGeometry(new T.CircleGeometry(.719,48)),oilGeo=ownGeometry(new T.CircleGeometry(.028,8));
  const chilli=material('#9a2e1b',{roughness:.47}),leek=material('#799344',{roughness:.70});
  const pepper=ownGeometry(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(-.044,0,-.009),new T.Vector3(0,.006,.008),new T.Vector3(.047,.001,.002)]),5,.009,5,false));
  const scallion=ownGeometry(new T.TorusGeometry(.014,.0045,4,8));
@@ -35,7 +35,7 @@ export function createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,fini
   render(topGeo,wood,[0,.847,0],table);
   // Keep four real drawer openings under the shared top, not a solid apron
   // passing through the imported sliding drawers (whose top is .8104m).
-  for(const side of[-1,1])for(const corner of[-.87,.87]){box(edge,[corner,.767,side*1.26],[.62,.11,.06],null,table);box(edge,[side*1.26,.767,corner],[.06,.11,.62],null,table);}render(footGeo,pedestal,[0,.061,0],table);render(neckGeo,pedestal,[0,.370,0],table);render(capGeo,edge,[0,.700,0],table);box(edge,[0,.801,0],[.84,.052,.84],null,table);
+  for(const side of[-1,1])for(const corner of[-.83,.83]){box(edge,[corner,.767,side*(HOTPOT_TABLE_SIZE/2-.065)],[.62,.11,.06],null,table);box(edge,[side*(HOTPOT_TABLE_SIZE/2-.065),.767,corner],[.06,.11,.62],null,table);}render(footGeo,pedestal,[0,.061,0],table);render(neckGeo,pedestal,[0,.370,0],table);render(capGeo,edge,[0,.700,0],table);box(edge,[0,.801,0],[.84,.052,.84],null,table);
   const pot=new T.Group();pot.name='hotpot-pot-'+t.id;pot.position.y=.875;table.add(pot);render(bowlGeo,steel,[0,0,0],pot);render(rimGeo,silver,[0,.257,0],pot,[Math.PI/2,0,0]);const soup=render(soupGeo,broth,[0,.214,0],pot,[-Math.PI/2,0,0]);soup.userData.animated=true;
   for(let i=0;i<14;i++){const angle=i*2.399+t.id*.5,r=.19+((i*37)%43)/100;render(oilGeo,oil,[Math.cos(angle)*r,.216,Math.sin(angle)*r],pot,[-Math.PI/2,0,angle]);}
   for(let i=0;i<4;i++){const angle=i*2.1+t.id*.8,r=.13+(i%2)*.085;const strand=render(noodleGeo,cabbage,[Math.cos(angle)*r,.221,Math.sin(angle)*r],pot);strand.rotation.y=angle;}

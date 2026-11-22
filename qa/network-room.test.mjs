@@ -1,3 +1,4 @@
+import {updateLayoutDoors} from '../dist/classroom-layout.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCampusServer} from '../server/server.js';
@@ -50,9 +51,13 @@ test('seat ownership, item completion and door duration are authoritative for se
  a.context.player._slots=[{id:0,action:'snack',readyAt:0,progress:0}];a.context.player._selectedSlot=0;a.context.selected='snack';
  assert.equal(r.command(a,'toggleDrawer'),true);assert.equal(r.command(a,'takeSlot',[0]),true);assert.equal(r.command(a,'hold',[true]),true);
  for(let i=0;i<30;i++)r.tick(.1);assert.equal(a.context.player._slots[0].action,null);assert.ok(r.snapshot(a).score>0);assert.equal(r.snapshot(b).score,r.snapshot(a).score);
- r.command(a,'interact');const door=DOORS.find(d=>d.id==='rear');Object.assign(a.context.player,{x:8.00,z:-6.7,yaw:Math.PI,seated:false});r.command(a,'setDoorUse',[true]);for(let i=0;i<19;i++)r.tick(.1);assert.equal(r.sim.layout.rearDoorClosed,false);r.tick(.11);assert.equal(r.sim.layout.rearDoorClosed,true);
- Object.assign(a.context.player,{x:6.7,z:door.center,yaw:-Math.PI/2});r.command(a,'setDoorUse',[true]);r.tick(.1);assert.equal(r.snapshot(a).doorUse.holding,false,'looking away must cancel the interaction');
- Object.assign(a.context.player,{x:6.7,z:door.center,yaw:Math.PI/2});r.command(a,'setDoorUse',[true]);for(let i=0;i<31;i++)r.tick(.1);assert.equal(r.sim.layout.rearDoorClosed,false,'closed leaf can be reopened from corridor');
+ r.command(a,'interact');const door=DOORS.find(d=>d.id==='rear');
+ updateLayoutDoors(r.sim.layout,{rearDoorClosed:true});Object.assign(a.context.player,{x:6.30,z:door.center,yaw:-Math.PI/2,seated:false});
+ assert.equal(r.command(a,'setDoorUse',[true,false]),false,'looking away cannot operate the door');
+ a.context.player.yaw=Math.PI/2;assert.equal(r.command(a,'setDoorUse',[true,false]),true);
+ for(let i=0;i<19;i++)r.tick(.1);assert.equal(r.sim.layout.rearDoorClosed,true);
+ r.tick(.11);assert.equal(r.sim.layout.rearDoorClosed,false);
+ assert.equal(r.command(a,'setDoorUse',[true,true]),false);
  a.context.player._slots=[{id:0,action:'banana',readyAt:0,progress:0}];a.context.player._selectedSlot=0;a.context.player._drawnSlot=0;a.context.player.seated=true;a.context.player.action='banana';a.context.selected='banana';r.command(a,'hold',[true]);for(let i=0;i<31;i++)r.tick(.1);assert.equal(r.snapshot(a).selected,'bananaPeel');assert.equal(a.context.player._slots[0].action,'bananaPeel');
  const other=new CampusRoom({code:'111111',seed:74});assert.notDeepEqual(r.sim.seats,other.sim.seats);assert.equal(other.sim.layout.rearDoorClosed,true);assert.equal(SEATS[0].pattern,'pairs');
 });
@@ -64,7 +69,7 @@ test('browser adapter predicts each mouse delta immediately and reconciles ackno
   a=await connectCampusRoom({endpoint,name:'甲',onError:e=>errors.push(e)});b=await connectCampusRoom({endpoint,code:a.room.code,name:'乙',onError:e=>errors.push(e)});await wait(()=>a.snapshot().connection==='connected'&&b.snapshot().connection==='connected');
   const yaw=a.player.yaw;for(let i=0;i<8;i++)a.setLook(a.player.yaw+.05,.2);assert.ok(Math.abs(Math.atan2(Math.sin(a.player.yaw-yaw-.4),Math.cos(a.player.yaw-yaw-.4)))<1e-8,'mouse delta must accumulate without waiting for snapshot');assert.equal(a.snapshot().player.pitch,.2);
   await wait(()=>a._state.inputAck.look>=8);assert.ok(Math.abs(a.player.pitch-.2)<1e-5);assert.equal(a.stopComputer(),false,'Q must continue to returnItem when no computer is open');assert.deepEqual(errors,[]);
-  const room=runtime.rooms.get(a.room.code),seed=room.seed;room.sim._finish('won','mischief');await wait(()=>a.status==='won');await assert.rejects(b.rematch(),/房主/);await a.rematch();await wait(()=>b.snapshot().stage==='gathering'&&b.status==='playing');assert.equal(room.seed,(seed+1)>>>0);assert.equal(room.members.size,2);assert.equal(room.teacherMember,null);assert.equal(a.room.code,b.room.code);assert.equal(a.room.members.every(m=>m.role==='student'),true);
+  const room=runtime.rooms.get(a.room.code),seed=room.seed;room.sim._finish('won','mischief');await wait(()=>a.status==='won');assert.equal(await b.continueAfterClass(),true);await wait(()=>b.snapshot().continued&&!a.snapshot().continued);assert.equal(await a.continueAfterClass(),true);await wait(()=>b.snapshot().stage==='gathering'&&b.status==='playing');assert.equal(room.seed,(seed+1)>>>0);assert.equal(room.members.size,2);assert.equal(room.teacherMember,null);assert.equal(a.room.code,b.room.code);assert.equal(a.room.members.every(m=>m.role==='student'),true);
  }finally{await a?.leave();await b?.leave();await runtime.close();}
 });
 

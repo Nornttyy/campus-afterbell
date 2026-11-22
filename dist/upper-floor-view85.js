@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
-import {createServingDish} from './game-actors.js?v=campus-91';
-import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-91';
+import {createServingDish} from './game-actors.js?v=campus-92';
+import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-92';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
-import {SERVING_BELTS,SERVING_MENU,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-85';
+import {SERVING_BELTS,SERVING_MENU,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92';
 
 const paperWidth=.89,paperDepth=.60;
 const paperFont='"PingFang SC","Microsoft YaHei",sans-serif';
@@ -27,16 +27,16 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
  }
  function cafeteria(){
   const group=wing('cafeteria-serving-hall'),fixed=new T.Group();group.add(fixed);
-  const orange=mat('#e4a137'),steel=mat('#a6aca8',{metalness:.48,roughness:.38}),cream=mat('#c5b196',{roughness:.73}),lip=mat('#b88154',{map:finishes.veneer||null,roughness:.52});
+  const orange=mat('#e4a137'),steel=mat('#a6aca8',{metalness:.48,roughness:.38}),cream=mat('#c5b196',{roughness:.73}),lip=mat('#d79a65',{map:finishes.veneer||null,roughness:.52});
   const runner=texture(256,512,(c,w,h)=>{
-   c.fillStyle='#bf976e';c.fillRect(0,0,w,h);
-   for(let y=0;y<h;y+=8){c.fillStyle=y%24?'#c29a73':'#bb936d';c.fillRect(0,y,w,1);}
+   c.fillStyle='#c59871';c.fillRect(0,0,w,h);
+   for(let y=0;y<h;y+=8){c.fillStyle=y%24?'#c79e7b':'#b98e68';c.fillRect(0,y,w,1);}
    c.fillStyle='#fff2de';c.beginPath();c.moveTo(w*.5,h*.16);c.lineTo(w*.87,h*.76);c.quadraticCurveTo(w*.88,h*.79,w*.84,h*.79);c.lineTo(w*.16,h*.79);c.quadraticCurveTo(w*.12,h*.79,w*.13,h*.76);c.closePath();c.fill();
   });runner.wrapT=T.RepeatWrapping;runner.repeat.y=9;
   const beltMat=mat('#ffffff',{map:runner,roughness:.88});
   for(const b of SERVING_BELTS){
    const center=(b.maxZ+b.minZ)/2,len=b.maxZ-b.minZ;
-   box(cream,[b.x,.52,center],[b.width-.08,.99,len-.03],null,fixed);
+   box(cream,[b.x,b.top/2,center],[b.width-.08,b.top-.07,len-.03],null,fixed);
    box(steel,[b.x,.09,center],[b.width-.04,.10,len],null,fixed);
    box(lip,[b.x,b.top-.045,center],[b.width,.09,len],null,fixed);
    const top=surface(fixed,own(new T.PlaneGeometry(b.width-.055,len-.035)),beltMat,b.x,b.top+.001,center,true);
@@ -44,13 +44,13 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
    for(const side of [-1,1]){
     const x=b.x+side*(b.width/2-.034);
     for(let z=b.minZ+.57;z<b.maxZ-.45;z+=1.65){
-     box(lip,[x,.85,z],[.024,.039,1.53],null,fixed);
-     box(steel,[x+side*.013,.74,z],[.014,.023,.20],null,fixed);
+     box(lip,[x,b.top-.19,z],[.024,.039,1.53],null,fixed);
+     box(steel,[x+side*.013,b.top-.30,z],[.014,.023,.20],null,fixed);
     }
     box(steel,[x+side*.026,.18,center],[.018,.023,len-.08],null,fixed);
    }
    for(const side of [-1,1])box(orange,[b.x+side*(b.width/2-.012),b.top-.013,center],[.024,.035,len],null,fixed);
-   for(let z=b.minZ+.56;z<b.maxZ;z+=1.65)for(const side of [-1,1])box(steel,[b.x+side*(b.width/2-.034),.50,z],[.012,.77,.012],null,fixed);
+   for(let z=b.minZ+.56;z<b.maxZ;z+=1.65)for(const side of [-1,1])box(steel,[b.x+side*(b.width/2-.034),b.top*.46,z],[.012,b.top*.73,.012],null,fixed);
   }
   for(const [x,z,w,d] of [[.25,-9.92,13.68,.032],[.25,8.72,13.68,.032],[-6.58,-.60,.032,18.52],...PARTITIONS.map(p=>{const lo=Math.max(CLASSROOM.minZ,p.minZ),hi=Math.min(CLASSROOM.maxZ,p.maxZ);return [7.157,(hi+lo)/2,.032,hi-lo];})]){
    box(orange,[x,.55,z],[w,1.08,d],null,fixed);

@@ -12,8 +12,8 @@ export const BUS=Object.freeze({
 const {low,high,body,stairs}=BUS;
 // Heights are above each deck. The lip ends behind the passenger's shins.
 export const COACH_CUSHION=Object.freeze({
- 'bus-seat':Object.freeze({top:.410,depth:.55,centerZ:-.030}),
- 'bus-table':Object.freeze({top:.343,depth:.46,centerZ:-.052})
+ 'bus-seat':Object.freeze({top:.410,width:.67,depth:.51,centerZ:-.030}),
+ 'bus-table':Object.freeze({top:.343,width:.64,depth:.44,centerZ:-.052})
 });
 const within=(r,x,z,p=0)=>x>=r.minX+p&&x<=r.maxX-p&&z>=r.minZ+p&&z<=r.maxZ-p;
 const wall=(id,x1,x2,z1,z2,d=0,h=2.59)=>volume(id,x1,x2,z1,z2,d?high:low,(d?high:low)+h);
@@ -61,7 +61,10 @@ export function busFootprint(x,z,r=0,deck=0){
   (x>BUS.gate[0]+r&&x<BUS.gate[1]-r&&Math.abs(z+6.9)<r+.06)||
   (x>9.5+r&&x<11.48-r&&z>8.62-r&&z<8.92+r);
 }
-const fixedFurniture=BUS_SEATS.map(s=>s.busDeck?wall('upper-chair-'+s.id,s.x-.19,s.x+.19,s.z-.33,s.z+.33,1,.64):wall('coach-chair-'+s.id,s.x-.30,s.x+.23,s.z-.34,s.z+.34,0,1.02));
+const fixedFurniture=BUS_SEATS.map(s=>{
+ const half=COACH_CUSHION[s.surface].width/2;
+ return s.busDeck?wall('upper-chair-'+s.id,s.x-.19,s.x+.19,s.z-half,s.z+half,1,.64):wall('coach-chair-'+s.id,s.x-.30,s.x+.23,s.z-half,s.z+half,0,1.02);
+});
 for(const s of BUS_SEATS.filter(s=>!s.busDeck))fixedFurniture.push(wall('seat-cabinet-'+s.id,s.deskX-.195,s.deskX+.195,s.z-.286,s.z+.286,0,.90));
 for(const x of [-.05,3.95,7.95])fixedFurniture.push(wall('upper-table-'+x,x-.53,x+.53,-15.19,-13.16,1,.86));
 fixedFurniture.push(wall('driver-seat',12.47,12.91,-15.14,-14.53,0,.99),wall('wc-seat',-6.33,-5.56,-15.14,-14.55,0,.78));
@@ -74,18 +77,19 @@ export const BUS_DECK_SLABS=Object.freeze([
 ]);
 const decks=[0,1].map(deck=>[...BUS_WALLS,...BUS_FURNITURE].filter(s=>deck?s.minY>=high:s.minY<high));
 const touches=(s,x,z,r)=>x>s.minX-r&&x<s.maxX+r&&z>s.minZ-r&&z<s.maxZ+r;
+function passengerDoorBlocks(context){return !!context.busDeparted||(context.doorMotion?.front?.amount??(context.frontDoorClosed?0:1))<.64;}
 export function busBlocked(x,z,r=.18,deck=0,ctx={}){
  if(ctx.busDeparted&&!within(body,x,z,r))return true;
  if(!busFootprint(x,z,r,deck))return true;
  if(!deck&&ctx.elevatorClosed&&x>9.48-r&&x<11.5+r&&Math.abs(z-8.80)<r+.06)return true;
  if(!deck&&ctx.officeLocked&&x>11.03-r&&x<11.20+r&&z>=-13.52-r&&z<=body.maxZ)return true;
- if(!deck&&ctx.busDeparted&&x>9.12-r&&x<10.99+r&&Math.abs(z-body.maxZ)<r+.06)return true;
+ if(!deck&&passengerDoorBlocks(ctx)&&x>9.12-r&&x<10.99+r&&Math.abs(z-body.maxZ)<r+.06)return true;
  return decks[deck===1?1:0].some(s=>touches(s,x,z,r));
 }
 export function busSight(a,b,ctx={}){
  const da=a.busDeck??0,db=b.busDeck??0;
  if(da!==db&&!(onBusStair(a.x,a.z)&&onBusStair(b.x,b.z)))return false;
- if(!da&&ctx.busDeparted&&onBus(a.x,a.z)!==onBus(b.x,b.z))return false;
+ if(!da&&passengerDoorBlocks(ctx)&&onBus(a.x,a.z)!==onBus(b.x,b.z))return false;
  const length=Math.hypot(a.x-b.x,a.z-b.z),n=Math.max(1,Math.ceil(length/.11));
  for(let i=1;i<n;i++){const t=i/n,x=a.x+(b.x-a.x)*t,z=a.z+(b.z-a.z)*t;if(BUS_WALLS.some(s=>((s.minY>=high)===Boolean(da))&&touches(s,x,z,0)))return false;}return true;
 }
@@ -104,7 +108,7 @@ export function moveOnBus(pos,dx,dz,r=.18,ctx={}){
 // only graph edge between decks lies inside the flight of stairs.
 const cache=new Map(),step=.28,x0=-8.56,z0=-18.08,W=87,H=110,N=W*H;
 function grid(radius,ctx){
- const key=[radius,Number(!!ctx.officeLocked),Number(!!ctx.elevatorClosed),Number(!!ctx.busDeparted)].join('/');
+ const key=[radius,Number(!!ctx.officeLocked),Number(!!ctx.elevatorClosed),Number(!!ctx.busDeparted),Number(passengerDoorBlocks(ctx))].join('/');
  if(cache.has(key))return cache.get(key);
  const pass=new Uint8Array(N*2),edges=new Int32Array(N*8);edges.fill(-1);
  const point=i=>({x:x0+(i%W)*step,z:z0+Math.floor((i%N)/W)*step,busDeck:i>=N?1:0});

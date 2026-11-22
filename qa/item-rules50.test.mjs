@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {ClassroomRound,CLASSROOM_ACTIONS,START_BELL,CLASS_START_TIMING} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
 import {createSnake,turnSnake,stepSnake,ITEM50_TUNING} from '../dist/item-rules50.js';
-import {OFFICE_CHAIR,TEACHER_SPAWN,BOARD,DETENTION,blocked,createSeatLayout} from '../dist/classroom-layout.js';
+import {OFFICE_CHAIR,TEACHER_SPAWN,BOARD,DETENTION,blocked,createSeatLayout,updateLayoutDoors} from '../dist/classroom-layout.js';
 const DT=1/60;
 function quiet(map='classroom',Round=ClassroomRound){const r=new Round({map,target:1000});r.start();r.player.pitch=.55;r._thinkAt=r._plan.until=Infinity;for(const s of r.students)s._decisionAt=Infinity;if(Round===ClassroomRound){r.teacher.x=40;r.teacher.z=40;}return r;}
 function stock(r,kind){r.player.pitch=.55;r.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};r.player._selectedSlot=0;r.player._drawnSlot=null;r.selected=r.player.action=kind;if(!r.player._drawerOpen)r.toggleDrawer();assert.equal(r.takeSlot(0),true);}
@@ -67,7 +67,7 @@ test('a player can take any free seat and late AI reroutes instead of occupying 
  const r=new ClassroomRound();r.start({gathering:true});r.startBell();const id=2,seat=r.seats[id];Object.assign(r.player,{x:seat.x,z:seat.z});assert.equal(r.interact(id),'seated');assert.equal(r.player.seatId,id);r.step(30);assert.notEqual(r.students[id]._targetSeatId,id);assert.equal(r.students.filter(s=>s.seated&&s.seatId===id).length,1);
 });
 test('layouts and closed doors belong to each room, and network humans are not AI-controlled',()=>{
- const a=quiet(),b=new ClassroomRound({seed:74});assert.notDeepEqual(a.seats,b.seats);a.setRearDoor(true);assert.equal(a.layout.rearDoorClosed,true);assert.equal(b.layout.rearDoorClosed,false);
+ const a=quiet(),b=new ClassroomRound({seed:74});assert.notDeepEqual(a.seats,b.seats);updateLayoutDoors(a.layout,{rearDoorClosed:true});assert.equal(b.layout.rearDoorClosed,false);assert.equal(a.setRearDoor(false),true);assert.equal(a.layout.rearDoorClosed,false);
  const human=a.students.find(s=>s.isTeammate);human.networkHuman=true;human.isTeammate=false;human._decisionAt=0;human._profile=null;human.holding=false;const before={x:human.x,z:human.z};a.step(5);assert.equal(human.holding,false);assert.deepEqual({x:human.x,z:human.z},before);assert.ok(Object.values(human.completed).every(n=>n===0));
 });
 
