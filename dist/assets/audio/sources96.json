@@ -7,9 +7,9 @@
     "source": "https://freesound.org/people/wancle/sounds/184149/",
     "sourceFile": "184149_735309-hq.mp3",
     "sourceSha256": "8da92ed93918909335174ed757e117533f2a26d87e0e31a69eed7162b5b2d41b",
-    "edits": "Two lengths cut from an actual six-inch AC bell, retaining the switch-off and room decay. Mono, 22050 Hz.",
+    "edits": "The entrance cue uses a roughly 3.45-second mechanical ring and a natural room decay. Its upper resonances were shifted down 16 Hz after measuring two bell sequences in gameplay. The dismissal cue is a separate cut of the same CC0 AC bell. Mono, 22050 Hz.",
     "files": [
-      "class-bell-in96.wav",
+      "class-bell-in97.wav",
       "class-bell-out96.wav"
     ]
   },
@@ -26,13 +26,13 @@
       "glass_001.ogg",
       "confirmation_004.ogg"
     ],
-    "edits": "Five ascending confirmations made from layered, tuned one-shots. The fifth resolves with a second phrase.",
+    "edits": "Five pitched one-shots voiced with struck-glass partials from the same CC0 set. Four short decays and a longer fifth resolution, matched in duration against the default streak recordings. No audio from the reference recordings is used.",
     "files": [
-      "game-confirm-1-96.wav",
-      "game-confirm-2-96.wav",
-      "game-confirm-3-96.wav",
-      "game-confirm-4-96.wav",
-      "game-confirm-5-96.wav"
+      "game-confirm-1-97.wav",
+      "game-confirm-2-97.wav",
+      "game-confirm-3-97.wav",
+      "game-confirm-4-97.wav",
+      "game-confirm-5-97.wav"
     ]
   }
 }

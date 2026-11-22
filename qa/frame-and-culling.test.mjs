@@ -17,7 +17,7 @@ function gameFixture(){
     setAttribute(){} removeAttribute(){} focus(){} showModal(){this.open=true;} close(){this.open=false;}
   }
   const doc=new EventTarget(),win=new EventTarget();doc.body=new Element();
-  doc.querySelector=id=>{if(id==='#locker-dialog[open]')return null;if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
+  doc.querySelector=id=>{if(id==='#locker-dialog[open]'||id==='#school-radio-player iframe')return null;if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
   const canvas=doc.querySelector('#classroom');doc.pointerLockElement=canvas;
   doc.exitPointerLock=()=>{doc.pointerLockElement=null;};canvas.requestPointerLock=()=>{doc.pointerLockElement=canvas;};
   const globals={document:doc,window:win,performance:{now:()=>now},requestAnimationFrame:fn=>{const id=++nextFrame;callbacks.set(id,fn);return id;},cancelAnimationFrame:id=>callbacks.delete(id)};

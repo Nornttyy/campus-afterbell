@@ -4,12 +4,12 @@ import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
 import {createReferenceHUD} from './reference-hud54.js?v=campus-93';
-import {interactionIntent} from './interaction-intent54.js?v=campus-96';
-import {createSessionUI} from './session-ui.js?v=campus-96';
+import {interactionIntent} from './interaction-intent54.js?v=campus-97';
+import {createSessionUI} from './session-ui.js?v=campus-97';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-96';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-97';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -87,7 +87,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
       repeatAfter=time+115;chooseComputerDirection(next);
     }
   }
-  const session=sessionFactory({root:ui,commands:{computerStick,radio:id=>round.changeRadio?.(id),radioFocus:()=>{release();stopMovement();},closeRadio:()=>{if(active&&!round.paused)lock();},silent:()=>audio.muted===true,bell:settings=>{if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;return round.startBell?.(round.network?settings:undefined);},mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
+  const session=sessionFactory({root:ui,commands:{computerStick,silent:()=>audio.muted===true,bell:settings=>{if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;return round.startBell?.(round.network?settings:undefined);},mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
   function chooseRole(role){
     if(round.network)return round.setPreference?.(role);
     const next=switchSoloRole(round,role);if(!next)return false;
@@ -167,12 +167,12 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     ui.dataset.role=s.role;ui.dataset.map=s.map;
     const drawer=s.drawer,carrying=drawer.drawnSlot!==null,target=scene.getInteraction?.(),hover=target?.kind==='item'?target.slot:null;
     ui.dataset.drawerOpen=String(drawer.open);ui.dataset.selectedSlot=String(drawer.selectedSlot);ui.dataset.carrying=String(carrying);
-    const openIntent=interactionIntent(s,target,'E'),closeIntent=interactionIntent(s,target,'Q');session.setActionLabels?.(target?.kind==='radio'?{label:'广播'}:openIntent,closeIntent);
+    const openIntent=interactionIntent(s,target,'E'),closeIntent=interactionIntent(s,target,'Q');session.setActionLabels?.(openIntent,closeIntent);
     let actionText='';
     if(target?.kind==='computer')actionText=p.computer?.app==='desktop'?(session.touch?'使用 · 打开应用':'左键 打开应用'):p.computer?.app==='miner'?'左键 下钩':p.computer?.app==='tetris'?'左键 落底':'';
     else if(target?.kind==='bell')actionText='E 开始上课';
     else if(target?.kind==='lift')actionText=s.elevator?.used?'本局电梯已使用':target.current?'当前楼层':s.elevator&&s.elevator.inside<s.elevator.total?`等待同学 ${s.elevator.inside}/${s.elevator.total}`:round.network&&round.room.selfId!==round.room.hostId?'等待房主选楼层':`E 前往 ${target.floor===0?'G':target.floor||''} 层${target.map==='cafeteria'?' · 自助食堂':target.map==='exam'?' · 考场':target.map==='bus'?' · 秋游大巴车':''}`;
-    else if(target?.kind==='radio')actionText='E 更换音乐';
+    else if(target?.kind==='radio'&&!openIntent)actionText=s.radio?'播音中':'';
     else if(target?.kind==='locker')actionText='E 更衣柜';
     else if(s.surveillance?.viewing!=null)actionText='Q 关闭监控';
     else if(target?.kind==='surveillance'&&!openIntent){const wait=Math.ceil(s.surveillance?.unlockIn||s.surveillance?.cooldown||0);actionText=wait>0?'监控 · '+formatTime(wait):'监控已用完';}
@@ -275,7 +275,6 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     if(!canInput()||computerStation!=null||session.computer)return;lock();const s=round.snapshot(),target=scene.getInteraction?.();
     if(target?.kind==='bell'){if(session.startBell)session.startBell();else round.startBell?.();return;}
     if(target?.kind==='lift'){if(s.elevator?.disabled!==false||s.stage!=='gathering'||target.current)return;round.travelFloor?.(target.map);processEvents();render(round.snapshot());return;}
-    if(target?.kind==='radio'){session.openRadio?.(s);return;}
     if(target?.kind==='locker'){if(s.stage==='gathering')session.openLocker();return;}
     applyIntent('E');
   }
@@ -301,7 +300,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   document.addEventListener('keyup',e=>{const action=physicalKeys.get(e.code)||actionForCode(e.code,controls);physicalKeys.delete(e.code);if(![...physicalKeys.values()].includes(action))keys.delete(action);if(action==='crawl')setPosture(keys.has('crawl'));if(action==='use')hold('keyboard',false);if(action==='return')round.setDoorUse?.(false);if(action==='interact'){if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setWriting?.(false);round.setDoorUse?.(false);}});
   window.addEventListener('blur',()=>{
     if(!active||finished)return;
-    if(!round.snapshot().radio||!document.querySelector('#school-radio-player iframe')){pause();return;}
+    if(!document.querySelector('#school-radio-player iframe')){pause();return;}
     stopMovement();
     setTimeout(()=>{if(active&&!finished&&!document.activeElement?.closest?.('#school-radio-player')&&!document.hasFocus())pause();},0);
   });document.addEventListener('visibilitychange',()=>{if(document.hidden&&active&&!finished)pause();});

@@ -52,6 +52,11 @@ test('bells and the five confirmations use real, distinct files even if the firs
   assert.equal(wav.toString('ascii',0,4),'RIFF');assert.equal(wav.readUInt32LE(24),22050);
   let energy=0,peak=0;for(let i=44;i<wav.length;i+=2){const s=wav.readInt16LE(i)/32768;energy+=s*s;peak=Math.max(peak,Math.abs(s));}
   assert.ok(Math.sqrt(energy/((wav.length-44)/2))>.02,file);assert.ok(peak<.85,file);
+  if(manifest.computerStreak.files.includes(file)){
+   const duration=(wav.length-44)/(2*22050);
+   if(file===manifest.computerStreak.files.at(-1))assert.ok(duration>4&&duration<4.8,file);
+   else assert.ok(duration>1&&duration<1.4,file);
+  }
   lengths.set(file,wav.length);
  }
  const ctx=new AudioContextFake();ctx.state='running';

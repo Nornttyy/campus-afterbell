@@ -85,37 +85,59 @@ test('the driver can reach both decks and the ordinary classroom retains its cen
  const seats=createSeatLayout(6,'classroom');assert.equal(seats[0].pattern,'facing-aisle');assert.equal(seats.length,28);
 });
 
-test('the campus radio awards one tenth per full playing second, including after a pause, on both excursion maps',()=>{
- assert.deepEqual(RADIO_SONGS.map(s=>s.id),['champions26','rain','friends']);
- const dj=radioSong('friends');assert.equal(dj.bvid,'BV1kFar6KE4t');assert.equal(dj.duration,42*60+54);
- const player=new URL(radioPlayerUrl(dj,1400.8));assert.equal(player.searchParams.get('bvid'),dj.bvid);assert.equal(player.searchParams.get('t'),'1400');
- for(const map of ['bus','playground']){
-  const r=createSoloRound({role:'student',map,seed:7});r.start();
-  const anchor=radioAnchor(map);Object.assign(r.player,{x:anchor.x,z:anchor.z+Math.cos(anchor.yaw)*.8,seated:false,busDeck:0,seatId:null,captivity:'free'});
-  assert.ok(reachesRadio(map,r.player));assert.equal(r.changeRadio('other'),false);assert.ok(r.changeRadio('friends'));
-  const start=r.snapshot().radio.startedAt;r.step(.75);assert.equal(r.score,0);
-  assert.equal(r.changeRadio('friends'),false);assert.equal(r.snapshot().radio.startedAt,start);
-  r.step(.26);assert.equal(r.score,.1);r.pause(true);r.step(4);assert.equal(r.score,.1);r.pause(false);
-  r.step(9);assert.equal(r.score,1);assert.equal(r.player._earnedPoints,1);
-  assert.ok(r.changeRadio('rain'));r.step(1.01);assert.equal(r.score,1.1);
-  assert.ok(r.changeRadio(null));r.step(1.5);assert.equal(r.score,1.1);assert.equal(r.snapshot().radio,undefined);
-  r.score=r.target-.1;assert.ok(r.changeRadio('champions26'));r.step(1.02);assert.equal(r.status,'won');assert.equal(r.score,r.target);assert.equal(r.snapshot().radio,undefined);
+const atRadio=(actor,map)=>{
+ const a=radioAnchor(map);Object.assign(actor,{x:a.x,z:a.z+Math.cos(a.yaw)*.82,seated:false,seatId:null,busDeck:0,caught:false,captivity:'free'});
+};
+
+test('the radio uses the three complete recordings; the host draws once per accepted activation on either map',()=>{
+ assert.deepEqual(RADIO_SONGS.map(s=>s.duration),[235,280,2574]);
+ for(const song of RADIO_SONGS){
+  const start=new URL(radioPlayerUrl(song));
+  assert.equal(start.searchParams.get('t'),'0');assert.equal(start.searchParams.get('p'),'1');
+  assert.equal(start.searchParams.get('muted'),'0');assert.equal(new URL(song.source).pathname,'/video/'+song.bvid+'/');
  }
- const r=createSoloRound({map:'classroom'});r.start();assert.equal(r.changeRadio('friends'),false);
+ const dj=radioSong('friends');assert.equal(dj.bvid,'BV1kFar6KE4t');
+ assert.equal(new URL(radioPlayerUrl(dj,1400.8)).searchParams.get('t'),'1400');
+ for(const map of ['bus','playground'])for(const [i,roll] of [[0,0],[1,.50],[2,.999999]]){
+  const r=createSoloRound({map,seed:7});r.start();atRadio(r.player,map);
+  const realRandom=r._random.bind(r);let draws=0;r._random=()=>{draws++;return roll;};
+  assert.equal(r.changeRadio('unknown'),false);assert.equal(r.changeRadio(false),false);
+  assert.ok(r.changeRadio('friends'));assert.equal(r.radio.track,RADIO_SONGS[i].id,'legacy titles cannot pick a track');
+  const station=r.snapshot().radio;
+  for(const request of [true,false,null,'rain'])assert.equal(r.changeRadio(request),false);
+  assert.deepEqual(r.radio,station);assert.equal(draws,1);r._random=realRandom;
+  r.step(.75);assert.equal(r.score,0);r.step(.26);assert.equal(r.score,.1);
+  r.pause(true);r.step(4);assert.equal(r.score,.1);r.pause(false);r.step(2.02);assert.equal(r.score,.3);
+  r.score=r.target-.1;r.step(1.02);assert.equal(r.status,'won');assert.equal(r.score,r.target);
+  assert.deepEqual(r.snapshot().radioAtFinish,station);assert.equal(r.snapshot().radio,undefined);
+  r.reset();assert.equal(r.snapshot().radioAtFinish,undefined);
+ }
+ const r=createSoloRound({map:'classroom'});r.start();assert.equal(r.changeRadio(true),false);
  const a=radioAnchor('bus');assert.equal(reachesRadio('bus',{...a,busDeck:1}),false);
  assert.equal(reachesRadio('bus',{x:a.x,z:a.z-1,busDeck:0}),false);
 });
 
-test('hosts advance one station clock for all players and credit only the latest student selector',()=>{
- const r=new CampusRoom({code:'939387',seed:19,map:'bus'}),h=r.join({name:'老师'}),g=r.join({name:'甲'}),j=r.join({name:'乙'});
- r.preference(h,'teacher');r.begin(h);for(let i=0;i<31;i++)r.tick(1);
- const a=radioAnchor('bus');for(const member of [h,g,j])Object.assign(member.context.player,{x:a.x,z:a.z+.82,seated:false,seatId:null,busDeck:0,caught:false,captivity:'free'});
- assert.ok(r.command(g,'changeRadio',['rain']));assert.deepEqual(r.snapshot(h).radio,r.snapshot(j).radio);r.tick(1.1);
- assert.equal(g.context.player._earnedPoints,.1);assert.equal(j.context.player._earnedPoints,0);
- assert.ok(r.command(j,'changeRadio',['friends']));r.tick(1.1);assert.equal(j.context.player._earnedPoints,.1);
- assert.equal(r.command(h,'changeRadio',['rain']),false);assert.ok(r.command(h,'changeRadio',[null]));
- r.tick(1.1);assert.equal(r.sim.score,.2);assert.ok(r.command(g,'changeRadio',['champions26']));
- r.disconnect(g);r.tick(1.1);assert.equal(r.sim.score,.2);assert.equal(r.snapshot(j).radio,undefined);
+test('only a nearby teacher can silence the room; a repeated student press cannot reroll or steal score',()=>{
+ for(const map of ['bus','playground']){
+  const r=new CampusRoom({code:'939387',seed:19,map}),h=r.join({name:'老师'}),g=r.join({name:'甲'}),j=r.join({name:'乙'});
+  r.preference(h,{rolePreference:'teacher'});r.begin(h);for(let i=0;i<31;i++)r.tick(1);
+  for(const m of [h,g,j])atRadio(m.context.player,map);
+  assert.equal(r.command(h,'changeRadio',[true]),false);assert.ok(r.command(g,'changeRadio',[true]));
+  const first=r.snapshot(h).radio;assert.deepEqual(first,r.snapshot(j).radio);
+  for(const args of [[true],[false],['friends'],[null],[]])assert.equal(r.command(j,'changeRadio',args),false);
+  assert.equal(r.command(g,'changeRadio',[false]),false);assert.deepEqual(r.sim.radio,first);
+  r.tick(1.1);assert.equal(g.context.player._earnedPoints,.1);assert.equal(j.context.player._earnedPoints,0);
+  const teacher=h.context.player;teacher.x+=10;assert.equal(r.command(h,'changeRadio',[false]),false);
+  atRadio(teacher,map);teacher.captivity='stunned';assert.equal(r.command(h,'changeRadio',[false]),false);teacher.captivity='free';
+  assert.ok(r.command(h,'changeRadio',[false]));assert.equal(r.snapshot(j).radio,undefined);
+  const score=r.sim.score;r.tick(1.1);assert.equal(r.sim.score,score);
+  assert.ok(r.command(j,'changeRadio',[true]));const second=r.snapshot(g).radio;
+  assert.ok(second.activation>first.activation);assert.ok(radioSong(second.track));
+  r.disconnect(j);r.tick(2);assert.deepEqual(r.snapshot(h).radio,second);assert.equal(r.sim.score,score);
+  r.reconnect(j);r.tick(1.02);assert.equal(j.context.player._earnedPoints,.1);
+  r.leave(j);r.tick(1.02);assert.deepEqual(r.snapshot(h).radio,second);assert.equal(r.sim.score,score+.1);
+  assert.ok(r.command(h,'changeRadio',[null]));r.sim._finish('lost','test');assert.equal(r.snapshot(h).radioAtFinish,undefined);
+ }
 });
 
 test('both departure and arrival stations stay free of street props at section boundaries',()=>{

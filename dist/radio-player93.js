@@ -1,45 +1,65 @@
-import {RADIO_SONGS,radioSong,radioPlayerUrl,reachesRadio} from './campus-radio93.js?v=campus-96';
+import {radioSong,radioPlayerUrl} from './campus-radio93.js?v=campus-97';
 
-export function createRadioUI(host,commands){
- const dialog=document.createElement('dialog'),player=document.createElement('aside');
- dialog.className='sheet campus-radio';dialog.id='radio-dialog';
- dialog.innerHTML='<div class="sheet-top"><h2>校园广播</h2><button type="button" data-back>返回</button></div><div class="radio-choices"></div>';
- player.id='school-radio-player';player.hidden=true;player.innerHTML='<div class="radio-playing"><a target="_blank" rel="noopener noreferrer"></a><button type="button" aria-label="静音校园广播">静音</button></div><div class="radio-media"></div>';
- host.append(dialog,player);
- const choices=dialog.querySelector('.radio-choices'),media=player.lastElementChild,link=player.querySelector('a'),mute=player.querySelector('button');
- let current=null,playerKey='',quiet=false,last=null;
- function close(resume=true){if(!dialog.open)return;dialog.close();if(resume)commands.closeRadio?.();}
- function choose(id){if(commands.radio?.(id)!==false)close();}
- for(const song of RADIO_SONGS){
-  const button=document.createElement('button');button.className='paper-button';button.dataset.song=song.id;
-  const title=document.createElement('b'),artist=document.createElement('small');title.textContent=song.title;artist.textContent=song.artist;
-  button.append(title,artist);button.onclick=()=>choose(song.id);choices.append(button);
- }
- const stop=document.createElement('button');stop.className='paper-button';stop.dataset.song='';stop.textContent='停止广播';stop.onclick=()=>choose(null);choices.append(stop);
- dialog.querySelector('[data-back]').onclick=()=>close();dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
- dialog.addEventListener('keydown',e=>{if(commands.radioReturn?.(e.code)){e.preventDefault();e.stopPropagation();close();}});
- function clearPlayer(){playerKey='';media.replaceChildren();}
- function reset(){close(false);clearPlayer();player.hidden=true;current=null;last=null;quiet=false;}
- function update(s){
-  last=s;
-  if(dialog.open&&(!s||s.stage!=='class'||s.status!=='playing'||!reachesRadio(s.map,s.player)))close(false);
-  const live=s?.status==='playing'&&s.stage==='class'?s.radio:null;
-  const song=live&&radioSong(live.track);
-  if(!song){if(current){clearPlayer();player.hidden=true;current=null;}return;}
-  current=song;player.hidden=false;link.textContent=song.title;link.href=song.source;
-  const silent=quiet||Boolean(commands.silent?.());mute.textContent=quiet?'收听':'静音';mute.setAttribute('aria-pressed',String(quiet));
-  mute.setAttribute('aria-label',quiet?'收听校园广播':'静音校园广播');
-  if(s.paused||silent){if(playerKey)clearPlayer();return;}
-  const age=Math.max(0,s.sceneElapsed-live.startedAt),pass=Math.floor(age/song.duration),key=song.id+'/'+live.startedAt+'/'+pass;
-  if(playerKey===key)return;
-  const frame=document.createElement('iframe');frame.title=song.title+' · '+song.artist;frame.allow='autoplay; encrypted-media; fullscreen';frame.referrerPolicy='strict-origin-when-cross-origin';
-  frame.src=radioPlayerUrl(song,age%song.duration);media.replaceChildren(frame);playerKey=key;
- }
- mute.onclick=()=>{quiet=!quiet;if(last)update(last);};
- function open(s){
-  if(!s||s.stage!=='class'||s.status!=='playing'||s.paused||!reachesRadio(s.map,s.player))return false;
-  for(const b of choices.children){const id=b.dataset.song;b.hidden=!!id&&s.role==='teacher';b.disabled=id?id===s.radio?.track:!s.radio;b.setAttribute('aria-pressed',String(!!id&&id===s.radio?.track));}
-  commands.radioFocus?.();dialog.showModal();commands.unlock?.();return true;
- }
- return {open,update,reset,get modal(){return dialog.open;},dispose(){reset();dialog.remove();player.remove();}};
+function sameBroadcast(a,b){
+  return a&&b&&a.track===b.track&&a.activation===b.activation&&a.startedAt===b.startedAt;
+}
+
+export function createRadioUI(doc,muted){
+  const panel=doc.createElement('aside');
+  panel.id='school-radio-player';panel.hidden=true;
+  panel.setAttribute('aria-label','校园广播');
+  panel.innerHTML='<div class="radio-playing"><a target="_blank" rel="noopener noreferrer"></a><button type="button" data-end hidden>结束收听</button></div><div class="radio-media"></div>';
+  const title=panel.querySelector('a'),end=panel.querySelector('[data-end]'),media=panel.lastElementChild;
+  doc.body.append(panel);
+  let broadcast=null,song=null,age=0,paused=false,afterClass=false,framePass=-1;
+
+  function clearFrame(){
+    if(framePass!==-1)media.replaceChildren();
+    framePass=-1;
+  }
+  function stop(){
+    clearFrame();broadcast=null;song=null;afterClass=false;panel.hidden=true;
+  }
+  function render(){
+    if(!song)return;
+    if(muted()){
+      if(afterClass){stop();return;}
+      clearFrame();panel.hidden=true;return;
+    }
+    panel.hidden=false;
+    panel.dataset.mode=afterClass?'after-class':'room';
+    end.hidden=!afterClass;
+    if(afterClass)return;
+    if(paused){clearFrame();return;}
+    const pass=Math.floor(age/song.duration);
+    if(pass===framePass)return;
+    const frame=doc.createElement('iframe');
+    frame.title=song.title+' · '+song.artist;frame.allow='autoplay; encrypted-media; fullscreen';
+    frame.allowFullscreen=true;frame.referrerPolicy='strict-origin-when-cross-origin';
+    frame.src=radioPlayerUrl(song,age%song.duration);
+    media.replaceChildren(frame);framePass=pass;
+  }
+  end.onclick=()=>{if(afterClass)stop();};
+  doc.addEventListener('campus-audio-settings',render);
+  return {
+    update(s){
+      const live=s?.status==='playing'&&s.stage==='class'?s.radio:null;
+      if(live){
+        if(afterClass||!sameBroadcast(broadcast,live)){
+          stop();song=radioSong(live.track);if(!song)return;
+          broadcast=live;title.textContent=song.title;title.href=song.source;
+        }
+        age=Math.max(0,s.sceneElapsed-live.startedAt);paused=!!s.paused&&!s.network;
+        render();return;
+      }
+      if(afterClass||!broadcast)return;
+      // A teacher may switch off and end a class within the same network tick.
+      // Continue only the station the authority actually heard at the final bell.
+      if(framePass>=0&&['won','lost'].includes(s?.status)&&sameBroadcast(broadcast,s.radioAtFinish)){
+        afterClass=true;render();
+      }else stop();
+    },
+    reset(){if(!afterClass)stop();},
+    dispose(){doc.removeEventListener('campus-audio-settings',render);stop();panel.remove();}
+  };
 }

@@ -1,7 +1,7 @@
 import {RULE_FIELDS,validTuning,tuningForm,readTuning} from './round-tuning93.js?v=campus-93';
 import {setupControlSettings} from './control-settings64.js?v=campus-93';
 import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-83';
-import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-96';
+import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-97';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -48,7 +48,8 @@ class MenuAudio {
   dispose(){this.context?.close();}
 }
 const audio = new MenuAudio();
-function syncSound(){const button=$('#sound-toggle');button.querySelector('use').setAttribute('href',settings.muted?'#i-muted':'#i-audio');button.setAttribute('aria-label',settings.muted?'开启声音':'关闭声音');button.setAttribute('aria-pressed',String(!settings.muted));audio.apply();}
+function notifyRadioSound(){document.dispatchEvent(new Event('campus-audio-settings'));}
+function syncSound(){const button=$('#sound-toggle');button.querySelector('use').setAttribute('href',settings.muted?'#i-muted':'#i-audio');button.setAttribute('aria-label',settings.muted?'开启声音':'关闭声音');button.setAttribute('aria-pressed',String(!settings.muted));audio.apply();notifyRadioSound();}
 function applySettings(){
   $('#sfx-volume').value=settings.sfx;$('#sfx-output').textContent=settings.sfx+'%';$('#motion-toggle').checked=settings.motion;
   $$('[data-quality]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.quality===settings.quality)));
@@ -68,7 +69,7 @@ for(const dialog of $$('#settings-dialog, #room-dialog')){
 }
 syncRoundOptions();
 $$('[data-quality]').forEach(button=>button.addEventListener('click',()=>{settings.quality=button.dataset.quality;applySettings();persist();}));
-for(const type of ['sfx'])$('#'+type+'-volume').addEventListener('input',e=>{settings[type]=Number(e.target.value);$('#'+type+'-output').textContent=settings[type]+'%';audio.apply();persist();});
+for(const type of ['sfx'])$('#'+type+'-volume').addEventListener('input',e=>{settings[type]=Number(e.target.value);$('#'+type+'-output').textContent=settings[type]+'%';audio.apply();notifyRadioSound();persist();});
 $('#sound-cues-toggle').addEventListener('change',e=>{settings.soundCues=e.target.checked;applySettings();persist();});
 function commitRoomSettings(){
   const tuning=readTuning($,'room-rule');if(!tuning)return false;
@@ -142,7 +143,7 @@ $('#room-enter').addEventListener('click',async()=>{
   const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;roomConnecting=request;button.disabled=true;button.textContent='连接中…';error.hidden=true;
   try{
     entryCharacter=randomStudent();
-    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-96');
+    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-97');
     const online=await connectCampusRoom({code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina,tuning:roundOptions.tuning},onError:e=>toast(typeof e==='string'?e:e.message)});
     if(disposed||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
     scene.setMap(online.snapshot().map);scene.setCharacter(online.player?.character||entryCharacter);scene.setActive(true);game.start({...roundOptions});
@@ -171,7 +172,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-96&entry=2'),import('./classroom-game.js?v=campus-96')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-97&entry=2'),import('./classroom-game.js?v=campus-97')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true,onProgress:(fraction,label)=>loadStep(38+Math.round(55*fraction),label)});
       if(disposed){prepared.dispose();return null;}
