@@ -1,5 +1,5 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-94';
-import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,actorFloorHeight,actorEyeHeight,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-94';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-95';
+import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,actorEyePosition as effectEye,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-95';
 
 // Local reconstruction parameters, not measured single-projectile durations.
 export const PROJECTILE_EFFECT_TUNING=Object.freeze({flashFuse:1.2,flashRange:8,flashWhite:4.5,flashFade:2.5,inkRange:2.2,inkDuration:7});
@@ -14,9 +14,7 @@ function segmentTime(a,b,box){
  }
  return lo;
 }
-export function effectEye(actor,map='classroom'){
- return{x:actor.x,y:actorFloorHeight(actor,map)+actorEyeHeight(actor,map),z:actor.z};
-}
+export {effectEye};
 export function clearEffectSight(a,b,map='classroom',layout=null){return !boxesFor(map,layout).some(box=>segmentTime(a,b,box)!==null);}
 export function flashExposure(origin,actor,map='classroom',layout=null){
  const eye=effectEye(actor,map),dx=origin.x-eye.x,dy=origin.y-eye.y,dz=origin.z-eye.z,dist=Math.hypot(dx,dy,dz);

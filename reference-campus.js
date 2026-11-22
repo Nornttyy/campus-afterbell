@@ -1,14 +1,15 @@
+import {DORM_CORRIDOR_SOLIDS} from './dorm-layout70.js?v=campus-95';
 import {createBoardInk} from './board-ink93.js?v=campus-93';
 import {makeOfficeFloor,fitOfficeInterior,staffroomFinish} from './staff-office92.js?v=campus-94';
 import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campus-83';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-94';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-95';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-92';
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-94';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-95';
 import {buildDesktop55} from './computer-hardware55.js?v=campus-93';
 import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-94';
-import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-94';
-import {PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-94';
+import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-95';
+import {PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-95';
 import {END_ORIGIN,endPoint,officeOffset,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD,officeShelfCenters,officeBinPlan} from './campus-ends.js?v=campus-94';
 const [OFFICE_DESK]=OFFICE_DESKS,[OFFICE_CHAIR]=OFFICE_CHAIRS;
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
@@ -353,6 +354,9 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  B(cream,[(OFFICE.doorMaxX+CORRIDOR.maxX)/2,wallY,8.91],[CORRIDOR.maxX-OFFICE.doorMaxX,wallHeight,.22],ends).name='office-entry-right-pier';
  B(cream,[(CORRIDOR.minX+LIFT.minX)/2,wallY,CORRIDOR.minZ-.10],[LIFT.minX-CORRIDOR.minX,wallHeight,.20],ends).name='lift-entry-left-pier';
  B(cream,[(LIFT.maxX+CORRIDOR.maxX)/2,wallY,CORRIDOR.minZ-.10],[CORRIDOR.maxX-LIFT.maxX,wallHeight,.20],ends).name='lift-entry-right-pier';
+ // The dorm has room doors on both sides. Mount the chalk drawing on the
+ // full-height wall between the lift and room 1, above the corridor stripe.
+ const dormTutorialWall=DORM_CORRIDOR_SOLIDS.find(wall=>wall.id==='dorm-hall-left-1');
  let studentTutorial=null;
  if(artwork.studentTutorial){
   const tutorial=new T.Group();tutorial.name='corridor-student-tutorial';tutorial.position.set(CORRIDOR.maxX-.004,2.05,CORRIDOR.minZ+6.8);tutorial.rotation.y=-Math.PI/2;scene.add(tutorial);studentTutorial=tutorial;
@@ -677,7 +681,15 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   },
   getTargets(){return targets;},setDoors,getDoorMotion:()=>schoolDoorSnapshot(schoolDoorMotion),
   setOfficeDrawer(open){drawerOpen=!!open;},
-  setMap(map){if(studentTutorial)studentTutorial.visible=!['bus','cafeteria'].includes(mapKind(map));const raised=mapKind(map)==='tiered',outdoor=mapKind(map)==='playground',dorm=mapKind(map)==='dorm';room.visible=!outdoor&&!dorm;indoorEnclosure.visible=!outdoor&&!dorm;ceilingRig.visible=!outdoor&&!dorm;doors.get('front').visible=!dorm;doors.get('rear').visible=!dorm;dormDoorNumber.visible=false;corridorSkin.visible=!dorm;tiered.visible=raised;const variant=mapKind(map);posterBay.visible=variant==='classroom';standardBay.visible=!posterBay.visible;newspaperMaterial.map=posterBay.visible&&artwork.dayChalkboard?artwork.dayChalkboard:poster;facades[0].visible=!raised&&!outdoor&&!dorm&&variant!=='toilet'&&variant!=='hotpot';facades[1].visible=raised;facades[2].visible=variant==='toilet';facades[3].visible=variant==='hotpot';ceilingRig.position.y=teachingRoomHeight(variant)-CEILING_HEIGHT;upperWalls.visible=raised;},
+  setMap(map){
+   if(studentTutorial){
+    const kind=mapKind(map),dorm=kind==='dorm';
+    studentTutorial.visible=!['bus','cafeteria'].includes(kind);
+    studentTutorial.rotation.y=dorm?Math.PI/2:-Math.PI/2;
+    if(dorm)studentTutorial.position.set(dormTutorialWall.maxX+.012,2.68,(dormTutorialWall.minZ+dormTutorialWall.maxZ)/2);
+    else studentTutorial.position.set(CORRIDOR.maxX-.004,2.05,CORRIDOR.minZ+6.8);
+   }
+   const raised=mapKind(map)==='tiered',outdoor=mapKind(map)==='playground',dorm=mapKind(map)==='dorm';room.visible=!outdoor&&!dorm;indoorEnclosure.visible=!outdoor&&!dorm;ceilingRig.visible=!outdoor&&!dorm;doors.get('front').visible=!dorm;doors.get('rear').visible=!dorm;dormDoorNumber.visible=false;corridorSkin.visible=!dorm;tiered.visible=raised;const variant=mapKind(map);posterBay.visible=variant==='classroom';standardBay.visible=!posterBay.visible;newspaperMaterial.map=posterBay.visible&&artwork.dayChalkboard?artwork.dayChalkboard:poster;facades[0].visible=!raised&&!outdoor&&!dorm&&variant!=='toilet'&&variant!=='hotpot';facades[1].visible=raised;facades[2].visible=variant==='toilet';facades[3].visible=variant==='hotpot';ceilingRig.position.y=teachingRoomHeight(variant)-CEILING_HEIGHT;upperWalls.visible=raised;},
   update(state,dt=1/60){boardInk.update(state?.teacher);setDoors(state);advanceSchoolDoors(schoolDoorMotion,dt);placeSchoolDoors();const step=Math.max(0,Math.min(.1,dt));liftAmount+=Math.sign(liftTarget-liftAmount)*Math.min(Math.abs(liftTarget-liftAmount),step*2.5);placeLiftDoors();drawerOpen=!!(state?.officeDeskOpen??state?.office?.open??drawerOpen);const openById=new Map((state?.officeDrawers||[]).map(d=>[d.id,d.open]));for(const[id,drawer]of officeDrawers){const open=openById.has(id)?openById.get(id):id===OFFICE_DESK.id?drawerOpen:false,old=drawerAmounts.get(id)||0,amount=old+((open?1:0)-old)*(1-Math.exp(-step*14));drawerAmounts.set(id,amount);drawer.position.z=-.08-amount*.52;}},
   setNight(night){officeDay.value=!night;sky.color.set(night?'#0d172e':'#c9e8f5');officeLight.intensity=night?.12:6.5;lamp.emissiveIntensity=night?.01:.48;}
  };

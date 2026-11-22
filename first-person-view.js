@@ -37,11 +37,11 @@ export function createFirstPersonView(renderer,camera,groups){
    light.intensity=night?.035:4;light.color.set(night?'#7084ac':'#fff8ed');fill.intensity=night?.055:.85;
    for(const group of groups)setCharacterNight(group,night);
   },
-  align(player,motion,position){
+  align(player,motion,position,bodyRoll=0){
    anchor.position.copy(position);
    // Head pitch changes how the hands are seen, not where the arms point.
    // Looking up can therefore take the low hands naturally out of view.
-   anchor.quaternion.setFromAxisAngle(new T.Vector3(0,1,0),motion.bodyYaw+Math.PI);
+   anchor.rotation.set(0,motion.bodyYaw+Math.PI,bodyRoll,'YXZ');
    anchor.updateMatrixWorld(true);
   },
   render(){
