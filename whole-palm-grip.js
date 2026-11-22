@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {createFingerRig,handFrame} from './hand-motion.js?v=campus-96';
+import {createFingerRig,handFrame} from './hand-motion.js?v=campus-97';
 import {WHOLE_PALM_PROFILES} from './whole-palm-profiles54.js?v=campus-83';
 const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
 

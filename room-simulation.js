@@ -3,14 +3,14 @@ import {returnPose,reachedHall} from './class-dismissal92.js?v=campus-95';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-92';
 import {reachesSchoolDoor} from './door-interaction54.js?v=campus-95';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-96';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-97';
 import {validComputerPlayback} from './computer-rules55.js?v=campus-96';
 import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-93';
 import {movementScale} from './movement55.js?v=campus-93';
 const randomUUID=()=>globalThis.crypto.randomUUID();
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-96';
-import {TeacherRound} from './teacher-rules.js?v=campus-96';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-97';
+import {TeacherRound} from './teacher-rules.js?v=campus-97';
 import * as Layout from './classroom-layout.js?v=campus-95';
 import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-95';
 
@@ -199,6 +199,7 @@ export class CampusRoom{
   if(command==='setPreference'){this.preference(member,args[0]);return true;}
   const allowed=member.role==='teacher'?teacherCommands:studentCommands;if(!allowed.has(command))throw new RoomError(400,'不支持的操作');
   if(!Array.isArray(args)||args.length>3)throw new RoomError(400,'操作参数错误');
+  if(command==='changeRadio'&&(!member.connected||args.length!==1))return false;
   if(command==='jump'&&args.length!==0)throw new RoomError(400,'跳跃无需参数');
   if(command==='jump'&&inputSeq>0&&inputSeq<=(member.jumpSequence||0))return false;
   if(command==='setComputerPlayback'&&!validComputerPlayback(args[0]))throw new RoomError(400,'无效播放状态');
@@ -285,8 +286,11 @@ export class CampusRoom{
   state.events=this.events.filter(e=>(e.recipientId==null||e.recipientId===selfId)&&(e.networkSequence||0)>member.lastSequence&&(member.role!=='teacher'||!scoringEvents.has(e.type))&&(member.role==='teacher'||!teacherFeedbackEvents.has(e.type))).map(e=>({...e,...(e.actor!==undefined?{actor:e.studentId===selfId?'player':e.actor==='player'?'peer':e.actor}:{})}));
   member.lastSequence=this.sequence;state.sequence=this.sequence;return state;
  }
- disconnect(member){if(member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim.radio=null;this.withMember(member,sim=>{if(sim.player._examMode)sim.setExamMode('close');ClassroomRound.prototype.hold.call(sim,false);ClassroomRound.prototype.setComputerPlayback.call(sim,{playing:false,visible:false,mediaTime:0});ClassroomRound.prototype.setRescue.call(sim,null);});member.connected=false;member.context._movement={x:0,z:0};member.context.holding=false;member.context.player.holding=false;member.lastSeen=Date.now();}
- reconnect(member){member.connected=true;member.lastSeen=Date.now();}
+ disconnect(member){if(member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim._radioNextAt=Infinity;this.withMember(member,sim=>{if(sim.player._examMode)sim.setExamMode('close');ClassroomRound.prototype.hold.call(sim,false);ClassroomRound.prototype.setComputerPlayback.call(sim,{playing:false,visible:false,mediaTime:0});ClassroomRound.prototype.setRescue.call(sim,null);});member.connected=false;member.context._movement={x:0,z:0};member.context.holding=false;member.context.player.holding=false;member.lastSeen=Date.now();}
+ reconnect(member){
+  if(!member.connected&&member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim._radioNextAt=this.sim._sessionElapsed+1;
+  member.connected=true;member.lastSeen=Date.now();
+ }
  leave(member){
   if(!this.members.has(member.id))return;this.disconnect(member);this.members.delete(member.id);
   if(member.role==='student'){

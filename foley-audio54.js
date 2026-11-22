@@ -88,8 +88,8 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
 
 const contexts=new WeakMap();
 const recordingFiles={
- 'school-bell-in':'class-bell-in96.wav','school-bell-out':'class-bell-out96.wav',
- ...Object.fromEntries(Array.from({length:5},(_,i)=>['game-kill-'+(i+1),'game-confirm-'+(i+1)+'-96.wav'])),
+ 'school-bell-in':'class-bell-in97.wav','school-bell-out':'class-bell-out96.wav',
+ ...Object.fromEntries(Array.from({length:5},(_,i)=>['game-kill-'+(i+1),'game-confirm-'+(i+1)+'-97.wav'])),
  ...Object.fromEntries(Array.from({length:6},(_,i)=>['step-'+i,'teacher-step-'+i+'.wav']))
 };
 

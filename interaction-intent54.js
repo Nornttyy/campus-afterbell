@@ -1,4 +1,5 @@
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
+import {radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-97';
 // A key resolves to ONE explicit action. In particular, returning a pen must
 // never fall through to opening the drawer underneath the crosshair.
 const intent=(method,args,label,hold=false)=>({method,args,label,hold});
@@ -6,6 +7,12 @@ export function interactionIntent(s,target,key){
  const p=s.player,d=s.drawer||{},carrying=d.drawnSlot!=null,teacher=s.role==='teacher',doorId=target?.doorId||target?.id||'rear';
  const storageDoor=['dorm','toilet'].includes(s.map)&&!p.officeChair;
  if(s.paused||s.status!=='playing'||s.elevator?.phase==='travel')return null;
+ if(target?.kind==='radio'&&s.stage==='class'&&reachesRadio(s.map,p)){
+  const power=radioPowerFor(s.role,s.radio);
+  if(power===true&&key==='E')return intent('changeRadio',[true],'开启播音器');
+  if(power===false&&(key==='E'||key==='Q'&&s.teacher?.carriedId==null))return intent('changeRadio',[false],'关闭播音器');
+  if(key==='E')return null;
+ }
  if(key==='Q'){
   if(s.exam?.mode)return intent('setExamMode',['close'],s.exam.mode==='card'?'放回答案卡':'放下红笔');
   if(p.mapActivity)return intent('releaseMapActivity',[],p.mapActivity.kind==='hang'?'松手':'放回搋子');
