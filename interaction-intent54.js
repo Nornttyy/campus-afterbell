@@ -10,7 +10,7 @@ export function interactionIntent(s,target,key){
   if(s.exam?.mode)return intent('setExamMode',['close'],s.exam.mode==='card'?'放回答案卡':'放下红笔');
   if(p.mapActivity)return intent('releaseMapActivity',[],p.mapActivity.kind==='hang'?'松手':'放回搋子');
   if(s.surveillance?.viewing!=null)return intent('closeSurveillance',[],'关闭监控');
-  if(p.computerActive)return intent('computerBack',[],p.computer?.app==='desktop'?'离开电脑':'返回桌面');
+  if(p.computerActive||target?.kind==='computer')return null;
   if(p.caught||['stunned','carried','bound'].includes(p.captivity))return null;
   if(teacher&&s.teacher.carriedId!=null)return intent('dropStudent',[],'放下同学');
   if(carrying)return d.canReturn===false?null:intent('returnItem',[],s.selected==='pen'?'放回笔':'放回物品');
@@ -65,7 +65,7 @@ export function interactionIntent(s,target,key){
  if(target?.kind==='desk')return !d.open?intent('setDrawerOpen',[true],storageDoor?'打开柜门':'打开抽屉'):null;
  if(target?.kind==='book')return !p.bookRaised?intent('setBookRaised',[true],'竖起书本'):null;
  if(target?.kind==='pen')return intent('takePen',[],'拿起笔');
- if(target?.kind==='computer')return intent('startComputer',[],'打开电脑');
+ if(target?.kind==='computer')return null;
  if(target?.kind==='item')return intent('takeSlot',[target.slot],'拿取');
  return null;
 }

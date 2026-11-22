@@ -8,6 +8,14 @@ export function nextComputerApp(index,direction){
  if(direction==='down'&&i+2<COMPUTER_APPS.length)return i+2;
  return i;
 }
+// The pupil uses the display from the keyboard side of the workstation.
+export function withinComputerReach(player,seat){
+ if(!seat||player.officeChair||player._officeChair)return false;
+ if(player.seated)return player.seatId===seat.id;
+ const dx=player.x-seat.deskX,dz=player.z-seat.deskZ,yaw=seat.yaw||0;
+ const front=-(dx*Math.sin(yaw)+dz*Math.cos(yaw));
+ return front>.12&&Math.hypot(dx,dz)<1.55&&Math.abs(dx*Math.cos(yaw)-dz*Math.sin(yaw))<.83;
+}
 export function canonicalComputerApp(app){return app==='learning'||app==='study'?'photoshop':app;}
 
 export const VIDEO_WATCH_SECONDS=3;

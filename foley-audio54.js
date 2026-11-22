@@ -1,7 +1,6 @@
-// Original procedural Foley: short contact, scrape and air layers. These are
-// not recordings from the reference game. No music scheduler or musical UI notes.
+// Recorded campus bells, footsteps and arcade confirmations share the effects bus with procedural Foley.
 const DURATIONS=Object.freeze({tap:.075,open:.20,back:.12,step:.22,'drawer-open':.49,'drawer-close':.35,'rear-door':.50,'book-open':.34,'book-close':.24,'pen-pickup':.14,'pen-putdown':.16,'pen-write':.34,'pen-twirl':.30,pen:.30,chair:.39,phone:.10,snack:.42,burger:.38,banana:.35,garlic:.37,lunch:.39,drink:.46,blow:.54,bubble:.13,'gum-pop':.16,'gum-score':.13,'bubble-release':.24,'bubble-hit':.20,'bananaPeel-throw':.18,'banana-slip':.47,stunned:.34,burp:.53,'smoke-throw':.19,'smoke-impact':.20,'smoke-bloom':1.70,'flash-burst':.70,'ink-splash':.34,'chalk-hit':.16,caught:.25,warning:.19,complete:.23,bell:1.05});
-const ACTION_DURATIONS=Object.freeze({'use-crunch':.34,'use-gulp':.48,'food-complete':.24,'drink-complete':.24,'gum-inflate':.62,'chalk-throw':.18,'phone-notification':.55,'snake-food':.24,'snake-failed':.60,'game-kill-1':.45,'game-kill-2':.45,'game-kill-3':.45,'game-kill-4':.45,'game-kill-5':.60});
+const ACTION_DURATIONS=Object.freeze({'school-bell-in':1.05,'school-bell-out':1.05,'use-crunch':.34,'use-gulp':.48,'food-complete':.24,'drink-complete':.24,'gum-inflate':.62,'chalk-throw':.18,'phone-notification':.55,'snake-food':.24,'snake-failed':.60,'game-kill-1':.45,'game-kill-2':.45,'game-kill-3':.45,'game-kill-4':.45,'game-kill-5':.60});
 export const FOLEY_KINDS=Object.freeze([...Object.keys(DURATIONS),...Object.keys(ACTION_DURATIONS)]);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 
@@ -69,7 +68,6 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
   case 'ink-splash':noise(0,.12,.57,{lo:120,hi:3100,decay:3,pulse:42});for(let k=0;k<5;k++){const at=.055+k*.042;impact(at,.065,.066,[245+k*17,537+k*23]);noise(at,.03,.12,{lo:700,hi:3400,decay:4});}break;
   case 'chalk-throw':noise(.005,.15,.27,{lo:320,hi:2400,decay:2,attack:.035});break;
   case 'chalk-hit':impact(0,.095,.38,[1120,1794,2810]);noise(0,.012,.14,{lo:700,hi:3000,decay:8});break;
-  // Original replacements pending the user's exact notification / kill recordings.
   case 'phone-notification':for(const [at,hz] of [[0,1175],[.10,1568],[.20,2093]])impact(at,.30,.22,[hz,hz*2.01]);break;
   case 'snake-food':impact(0,.12,.24,[523,1046]);impact(.10,.13,.25,[784,1568]);break;
   case 'snake-failed':for(const [at,hz] of [[0,392],[.14,330],[.28,262]])impact(at,.28,.23,[hz,hz*2]);break;
@@ -79,7 +77,7 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
   case 'caught':impact(0,.17,.35,[56,91,157]);scuff(.03,.31);break;
   case 'warning':impact(0,.13,.19,[89,163,297]);noise(.012,.11,.18,{lo:180,hi:1100,decay:3});break;
   case 'complete':paper(.01,.15);latch(.01,.13);impact(.045,.12,.08,[114,283]);break;
-  case 'bell':for(const at of [0,.135,.27])impact(at,.76,.21,[711,1438,2013,2891,4351]);break;
+  case 'school-bell-in':case 'school-bell-out':case 'bell':for(const at of [0,.135,.27])impact(at,.76,.21,[711,1438,2013,2891,4351]);break;
  }
  // A short final fade also protects paper/cloth layers that outlast the event.
  const fade=Math.min(data.length,Math.ceil(rate*.007));for(let i=0;i<fade;i++)data[data.length-1-i]*=i/fade;
@@ -88,30 +86,69 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
  return data;
 }
 
-const contexts=new WeakMap(),recordings=new WeakMap();
+const contexts=new WeakMap();
+const recordingFiles={
+ 'school-bell-in':'class-bell-in96.wav','school-bell-out':'class-bell-out96.wav',
+ ...Object.fromEntries(Array.from({length:5},(_,i)=>['game-kill-'+(i+1),'game-confirm-'+(i+1)+'-96.wav'])),
+ ...Object.fromEntries(Array.from({length:6},(_,i)=>['step-'+i,'teacher-step-'+i+'.wav']))
+};
+
+function contextState(context){
+ if(!contexts.has(context))contexts.set(context,{buffers:new Map(),loads:new Map(),counts:new Map(),last:new Map(),active:0});
+ return contexts.get(context);
+}
+function loadRecording(context,state,id){
+ if(!state.loads.has(id)){
+  const request=fetch(new URL('./assets/audio/'+recordingFiles[id],import.meta.url))
+    .then(response=>response.ok?response.arrayBuffer():null)
+    .then(bytes=>bytes?context.decodeAudioData(bytes):null)
+    .then(buffer=>{if(buffer)state.buffers.set(id,buffer);return buffer;})
+    .catch(()=>null);
+  state.loads.set(id,request);
+ }
+ return state.loads.get(id);
+}
 export function warmCampusFoley(audio){
- const c=audio?.context;if(!c?.decodeAudioData)return Promise.resolve(false);
- if(recordings.has(c))return recordings.get(c).ready;
- const entry={buffers:[],ready:null};recordings.set(c,entry);
- entry.ready=Promise.all(Array.from({length:6},async(_,i)=>{
-  try{const res=await fetch(new URL('./assets/audio/teacher-step-'+i+'.wav',import.meta.url));if(!res.ok)return;
-   entry.buffers[i]=await c.decodeAudioData(await res.arrayBuffer());}catch{}
- })).then(()=>entry.buffers.filter(Boolean).length===6);return entry.ready;
+ const context=audio?.context;if(!context?.decodeAudioData)return Promise.resolve(false);
+ const state=contextState(context);
+ state.ready??=Promise.all(Object.keys(recordingFiles).map(id=>loadRecording(context,state,id))).then(all=>all.every(Boolean));
+ return state.ready;
 }
 
 export function playCampusFoley(audio,kind,intensity=1){
  if(!DURATIONS[kind]&&!ACTION_DURATIONS[kind])return false;
- const c=audio?.context,out=audio?.fx;if(!c||!out||c.state==='closed')return true;
- const volume=clamp(Number(intensity)||0,0,1);if(!volume)return true;
- let state=contexts.get(c);if(!state){state={buffers:new Map(),counts:new Map(),last:new Map(),active:0};contexts.set(c,state);}
- const t=c.currentTime,minGap=kind==='step'?.09:kind.startsWith('pen-')?.05:.035;
- if(state.active>=20||t-(state.last.get(kind)??-100)<minGap)return true;
- state.last.set(kind,t);const count=state.counts.get(kind)||0,variant=count%6;state.counts.set(kind,count+1);
- const key=kind+':'+variant;let buffer=kind==='step'?recordings.get(c)?.buffers[variant]:state.buffers.get(key);
- if(kind==='step'&&c.decodeAudioData&&!buffer){warmCampusFoley(audio);return true;}
- if(!buffer){const samples=createFoleySamples(kind,{sampleRate:c.sampleRate,variant});buffer=c.createBuffer(1,samples.length,c.sampleRate);buffer.getChannelData(0).set(samples);state.buffers.set(key,buffer);}
- const source=c.createBufferSource(),gain=c.createGain();source.buffer=buffer;gain.gain.value=volume;source.connect(gain);gain.connect(out);state.active++;source.start(t);
- // Every sound owns its source, so a new footstep or interaction does not cut
- // off a currently playing door, page or food sound.
- source.onended=()=>{source.disconnect();gain.disconnect();state.active=Math.max(0,state.active-1);};return true;
+ const context=audio?.context,output=audio?.fx;
+ const volume=clamp(Number(intensity)||0,0,1);
+ if(!context||!output||context.state==='closed'||!volume)return true;
+ const state=contextState(context),now=context.currentTime;
+ const minGap=kind==='step'?.09:kind.startsWith('pen-')?.05:.035;
+ if(state.active>=20||now-(state.last.get(kind)??-100)<minGap)return true;
+ state.last.set(kind,now);
+ const count=state.counts.get(kind)||0,variant=count%6;state.counts.set(kind,count+1);
+ const id=kind==='step'?'step-'+variant:kind;
+ function play(buffer){
+  if(state.active>=20||context.state==='closed'||audio.muted)return;
+  if(!buffer){
+   const key=kind+':'+variant;
+   buffer=state.buffers.get(key);
+   if(!buffer){
+    const samples=createFoleySamples(kind,{sampleRate:context.sampleRate,variant});
+    buffer=context.createBuffer(1,samples.length,context.sampleRate);
+    buffer.getChannelData(0).set(samples);state.buffers.set(key,buffer);
+   }
+  }
+  const source=context.createBufferSource(),gain=context.createGain();
+  source.buffer=buffer;gain.gain.value=volume;source.connect(gain);gain.connect(output);
+  source.onended=()=>{source.disconnect();gain.disconnect();state.active--;};
+  state.active++;source.start(context.currentTime);
+ }
+ if(context.decodeAudioData&&recordingFiles[id]){
+  const ready=state.buffers.get(id);
+  if(ready)play(ready);
+  else{
+   const request=loadRecording(context,state,id);
+   if(kind!=='step')request.then(buffer=>{if(context.state==='running'&&context.currentTime-now<1.5)play(buffer);});
+  }
+ }else play(null);
+ return true;
 }

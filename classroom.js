@@ -1,9 +1,9 @@
 import {setDish} from './hotpot-food94.js?v=campus-94';
 import {CampusModelLoader} from './model-delivery93.js?v=campus-93';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
-import {reachesRadio} from './campus-radio93.js?v=campus-94';
+import {reachesRadio} from './campus-radio93.js?v=campus-96';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {paperQuestion} from './upper-floor-view85.js?v=campus-95';
+import {paperQuestion} from './upper-floor-view85.js?v=campus-96';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-94';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-92';
 import {loadFurniture67} from './furniture-assets67.js?v=campus-83';
@@ -25,22 +25,23 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-83';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-83';
 import {loadCampusArtwork} from './campus-artwork.js?v=campus-93';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-95';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-96';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-95';
-import {createRoomVariants} from './room-variants.js?v=campus-95';
-import {createComputerScreenContent} from './computer-screen55.js?v=campus-93';
+import {createRoomVariants} from './room-variants.js?v=campus-96';
+import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
+import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96';
 import * as THREE from './vendor/three.module.js';
 import {loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-94';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-95';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-96';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-95';
-import {loadStudentAssets} from './student-assets.js?v=campus-95';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-96';
+import {loadStudentAssets} from './student-assets.js?v=campus-96';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-95';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-96';
 import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-95';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
@@ -134,7 +135,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     camera.visible=false;if(gameplay?.role==='teacher'&&gameplay.teacher?.visible!==false)teacher.group.visible=true;
     return()=>{camera.visible=cameraVisible;teacher.group.visible=teacherVisible;};
   }});
-  const itemOutline=createItemOutline(renderer),itemRay=new THREE.Raycaster(),itemPointer=new THREE.Vector2(0,0);let hoveredSlot=null,pointerPresent=false;
+  const itemOutline=createItemOutline(renderer),itemRay=new THREE.Raycaster(),itemPointer=new THREE.Vector2(0,0);let hoveredSlot=null,pointerPresent=false,aimedComputer=null;
   const room=new THREE.Group();scene.add(room);
   const dynamic=new THREE.Group();scene.add(dynamic);
   const surfacesReady=loadCampusSurfaces();
@@ -637,6 +638,18 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   const menuFov=()=>camera.aspect<.9?52:48;
   const viewRole=()=>gameplay?.stage==='gathering'?gameplay.lobbyRole||gameplay.role:gameplay?.role;
   const gameFov=()=>gameplayFov(viewRole(),camera.aspect);
+  const monitorDirection=new THREE.Vector3();
+  let computerZoom=0;
+  function monitorFrame(id){
+    const screen=variants.screens.get(id);
+    if(!screen||!isObjectVisible(screen))return null;
+    screen.getWorldPosition(monitorDirection).sub(camera.position);
+    const {width,height}=screen.geometry.parameters;
+    const extent=Math.max(height/.73,width/(camera.aspect*.76));
+    return {yaw:Math.atan2(monitorDirection.x,monitorDirection.z),
+      pitch:Math.atan2(-monitorDirection.y,Math.hypot(monitorDirection.x,monitorDirection.z)),
+      fov:THREE.MathUtils.radToDeg(2*Math.atan2(extent/2,monitorDirection.length()))};
+  }
   function resize(){const rect=canvas.getBoundingClientRect();const w=Math.max(1,rect.width),h=Math.max(1,rect.height);renderer.setPixelRatio(renderPixelRatio({width:w,height:h,dpr:devicePixelRatio,quality,mobile:mobileRendering,scale:renderBudget.scale}));renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=gameplay?THREE.MathUtils.lerp(entryFov,gameFov(),THREE.MathUtils.smoothstep(entryTime/.7,0,1)):menuFov();camera.updateProjectionMatrix();}
   const observer=new ResizeObserver(resize);observer.observe(canvas);resize();
   function move(e){if(gameplay){const r=canvas.getBoundingClientRect();itemPointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);pointerPresent=e.target===canvas;return;}const r=canvas.getBoundingClientRect();pointer.set(THREE.MathUtils.clamp((e.clientX-r.left)/r.width-.5,-.5,.5),THREE.MathUtils.clamp((e.clientY-r.top)/r.height-.5,-.5,.5));if(dragging&&!gameplay){dragYaw+=(e.clientX-lastX)*.004;lastX=e.clientX;dragYaw=THREE.MathUtils.clamp(dragYaw,-.55,.55);}}
@@ -653,6 +666,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     }
     if(!gameplay){
       viewFloor=actorFloorHeight(state.player,state.map,state.teacher)-(state.player.jumpHeight||0);
+      computerZoom=0;aimedComputer=null;screenContent.setHover(null,null);
       viewBedId=state.player.onBed?state.player.bedId:null;bedTransition=1;
       entryPosition.copy(camera.position);entryQuaternion.copy(camera.quaternion);entryFov=snapEntry?gameFov():camera.fov;entryTime=snapEntry?.7:0;gameTime=0;feedbackTime=0;teacherWorldSample=null;teacherWorldSpeed=0;firstPersonMotion=null;eyeHeight=null;drawerFocus=0;raisedSlot=null;drawerItemSignature='';
       pointer.set(0,0);dragging=false;teacher.group.position.set(BOARD.x,0,BOARD.z);teacher.group.rotation.y=0;lastTeacherPhase='board';
@@ -783,7 +797,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     try{
     camera.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);
     const candidates=[];
-    const add=(object,result,max=2.2)=>{if(!object||!isObjectVisible(object))return;object.updateWorldMatrix(true,true);const hit=itemRay.intersectObject(object,true).find(h=>h.distance<max&&isObjectVisible(h.object));if(hit)candidates.push({object,result,hit});};
+    const add=(object,result,max=2.2)=>{if(!object||!isObjectVisible(object))return;object.updateWorldMatrix(true,true);const hit=itemRay.intersectObject(object,true).find(h=>h.distance<max&&isObjectVisible(h.object));if(hit){candidates.push({object,result,hit});return hit;}};
     if(mapVariant==='toilet'&&!preClass&&gameplay.role!=='teacher'&&gameplay.drawer?.drawnSlot!=null&&['wrapper','phone'].includes(gameplay.selected)){
       for(const [id,fixture] of variants.toilet.seats){
         if(player.seated&&player.seatId!==id||Math.hypot(player.x-fixture.x,player.z-fixture.z)>1.7)continue;
@@ -831,9 +845,17 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
       if(gameplay.role==='teacher')for(const target of surveillanceView.targets())add(target.object,{kind:'surveillance',id:target.id,installed:target.installed,ready:target.ready},2.5);
       if(!player.seated)for(const c of campusTargets.officeChairs)add(c.object,{kind:'office-chair',id:c.id});
       for(const d of campusTargets.officeDesks)add(d.object,{kind:'office-desk',id:d.id});
+      if(mapKind(mapVariant)==='computer'&&gameplay.role==='student'&&gameplay.drawer?.drawnSlot==null&&!player.officeChair&&!player.mapActivity&&(!player.captivity||player.captivity==='free')){
+        for(const [id,screen] of variants.screens){
+          if(!withinComputerReach(player,currentSeats[id]))continue;
+          if(!player.seated&&gameplay.students.some(s=>s.id!==player.id&&(s.seated&&s.seatId===id||s.computer?.active&&s.computer.stationId===id)))continue;
+          const target={kind:'computer',id},hit=add(screen,target);
+          if(hit?.uv)target.app=desktopAppAtUV(hit.uv.x,hit.uv.y);
+        }
+      }
       if(player.seated){
         const slot=pickDrawerSlot();if(slot!==null)return{kind:'item',slot};
-        if(mapKind(mapVariant)==='computer'&&!player.officeChair&&gameplay.drawer?.drawnSlot===null)add(variants.screens.get(player.seatId),{kind:'computer'});
+
         if(!player.officeChair){
           const cabinet=variants.cabinetFor(player.bedId??player.seatId),body=cabinet?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(player.seatId):mapKind(mapVariant)==='hotpot'?drawerRecords.get(player.seatId)?.group:deskTargets.get(player.seatId)),drawer=cabinet?.target||(mapKind(mapVariant)==='computer'?variants.drawers:drawerRecords).get(player.seatId)?.group;
           add(body,{kind:'desk'});add(drawer,{kind:'desk'});
@@ -858,9 +880,9 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     }finally{itemRay.far=previousFar;}
   }
   function updateItemHover(){
-    const target=getInteraction();hoveredSlot=target?.kind==='item'?target.slot:null;
+    const target=getInteraction();aimedComputer=target?.kind==='computer'?target:null;hoveredSlot=target?.kind==='item'?target.slot:null;
     let prop=campusTargetObject(target?.kind,target?.id);
-    if(!prop)prop=target?.kind==='bell'?(mapVariant==='bus'?variants.bus.bell:startBellCap):target?.kind==='lift'?(mapVariant==='bus'?variants.bus.liftPanel:campus.liftPanel):target?.kind==='post'?postModels[target.id]:['rescue','release'].includes(target?.kind)?pupilRecords[target.id]?.actor?.group:hoveredSlot===null?target?.kind==='computer'?variants.screens.get(gameplay.player.seatId):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?(variants.cabinetFor(gameplay.player.bedId??gameplay.player.seatId)?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(gameplay.player.seatId):deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group)):null:drawerSlotProps[hoveredSlot]?.props.get(gameplay.drawer.slots[hoveredSlot].action);
+    if(!prop)prop=target?.kind==='bell'?(mapVariant==='bus'?variants.bus.bell:startBellCap):target?.kind==='lift'?(mapVariant==='bus'?variants.bus.liftPanel:campus.liftPanel):target?.kind==='post'?postModels[target.id]:['rescue','release'].includes(target?.kind)?pupilRecords[target.id]?.actor?.group:hoveredSlot===null?target?.kind==='computer'?variants.screens.get(target.id):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?(variants.cabinetFor(gameplay.player.bedId??gameplay.player.seatId)?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(gameplay.player.seatId):deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group)):null:drawerSlotProps[hoveredSlot]?.props.get(gameplay.drawer.slots[hoveredSlot].action);
     itemOutline.select(prop||null);canvas.dataset.hoveredSlot=hoveredSlot===null?'':String(hoveredSlot);canvas.dataset.interaction=target?JSON.stringify(target):'';
     if(gameplay?.drawer?.open)canvas.dataset.drawerTargets=JSON.stringify(drawerSlotProps.map((slot,id)=>{const p=slot.group.getWorldPosition(new THREE.Vector3());p.project(camera);return{id,x:(p.x+1)/2,y:(1-p.y)/2};}));
   }
@@ -980,7 +1002,12 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
       const transitioningBed=bedTransition<1&&socialBlend<=.015;
       const handRoll=transitioningBed?bedHandEuler.setFromQuaternion(camera.quaternion,'YXZ').z:bed?DORM_REST_VIEW.roll:0;
       firstPersonView.align(player,firstPersonMotion,transitioningBed?camera.position:playerPosition,handRoll);mapActivityView.updateFirstPerson(gameplay,hands);
-      const nextFov=THREE.MathUtils.lerp(entryFov,gameFov(),blend);if(Math.abs(camera.fov-nextFov)>.001){camera.fov=nextFov;camera.updateProjectionMatrix();}
+      const pc=player.computer;
+      const framed=pc?.active&&COMPUTER_GAMES.includes(pc.app)?monitorFrame(pc.stationId??player.seatId):null;
+      const normalFov=THREE.MathUtils.lerp(entryFov,gameFov(),blend);
+      const reduction=framed?Math.max(0,normalFov-Math.max(12,framed.fov)):0;
+      computerZoom=THREE.MathUtils.damp(computerZoom,reduction,12,activeDt);
+      const nextFov=normalFov-computerZoom;if(Math.abs(camera.fov-nextFov)>.001){camera.fov=nextFov;camera.updateProjectionMatrix();}
       if(!gameplay.paused)feedbackTime=Math.max(0,feedbackTime-dt);
       flash.visible=feedbackTime>0;flashMat.opacity=feedbackKind==='caught'?.045*Math.sin(Math.min(1,feedbackTime/.55)*Math.PI):.018*Math.sin(Math.min(1,feedbackTime/.4)*Math.PI);
       startBellCap.position.x=gameplay.stage==='seating'?6.075:6.10;
@@ -1012,6 +1039,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   return {
     setGameplay,setMap,setSeats,setActive,
     getRolePreviews,
+    getAimedComputer:()=>aimedComputer,getComputerFrame:monitorFrame,setComputerHover:(id,app)=>screenContent.setHover(id,app),
     getComputerPlayback:()=>(screenContent.getPlayback?.()??{playing:false,visible:false,mediaTime:0}),
     setSoundCues:enabled=>soundCues.setEnabled(enabled),
     playWorldEffect(event){chalkPowder.emit(event);soundCues.emit(event,gameplay);},
