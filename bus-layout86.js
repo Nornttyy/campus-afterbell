@@ -67,6 +67,7 @@ const fixedFurniture=BUS_SEATS.map(s=>{
 });
 for(const s of BUS_SEATS.filter(s=>!s.busDeck))fixedFurniture.push(wall('seat-cabinet-'+s.id,s.deskX-.195,s.deskX+.195,s.z-.286,s.z+.286,0,.90));
 for(const x of [-.05,3.95,7.95])fixedFurniture.push(wall('upper-table-'+x,x-.53,x+.53,-15.19,-13.16,1,.86));
+for(const p of BUS_POSTS)fixedFurniture.push(wall('upper-post-'+p.id,p.x-.10,p.x+.10,p.z-.10,p.z+.10,1,2.06));
 fixedFurniture.push(wall('driver-seat',12.47,12.91,-15.14,-14.53,0,.99),wall('wc-seat',-6.33,-5.56,-15.14,-14.55,0,.78));
 export const BUS_FURNITURE=Object.freeze(fixedFurniture);
 export const BUS_DECK_SLABS=Object.freeze([

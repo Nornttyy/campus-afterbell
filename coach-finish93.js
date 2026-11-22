@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {BUS,BUS_SEATS} from './bus-layout86.js?v=campus-93';
+import {BUS,BUS_SEATS} from './bus-layout86.js?v=campus-94';
 import {sectionRandom} from './excursion-journey91.js?v=campus-93';
 
 // Upholstered pieces taper and lean independently of the passenger's level

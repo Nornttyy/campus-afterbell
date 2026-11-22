@@ -1,21 +1,21 @@
-import {createBusRoom} from './bus-room86.js?v=campus-93';
-import {mountSchoolRadio} from './radio-model93.js?v=campus-93';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-93';
-import {createToiletRoom} from './toilet-room70.js?v=campus-93';
-import {createDormRoom} from './dorm-room70.js?v=campus-92';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-93';
-import {createHotpotRoom} from './hotpot-room70.js?v=campus-93';
+import {createBusRoom} from './bus-room86.js?v=campus-94';
+import {mountSchoolRadio} from './radio-model93.js?v=campus-94';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-94';
+import {createToiletRoom} from './toilet-room70.js?v=campus-94';
+import {createDormRoom} from './dorm-room70.js?v=campus-94';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-94';
+import {createHotpotRoom} from './hotpot-room70.js?v=campus-94';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-83';
 import * as T from './vendor/three.module.js';
 import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-93';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-93';
+import {SEATS,MAX_CAMPUS_SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-94';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,batchHardware,liftPanel,roleLocker,schoolBell,hallLamp,boardInk,stationFloor,finishes={},menus=null,drawerRecords=null,screenContent=null,officeScreens=new Map()}){
  const bus=createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,roleLocker,schoolBell,hallLamp,boardInk,stationFloor,finishes});
  const upper=createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords,finishes});
  const builders={
-  hotpot:parent=>createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,finishes,menus}),
-  toilet:parent=>createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,finishes}),
+  hotpot:parent=>createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,finishes,menus,seats}),
+  toilet:parent=>createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,batchHardware,finishes}),
   dorm:parent=>createDormRoom({parent,box,rounded,mat,texture,bakeStatic,finishes}),
   playground:parent=>createPlaygroundRoom({parent,finishes,boardInk})
  };
@@ -81,7 +81,9 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
   hardwareBatch=batchHardware?.([...hardwareRoots,...Array.from(drawers.values(),d=>d.group)],scene);
  }
  let currentMap='classroom',seats=SEATS;
- function setSeats(next){if(!Array.isArray(next)||!next.length||next.length>SEATS.length)return;seats=next;upper.setSeats(next);const active=new Set(next.map(s=>s.id));for(const[id,station]of stations)station.visible=active.has(id);for(const s of seats){const station=stations.get(s.id);if(!station)continue;station.position.set(s.deskX,floorHeight(s.deskX,s.deskZ,currentMap),s.deskZ);station.rotation.y=s.yaw||0;}}
+ function setSeats(next){if(!Array.isArray(next)||!next.length||next.length>MAX_CAMPUS_SEATS)return;seats=next;
+  if(next[0].map==='hotpot'&&rooms.hotpot.view&&rooms.hotpot.view.pattern!==next[0].pattern){rooms.hotpot.view.dispose();rooms.hotpot.view=null;if(currentMap==='hotpot')prepareFloor('hotpot');}
+  upper.setSeats(next);const active=new Set(next.map(s=>s.id));for(const[id,station]of stations)station.visible=active.has(id);for(const s of seats){const station=stations.get(s.id);if(!station)continue;station.position.set(s.deskX,floorHeight(s.deskX,s.deskZ,currentMap),s.deskZ);station.rotation.y=s.yaw||0;}}
  setSeats(seats);
  const light=new T.SpotLight('#fff4d5',75,17,.43,.65,1.4);light.castShadow=true;light.shadow.mapSize.set(512,512);light.shadow.bias=-.001;scene.add(light,light.target);light.visible=false;
  function updateDrawers(state,dt=0){
@@ -118,7 +120,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
    const active=rooms[currentMap]?.view;
    if(active){
     if(currentMap==='playground')active.update(state?.sceneElapsed??state?.elapsed??0,state?.vendingStock);
-    else if(currentMap==='hotpot')active.update(state?.elapsed||0);
+    else if(currentMap==='hotpot')active.update(state?.elapsed||0,state?.hotpots||[]);
     else active.update(state||{},dt);
    }
    screenContent?.update(state,group.visible?new Map([...screens].filter(([id])=>stations.get(id)?.visible)):new Map(),group.visible?teacherScreen:null,officeScreens);

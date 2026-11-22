@@ -1,11 +1,10 @@
-// BV1LsWj6eEEU 28:40 shows numbered doors 2 and 3 on opposite sides
-// of a corridor; BV1otWu6EEu9 00:15 shows room 1. Three connected rooms
-// are confirmed. Dimensions and eight sleeping places per room are reconstruction.
+// Eight beds per room. Keep established seat IDs stable when adding the fourth room.
 export const DORM_ROOM_BOUNDS=Object.freeze({minX:-3.1,maxX:3.1,minZ:0,maxZ:9.62,height:3.45});
 export const DORM_ROOMS=Object.freeze([
  {id:1,x:7.2,z:-8,yaw:-Math.PI/2},
  {id:3,x:7.2,z:2.8,yaw:-Math.PI/2},
- {id:2,x:12.64,z:2.8,yaw:Math.PI/2}
+ {id:2,x:12.64,z:2.8,yaw:Math.PI/2},
+ {id:4,x:12.64,z:-8,yaw:Math.PI/2}
 ].map(Object.freeze));
 export function dormPoint(b,x,z){const c=Math.cos(b.yaw),s=Math.sin(b.yaw);return{x:b.x+c*x+s*z,z:b.z-s*x+c*z};}
 export function dormRoomPoint(id,x,z){const room=DORM_ROOMS.find(r=>r.id===Number(id));return room?dormPoint(room,x,z):null;}
@@ -15,7 +14,7 @@ export const DORM_CABINET=Object.freeze({x:-1.65,z:.10,width:.66,depth:.58,heigh
 export const DORM_TABLES=Object.freeze(DORM_ROOMS.map(r=>Object.freeze({id:r.id,...dormPoint(r,0,1.9),yaw:r.yaw,width:1.02,depth:1.44,height:.78})));
 export const DORM_TABLE=DORM_TABLES[0];
 export const DORM_WATCH=Object.freeze({x:10.3,z:5.8});
-export const DORM_POSTS=Object.freeze(Array.from({length:6},(_,id)=>Object.freeze({id,x:12.02,z:-3.4+id*1.45})));
+export const DORM_POSTS=Object.freeze([[12.02,-4.85],[12.02,-3.4],[12.02,-1.95],[7.82,-4.85],[7.82,-3.4],[7.82,-1.95],[12.02,-13.3],[12.02,-14.75],[12.02,-16.2]].map(([x,z],id)=>Object.freeze({id,x,z})));
 export const DORM_BUNK_ROWS=Object.freeze([3.88,7.12]);
 export const DORM_BUNKS=Object.freeze(DORM_ROOMS.flatMap((room,ri)=>DORM_BUNK_ROWS.flatMap((z,row)=>[-2.3,2.3].map((x,col)=>Object.freeze({id:ri*4+row*2+col,roomId:room.id,row,col,...dormPoint(room,x,z),yaw:room.yaw+(col?-Math.PI/2:Math.PI/2)})))));
 export const DORM_BEDS=Object.freeze(DORM_BUNKS.flatMap(b=>[0,1].map(level=>{

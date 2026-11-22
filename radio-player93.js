@@ -1,4 +1,4 @@
-import {RADIO_SONGS,radioSong,radioPlayerUrl,reachesRadio} from './campus-radio93.js?v=campus-93';
+import {RADIO_SONGS,radioSong,radioPlayerUrl,reachesRadio} from './campus-radio93.js?v=campus-94';
 
 export function createRadioUI(host,commands){
  const dialog=document.createElement('dialog'),player=document.createElement('aside');

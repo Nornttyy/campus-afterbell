@@ -1,12 +1,11 @@
-// Reconstructed furnishings, not measured original dimensions. References:
-// BV1LsWj6eEEU 23:00/23:10/24:10 and BV13L476gE1o 00:15/00:37.
-// Twelve cubicles are this reconstruction's capacity. Occlusion in the source
-// does not establish an exact original cubicle count. No desks or school chairs.
+// The reference has 28 adjoining cubicles. Bay spacing and aisle widths are
+// reconstructed from the seated view and the teacher's walk past the row.
 export const TOILET_BOUNDS=Object.freeze({minX:-6.65,maxX:7.2,minZ:-10,maxZ:8.8});
-export const TOILET_STALL_SIZE=Object.freeze({width:2.10,depth:2.38,height:1.83,bottom:.18});
-export const TOILET_DOOR=Object.freeze({width:1.86,depth:.045,height:1.57,bottom:.24,hingeX:-.93,hingeZ:1.19,angle:-Math.PI*.475});
-export const TOILET_CABINET=Object.freeze({x:.68,z:-.52,width:.43,depth:.35,height:1.12,bottom:.10,doorAngle:-Math.PI*.48});
-export const TOILET_STALLS=Object.freeze([-7.50,-3.54,.42].flatMap((z,row)=>[-5.05,-1.95,1.15,4.25].map((x,col)=>Object.freeze({id:row*4+col,row,col,x,z,yaw:0}))));
+export const TOILET_STALL_SIZE=Object.freeze({width:1.68,depth:2.38,height:1.83,bottom:.18});
+export const TOILET_DOOR=Object.freeze({width:1.44,depth:.045,height:1.65,bottom:.24,hingeX:-.72,hingeZ:1.19,handleX:1.31,angle:-Math.PI*.475});
+export const TOILET_CABINET=Object.freeze({x:.55,z:-.52,width:.43,depth:.35,height:1.12,bottom:.10,doorAngle:-Math.PI*.48});
+export const TOILET_STALLS=Object.freeze([-8.50,-4.06,.38,4.82].flatMap((z,row)=>
+ Array.from({length:7},(_,col)=>Object.freeze({id:row*7+col,row,col,x:-5.72+col*TOILET_STALL_SIZE.width,z,yaw:0}))));
 export const TOILET_SEATS=Object.freeze(TOILET_STALLS.map(s=>Object.freeze({
  id:s.id,row:s.row,col:s.col,x:s.x-.18,z:s.z-.48,y:.36,yaw:0,
  // Existing interaction callers use deskX/Z; these are CABINET anchors.
@@ -16,22 +15,24 @@ export const TOILET_SEATS=Object.freeze(TOILET_STALLS.map(s=>Object.freeze({
 })));
 const volume=(id,minX,maxX,minZ,maxZ,minY,maxY)=>Object.freeze({id,minX,maxX,minZ,maxZ,minY,maxY});
 const fixedFixtures=Object.freeze(TOILET_STALLS.flatMap(s=>[
- volume('toilet-left-'+s.id,s.x-1.08,s.x-1.02,s.z-1.22,s.z+1.22,TOILET_STALL_SIZE.bottom,TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height),
- volume('toilet-right-'+s.id,s.x+1.02,s.x+1.08,s.z-1.22,s.z+1.22,TOILET_STALL_SIZE.bottom,TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height),
- volume('toilet-rear-'+s.id,s.x-1.08,s.x+1.08,s.z-1.22,s.z-1.16,TOILET_STALL_SIZE.bottom,TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height),
- volume('toilet-hinge-'+s.id,s.x-1.06,s.x-.93,s.z+1.15,s.z+1.23,.18,1.89),
- volume('toilet-latch-'+s.id,s.x+.93,s.x+1.06,s.z+1.15,s.z+1.23,.18,1.89),
+ ...(s.col===0?[volume('toilet-left-'+s.id,s.x-.87,s.x-.81,s.z-1.22,s.z+1.22,.18,2.01)]:[]),
+ volume('toilet-right-'+s.id,s.x+.81,s.x+.87,s.z-1.22,s.z+1.22,.18,2.01),
+ volume('toilet-rear-'+s.id,s.x-.81,s.x+.81,s.z-1.22,s.z-1.16,.18,2.01),
+ volume('toilet-hinge-'+s.id,s.x-.84,s.x-.72,s.z+1.15,s.z+1.23,.18,1.89),
+ volume('toilet-latch-'+s.id,s.x+.72,s.x+.84,s.z+1.15,s.z+1.23,.18,1.89),
  volume('toilet-bowl-'+s.id,s.x-.39,s.x+.03,s.z-.76,s.z-.23,0,.365),
  volume('toilet-tank-'+s.id,s.x-.39,s.x+.03,s.z-.965,s.z-.65,0,.75)
 ]));
 // Food cupboards are hollow: projectile/flash tests see their back, sides
 // and two shelf bays. Walking still uses the cupboard's full footprint.
-export const TOILET_WALK_SOLIDS=Object.freeze([...fixedFixtures,...TOILET_STALLS.map(s=>volume('toilet-cabinet-footprint-'+s.id,s.x+.465,s.x+.895,s.z-.695,s.z-.345,.10,1.22))]);
+const cabinetLeft=s=>s.x+TOILET_CABINET.x-TOILET_CABINET.width/2;
+const cabinetRight=s=>s.x+TOILET_CABINET.x+TOILET_CABINET.width/2;
+export const TOILET_WALK_SOLIDS=Object.freeze([...fixedFixtures,...TOILET_STALLS.map(s=>volume('toilet-cabinet-footprint-'+s.id,cabinetLeft(s),cabinetRight(s),s.z-.695,s.z-.345,.10,1.22))]);
 export const TOILET_SOLIDS=Object.freeze([...fixedFixtures,...TOILET_STALLS.flatMap(s=>[
- volume('toilet-cabinet-back-'+s.id,s.x+.465,s.x+.895,s.z-.694,s.z-.666,.10,1.22),
- volume('toilet-cabinet-left-'+s.id,s.x+.465,s.x+.491,s.z-.695,s.z-.345,.10,1.22),
- volume('toilet-cabinet-right-'+s.id,s.x+.869,s.x+.895,s.z-.695,s.z-.345,.10,1.22),
- ...[.113,.65,1.207].map((y,i)=>volume(`toilet-cabinet-shelf-${s.id}-${i}`,s.x+.4775,s.x+.8825,s.z-.695,s.z-.345,y-.013,y+.013))
+ volume('toilet-cabinet-back-'+s.id,cabinetLeft(s),cabinetRight(s),s.z-.694,s.z-.666,.10,1.22),
+ volume('toilet-cabinet-left-'+s.id,cabinetLeft(s),cabinetLeft(s)+.026,s.z-.695,s.z-.345,.10,1.22),
+ volume('toilet-cabinet-right-'+s.id,cabinetRight(s)-.026,cabinetRight(s),s.z-.695,s.z-.345,.10,1.22),
+ ...[.113,.65,1.207].map((y,i)=>volume(`toilet-cabinet-shelf-${s.id}-${i}`,cabinetLeft(s)+.0125,cabinetRight(s)-.0125,s.z-.695,s.z-.345,y-.013,y+.013))
 ])]);
 const clamp=v=>Number.isFinite(v)?Math.max(0,Math.min(1,v)):0;
 const stallFor=value=>typeof value==='object'&&value?value:TOILET_STALLS.find(s=>s.id===Number(value));

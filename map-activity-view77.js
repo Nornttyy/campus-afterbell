@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.js';
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-92';
-import {TOILET_STALLS} from './toilet-layout70.js?v=campus-92';
-import {toiletBowl} from './map-activities77.js?v=campus-93';
-import {activityHandTargets} from './map-activity-pose77.js?v=campus-93';
-import {handFrame} from './hand-motion.js?v=campus-93';
+import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94';
+import {toiletBowl} from './map-activities77.js?v=campus-94';
+import {activityHandTargets} from './map-activity-pose77.js?v=campus-94';
+import {handFrame} from './hand-motion.js?v=campus-94';
 const handRigs=new WeakMap();
 function frameQuaternion(along,dorsal){const y=along.clone().normalize(),z=dorsal.clone().addScaledVector(y,-dorsal.dot(y)).normalize(),x=new T.Vector3().crossVectors(y,z);return new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));}
 export function createMapActivityView(scene){
@@ -11,12 +11,13 @@ export function createMapActivityView(scene){
  const geo=g=>(geometries.add(g),g),mat=(color,extra={})=>{const m=new T.MeshStandardMaterial({color,...extra});materials.add(m);return m;};
  const wood=mat('#b37a3b',{roughness:.54}),rubber=mat('#b13227',{roughness:.78}),paper=mat('#efd648',{roughness:.85}),red=mat('#cc4539',{roughness:.85});
  const pickMaterial=new T.MeshBasicMaterial({visible:false});materials.add(pickMaterial);
+ const phoneCase=mat('#222a32',{roughness:.38}),phoneGeo=geo(new T.BoxGeometry(.095,.012,.155));
  const pickHandle=geo(new T.BoxGeometry(.18,.78,.18));
  const handle=geo(new T.CylinderGeometry(.018,.022,.70,12)),cup=geo(new T.LatheGeometry([[.02,.15],[.045,.11],[.07,.085],[.11,.05],[.14,.018],[.145,0],[.126,0],[.10,.036],[.055,.065],[.018,.10]].map(p=>new T.Vector2(...p)),20));
  const label=geo(new T.BoxGeometry(.125,.003,.055)),wrapperGeo=geo(new T.PlaneGeometry(.14,.18,5,6));const p=wrapperGeo.attributes.position;
  for(let i=0;i<p.count;i++)p.setZ(i,.012*Math.sin(p.getX(i)*83)+.007*Math.cos(p.getY(i)*105));wrapperGeo.computeVertexNormals();paper.side=T.DoubleSide;
  const mesh=(g,m,parent,x=0,y=0,z=0)=>{const o=new T.Mesh(g,m);o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;parent.add(o);return o;};
- for(const s of TOILET_STALLS){const b=toiletBowl(s.id),g=new T.Group();g.name='toilet-plunger-'+s.id;root.add(g);mesh(cup,rubber,g);mesh(handle,wood,g,0,.49,0);mesh(pickHandle,pickMaterial,g,0,.49,0);const wrapper=new T.Group();wrapper.position.set(b.x,.31,b.z);wrapper.rotation.y=s.id*.9;root.add(wrapper);const sheet=mesh(wrapperGeo,paper,wrapper);sheet.rotation.x=-Math.PI/2;mesh(label,red,wrapper,0,.012,0);wrapper.visible=false;wrappers.set(s.id,wrapper);plungers.set(s.id,g);}
+ for(const s of TOILET_STALLS){const b=toiletBowl(s.id),g=new T.Group();g.name='toilet-plunger-'+s.id;root.add(g);mesh(cup,rubber,g);mesh(handle,wood,g,0,.49,0);mesh(pickHandle,pickMaterial,g,0,.49,0);const wrapper=new T.Group();wrapper.position.set(b.x,.31,b.z);wrapper.rotation.y=s.id*.9;root.add(wrapper);const sheet=mesh(wrapperGeo,paper,wrapper);sheet.rotation.x=-Math.PI/2;mesh(label,red,wrapper,0,.012,0);mesh(phoneGeo,phoneCase,wrapper);wrapper.visible=false;wrappers.set(s.id,wrapper);plungers.set(s.id,g);}
  for(const b of PLAYGROUND_LAYOUT.bars){const object=mesh(geo(new T.BoxGeometry(.13,.13,b.width-.16)),pickMaterial,root,b.x,b.height,b.z);object.name=b.id+'-grip-target';bars.set(b.id,object);}
  let state=null;
  return{
@@ -25,7 +26,12 @@ export function createMapActivityView(scene){
   update(s){state=s;const people=[...(s?.students||[]),...(s?.player?[s.player]:[])];
    for(const[id,g]of plungers){g.visible=s?.map==='toilet';const b=toiletBowl(id),actor=people.find(a=>a.mapActivity?.kind==='plunge'&&a.mapActivity.id===id);g.position.set(b.x+.40,0,b.z+.05);g.rotation.set(0,0,-.12);
     if(actor){g.position.set(b.x,.22+.065*Math.sin(actor.mapActivity.age*Math.PI*4),b.z+.05);g.rotation.z=0;}
-    const wrapper=wrappers.get(id);wrapper.visible=g.visible&&Boolean(s.toiletClogs?.[id]);wrapper.position.y=.31+(actor?.mapActivity?.progress||0)*-.035;
+    const wrapper=wrappers.get(id),flush=s?.toiletFlushes?.[id],remaining=flush?Math.max(0,flush.end-s.elapsed):0;
+    wrapper.visible=g.visible&&Boolean(s.toiletClogs?.[id]||remaining>0);
+    if(wrapper.visible){const progress=remaining>0?1-Math.min(1,remaining):1;
+     wrapper.rotation.y=id*.9+progress*5.2;wrapper.position.y=.31+(1-progress)*.17-(s.toiletClogs?.[id]?0:.19*progress)-(actor?.mapActivity?.progress||0)*.035;
+     wrapper.children[0].visible=flush?.item!=='phone';wrapper.children[1].visible=flush?.item!=='phone';wrapper.children[2].visible=flush?.item==='phone';
+    }
    }
    for(const o of bars.values())o.visible=s?.map==='playground';
   },

@@ -1,11 +1,11 @@
 import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-93';
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-93';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-93';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-94';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-94';
 import {teacherViewHeight} from './camera-height58.js?v=campus-83';
-import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,actorFloorHeight} from './classroom-layout.js?v=campus-93';
+import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,actorFloorHeight} from './classroom-layout.js?v=campus-94';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-93';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-94';
 
 import {BOARD_SECONDS} from './board-lesson93.js?v=campus-93';
 export class TeacherRound extends ClassroomRound{
@@ -18,7 +18,7 @@ export class TeacherRound extends ClassroomRound{
     for(const s of this.students){
       s.isPlayer=false;s.isTeammate=this._team.has(s.id);s.name='同学';
       s._profile=s.isTeammate?{caution:this._range(.3,.85),helpful:.5,distraction:this._range(0,.7)}:null;
-      s._slots=s.isTeammate&&mapKind(this.map)!=='playground'?Array.from({length:mapKind(this.map)==='exam'?0:mapKind(this.map)==='computer'?1:3},(_,id)=>({id,action:this._drawItem(),readyAt:0,progress:0})):[];
+      s._slots=s.isTeammate&&mapKind(this.map)!=='playground'?Array.from({length:this._deskItemCount()},(_,id)=>this._deskSlot(id)):[];
       s._decisionAt=this._range(1,6);s._chalkUntil=0;
     }
     this.classSlotsBySeat=new Map(this.students.filter(a=>a._slots.length).map(a=>[a.seatId,a._slots]));

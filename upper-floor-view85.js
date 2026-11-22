@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {createServingDish} from './game-actors.js?v=campus-93';
-import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-93';
+import {createServingDish} from './game-actors.js?v=campus-94';
+import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-94';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {SERVING_BELTS,SERVING_MENU,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92';
 
@@ -120,7 +120,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   face(group,mat('#fff',{map:banner}),0,3.73,8.729,5.92,.57,Math.PI);
   const print=texture(1200,760,drawSheet);liveSheet=mat('#fff',{map:print});paperPrint.set('blank',clean);
   const cardBack=mat('#faf2da',{side:T.DoubleSide});
-  for(let id=0;id<30;id++){
+  for(let id=0;id<32;id++){
    const desk=new T.Group();group.add(desk);desk.name='exam-writing-place-'+id;
    const sheet=surface(desk,plane,clean,0,.887,-.035,true);sheet.name='exam-paper-'+id;
    const back=surface(desk,card,cardBack,.14,.977,-.52);back.rotation.set(-.41,Math.PI,0,'YXZ');back.visible=false;
@@ -164,7 +164,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   }
   const extension=place?(drawerRecords?.get(seat.id)?.open??1):0;
   for(const [id,c]of cards.entries()){
-   c.visible=!!(place&&exam&&state.drawer?.open&&!exam.mode&&extension>.12);
+   c.visible=!!(place&&exam&&!exam.complete&&state.drawer?.open&&!exam.mode&&extension>.12);
    if(c.visible){if(c.parent!==place.desk)place.desk.add(c);c.position.set(id?.17:-.17,.668,-.169-.24*extension);c.material=cardMaterial(exam.cards[id]);}
   }
   held.visible=!!(place&&exam?.mode==='card');
@@ -187,7 +187,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   if(!p.seated||p.officeChair||!s.exam||s.exam.mode==='card')return [];
   const sheet=paperSeats.get(p.seatId)?.sheet;
   if(s.exam.mode==='paper')return sheet?[{kind:'exam-question',object:sheet,id:p.seatId}]:[];
-  const answers=cards.flatMap((object,id)=>object.visible?[{object,kind:'exam-card',id}]:[]);
+  const answers=s.exam.complete?[]:cards.flatMap((object,id)=>object.visible?[{object,kind:'exam-card',id}]:[]);
   return sheet&&!s.drawer?.open?[{object:sheet,kind:'exam-paper',id:p.seatId},...answers]:answers;
  }
  function target(kind,id,s){

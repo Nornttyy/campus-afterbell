@@ -37,7 +37,7 @@ export function addTerrazzoGrout(material){
    '#include <worldpos_vertex>\nvTerrazzoPosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
   shader.fragmentShader='uniform float schoolMoonlight; varying vec3 vTerrazzoPosition; uniform float terrazzoJointStrength;\n'+shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
    #ifdef USE_MAP
-    vec2 slabUv=vMapUv*1.5;
+    vec2 slabUv=vTerrazzoPosition.xz/.81;
     vec2 cellEdge=min(fract(slabUv),1.0-fract(slabUv));
     vec2 antialias=max(fwidth(slabUv),vec2(0.0001));
     vec2 seam=(1.0-smoothstep(vec2(0.0013),vec2(0.0013)+antialias,cellEdge))

@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {radioAnchor} from './campus-radio93.js?v=campus-93';
+import {radioAnchor} from './campus-radio93.js?v=campus-94';
 
 export function mountSchoolRadio(map,parent,{box,rounded,mat,texture,bakeStatic}){
  const anchor=radioAnchor(map),root=new T.Group();

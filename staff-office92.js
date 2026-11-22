@@ -1,5 +1,30 @@
 import * as T from './vendor/three.module.js';
-import {officePlan as office,officeDeskPlans} from './campus-ends.js?v=campus-93';
+import {officePlan as office,officeDeskPlans,END_ORIGIN} from './campus-ends.js?v=campus-94';
+
+// Window bounce is localized to the staffroom. The adjacent hallway shares
+// neither its ceiling finish nor its window, including on the touch renderer.
+export function staffroomFinish(material,kind,day){
+ const before=material.onBeforeCompile,key=material.customProgramCacheKey();
+ material.onBeforeCompile=function(shader,renderer){
+  before.call(this,shader,renderer);
+  shader.uniforms.staffroomDay=day;
+  shader.vertexShader='varying vec3 staffPosition;\n'+shader.vertexShader.replace('#include <worldpos_vertex>',
+   '#include <worldpos_vertex>\n staffPosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
+  shader.fragmentShader='varying vec3 staffPosition; uniform bool staffroomDay;\n'+shader.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
+   if(staffroomDay){
+    vec2 p=vec2(${END_ORIGIN.x.toFixed(3)},${END_ORIGIN.z.toFixed(3)})-staffPosition.xz;
+    float nearGlass=smoothstep(9.3,19.35,p.y)*(1.0-smoothstep(2.5,6.5,abs(p.x-6.02)));
+    float edge=max(0.0,min(min(p.x+.4,12.44-p.x),min(p.y-9.02,19.34-p.y)));
+    ${kind==='ceiling'?`float cove=smoothstep(.04,.95,edge);
+     reflectedLight.indirectDiffuse*=mix(vec3(.46,.49,.46),vec3(.73,.75,.72),cove)+vec3(.08,.11,.13)*nearGlass;`
+    :`float footing=smoothstep(.1,.86,staffPosition.y)*smoothstep(.0,.48,3.95-staffPosition.y);
+     float corner=smoothstep(.0,1.32,min(min(abs(p.x+.4),abs(12.44-p.x))+min(abs(p.y-9.02),abs(19.34-p.y)),2.0));
+     reflectedLight.indirectDiffuse*=mix(vec3(.57,.60,.55),vec3(.81,.80,.75),footing*corner)+vec3(.09,.14,.18)*nearGlass;`}
+   }`);
+ };
+ material.customProgramCacheKey=()=>key+'-office-'+kind+'-94';
+ return material;
+}
 
 // Office floor UVs follow the long boards. Soft contact under fixed furniture
 // is per vertex, so the room needs no extra lamps, textures or shadow passes.
@@ -10,10 +35,13 @@ export function makeOfficeFloor(material,assets,mesh,parent){
   const x=x0+pos.getX(i),z=z0+pos.getZ(i);
   uv.setXY(i,x/4.68,z/2.40);
   const edge=Math.max(0,Math.min(x-minX,maxX-x,z-minZ,maxZ-z));
-  let shade=.96-.17*Math.exp(-edge*2.1);
+  const windowRay=Math.max(0,1-Math.abs(x-6.02)/5.2)*Math.max(0,(z-minZ)/(maxZ-minZ));
+  let shade=.86+.18*windowRay-.24*Math.exp(-edge*1.7);
   for(const desk of officeDeskPlans){
-   const dx=Math.max(0,Math.abs(x-desk.x)-.42),dz=Math.max(0,Math.abs(z-desk.z)-.16);
-   shade-=.32*Math.exp(-dx*dx*4.5-dz*dz*8);
+   const c=Math.cos(desk.yaw),s=Math.sin(desk.yaw),lx=(x-desk.x)*c-(z-desk.z)*s,lz=(x-desk.x)*s+(z-desk.z)*c;
+   const dx=Math.max(0,Math.abs(lx)-.55),dz=Math.max(0,Math.abs(lz)-.24);
+   shade-=.35*Math.exp(-dx*dx*4.5-dz*dz*8);
+   shade-=.13*Math.exp(-lx*lx*5-(lz+1.14)**2*5);
   }
   colors.push(shade,shade,shade);
  }
@@ -35,21 +63,26 @@ export function fitOfficeInterior({parent,B,rounded,mat,mesh,texture,assets,cloc
  put(skirting,middle,.065,maxZ-.022,maxX-minX,.13,.064);
  put(skirting,middle,office.height-.145,maxZ-.028,maxX-minX,.25,.14);
  for(const [a,b] of [[minX,office.doorMinX],[office.doorMaxX,maxX]])put(skirting,(a+b)/2,.065,minZ+.02,b-a,.13,.07);
- const windowVeil=texture(128,160,(c,w,h)=>{
-  const fade=c.createLinearGradient(0,0,w,h);fade.addColorStop(0,'#c3d8d5');fade.addColorStop(.56,'#8aaeb0');fade.addColorStop(1,'#b6cac5');c.fillStyle=fade;c.fillRect(0,0,w,h);
+ const windowVeil=texture(256,256,(c,w,h)=>{
+  const fade=c.createLinearGradient(0,0,w*.21,h);fade.addColorStop(0,'#bcd4d4');fade.addColorStop(.47,'#90adb0');fade.addColorStop(1,'#b4c8c4');c.fillStyle=fade;c.fillRect(0,0,w,h);
+  // Only broad shapes show through the patterned glass.
+  c.save();c.filter='blur(9px)';c.fillStyle='rgba(87,111,113,.28)';c.fillRect(-20,136,w+40,12);c.fillRect(163,139,12,h-130);c.restore();
  });
- const windowGlass=mat('#b6cecd',{map:windowVeil,transparent:true,opacity:.72,depthWrite:false,roughness:.72});
+ const windowGlass=mat('#abc2c2',{map:windowVeil,transparent:true,opacity:.972,depthWrite:false,roughness:.79});
  const facet=(m,x,y,z,w,h)=>put(m,x,y,z,w,h,.078);
- for(const y of [sill,2.96,top])facet(blue,middle,y,maxZ-.04,windowWidth+.08,.089);
  put(edge,middle,sill-.05,maxZ-.10,windowWidth+.19,.064,.27);
- for(let i=0;i<=3;i++){
-  const x=left+i*windowWidth/3;facet(blue,x,(sill+top)/2,maxZ-.04,.085,top-sill);
-  if(i===3)break;
-  const pane=put(windowGlass,x+windowWidth/6,(sill+top)/2,maxZ,windowWidth/3-.086,top-sill-.08,.016);pane.castShadow=false;
-  facet(edge,x+windowWidth/6,sill+.063,maxZ-.092,windowWidth/3-.10,.026);
-  put(seal,x+.085,2.01,maxZ-.10,.025,.14,.033);
+ const sashWidth=windowWidth/5;
+ for(let i=0;i<=5;i++){
+  const x=left+i*sashWidth;facet(blue,x,(sill+top)/2,maxZ-.04,.085,top-sill+.089);
+  if(i===5)break;
+  const center=x+sashWidth/2,pane=put(windowGlass,center,(sill+top)/2,maxZ,sashWidth-.086,top-sill-.08,.016);pane.castShadow=false;
+  for(const y of [sill,2.96,top])facet(blue,center,y,maxZ-.04,sashWidth-.085,.089);
+  const railDepth=maxZ-(i%2?.095:.12);
+  facet(edge,center,sill+.063,railDepth,sashWidth-.10,.028);
+  facet(edge,x+.075,(sill+2.96)/2,railDepth,.036,2.96-sill-.08);
+  put(seal,x+.105,2.01,railDepth-.015,.025,.14,.033);
  }
- const cloth=mat('#5e834d',{roughness:.96,side:T.DoubleSide});
+ const cloth=mat('#486942',{roughness:.96,side:T.DoubleSide});
  for(const side of [-1,1]){
   const geo=new T.PlaneGeometry(.76,2.54,34,9),p=geo.attributes.position;
   for(let i=0;i<p.count;i++){

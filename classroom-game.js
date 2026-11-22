@@ -1,12 +1,13 @@
+import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
 import {createReferenceHUD} from './reference-hud54.js?v=campus-93';
-import {interactionIntent} from './interaction-intent54.js?v=campus-92';
-import {createSessionUI} from './session-ui.js?v=campus-93';
+import {interactionIntent} from './interaction-intent54.js?v=campus-94';
+import {createSessionUI} from './session-ui.js?v=campus-94';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-93';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-94';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -18,7 +19,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   const refreshControls=event=>{release();stopMovement();controls=event?.detail||readControls();};
   window.addEventListener('campus-controls-change',refreshControls);
   const referenceHUD=createReferenceHUD({document,root:ui,bindings:()=>controls,touchMode:()=>session.touch});
-  const labels={snack:'零食',drink:'饮料',burger:'汉堡',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡糖',banana:'香蕉',bananaPeel:'香蕉皮',garlic:'大蒜',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set(),physicalKeys=new Map();
+  const labels={wrapper:'零食包装',hotpotPlate:'食材盘',hotpotBite:'涮菜',snack:'零食',drink:'饮料',burger:'汉堡',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡糖',banana:'香蕉',bananaPeel:'香蕉皮',garlic:'大蒜',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set(),physicalKeys=new Map();
   const throwables=new Set(['smoke','flash','ink','bananaPeel']),vision=canvas.parentElement&&document.createElement?createVisionEffects(canvas.parentElement):null;
   let active=false,finished=false,continued=false,raf=0,last=0,lastHud=0,lastEffect=0;
   const teacherFootsteps=createTeacherFootsteps();
@@ -129,8 +130,13 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     else if(p.captivity==='stunned'||p.stunLeft>0)actionText='';
     else if(s.exam?.mode==='card')actionText='按住左键 看答案 · Q 放回';
     else if(s.exam?.mode==='paper')actionText=s.exam.hint!=null?'第 '+(s.exam.hint+1)+' 题灵感 '+s.exam.seconds+'秒 · 按住左键答题':'Q 放下红笔';
-    else if(openIntent)actionText=(openIntent.hold?'按住 ':'')+'E '+openIntent.label+(target?.kind==='item'?' '+(labels[drawer.slots[target.slot]?.action]||''):'');
+    else if(target?.kind==='toilet-bowl'&&target.blocked)actionText=s.toiletClogs[target.id]?'马桶堵塞':'正在冲水';
+    else if(target?.kind==='hotpot'&&s.selected==='hotpotPlate'&&drawer.drawnSlot!=null)actionText='按住左键 下食材';
+    else if(target?.kind==='hotpot'&&target.cooking&&drawer.drawnSlot==null)actionText='正在煮';
+    else if(drawer.drawnSlot!=null&&s.selected==='hotpotBite')actionText='低头按住左键 食用';
+    else if(openIntent)actionText=(openIntent.hold?'按住 ':'')+'E '+openIntent.label+(target?.kind==='item'?' '+(dishLabels[drawer.slots[target.slot]?.dish]||labels[drawer.slots[target.slot]?.action]||''):'');
     else if(closeIntent)actionText=(closeIntent.hold?'按住 ':'')+'Q '+closeIntent.label;
+    else if(s.selected==='wrapper'&&drawer.drawnSlot!=null)actionText='对准马桶';
     else if(drawer.drawnSlot!=null&&drawer.canReturn===false)actionText=drawer.source?.meal!=null?'低头按住左键食用':'回到原抽屉附近 · Q 放回';
     else if(p.burpReadyLeft>0)actionText='左键 打嗝 · '+Math.ceil(p.burpReadyLeft);
     else if(teacher)actionText='左键 扔粉笔';
