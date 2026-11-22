@@ -1,7 +1,7 @@
-import {setupControlSettings} from './control-settings64.js?v=campus-90';
+import {RULE_FIELDS,validTuning,tuningForm,readTuning} from './round-tuning93.js?v=campus-93';
+import {setupControlSettings} from './control-settings64.js?v=campus-93';
 import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-83';
 import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-83';
-import {connectPeerRoom as connectCampusRoom} from './peer-room79.js?v=campus-92';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -15,7 +15,10 @@ const settings = { ...defaults,soundCues:saved.soundCues!==false, sfx:volume(sav
 let scene, game, sceneReady=false, worldPromise=null, disposed=false, openingButton=null, entryCharacter='boy',entryMode='online',entryRequest=0,roomConnecting=null;
 let roundOptions={duration:Number.isInteger(saved.duration)&&saved.duration>=300&&saved.duration<=1200?saved.duration:600,target:Number.isInteger(saved.target)&&saved.target>=20&&saved.target<=160?saved.target:120,role:'student',map:'classroom',chalkStamina:saved.chalkStamina===true,maxPlayers:Number.isInteger(saved.maxPlayers)&&saved.maxPlayers>=2&&saved.maxPlayers<=8?saved.maxPlayers:8};
 Object.assign(settings,{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina,maxPlayers:roundOptions.maxPlayers});
+$('#room-settings').insertAdjacentHTML?.('beforeend',tuningForm('room-rule'));
+roundOptions.tuning=validTuning(saved.tuning)&&saved.tuning?{...saved.tuning}:{};
 function syncRoundOptions(){
+  for(const f of RULE_FIELDS){const input=$('#room-rule-'+f.key);if(input)input.value=roundOptions.tuning[f.key]??f.initial;}
   $('#round-players').value=String(roundOptions.maxPlayers);$('#round-minutes').value=roundOptions.duration/60;$('#round-goal').value=roundOptions.target;$('#round-chalk-stamina').checked=roundOptions.chalkStamina;
 }
 let toastTimer=0;
@@ -37,6 +40,7 @@ class MenuAudio {
       this.started=true;if(typeof warmCampusFoley==='function')warmCampusFoley(this);
     }catch{}
   }
+  get muted(){return settings.muted||settings.sfx===0;}
   apply(){if(!this.context)return;this.fx.gain.setTargetAtTime(settings.muted?0:settings.sfx/100*.55,this.context.currentTime,.025);}
   click(kind='tap'){if(this.context&&!settings.muted)playCampusFoley(this,['open','back'].includes(kind)?kind:'tap');}
   effect(kind,volume=1){if(this.context&&!settings.muted)playCampusFoley(this,kind,volume);}
@@ -67,12 +71,14 @@ $$('[data-quality]').forEach(button=>button.addEventListener('click',()=>{settin
 for(const type of ['sfx'])$('#'+type+'-volume').addEventListener('input',e=>{settings[type]=Number(e.target.value);$('#'+type+'-output').textContent=settings[type]+'%';audio.apply();persist();});
 $('#sound-cues-toggle').addEventListener('change',e=>{settings.soundCues=e.target.checked;applySettings();persist();});
 function commitRoomSettings(){
+  const tuning=readTuning($,'room-rule');if(!tuning)return false;
+  roundOptions.tuning=tuning;settings.tuning={...tuning};
   roundOptions.maxPlayers=Math.round(Math.max(2,Math.min(8,Number($('#round-players').value)||8)));settings.maxPlayers=roundOptions.maxPlayers;
   roundOptions.duration=Math.round(Math.max(5,Math.min(20,Number($('#round-minutes').value)||10)))*60;
   roundOptions.target=Math.round(Math.max(20,Math.min(160,Number($('#round-goal').value)||120)));
-  roundOptions.chalkStamina=$('#round-chalk-stamina').checked;settings.chalkStamina=roundOptions.chalkStamina;settings.duration=roundOptions.duration;settings.target=roundOptions.target;syncRoundOptions();persist();
+  roundOptions.chalkStamina=$('#round-chalk-stamina').checked;settings.chalkStamina=roundOptions.chalkStamina;settings.duration=roundOptions.duration;settings.target=roundOptions.target;syncRoundOptions();persist();return true;
 }
-for(const id of ['#round-minutes','#round-goal','#round-chalk-stamina','#round-players'])$(id).addEventListener('change',commitRoomSettings);
+for(const id of ['#round-minutes','#round-goal','#round-chalk-stamina','#round-players',...RULE_FIELDS.map(f=>'#room-rule-'+f.key)])$(id)?.addEventListener('change',commitRoomSettings);
 $('#motion-toggle').addEventListener('change',e=>{settings.motion=e.target.checked;applySettings();persist();});
 $('#sound-toggle').addEventListener('click',()=>{settings.muted=!settings.muted;syncSound();persist();});
 $('#fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('当前浏览器暂不支持全屏');}catch{toast('当前窗口无法全屏，请在浏览器中打开');}});
@@ -132,11 +138,12 @@ $('#room-enter').addEventListener('click',async()=>{
   if(!sceneReady||!game){ensureWorld();return;}
   // Read the final visible values at submission, including an input that has
   // not blurred yet. Joining an existing room never changes its host settings.
-  if(!$('#room-code').value.trim())commitRoomSettings();
+  if(!$('#room-code').value.trim()&&!commitRoomSettings())return;
   const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;roomConnecting=request;button.disabled=true;button.textContent='连接中…';error.hidden=true;
   try{
     entryCharacter=randomStudent();
-    const online=await connectCampusRoom({code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina},onError:e=>toast(typeof e==='string'?e:e.message)});
+    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-93');
+    const online=await connectCampusRoom({code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina,tuning:roundOptions.tuning},onError:e=>toast(typeof e==='string'?e:e.message)});
     if(disposed||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
     scene.setMap(online.snapshot().map);scene.setCharacter(online.player?.character||entryCharacter);scene.setActive(true);game.start({...roundOptions});
   }catch(e){if(request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接失败，请检查网络后重试。':e.message;}}
@@ -162,9 +169,9 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-92'),import('./classroom-game.js?v=campus-92')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-93'),import('./classroom-game.js?v=campus-93')]);
       if(disposed)return null;
-      loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true});
+      loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true,onProgress:(fraction,label)=>loadStep(38+Math.round(55*fraction),label)});
       if(disposed){prepared.dispose();return null;}
       scene=prepared;scene.setActive(false);
       game=controller.createClassroomGame({scene,audio,settings,onExit:showMenu});

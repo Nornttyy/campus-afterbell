@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {officePlan as office,officeDeskPlans} from './campus-ends.js?v=campus-92';
+import {officePlan as office,officeDeskPlans} from './campus-ends.js?v=campus-93';
 
 // Office floor UVs follow the long boards. Soft contact under fixed furniture
 // is per vertex, so the room needs no extra lamps, textures or shadow passes.
@@ -10,7 +10,7 @@ export function makeOfficeFloor(material,assets,mesh,parent){
   const x=x0+pos.getX(i),z=z0+pos.getZ(i);
   uv.setXY(i,x/4.68,z/2.40);
   const edge=Math.max(0,Math.min(x-minX,maxX-x,z-minZ,maxZ-z));
-  let shade=.98-.13*Math.exp(-edge*2.1);
+  let shade=.96-.17*Math.exp(-edge*2.1);
   for(const desk of officeDeskPlans){
    const dx=Math.max(0,Math.abs(x-desk.x)-.42),dz=Math.max(0,Math.abs(z-desk.z)-.16);
    shade-=.32*Math.exp(-dx*dx*4.5-dz*dz*8);
@@ -24,7 +24,7 @@ export function makeOfficeFloor(material,assets,mesh,parent){
 export function fitOfficeInterior({parent,B,rounded,mat,mesh,texture,assets,clock,cream,edge,blue,skirting,cabinetPaint,cabinetBack,seal,wood,paper,blackboard}){
  const {minX,maxX,minZ,maxZ}=office,middle=(minX+maxX)/2,zBack=maxZ+.10;
  const put=(m,x,y,z,w,h,d)=>B(m,[x,y,z],[w,h,d],parent);
- const windowWidth=7.15,sill=1.02,top=3.41,left=middle-windowWidth/2,right=middle+windowWidth/2;
+ const windowWidth=7.36,sill=1.02,top=3.41,left=middle-windowWidth/2,right=middle+windowWidth/2;
  put(cream,middle,sill/2,zBack,maxX-minX,sill,.20);
  put(cream,middle,(office.height+top)/2,zBack,maxX-minX,office.height-top,.20);
  for(const [a,b] of [[minX,left],[right,maxX]])put(cream,(a+b)/2,(sill+top)/2,zBack,b-a,top-sill,.20);
@@ -35,7 +35,10 @@ export function fitOfficeInterior({parent,B,rounded,mat,mesh,texture,assets,cloc
  put(skirting,middle,.065,maxZ-.022,maxX-minX,.13,.064);
  put(skirting,middle,office.height-.145,maxZ-.028,maxX-minX,.25,.14);
  for(const [a,b] of [[minX,office.doorMinX],[office.doorMaxX,maxX]])put(skirting,(a+b)/2,.065,minZ+.02,b-a,.13,.07);
- const windowGlass=mat('#a6bdbe',{transparent:true,opacity:.29,depthWrite:false,roughness:.46});
+ const windowVeil=texture(128,160,(c,w,h)=>{
+  const fade=c.createLinearGradient(0,0,w,h);fade.addColorStop(0,'#c3d8d5');fade.addColorStop(.56,'#8aaeb0');fade.addColorStop(1,'#b6cac5');c.fillStyle=fade;c.fillRect(0,0,w,h);
+ });
+ const windowGlass=mat('#b6cecd',{map:windowVeil,transparent:true,opacity:.72,depthWrite:false,roughness:.72});
  const facet=(m,x,y,z,w,h)=>put(m,x,y,z,w,h,.078);
  for(const y of [sill,2.96,top])facet(blue,middle,y,maxZ-.04,windowWidth+.08,.089);
  put(edge,middle,sill-.05,maxZ-.10,windowWidth+.19,.064,.27);

@@ -263,3 +263,7 @@ campus-86 已将 G 接入单人和多人电梯。实装了出发站侧门、车�
 沿跑道能看到多种横幅。游戏里的跳远、接力和足球三幅画共用一张纹理。巴士底层车内的座椅有浅色滚边，抬头能看到暖白顶板和较暗的板缝。[秋游巴士实况](https://www.bilibili.com/video/BV14ssv6gEit/)
 
 秋游的发车规则按玩家要求制作。准备时间结束时，仍在站台的学生分配到空位，老师进入车厢，提前登车的人保留当前位置。车轮按行驶距离转动。街区的布局取决于房间种子和道路区段编号，客户端只保留车前后共七段道路。道路速度和沿途街区为本作设计。
+
+从出电梯到登车的连续画面可以看到候车区的磨砂窗、脚印和墙上海报。车里橙色座背有浅色滚边，侧窗投下斜影。站台与车厢据此调整，车外街区按房间种子生成。行车保留街景和轮胎的运动，人物和第一人称镜头保持平稳。[站台实况](https://www.bilibili.com/video/BV1WgytzLEfB/?t=40) · [车厢实况](https://www.bilibili.com/video/BV14ssv6gEit/?t=32)
+
+秋游天空采用 Greg Zaal 和 Jarod Guest 的 CC0 全景摄影。[Poly Haven 素材页](https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky)

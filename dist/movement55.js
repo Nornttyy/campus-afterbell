@@ -29,13 +29,13 @@ export function isBackward(actor,dx,dz){
  const length=Math.hypot(dx,dz);return length>1e-8&&(Math.sin(actor?.yaw||0)*dx+Math.cos(actor?.yaw||0)*dz)/length<-.05;
 }
 export function movementScale(actor,movement){return isBackward(actor,movement?.x||0,movement?.z||0)?BACKWARD_SPEED_RATIO:1;}
-export function spendTeacherMovement(teacher,before,dt){
+export function spendTeacherMovement(teacher,before,dt,tuning){
  if(!teacher||!before||!(dt>0))return 0;
  const dx=teacher.x-before.x,dz=teacher.z-before.z,distance=Math.hypot(dx,dz);
  // No drain while blocked, seated or teleported. Fractional work is retained
  // across stops/direction changes, making 30/60/120Hz yield identical costs.
  if(distance<1e-7||distance>dt*8+.01)return 0;
- const secondsPerPoint=isBackward(teacher,dx,dz)?.6:.2;
+ const secondsPerPoint=(isBackward(teacher,dx,dz)?tuning?.backDrainMs??600:tuning?.forwardDrainMs??200)/1000;
  teacher._movementFatigue=(teacher._movementFatigue||0)+dt/secondsPerPoint;
  const points=Math.floor(teacher._movementFatigue+1e-9);
  teacher._movementFatigue=Math.max(0,teacher._movementFatigue-points);

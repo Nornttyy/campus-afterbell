@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
-import {createDeskItem} from './game-actors.js?v=campus-92';
+import {createDeskItem} from './game-actors.js?v=campus-93';
 import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-92';
 export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-92';
 
@@ -41,7 +41,7 @@ function surfaceTexture(type){
 }
 function paintedTexture(kind){
  if(typeof document==='undefined')return null;
- const printFile={sports:'./assets/posters/playground-sports73.png','vending-shelf':'./assets/materials/playground-vending84.webp',campaigns:'./assets/posters/athletics-meet91.webp'}[kind];
+ const printFile={sports:'./assets/posters/playground-sports73-lossless93.webp','vending-shelf':'./assets/materials/playground-vending84.webp',campaigns:'./assets/posters/athletics-meet91.webp'}[kind];
  if(printFile){
   const map=new T.TextureLoader().load(new URL(printFile,import.meta.url).href);
   if(map){map.colorSpace=T.SRGBColorSpace;map.anisotropy=4;}
@@ -75,7 +75,7 @@ function paintedTexture(kind){
 }
 function rectangleUV(geometry,width,height,scale){const uv=geometry.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*width/scale,uv.getY(i)*height/scale);return geometry;}
 
-export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width,length,includeBackground=true,includeSky=true,finishes={}}={}){
+export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width,length,includeBackground=true,includeSky=true,finishes={},boardInk=null}={}){
  if(width!==undefined||length!==undefined)layout=createPlaygroundLayout({width,length});
  const group=new T.Group();group.name='playground70-independent-outdoor';if(parent)parent.add(group);
  const geometries=new Set(),materials=new Set(),textures=new Set(),batches=new Map(),referenceObjects=[];
@@ -177,6 +177,9 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  postGeo.dispose();
  const board=layout.board;box(frame,[board.x,board.y,board.z],[board.width+.10,board.height+.10,.10]);
  panel(chalk,[board.x,board.y,board.z-.056],board.width,board.height,Math.PI);
+ if(boardInk){const inkGeo=ownGeo(new T.PlaneGeometry(board.width-.03,board.height-.03)),marks=new T.Mesh(inkGeo,boardInk);
+  marks.position.set(board.x,board.y,board.z-.061);marks.rotation.y=Math.PI;marks.castShadow=false;group.add(marks);
+ }
  box(frame,[board.x,board.y-board.height/2-.04,board.z-.10],[board.width+.12,.04,.16]);
  const boardTarget=new T.Mesh(ownGeo(new T.PlaneGeometry(board.width,board.height)),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));materials.add(boardTarget.material);boardTarget.name='playground-teacher-writing-board';boardTarget.position.set(board.x,board.y,board.z-.061);boardTarget.rotation.y=Math.PI;boardTarget.userData.interaction='board';group.add(boardTarget);referenceObjects.push(boardTarget);
  const campaigns=mat('#ffffff',{map:ownTexture(paintedTexture('campaigns')),roughness:.85});

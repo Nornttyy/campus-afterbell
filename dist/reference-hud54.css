@@ -76,3 +76,23 @@
 /* Preparation uses the unused score corner, leaving the physical bell and
    its wall lettering unobstructed at the initial centre-facing camera. */
 #play-ui[data-stage="gathering"] .round-clock{left:1.8%;right:auto;transform:none}
+
+.campus-actions{max-width:min(390px,88vw);padding:20px 24px;color:#34342d;text-align:center}
+.campus-actions h3{margin:0 0 12px}.action-choices{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.action-choices button{position:relative;min-height:48px;min-width:115px}.action-choices small{margin-right:8px;opacity:.56}
+#touch-emote{position:absolute;right:var(--touch-edge,22px);top:21%;min-width:48px;min-height:38px;z-index:2;touch-action:manipulation}
+
+#room-dialog:has(.room-advanced[open]),#session-settings{max-height:86dvh;overflow-y:auto;overscroll-behavior:contain}
+.room-advanced{grid-column:1/-1;width:100%;box-sizing:border-box;text-align:left;color:#38483f}
+.room-advanced summary{cursor:pointer;padding:8px 0;font-weight:700}
+.room-advanced h4{font-size:14px;margin:12px 0 5px}.room-advanced>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,176px),1fr));gap:3px 14px}
+.room-advanced label{display:flex!important;align-items:center;justify-content:space-between;gap:6px;padding:3px 0;font-size:13px}
+.room-advanced label small{font-size:10px;margin-left:3px;color:#647268}.room-advanced label input{width:60px!important;min-width:0}
+#radio-dialog{width:min(400px,88vw);padding:18px}
+.campus-radio .radio-choices{display:grid;gap:8px;margin-top:14px}
+.radio-choices button{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:43px;padding:8px 15px;text-align:left}
+.radio-choices small{font-size:.73em;opacity:.72}.radio-choices button[hidden]{display:none}
+#school-radio-player{position:absolute;right:1.7%;top:16%;width:clamp(200px,17vw,264px);z-index:4;pointer-events:auto;color:white;background:#273b3eeb;border-radius:5px;overflow:hidden}
+#school-radio-player[hidden]{display:none}.radio-playing{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 8px;font-size:13px}.radio-playing a{color:inherit}.radio-playing button{color:white;background:transparent;border:0;font:inherit;cursor:pointer}
+.radio-media iframe{display:block;width:100%;height:clamp(115px,9.6vw,152px);border:0}
+@media(max-height:550px){#school-radio-player{top:12%;right:1%;width:200px}.radio-playing{padding:2px 7px}}

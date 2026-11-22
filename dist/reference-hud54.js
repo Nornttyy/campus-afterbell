@@ -1,4 +1,4 @@
-import {readControls,keyLabel} from './control-settings64.js?v=campus-90';
+import {readControls,keyLabel} from './control-settings64.js?v=campus-93';
 // Presentation consumes authoritative scores; names and points are never
 // invented from an animation or inferred from the number of eaten objects.
 export function hud54Model(s){
@@ -14,7 +14,7 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
  const details=pause.querySelector('.controls-guide');if(details){details.querySelector('summary').textContent='操作说明';pause.append(details);}
  $('#resume-game').textContent='继续游戏';$('#leave-game').textContent='退出游戏';
  const settings=make('button','paper-button','设置');settings.id='pause-settings';settings.addEventListener('click',()=>{$('#settings-dialog')?.showModal();});pause.insertBefore(settings,$('#leave-game'));if(details)pause.insertBefore(details,$('#leave-game'));
- $('#student-controls').textContent='WASD 移动 · 鼠标转向\nE 拿取 / 打开 / 坐下\nQ 放回 / 关闭 / 起身\n拿笔后 E 切换转笔和写字\n长按左键使用 · 投掷物松开抛出\n对准教室门按住 E 开门\n按住 E 解救 · Shift 爬行\n机房方向键 / WASD 控制贪吃蛇\nM 麦克风 · ESC 暂停';
+ $('#student-controls').textContent='WASD 移动 · 鼠标转向\nE 拿取 / 打开 / 坐下\nQ 放回 / 关闭 / 起身\n拿笔后 E 切换转笔和写字\n长按左键使用 · 投掷物松开抛出\n对准教室门按住 E 开门\n按住 E 解救 · Shift 爬行\n机房方向键 / WASD 操作，E 确认，Q 返回\nB 做动作\nM 麦克风 · ESC 暂停';
  $('#teacher-controls').textContent='WASD 移动 · 按住 Shift 奔跑 · 鼠标转向\n左键投粉笔 · E 抓住眩晕同学\n木桩前 E 绑住 · Q 放下\n黑板前按住 E 写字\n按住 E 打开教室门\nM 麦克风 · ESC 暂停';
  const summary=make('div','result-summary'),scoreBox=result.querySelector('.result-number'),caughtBox=make('div','result-number');
  const caught=make('strong'),caughtLabel=make('span',null,'被捕人数');caught.id='result-caught';caughtBox.append(caught,caughtLabel);summary.append(scoreBox,caughtBox);result.insertBefore(summary,$('#result-detail'));
@@ -37,7 +37,7 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
   },
   finish(s){
    const m=hud54Model(s),title=$('#result-title');title.replaceChildren(make('span','winner-team',m.winner),make('span','winner-victory','胜利'));result.dataset.winner=m.winner==='学生'?'student':'teacher';
-   $('#result-score').textContent=Math.floor(m.score)+' / '+m.target;$('#result-goal').textContent='捣蛋度';caught.textContent=m.caught+' / '+m.total;$('#result-detail').textContent=m.reason;
+   $('#result-score').textContent=Number(m.score.toFixed(1))+' / '+m.target;$('#result-goal').textContent='捣蛋度';caught.textContent=m.caught+' / '+m.total;$('#result-detail').textContent=m.reason;
    table.replaceChildren(row({name:m.teacherName,points:m.caught},0,true),...m.rows.map((p,i)=>row(p,i)));
   },
   dispose(){ranking.remove();held.remove();settings.remove();}

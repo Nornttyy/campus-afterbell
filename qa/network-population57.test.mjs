@@ -20,11 +20,11 @@ function beginClass(room,host){room.begin(host);for(let i=0;i<301;i++)room.tick(
 
 for(const [index,pattern]of LAYOUT_PATTERNS.entries())test(`${pattern}: 1–8 humans replace ordinary AI within the actual 20/30-seat capacity`,()=>{
  for(let count=1;count<=8;count++){
-  const {room,people}=fixture(count,72+index);assert.equal(room.sim.seats[0].pattern,pattern);assert.equal(room.sim.seats.length,pattern.startsWith('rows-')?20:30);
+  const {room,people}=fixture(count,42+index);assert.equal(room.sim.seats[0].pattern,pattern);assert.equal(room.sim.seats.length,pattern.startsWith('rows-')?20:30);
   assert.equal(census(room).ai.length,room.sim.seats.length-count);
   assert.throws(()=>{while(room.members.size<8)room.join({});room.join({});},/房间已满/);
   // Use a fresh room so the capacity-limit check does not change this roster.
-  const current=fixture(count,72+index),r=current.room;
+  const current=fixture(count,42+index),r=current.room;
   if(count===1){assert.throws(()=>r.begin(current.people[0]),/两位/);continue;}
   r.begin(current.people[0]);const tally=census(r);assert.equal(tally.humans.length,count-1);assert.equal(tally.ai.length,tally.capacity-(count-1));assert.equal(r.teacherActor.id,-1);
   const formerStudent=r.sim.students[r.teacherMember.studentId];assert.equal(formerStudent.networkHuman,false);assert.equal(formerStudent.name,'同学');assert.equal(formerStudent.character,undefined,'teacher promotion restores the original AI identity');

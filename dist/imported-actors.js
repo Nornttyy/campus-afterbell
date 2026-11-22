@@ -3,12 +3,12 @@ import {createFacialEffects} from './facial-effects64.js?v=campus-83';
 import {requireModelBudget} from './model-budget64.js';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
-import {normalWalkCycleRate} from './movement55.js?v=campus-83';
+import {normalWalkCycleRate} from './movement55.js?v=campus-93';
 import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-83';
-import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createCrawlPose} from './crawl-pose.js?v=campus-92';
+import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-93';
+import {createCrawlPose} from './crawl-pose.js?v=campus-93';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-92';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-93';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-90';
 
 export async function loadTeacherModel(){

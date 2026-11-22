@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import * as T from '../dist/vendor/three.module.js';
 import {createDrawerPickTarget,pickDrawerItem,drawerObjectVisible} from '../dist/drawer-picking.js';
+import {reachesRadio} from '../dist/campus-radio93.js';
 import {LIFT,mapKind} from '../dist/classroom-layout.js';
 
 // Execute the production closures against real Three.js geometry without
@@ -23,7 +24,7 @@ function fixture(){
  const scope={mapActivityView:{targets:()=>[]},gameplay,scene,camera,itemRay,neutralPointer:new T.Vector2(),drawerFocus:1,drawerSlotProps,room,furnitureRows,drawerItems,
   variants:{seatTarget:()=>null,specialRoots:[],group:variantGroup,screens:new Map(),stations:new Map(),drawers:new Map()},campusTargets:{lockers:[],doors:[],officeChairs:[],officeDesks:[]},
   startBellModel:null,campus:{},chairTargets,surveillanceView:{targets:()=>[]},deskTargets:new Map(),drawerRecords:new Map(),deskBooks:new Map(),deskPens:new Map(),mapVariant:'classroom',
-  LIFT,mapKind,teachingEnd,pickDrawerItem,isObjectVisible:drawerObjectVisible};
+  reachesRadio,LIFT,mapKind,teachingEnd,pickDrawerItem,isObjectVisible:drawerObjectVisible};
  const api=new Function('scope',`const {${Object.keys(scope).join(',')}}=scope;\n${pickSource}\n${interactionSource}\nreturn {getInteraction,pickDrawerSlot};`)(scope);
  const mesh=(distance,parent=scene,size=.2)=>{const m=new T.Mesh(new T.BoxGeometry(size,size,size),new T.MeshBasicMaterial());m.position.z=-distance;parent.add(m);const raycast=m.raycast.bind(m);m.raycast=(r,hits)=>{seenFar.push(r.far);return raycast(r,hits);};return m;};
  return{...api,gameplay,itemRay,scene,room,chairTargets,furnitureRows,drawerSlotProps,drawerItems,seenFar,mesh,get blockerCalls(){return blockerCalls;},
