@@ -966,7 +966,16 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     renderActive=next;canvas.dataset.renderActive=String(next);cancelAnimationFrame(frame);frame=0;
     if(next){last=performance.now();resize();frame=requestAnimationFrame(render);}
   }
-  setSeats(currentSeats,true);updatePupils(null,0,0);canvas.dataset.renderActive=String(renderActive);if(renderActive)frame=requestAnimationFrame(render);renderer.render(scene,camera);onReady?.();
+  setSeats(currentSeats,true);
+  canvas.dataset.renderActive=String(renderActive);
+  // A hidden room enters through setGameplay. Building the entire attract-mode
+  // class here would skin pupils and upload textures for a frame nobody sees.
+  if(renderActive){
+    updatePupils(null,0,0);
+    renderer.render(scene,camera);
+    frame=requestAnimationFrame(render);
+  }
+  onReady?.();
   return {
     setGameplay,setMap,setSeats,setActive,
     getRolePreviews,
