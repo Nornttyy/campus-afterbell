@@ -1,7 +1,7 @@
 // BV1LsWj6eEEU 28:40 shows numbered doors 2 and 3 on opposite sides
 // of a corridor; BV1otWu6EEu9 00:15 shows room 1. Three connected rooms
 // are confirmed. Dimensions and eight sleeping places per room are reconstruction.
-export const DORM_ROOM_BOUNDS=Object.freeze({minX:-3.1,maxX:3.1,minZ:0,maxZ:10.2,height:3.45});
+export const DORM_ROOM_BOUNDS=Object.freeze({minX:-3.1,maxX:3.1,minZ:0,maxZ:9.62,height:3.45});
 export const DORM_ROOMS=Object.freeze([
  {id:1,x:7.2,z:-8,yaw:-Math.PI/2},
  {id:3,x:7.2,z:2.8,yaw:-Math.PI/2},
@@ -9,14 +9,15 @@ export const DORM_ROOMS=Object.freeze([
 ].map(Object.freeze));
 export function dormPoint(b,x,z){const c=Math.cos(b.yaw),s=Math.sin(b.yaw);return{x:b.x+c*x+s*z,z:b.z-s*x+c*z};}
 export function dormRoomPoint(id,x,z){const room=DORM_ROOMS.find(r=>r.id===Number(id));return room?dormPoint(room,x,z):null;}
-export const DORM_BOUNDS=Object.freeze({minX:-3,maxX:22.84,minZ:-11.1,maxZ:5.9,height:3.45});
+export const DORM_BOUNDS=Object.freeze({minX:7.2-DORM_ROOM_BOUNDS.maxZ,maxX:12.64+DORM_ROOM_BOUNDS.maxZ,minZ:-11.1,maxZ:5.9,height:3.45});
 export const DORM_BED_SIZE=Object.freeze({length:2.46,width:1.32,lower:.64,upper:2.08,frameTop:2.63});
 export const DORM_CABINET=Object.freeze({x:-1.65,z:.10,width:.66,depth:.58,height:.90,bottom:1.04,levelStep:1.44,yaw:Math.PI/2,doorAngle:-Math.PI*.48});
 export const DORM_TABLES=Object.freeze(DORM_ROOMS.map(r=>Object.freeze({id:r.id,...dormPoint(r,0,1.9),yaw:r.yaw,width:1.02,depth:1.44,height:.78})));
 export const DORM_TABLE=DORM_TABLES[0];
 export const DORM_WATCH=Object.freeze({x:10.3,z:5.8});
 export const DORM_POSTS=Object.freeze(Array.from({length:6},(_,id)=>Object.freeze({id,x:12.02,z:-3.4+id*1.45})));
-export const DORM_BUNKS=Object.freeze(DORM_ROOMS.flatMap((room,ri)=>[3.9,7.4].flatMap((z,row)=>[-2.3,2.3].map((x,col)=>Object.freeze({id:ri*4+row*2+col,roomId:room.id,row,col,...dormPoint(room,x,z),yaw:room.yaw+(col?-Math.PI/2:Math.PI/2)})))));
+export const DORM_BUNK_ROWS=Object.freeze([3.88,7.12]);
+export const DORM_BUNKS=Object.freeze(DORM_ROOMS.flatMap((room,ri)=>DORM_BUNK_ROWS.flatMap((z,row)=>[-2.3,2.3].map((x,col)=>Object.freeze({id:ri*4+row*2+col,roomId:room.id,row,col,...dormPoint(room,x,z),yaw:room.yaw+(col?-Math.PI/2:Math.PI/2)})))));
 export const DORM_BEDS=Object.freeze(DORM_BUNKS.flatMap(b=>[0,1].map(level=>{
  const id=b.id*2+level,supportHeight=level?DORM_BED_SIZE.upper:DORM_BED_SIZE.lower;
  const sit=dormPoint(b,.15,.22),head=dormPoint(b,-.84,0),desk=dormPoint(b,DORM_CABINET.x+DORM_CABINET.depth/2+.1,DORM_CABINET.z),cab=dormPoint(b,DORM_CABINET.x,DORM_CABINET.z),exit=dormPoint(b,.20,1.12),ladder=dormPoint(b,.92,.79);

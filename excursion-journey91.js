@@ -6,10 +6,14 @@ export const ROAD_RADIUS=3;
 const CRUISE_SPEED=8.4;
 const ACCELERATION_TIME=3.2;
 
-export function coachDistanceAt(time,departedAt){
+export const COACH_BRAKE_SECONDS=3;
+export function coachDistanceAt(time,departedAt,brakeAt=null){
  if(!Number.isFinite(departedAt)||!Number.isFinite(time))return 0;
- const driving=Math.max(0,time-departedAt-COACH_DOOR_SECONDS);
- return CRUISE_SPEED*(driving+ACCELERATION_TIME*Math.expm1(-driving/ACCELERATION_TIME));
+ const braking=Number.isFinite(brakeAt)&&time>=brakeAt;
+ const driving=Math.max(0,(braking?brakeAt:time)-departedAt-COACH_DOOR_SECONDS);
+ const t=braking?Math.min(time-brakeAt,COACH_BRAKE_SECONDS):0;
+ const brakeTravel=CRUISE_SPEED*(-Math.expm1(-driving/ACCELERATION_TIME))*t*(1-t/(2*COACH_BRAKE_SECONDS));
+ return brakeTravel+CRUISE_SPEED*(driving+ACCELERATION_TIME*Math.expm1(-driving/ACCELERATION_TIME));
 }
 
 export function roadSectionAt(distance){return Math.floor(distance/ROAD_SECTION_LENGTH);}

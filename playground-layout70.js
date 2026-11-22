@@ -6,12 +6,12 @@ const volume=(id,minX,maxX,minZ,maxZ,minY=0,maxY=2.2,extra={})=>Object.freeze({i
 const finite=(value,fallback)=>Number.isFinite(value)?value:fallback;
 export function createPlaygroundLayout(options={}){
  const maxX=finite(options.maxX,7.20),maxZ=finite(options.maxZ,8.80);
- const width=Math.max(12,finite(options.width,maxX-finite(options.minX,-28.8)));
- const length=Math.max(width+2,finite(options.length,maxZ-finite(options.minZ,-51.2)));
+ const width=Math.max(12,finite(options.width,maxX-finite(options.minX,-32.8)));
+ const length=Math.max(width+2,finite(options.length,maxZ-finite(options.minZ,-59.2)));
  const minX=maxX-width,minZ=maxZ-length,cx=(minX+maxX)/2,cz=(minZ+maxZ)/2;
  const entranceZ=Math.min(maxZ-1.0,Math.max(minZ+1.0,finite(options.entranceZ,7.0)));
  const entranceWidth=1.72,entranceMin=entranceZ-entranceWidth/2,entranceMax=entranceZ+entranceWidth/2;
- const laneCount=3,laneWidth=.88,outerRadius=width/2-2.35,innerRadius=outerRadius-laneCount*laneWidth;
+ const laneCount=3,laneWidth=1.00,outerRadius=width/2-2.35,innerRadius=outerRadius-laneCount*laneWidth;
  const straightHalf=length/2-2.35-outerRadius;
  const track=Object.freeze({cx,cz,outerRadius,innerRadius,straightHalf,laneCount,laneWidth,lineWidth:.07});
  const stageZ=cz+straightHalf+innerRadius*.48,stageWidth=Math.min(7.6,innerRadius*1.3),stageDepth=3.05;

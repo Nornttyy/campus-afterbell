@@ -1,8 +1,9 @@
+import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 // A key resolves to ONE explicit action. In particular, returning a pen must
 // never fall through to opening the drawer underneath the crosshair.
 const intent=(method,args,label,hold=false)=>({method,args,label,hold});
 export function interactionIntent(s,target,key){
- const p=s.player,d=s.drawer||{},carrying=d.drawnSlot!=null,teacher=s.role==='teacher',doorId=target?.doorId||'rear',doorClosed=s[doorId==='office'?'officeDoorClosed':doorId+'DoorClosed'];
+ const p=s.player,d=s.drawer||{},carrying=d.drawnSlot!=null,teacher=s.role==='teacher',doorId=target?.doorId||target?.id||'rear';
  const storageDoor=['dorm','toilet'].includes(s.map)&&!p.officeChair;
  if(s.paused||s.status!=='playing'||s.elevator?.phase==='travel')return null;
  if(key==='Q'){
@@ -14,9 +15,9 @@ export function interactionIntent(s,target,key){
   if(teacher&&s.teacher.carriedId!=null)return intent('dropStudent',[],'放下同学');
   if(carrying)return d.canReturn===false?null:intent('returnItem',[],s.selected==='pen'?'放回笔':'放回物品');
   if(teacher&&s.teacher.writing)return intent('setWriting',[false],'停止写字');
-  if(target?.kind==='dorm-door')return target.open?intent('toggleDormDoor',[target.id],'关门'):null;
-  if(target?.kind==='toilet-door')return target.open?intent('toggleToiletDoor',[target.id],'关门'):null;
-  if(target?.kind==='rear-door')return !doorClosed&&!(doorId==='office'&&s.officeLocked)?intent('setDoorUse',target?.doorId?[true,true,doorId]:[true,true],'关门',true):null;
+  if(target?.kind==='dorm-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&target.open?intent('toggleDormDoor',[target.id],'关门'):null;
+  if(target?.kind==='toilet-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&target.open?intent('toggleToiletDoor',[target.id],'关门'):null;
+  if(target?.kind==='rear-door')return null;
   if(target?.kind==='book')return p.bookRaised?intent('setBookRaised',[false],'放下书本'):null;
   if(['desk','office-desk'].includes(target?.kind))return d.open?intent(p.officeChair?'setOfficeDrawerOpen':'setDrawerOpen',[false],storageDoor?'关闭柜门':'关闭抽屉'):null;
   if(p.bookRaised)return intent('setBookRaised',[false],'放下书本');
@@ -33,8 +34,8 @@ export function interactionIntent(s,target,key){
  }
  if(target?.kind==='sports-bar'&&!teacher&&!carrying)return intent('startMapActivity',['hang',target.id],'抓住单杠');
  if(target?.kind==='plunger'&&!teacher&&!carrying)return intent('startMapActivity',['plunge',target.id],'疏通',true);
- if(target?.kind==='dorm-door')return !target.open?intent('toggleDormDoor',[target.id],'开门'):null;
- if(target?.kind==='toilet-door')return !target.open?intent('toggleToiletDoor',[target.id],'开门'):null;
+ if(target?.kind==='dorm-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&!target.open?intent('toggleDormDoor',[target.id],'开门'):null;
+ if(target?.kind==='toilet-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&!target.open?intent('toggleToiletDoor',[target.id],'开门'):null;
  if(target?.kind==='bed'&&!teacher)return p.onBed?intent('toggleBedLie',[],p.sleeping?'睁眼':'闭眼'):!p.seated?intent('interact',[target.id],'上床'):null;
  if(target?.kind==='vending'&&!teacher&&!carrying&&target.ready){
   return s.vendingStock?intent('pressVendingButton',[target.id],'按下'):intent('takePlaygroundFood',['snack'],'拿取');
@@ -43,7 +44,7 @@ export function interactionIntent(s,target,key){
  if(target?.kind==='surveillance'&&teacher)return target.installed?intent('viewSurveillance',[target.id],'查看监控'):target.ready?intent('deploySurveillance',[target.id],'安装监控'):null;
  if(carrying&&p.seated&&target?.kind==='chair'&&target.id===p.seatId)return intent('interact',[],'拿着起身');
  if(carrying&&s.selected==='pen'&&p.seated)return p.officeChair?intent('interact',[],'拿着起身'):intent('togglePenMode',[],p.penWriting?'转笔':'写字');
- if(target?.kind==='rear-door')return doorClosed&&!(doorId==='office'&&s.officeLocked)?intent('setDoorUse',target?.doorId?[true,false,doorId]:[true,false],'开门',true):null;
+ if(target?.kind==='rear-door')return canOpenSchoolDoor(s.stage,s,doorId)?intent('setDoorUse',target?.doorId?[true,false,doorId]:[true,false],'开门',true):null;
  if(target?.kind==='office-chair')return !p.seated&&(!teacher||s.teacher.carriedId==null)?intent('interact',[target.id||'office-chair'],'坐下'):null;
  if(target?.kind==='chair')return !p.seated?intent('interact',[target.id],'坐下'):null;
  if(teacher&&s.stage==='class'){

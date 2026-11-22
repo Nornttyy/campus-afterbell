@@ -2,9 +2,9 @@
 // seat originate from the same measurements used by both room authorities.
 import * as T from './vendor/three.module.js';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
-import {coachDistanceAt} from './excursion-journey91.js?v=campus-91';
-import {createExcursionRoad} from './excursion-road91.js?v=campus-91';
-import {BUS,BUS_SEATS,BUS_DECK_SLABS,COACH_CUSHION} from './bus-layout86.js?v=campus-91';
+import {coachDistanceAt,COACH_BRAKE_SECONDS} from './excursion-journey91.js?v=campus-92';
+import {createExcursionRoad} from './excursion-road91.js?v=campus-92';
+import {BUS,BUS_SEATS,BUS_DECK_SLABS,COACH_CUSHION} from './bus-layout86.js?v=campus-92';
 
 export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor,finishes={}}){
  const group=new T.Group();group.name='excursion-ground-floor';scene.add(group);group.visible=false;
@@ -149,13 +149,13 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   const speaker=C('#deaa39');for(const x of [-5.85,8.85]){R(night,x,L+2.18,far+.13,.37,.47,.16);rod(speaker,[x,L+2.18,far+.20],[x,L+2.18,far+.25],.127);rod(night,[x,L+2.18,far+.25],[x,L+2.18,far+.26],.061);}
   for(const s of BUS_SEATS){const h=s.busDeck?U:L,dir=Math.sign(Math.sin(s.yaw)),g=new T.Group();g.position.set(s.x,h,s.z);g.rotation.y=s.yaw;vehicle.add(g);chairs.set(s.id,g);
    const wood=s.busDeck?oak:felt,cushion=COACH_CUSHION[s.surface],pad=s.busDeck?.075:.12;
-   R(wood,0,cushion.top-pad/2,cushion.centerZ,.71,pad,cushion.depth,.038,g);
-   const backTop=s.busDeck?1.03:1.20;R(wood,0,(backTop+cushion.top)/2,-.26,.71,backTop-cushion.top,.16,.058,g,[-.09,0,0]);
+   R(wood,0,cushion.top-pad/2,cushion.centerZ,cushion.width,pad,cushion.depth,.038,g);
+   const backTop=s.busDeck?1.03:1.20;R(wood,0,(backTop+cushion.top)/2,-.26,cushion.width,backTop-cushion.top,.16,.058,g,[-.09,0,0]);
    if(!s.busDeck){
-    R(cream,0,1.26,-.295,.57,.27,.16,.042,g);
-    R(felt,0,1.265,-.293,.53,.263,.178,.044,g);
+    R(cream,0,1.26,-.295,cushion.width-.14,.27,.16,.042,g);
+    R(felt,0,1.265,-.293,cushion.width-.18,.263,.178,.044,g);
     for(const sx of [-.20,.20])B(amber,sx,.877,-.167,.012,.38,.008,g);
-    for(const side of [-1,1]){B(cream,side*.342,.82,-.259,.030,.78,.16,g);B(amber,side*.34,.54,-.04,.062,.075,.42,g);}
+    for(const side of [-1,1]){B(cream,side*(cushion.width/2-.013),.82,-.259,.030,.78,.16,g);B(amber,side*(cushion.width/2-.015),.54,-.04,.062,.075,.42,g);}
     B(iron,0,(cushion.top-pad)/2,.005,.22,cushion.top-pad,.26,g);
    }
    else for(const side of [-1,1])for(const z of [-.21,.14])B(iron,side*.265,cushion.top/2,z,.033,cushion.top,.035,g);
@@ -189,17 +189,18 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
  function update(state,dt){
   if(!group.visible)return;
   const approach=(x,target,speed)=>T.MathUtils.damp(x,target,speed,Math.min(dt,.15));
-  doorAmount=approach(doorAmount,state.busDeparted?0:1,8);liftAmount=approach(liftAmount,state.elevator?.doorClosed?0:1,9);driverAmount=approach(driverAmount,state.officeLocked?0:1,8);
+  doorAmount=approach(doorAmount,state.busDeparted?0:(state.doorMotion?.front?.amount??(state.frontDoorClosed?0:1)),8);liftAmount=approach(liftAmount,state.elevator?.doorClosed?0:1,9);driverAmount=approach(driverAmount,state.officeLocked?0:1,8);
   for(const {o,side,lift}of leaves)o.position.x=lift?10.49+side*(.49+liftAmount*.95):10.05+side*(.445+doorAmount*.89);
   driverGate.position.z=-12.12-driverAmount*2.71;
   // The station and road have fixed route coordinates; the coach and all its
   // furniture travel on +X. The render origin follows the coach so interaction
   // rays, remote players and cameras keep metre precision on long journeys.
-  const distance=coachDistanceAt(state.sceneElapsed,state.busDepartureAt);
+  const distance=coachDistanceAt(state.sceneElapsed,state.busDepartureAt,state.busBrakeAt);
   vehicle.position.x=distance;
   world.position.x=-distance;
   for(const wheel of wheels)wheel.rotation.z=-(distance/.60)%(2*Math.PI);
-  stop.visible=distance<150;
+  stop.position.x=Number.isFinite(state.busBrakeAt)?coachDistanceAt(state.busBrakeAt+COACH_BRAKE_SECONDS,state.busDepartureAt,state.busBrakeAt):0;
+  stop.visible=Math.abs(stop.position.x-distance)<150;
   road.update(distance,state.busRouteSeed??state.layoutSeed??0);
   const openIds=new Set((state.students||[]).filter(p=>p.drawerOpen&&p.seated).map(p=>p.seatId));if(state.drawer?.open&&state.player?.seated)openIds.add(state.player.seatId);
   let movingDrawer=false;

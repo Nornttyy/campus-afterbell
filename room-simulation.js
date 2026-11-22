@@ -1,15 +1,17 @@
-import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-85';
-import {reachesSchoolDoor} from './door-interaction54.js?v=campus-91';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-91';
+import {returnPose,reachedHall} from './class-dismissal92.js?v=campus-92';
+import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
+import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-92';
+import {reachesSchoolDoor} from './door-interaction54.js?v=campus-92';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-92';
 import {validComputerPlayback} from './computer-rules55.js?v=campus-83';
 import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-83';
 import {movementScale} from './movement55.js?v=campus-83';
 const randomUUID=()=>globalThis.crypto.randomUUID();
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-91';
-import {TeacherRound} from './teacher-rules.js?v=campus-91';
-import * as Layout from './classroom-layout.js?v=campus-91';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-91';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-92';
+import {TeacherRound} from './teacher-rules.js?v=campus-92';
+import * as Layout from './classroom-layout.js?v=campus-92';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-92';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
@@ -22,6 +24,9 @@ const teacherFeedbackEvents=new Set(['wrong-grab','correct-capture','stamina-low
 function context(actor){return{player:actor,selected:actor.id===-1?'chalk':actor.action||actor._slots?.[0]?.action||'snack',holding:false,_movement:{x:0,z:0},_rescueId:null,_rescueProgress:0,completed:actor.completed||Object.fromEntries(Object.keys(CLASSROOM_ACTIONS).map(k=>[k,0]))};}
 
 class SharedRound extends TeacherRound{
+ _dismissalHumans(){return [...this.room.members.values()].filter(m=>m.connected).map(m=>m.context.player);}
+ _dismissalConfirmed(){return [...this.room.members.values()].every(m=>!m.connected||m.continued);}
+ _finishDismissal(){/* CampusRoom restores all member contexts together after the tick. */}
  canStartBell(){return this._inputAllowed()&&this.stage==='gathering';}
  _advanceStudents(dt){
   // Human state is controlled by authenticated room input, never AI decisions.
@@ -31,7 +36,7 @@ class SharedRound extends TeacherRound{
  }
  _moveGuests(dt){
   for(const member of this.room?.members.values()||[]){
-   if(member.role==='teacher'||!member.connected)continue;
+   if(member.role==='teacher'||!member.connected||this.stage==='dismissal'&&!member.continued)continue;
    this.room.withMember(member,()=>{
     const p=this.player;if(p.mapActivity?.kind==='plunge'&&Date.now()-member.lastInput>1000)this.releaseMapActivity();if(p.seated||p.mapActivity||this._restrained(p))return;
     if(Date.now()-member.lastInput>500)this._movement={x:0,z:0};
@@ -134,7 +139,7 @@ export class CampusRoom{
   this.map=map;this.seed=seed>>>0;this.floor=Layout.campusFloor(map);
   this.sim=new SharedRound({seed:this.seed,map,...this.settings});this.sim.room=this;this.teacherActor=this.sim.player;this.teacherContext=context(this.teacherActor);this.teacherMember=null;this.sim.start({gathering:true});this.sim._team=new Set();this.events=[];
   this._initializeStudents();
-  let i=0;for(const m of this.members.values()){m.role='student';m.doorUse=false;m.doorProgress=0;m.lastInput=Date.now();const actor=this.sim.students[m.studentId];this._prepareHuman(m,actor,i++);m.context=context(actor);this.sim._team.add(actor.id);}
+  let i=0;for(const m of this.members.values()){m.role='student';m.continued=false;m.doorUse=false;m.doorProgress=0;m.lastInput=Date.now();const actor=this.sim.students[m.studentId];this._prepareHuman(m,actor,i++);m.context=context(actor);this.sim._team.add(actor.id);}
   this.sequence++;return true;
  }
  travelFloor(member,map){
@@ -172,14 +177,18 @@ export class CampusRoom{
   // wait for arrival. Repeated floor commands still pass through validation.
   if(this.elevator.phase==='travel'&&!['setMovement','setLook','travelFloor'].includes(command))return false;
   if(command==='startBell')return this.begin(member,args[0]);
-  if(command==='rematch')return this.rematch(member);
+  if(command==='continueAfterClass'||command==='rematch'){
+   if(!member.connected||!this.sim.continueAfterClass())return false;
+   member.continued=true;member.context._movement={x:0,z:0};this.sequence++;return true;
+  }
+  if(this.sim.stage==='dismissal'&&(!member.continued||!['setLook','setMovement'].includes(command)))return false;
   if(command==='configureRound')return this.configureRound(member,args[0]);
   if(command==='setDoorUse'){
    const id=args[2]??'rear',key=id==='office'?'officeDoorClosed':id+'DoorClosed';
    if(typeof args[0]!=='boolean'||args[1]!==undefined&&typeof args[1]!=='boolean'||!['rear','front','office'].includes(id))throw new RoomError(400,'无效交互');
    const desired=args[1]??!this.sim.layout[key];
    if(!args[0]){member.doorUse=false;member.doorProgress=0;return true;}
-   if(id==='office'&&this.sim.layout.officeLocked||this.sim.layout[key]===desired||!reachesSchoolDoor(member.context.player,this.sim.layout,id))return false;
+   if(this.sim.status!=='playing'||!canOpenSchoolDoor(this.sim.stage,this.sim.layout,id,desired)||member.context.player.seated||this.sim._restrained(member.context.player)||!reachesSchoolDoor(member.context.player,this.sim.layout,id))return false;
    if(!member.doorUse||member.doorTarget!==desired||member.doorId!==id)member.doorProgress=0;
    member.doorUse=true;member.doorId=id;member.doorTarget=desired;return true;
   }
@@ -232,11 +241,17 @@ export class CampusRoom{
   // The teacher is always the main simulation context. Student controls and
   // shared item progression are advanced alongside it, exactly once per tick.
   const ctx=this.teacherMember?.context||this.teacherContext;for(const key of CONTEXT)this.sim[key]=ctx[key];
-  if(this.teacherMember&&Date.now()-this.teacherMember.lastInput>500){this.sim._movement={x:0,z:0};this.sim.player.sprinting=false;}
+  if(this.teacherMember&&(Date.now()-this.teacherMember.lastInput>500||this.sim.stage==='dismissal'&&!this.teacherMember.continued)){this.sim._movement={x:0,z:0};this.sim.player.sprinting=false;}
   this.sim.step(dt);for(const key of CONTEXT)ctx[key]=this.sim[key];
+  if(this.sim._dismissal?.complete){
+   const poses=new Map([...this.members.values()].filter(m=>reachedHall(m.context.player,this.map)).map(m=>[m.id,returnPose(m.context.player)]));
+   this.elevator=createElevator();this._rebuild(this.map,(this.seed+1)>>>0);
+   for(const m of this.members.values())if(poses.has(m.id))Object.assign(m.context.player,poses.get(m.id));
+   return;
+  }
   for(const member of this.members.values()){
-   if(!member.doorUse)continue;const p=member.context.player,id=member.doorId||'rear',key=id==='office'?'officeDoorClosed':id+'DoorClosed';
-   if(!member.connected||this.sim.layout[key]===member.doorTarget||id==='office'&&this.sim.layout.officeLocked||!reachesSchoolDoor(p,this.sim.layout,id)||this.sim._restrained(p)||p.seated){member.doorUse=false;member.doorProgress=0;continue;}
+   if(!member.doorUse)continue;const p=member.context.player,id=member.doorId||'rear';
+   if(!member.connected||this.sim.status!=='playing'||!canOpenSchoolDoor(this.sim.stage,this.sim.layout,id,member.doorTarget)||!reachesSchoolDoor(p,this.sim.layout,id)||this.sim._restrained(p)||p.seated){member.doorUse=false;member.doorProgress=0;continue;}
    member.doorProgress=Math.min(1,(member.doorProgress||0)+dt/INTERACTION_SECONDS);if(member.doorProgress>=1-1e-9){ClassroomRound.prototype.setSchoolDoor.call(this.sim,id,member.doorTarget);member.doorUse=false;member.doorProgress=0;}
   }
   const incoming=this.sim.drainEvents();for(const event of incoming)this.events.push({...event,networkSequence:++this.sequence});
@@ -246,7 +261,7 @@ export class CampusRoom{
  snapshot(member){
   const state=this.withMember(member,sim=>TeacherRound.prototype.snapshot.call(sim));
   state.doorUse={holding:Boolean(member.doorUse),id:member.doorId||'rear',progress:member.doorProgress||0};state.interaction={kind:member.doorUse?'rear-door':null,doorId:member.doorId||'rear',progress:member.doorProgress||0};
-  state.teamSize=this.sim._team.size;state.network=true;state.floor=this.floor;state.layoutSeed=this.seed;state.room=this.publicRoom(member);
+  state.continued=!!member.continued;state.teamSize=this.sim._team.size;state.network=true;state.floor=this.floor;state.layoutSeed=this.seed;state.room=this.publicRoom(member);
   state.elevator=elevatorSnapshot(this.elevator,[...this.members.values()].map(m=>({player:m.context.player,connected:m.connected})),{stage:state.stage,status:state.status,host:member.id===this.hostId});
   state.lobbyRole=state.stage==='gathering'?member.rolePreference:null;
   state.inputAck={jump:member.jumpSequence||0,look:member.lookSequence||0,move:member.moveSequence||0,movement:{...member.context._movement}};state.player.name=member.name;state.player.character=member.character;

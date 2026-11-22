@@ -1,6 +1,6 @@
 // Food moves along the two long serving counters. The snapshot only carries
 // the last portion removed from each lane slot; position uses the room clock.
-export const SERVING_BELTS=Object.freeze([-2.84,2.84].map((x,id)=>Object.freeze({id,x,minZ:-8.30,maxZ:5.35,width:.82,top:1.04})));
+export const SERVING_BELTS=Object.freeze([-2.84,2.84].map((x,id)=>Object.freeze({id,x,minZ:-8.30,maxZ:5.35,width:.96,top:1.055})));
 export const SERVING_SOLIDS=Object.freeze(SERVING_BELTS.map(b=>Object.freeze({id:'serving-counter-'+b.id,minX:b.x-b.width/2,maxX:b.x+b.width/2,minZ:b.minZ,maxZ:b.maxZ,minY:0,maxY:b.top})));
 export const CAFETERIA_SEATS=Object.freeze([-6.95,-4.28,-1.61,1.06,3.73].flatMap((deskZ,row)=>[-4.08,-1.60,1.60,4.08].map((deskX,col)=>Object.freeze({id:row*4+col,row,col,deskX,deskZ,x:deskX,z:deskZ-.78,yaw:0,map:'cafeteria',pattern:'counter-rows'}))));
 export const SERVING_MENU=Object.freeze(['burger','drink','snack','banana','chickenBucket','layerCake']);
