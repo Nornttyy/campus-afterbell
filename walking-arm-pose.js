@@ -14,10 +14,20 @@ export function createWalkingArmPose(group,bones){
  }
  return {
   restore(){for(const [bone,q] of saved)bone.quaternion.copy(q);saved.clear();},
-  apply({weight=0,seated=false,crawling=false,restraint='free',mood='resting',carrying=false,walkTime=0,cycleDuration=1,teacher=false}={}){
-   if(seated||crawling||restraint!=='free'||mood==='rescuing'||weight<.00001)return;
+  apply({weight=0,seated=false,crawling=false,restraint='free',mood='resting',carrying=false,walkTime=0,cycleDuration=1,teacher=false,jumpHeight=0}={}){
+   if(seated||crawling||restraint!=='free'||mood==='rescuing'||(weight<.00001&&jumpHeight<=0))return;
    group.updateMatrixWorld(true);
    group.getWorldQuaternion(character);
+   if(jumpHeight>0){
+    const lift=T.MathUtils.smoothstep(jumpHeight,0,.55);
+    for(const [side,lead] of [['Left',.83],['Right',1]]){
+     rotate(bones[side+'UpLeg'],1,0,0,-.39*lift*lead);
+     rotate(bones[side+'Leg'],1,0,0,.65*lift*lead);
+     rotate(bones[side+'Foot'],1,0,0,-.20*lift);
+     if(!carrying)rotate(bones[side+'ForeArm'],1,0,0,-.23*lift);
+    }
+    weight*=1-lift;
+   }
    // The ponytail student's jacket is wider below the sleeve. Give that
    // model two extra degrees of clearance, without widening every student.
    const degrees=teacher?0:group.userData.character==='ponytail'?18:group.userData.character==='glasses'?20:16;

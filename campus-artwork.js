@@ -2,10 +2,11 @@ import * as T from './vendor/three.module.js';
 export const CAMPUS_ARTWORK_SOURCES=Object.freeze({
  hotpotVegetables:'./assets/posters/hotpot-vegetables85.webp',
  classroomAward:'./assets/posters/classroom-award72.png',
+ dayChalkboard:'./assets/posters/classroom-gratitude90.webp',
  chalkNewspaper:'./assets/posters/chalk-newspaper72-ref.png',
  teacherTutorial:'./assets/posters/teacher-tutorial64.png?v=black-brush64',
  studentTutorial:'./assets/posters/student-tutorial64.png?v=black-brush64',
- classroomNotice:'./assets/posters/classroom-notice54.png',
+ classroomNotice:'./assets/posters/classroom-prints90.webp',
  graffitiSnack:'./assets/posters/graffiti-snack64.png',
  graffitiHomework:'./assets/posters/graffiti-homework64.png'
 });

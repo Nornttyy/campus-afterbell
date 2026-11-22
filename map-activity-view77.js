@@ -1,9 +1,9 @@
 import * as T from './vendor/three.module.js';
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-84';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-84';
-import {toiletBowl} from './map-activities77.js?v=campus-89';
-import {activityHandTargets} from './map-activity-pose77.js?v=campus-89';
-import {handFrame} from './hand-motion.js?v=campus-89';
+import {toiletBowl} from './map-activities77.js?v=campus-90';
+import {activityHandTargets} from './map-activity-pose77.js?v=campus-90';
+import {handFrame} from './hand-motion.js?v=campus-90';
 const handRigs=new WeakMap();
 function frameQuaternion(along,dorsal){const y=along.clone().normalize(),z=dorsal.clone().addScaledVector(y,-dorsal.dot(y)).normalize(),x=new T.Vector3().crossVectors(y,z);return new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));}
 export function createMapActivityView(scene){

@@ -1,13 +1,13 @@
 import {createBusRoom} from './bus-room86.js?v=campus-87';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-89';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-90';
 import {createToiletRoom} from './toilet-room70.js?v=campus-84';
 import {createDormRoom} from './dorm-room70.js?v=campus-85';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-89';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-90';
 import {createHotpotRoom} from './hotpot-room70.js?v=campus-85';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-83';
 import * as T from './vendor/three.module.js';
 import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-83';
-import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-87';
+import {SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-90';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor,drawerRecords=null,screenContent=null,officeScreens=new Map()}){
  const bus=createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,stationFloor});
