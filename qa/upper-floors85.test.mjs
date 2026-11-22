@@ -12,17 +12,17 @@ const enterLift=(p,i=0)=>Object.assign(p,{seated:false,x:LIFT.x+i*.25,z:LIFT.z})
 for(const [index,map] of ['cafeteria','exam'].entries())test('both roles can ride into '+map+'; room requires every human and keeps the 8-player limit',()=>{
  const floor=9+index;
  assert.equal(CAMPUS_MAPS[floor-1],map);assert.equal(campusFloor(map),floor);
- assert.equal(elevatorDuration('classroom',map),floor+1);assert.equal(elevatorDuration('cafeteria','exam'),3);
+ assert.equal(elevatorDuration('classroom',map),floor);assert.equal(elevatorDuration('cafeteria','exam'),3);
  for(const role of ['teacher','student']){
   const r=createSoloRound({role});r.start({gathering:true});enterLift(r.player);
-  assert.equal(r.travelFloor(map),true);r.step(floor+.9);assert.equal(r.map,'classroom');r.step(.1);
+  assert.equal(r.travelFloor(map),true);r.step(floor-.1);assert.equal(r.map,'classroom');r.step(.1);
   assert.equal(r.snapshot().floor,floor);assert.equal(r.seats[0].map,map);assert.equal(r.snapshot().elevator.canTravel,false);
  }
  const room=new CampusRoom({code:'100009'}),host=room.join({name:'甲'}),guest=room.join({name:'乙'});
  enterLift(host.context.player);assert.throws(()=>room.command(host,'travelFloor',[map]),/所有玩家/);
  enterLift(guest.context.player,1);assert.throws(()=>room.command(guest,'travelFloor',[map]),/房主/);
  assert.equal(room.command(host,'travelFloor',[map]),true);room.tick(floor+1);
- for(const m of [host,guest]){const s=room.snapshot(m);assert.equal(s.floor,floor);assert.equal(s.map,map);assert.equal(s.seats.length,20);assert.equal(s.elevator.used,true);}
+ for(const m of [host,guest]){const s=room.snapshot(m);assert.equal(s.floor,floor);assert.equal(s.map,map);assert.equal(s.seats.length,map==='exam'?32:20);assert.equal(s.elevator.used,true);}
  assert.equal(MAX_ROOM_PLAYERS,8);assert.throws(()=>new CampusRoom({code:'x',maxPlayers:9}),/2–8/);
 });
 
@@ -49,7 +49,7 @@ test('the exam requires reading a real card and writing its matching row, with i
  r.setExamUse(-1);r.step(2);assert.equal(r.snapshot().exam.hint,q);assert.equal(r.score,0);r.setExamMode('close');
  assert.equal(r.setExamMode('paper'),true);assert.equal(r.setExamUse((q+1)%QUESTION_COUNT),false);
  assert.equal(r.setExamUse(q),true);r.step(.8);r.pause(true);assert.equal(r.snapshot().exam.progress,0);
- r.pause(false);r.setExamUse(q);r.step(2);assert.equal(r.score,1);assert.equal(r.snapshot().exam.answered,1<<q);assert.equal(r.setExamUse(q),false);
+ r.pause(false);r.setExamUse(q);r.step(2);assert.equal(r.score,q===11?4:2);assert.equal(r.snapshot().exam.answered,1<<q);assert.equal(r.setExamUse(q),false);
  r.setExamMode('close');r.setDrawerOpen(true);r.setExamMode('card',1);r.setExamUse(-1);r.step(2);const expired=r.snapshot().exam.card;r.setExamMode('close');r.step(10.1);
  assert.equal(r.setExamMode('paper'),true);assert.equal(r.setExamUse(expired),false);
  for(let i=0;i<12;i++)assert.equal(paperQuestion(i<6?.25:.70,1-(.193+(.5+i%6)*.12)),i);
@@ -62,7 +62,7 @@ test('each exam guest gets a private card and the shared room scores the solved 
  assert.equal(room.command(a,'setExamMode',['card',0]),true);assert.equal(room.command(a,'setExamUse',[-1]),true);
  for(let i=0;i<121;i++)room.tick(1/60);const q=room.snapshot(a).exam.hint;assert.ok(Number.isInteger(q));assert.equal(room.snapshot(b).exam.hint,null);
  room.command(a,'setExamMode',['close']);room.command(a,'setExamMode',['paper']);room.command(a,'setExamUse',[q]);
- for(let i=0;i<121;i++)room.tick(1/60);assert.equal(room.snapshot(a).score,1);assert.equal(room.snapshot(b).score,1);
+ for(let i=0;i<121;i++)room.tick(1/60);assert.equal(room.snapshot(a).score,q===11?4:2);assert.equal(room.snapshot(b).score,q===11?4:2);
  assert.equal(room.snapshot(b).exam.answered,0);assert.equal(room.snapshot(a).exam.answered,1<<q);
  assert.throws(()=>room.command(h,'takeMeal',[0]),/不支持/);
 });
@@ -72,16 +72,16 @@ test('live E and Q select one exam or meal action each',()=>{
  assert.equal(interactionIntent(s,{kind:'desk'},'E'),null);
 });
 
-test('a solo pupil can keep answering beyond the first twelve questions towards a custom round target',()=>{
- const r=createSoloRound({map:'exam',target:20,seed:73});r.start();
+test('a finished paper awards its completion bonus once and the desk supplies ordinary items afterwards',()=>{
+ const r=createSoloRound({map:'exam',target:60,seed:73});r.start();
  // Keep the teacher looking at the board while exercising a long sequence of player input.
  r._perceive=()=>{};
- for(let i=0;i<20;i++){
+ for(let i=0;i<12;i++){
   r.setDrawerOpen(true);assert.equal(r.setExamMode('card',i%2),true);
   assert.equal(r.setExamUse(-1),true);r.step(2);const q=r.snapshot().exam.hint;
   assert.ok(Number.isInteger(q));r.setExamMode('close');r.setExamMode('paper');r.setExamUse(q);r.step(2.02);r.setExamMode('close');
  }
- assert.equal(r.score,20);assert.equal(r.status,'won');assert.equal(r.player._examSheet,1);
+ assert.equal(r.score,31);assert.equal(r.snapshot().exam.complete,true);assert.equal(r.setDrawerOpen(true),true);assert.equal(r.setExamMode('card',0),false);assert.equal(r.snapshot().drawer.slots.length,3);assert.equal(r.takeSlot(0),true);
 });
 
 test('the chicken bucket and layer cake keep the same appearance on the belt and in inventory',async()=>{

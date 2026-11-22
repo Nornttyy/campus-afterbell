@@ -35,11 +35,11 @@ function focusSeat(round,id){
   if(actor.isPlayer){if(!round.snapshot().drawer.open)round.toggleDrawer();round.selectAction('phone');takeAndUse(round);round.hold(false);}
 }
 
-test('30 shared seats, five team members, a ten-minute clock and no ambient points',()=>{
+test('20 classmates at 30 desks, five team members, a ten-minute clock and no ambient points',()=>{
   const r=new ClassroomRound();const s=r.snapshot();
-  assert.equal(s.students.length,30);assert.equal(s.player.id,PLAYER_SEAT);
+  assert.equal(s.students.length,20);assert.equal(r.seats.length,30);assert.equal(s.player.id,PLAYER_SEAT);
   assert.deepEqual(s.students.filter(s=>s.isTeammate).map(s=>s.id),[...FRIEND_SEATS]);
-  assert.equal(s.students.filter(s=>!s.isPlayer&&!s.isTeammate).length,25);
+  assert.equal(s.students.filter(s=>!s.isPlayer&&!s.isTeammate).length,15);
   assert.equal(s.timed,true);assert.equal(s.timeLeft,600);assert.equal(s.target,120);
   r.step(100);assert.equal(r.snapshot().elapsed,0);assert.equal(r.snapshot().score,0);
   assert.deepEqual(s.teacher.observedIds,[]);
@@ -86,13 +86,14 @@ test('heard noise can be remembered without visual evidence or a red card',()=>{
 test('movement collides with desks, can use an aisle, and carrying without using earns no points',()=>{
   // This case measures a fixed static aisle route. Independently scheduled AI
   // drawers are covered by drawer-collision58 rather than changing its distance.
-  const r=quietFixture();r.player._slots[0].action='snack';r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
+  const r=quietFixture(),seatId=r.player.seatId;r.player._slots[0].action='snack';r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
   r.hold(false);r.setMovement(0,1);r.step(2);
-  let s=r.snapshot();const desk=DESKS[PLAYER_SEAT];assert.ok(s.player.z<=desk.minZ-.18+1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
-  r.setMovement(-1,0);r.step((r.player.x-AISLES[0])/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,1);r.step(2);
-  s=r.snapshot();assert.ok(s.player.z>SEATS[PLAYER_SEAT].z+1);assert.equal(blocked(s.player.x,s.player.z),false);
+  let s=r.snapshot();const desk=DESKS[seatId];assert.ok(s.player.z<=desk.minZ-.18+1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
+  const aisle=(desk.maxX+DESKS[seatId+1].minX)/2;
+  r.setMovement(1,0);r.step((aisle-r.player.x)/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,1);r.step(2);
+  s=r.snapshot();assert.ok(s.player.z>SEATS[seatId].z+1);assert.equal(blocked(s.player.x,s.player.z),false);
   assert.equal(s.completed.snack,0);assert.equal(s.holding,false);
-  const other=new ClassroomRound();other.start();assert.equal(other.interact(),'stood');assert.equal(other.interact(),'seated');assert.equal(other.snapshot().player.seatId,PLAYER_SEAT);
+  const other=new ClassroomRound();other.start();const home=other.player.seatId;assert.equal(other.interact(),'stood');assert.equal(other.interact(),'seated');assert.equal(other.snapshot().player.seatId,home);
 });
 
 test('pause freezes perception, AI, movement and smoke and resume needs fresh held input',()=>{
@@ -116,13 +117,18 @@ test('four classmates plan and complete actual actions; ordinary NPCs never scor
 
 test('teacher revisits remembered individuals and targets only previously seen or heard people',()=>{
   const r=new ClassroomRound({seed:73,target:100000});r.start();let targeted=0,revisited=false,observedEvidence=false;
-  // Begin with a real visible phone use, rather than depending on a random AI
-  // exposing a prop along one particular patrol route before its drawer closes.
+  // The same pupil must be seen and heard, then hide the snack before being
+  // identified. Both visits must follow from the teacher's own observations.
+  for(const actor of r.students)if(actor.isTeammate)actor._decisionAt=Infinity;
   Object.assign(r.teacher,{x:r.player.x,z:r.player.z-.9,yaw:0});
   assert.equal(blocked(r.teacher.x,r.teacher.z,.23,r.layout),false);assert.equal(canSee(r.teacher,r.player,[],r.layout),true);
-  r.player._slots[0].action='phone';r.toggleDrawer();assert.equal(r.selectSlot(0),true);takeAndUse(r);
-  for(let i=0;i<120*60;i++){r.step(DT);const t=r.snapshot().teacher;revisited ||= t.memory.some(m=>m.visits>1&&m.lastHeard!==null);observedEvidence ||= t.memory.some(m=>m.evidence>15);if(t.targetId!==null){assert.ok(t.observedIds.includes(t.targetId));targeted++;}}
-  const memories=r.snapshot().teacher.memory;
+  r.player._slots[0].action='snack';r.toggleDrawer();assert.equal(r.selectSlot(0),true);takeAndUse(r);
+  for(let i=0;i<40*60;i++){
+    if(i===90){r.releaseUse();assert.ok(r.returnItem());r.toggleDrawer();}
+    r.step(DT);const t=r.snapshot().teacher,m=t.memory.find(m=>m.id===r.player.id);
+    revisited ||= Boolean(m&&m.visits>1&&m.lastHeard!==null);observedEvidence ||= Boolean(m&&m.evidence>15);
+    if(t.targetId!==null){assert.ok(t.observedIds.includes(t.targetId));targeted++;}
+  }
   assert.ok(targeted>0);assert.ok(revisited,'teacher revisited a known source before rescue could clear the memory');
   assert.ok(observedEvidence);
 });

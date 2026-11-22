@@ -9,7 +9,7 @@ const intersects=(x,z,solids,r=.2)=>solids.some(s=>x>s.minX-r&&x<s.maxX+r&&z>s.m
 
 test('toilet layout is immutable server-compatible data, with genuine cubicle seat and cabinet anchors',async()=>{
  const code=await readFile(new URL('../dist/toilet-layout70.js',import.meta.url),'utf8');assert.doesNotMatch(code,/^import\s/m);
- assert.ok(Object.isFrozen(TOILET_SEATS)&&Object.isFrozen(TOILET_SOLIDS));assert.ok(TOILET_SEATS.length>=12&&TOILET_SEATS.length<=30);assert.equal(new Set(TOILET_SEATS.map(s=>s.id)).size,TOILET_SEATS.length);
+ assert.ok(Object.isFrozen(TOILET_SEATS)&&Object.isFrozen(TOILET_SOLIDS));assert.equal(TOILET_SEATS.length,28);assert.equal(new Set(TOILET_SEATS.map(s=>s.id)).size,TOILET_SEATS.length);
  for(const s of TOILET_SEATS){assert.ok(s.hideBook&&s.hidePen);assert.equal(s.surface,'toilet');assert.ok(Math.hypot(s.deskX-s.x,s.deskZ-s.z)>.7);assert.equal(s.deskX,s.cabinetX);assert.ok(Number.isFinite(s.yaw));}
 });
 test('open cubicle doors connect every seat approach to a common aisle, while both right-hand classroom doors stay clear',()=>{
@@ -17,7 +17,7 @@ test('open cubicle doors connect every seat approach to a common aisle, while bo
  const minX=-6.4,minZ=-9.75,step=.10,nx=134,nz=183,index=(x,z)=>[Math.round((x-minX)/step),Math.round((z-minZ)/step)],clear=(i,j)=>i>=0&&j>=0&&i<nx&&j<nz&&!intersects(minX+i*step,minZ+j*step,solids,.18);
  const start=index(6.4,7),queue=[start],seen=new Set([start.join(',')]);for(let n=0;n<queue.length;n++){const[i,j]=queue[n];for(const[di,dj]of[[1,0],[-1,0],[0,1],[0,-1]]){const a=i+di,b=j+dj,key=a+','+b;if(clear(a,b)&&!seen.has(key)){seen.add(key);queue.push([a,b]);}}}
  for(const s of TOILET_SEATS){assert.ok(seen.has(index(s.x,s.z+.9).join(',')),'front of toilet '+s.id+' unreachable');assert.ok(seen.has(index(s.exitX,s.exitZ).join(',')),'exit '+s.id+' unreachable');}
- for(const z of[-8,7])assert.ok(!intersects(6.9,z,solids,.25));for(let x=-6;x<6.8;x+=.2)assert.ok(!intersects(x,6.5,solids,.2));
+ for(const z of[-8,7])assert.ok(!intersects(6.9,z,solids,.25));for(let x=-6;x<6.8;x+=.2)assert.ok(!intersects(x,7.77,solids,.2));
 });
 test('door collider follows the actual hinge over opening travel and is not one oversized diagonal box',()=>{
  for(const s of TOILET_STALLS)for(const open of[0,.25,.5,.75,1]){const pose=toiletDoorPose(s.id,open),boxes=toiletDoorSolids(s.id,open);assert.equal(boxes.length,12);for(let i=0;i<=80;i++){const u=TOILET_DOOR.width*i/80,x=pose.x+Math.cos(pose.angle)*u,z=pose.z-Math.sin(pose.angle)*u;assert.ok(boxes.some(b=>x>=b.minX-1e-9&&x<=b.maxX+1e-9&&z>=b.minZ-1e-9&&z<=b.maxZ+1e-9));}const c=toiletCabinetDoorPose(s.id,open);assert.ok(Number.isFinite(c.angle));assert.equal(toiletCabinetDoorSolids(s.id,open).length,12);}
@@ -52,7 +52,7 @@ test('a seated pupil can still pick their fully opened stall door and its fittin
   room.update({toiletDoors:{[seat.id]:1}});room.group.updateMatrixWorld(true);
   const door=room.doors.get(seat.id),eye=new T.Vector3(seat.x,1.43,seat.z);
   assert.equal(door.target,door.hinge);assert.ok(door.target.children.length>2);
-  const point=new T.Box3().setFromObject(door.panel,true).getCenter(new T.Vector3());
+  const point=door.hinge.localToWorld(new T.Vector3(TOILET_DOOR.handleX,.91,0));
   const dir=point.sub(eye).normalize(),reach=toiletDoorReach({seated:true,seatId:seat.id},seat.id);
   const hit=new T.Raycaster(eye,dir,0,reach).intersectObject(door.target,true)[0];
   assert.ok(hit&&hit.distance>2.5&&hit.distance<reach);

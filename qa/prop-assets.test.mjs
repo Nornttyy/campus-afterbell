@@ -89,7 +89,7 @@ test('every item rests on the real open drawer floor after arbitrary grip transf
   const prop=createDeskItem(kind),saved=localSnapshots(prop),slot=new T.Group();slot.position.set((index-1)*.28,.680,-.16);
   // Return from holding starts with a non-drawer location; the caller restores
   // the drawer orientation before settling its actual rotated geometry.
-  prop.position.set(0,1.3,0);prop.rotation.set(['burger','lunch'].includes(kind)?0:-Math.PI/2,0,index===1?.04:index===0?-.07:.08);
+  prop.position.set(0,1.3,0);prop.rotation.set(['burger','lunch','hotpotPlate','hotpotBite'].includes(kind)?0:-Math.PI/2,0,index===1?.04:index===0?-.07:.08);
   const rotation=prop.quaternion.clone();restDeskItem(prop,floor-slot.position.y);slot.add(prop);const box=bounds(slot);
   close(box.min.y,floor+.003,.00001,`${kind}/${index} drawer contact`);assert.ok(box.max.y<.815,`${kind} protrudes through table (${box.max.y})`);
   assert.ok(box.min.x>-.48&&box.max.x<.48,`${kind} hits side wall`);assert.deepEqual(prop.scale.toArray(),[1,1,1]);assert.ok(prop.quaternion.angleTo(rotation)<1e-7);assertUnchanged(saved);

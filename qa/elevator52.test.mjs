@@ -76,8 +76,8 @@ test('departed humans no longer block the cabin, host transfer does not reset pe
 
 test('travel time grows with actual floor separation and is symmetric',()=>{
  assert.equal(elevatorDuration('classroom','night'),3);
- assert.equal(elevatorDuration('classroom','tiered8'),9);
- assert.equal(elevatorDuration('tiered8','classroom'),9);
+ assert.equal(elevatorDuration('classroom','tiered8'),8);
+ assert.equal(elevatorDuration('tiered8','classroom'),8);
  assert.equal(elevatorDuration('night6','computer7'),3);
 });
 

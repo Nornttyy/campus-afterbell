@@ -17,7 +17,7 @@ test('teammates need continuous nearby rescue input; walking away cancels; succe
  // the actual route and ordinary speed rather than assuming a 20-second trip.
  const returnFrames=Math.ceil(returnDistance/AI_WALK_SPEEDS.student/dt)+route.length+1;
  for(let frame=0;frame<returnFrames&&!s.seated;frame++)r.step(dt);
- assert.equal(s.seated,true,'rescued pupil did not reach their seat within the physical route budget');assert.equal(s.seatId,s.id);assert.equal(r.drainEvents().filter(e=>e.type==='rescued').length,1);
+ assert.equal(s.seated,true,'rescued pupil did not reach their seat within the physical route budget');assert.equal(s.seatId,s.homeSeatId);assert.equal(r.drainEvents().filter(e=>e.type==='rescued').length,1);
 });
 test('a bound player cannot rescue themselves, move or use items; AI can free the player and they can move again',()=>{
  const r=quiet(),s=r.player;bind(r,s);assert.equal(r.setMovement(1,0),false);assert.equal(r.hold(true),true);assert.equal(r.snapshot().player.bubble.blowing,true);r.hold(false);assert.equal(r.interact(),false);assert.equal(r.setRescue(s.id),false);

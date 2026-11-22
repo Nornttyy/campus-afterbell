@@ -27,7 +27,9 @@ export function interactionIntent(s,target,key){
  }
  if(key!=='E'||p.computerActive||p.caught||['stunned','carried','bound'].includes(p.captivity))return null;
  if(p.mapActivity||s.exam?.mode)return null;
+ if(!teacher&&carrying&&s.stage==='class'&&target?.kind==='toilet-bowl')return target.blocked?null:intent('dropIntoToilet',[target.id],'丢进马桶');
  if(!teacher&&!carrying&&s.stage==='class'){
+  if(target?.kind==='cooked-piece')return intent('takeCookedPiece',[target.id,target.piece],'夹起涮菜');
   if(target?.kind==='meal')return intent('takeMeal',[target.id],'取餐');
   if(target?.kind==='exam-paper')return intent('setExamMode',['paper'],'拿起红笔');
   if(target?.kind==='exam-card')return intent('setExamMode',['card',target.id],'拿起答案卡');

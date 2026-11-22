@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {placeFurniture67} from './furniture-assets67.js?v=campus-83';
-import {TOILET_STALL_SIZE,TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-92';
-export * from './toilet-layout70.js?v=campus-92';
+import {TOILET_STALL_SIZE,TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-94';
+export * from './toilet-layout70.js?v=campus-94';
 
 function ellipseRing(outerX,outerZ,innerX,innerZ,height){
  const shape=new T.Shape();shape.absellipse(0,0,outerX,outerZ,0,Math.PI*2,false);const hole=new T.Path();hole.absellipse(0,0,innerX,innerZ,0,Math.PI*2,true);shape.holes.push(hole);
@@ -10,20 +10,21 @@ function ellipseRing(outerX,outerZ,innerX,innerZ,height){
 const getState=(source,id,fallback=false)=>{const entry=source instanceof Map?source.get(id):source?.[id];return entry==null?fallback:typeof entry==='number'?Math.max(0,Math.min(1,entry)):typeof entry==='object'?!!entry.open:!!entry;};
 const damp=(from,to,dt)=>from+(to-from)*(1-Math.exp(-10*Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0))));
 
-export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,finishes={}}){
+export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,batchHardware,finishes={}}){
  const group=new T.Group();group.name='toilet-classroom-furniture';parent.add(group);
  const fixed=new T.Group();fixed.name='toilet-fixed-partitions';group.add(fixed);
  const geometries=new Set(),materials=new Set(),textures=new Set(),borrowedGeometry=new Set();
  const own=g=>(geometries.add(g),g),material=(c,o={})=>{const m=mat(c,o);materials.add(m);return m;};
  const render=(g,m,p,root=fixed,r=null)=>{const mesh=new T.Mesh(g,m);mesh.position.set(...p);if(r)mesh.rotation.set(...r);mesh.castShadow=mesh.receiveShadow=true;root.add(mesh);return mesh;};
  const compactLaminate=texture(64,256,(c,w,h)=>{
-  const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#dedfda');g.addColorStop(.14,'#d4d7d4');g.addColorStop(.79,'#cdd2d1');g.addColorStop(1,'#b5bfbe');c.fillStyle=g;c.fillRect(0,0,w,h);
+  const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#e1e4e4');g.addColorStop(.14,'#d5dadb');g.addColorStop(.79,'#cdd3d5');g.addColorStop(1,'#bcc5c9');c.fillStyle=g;c.fillRect(0,0,w,h);
+  let seed=314;for(let i=0;i<2200;i++){seed=Math.imul(seed,1664525)+1013904223>>>0;const x=seed%w,y=(seed>>>9)%h;c.fillStyle=i%2?'rgba(88,98,104,.045)':'rgba(253,254,250,.085)';c.fillRect(x,y,1,1);}
  });textures.add(compactLaminate);
  const panel=material('#fff',{map:compactLaminate,roughness:.46}),edge=material('#303a3a',{roughness:.58}),feet=material('#784d47',{roughness:.56}),porcelain=material('#e7e7db',{roughness:.24}),seatMat=material('#f4f2e5',{roughness:.31}),inside=material('#afb5a7',{roughness:.36}),water=material('#8fa79a',{roughness:.18,metalness:.06}),steel=material('#a3aaa5',{metalness:.56,roughness:.31});
  const woodMap=texture(256,512,(c,w,h)=>{c.fillStyle='#bdb088';c.fillRect(0,0,w,h);for(let i=0;i<85;i++){const x=(i*43.271)%w;c.strokeStyle=i%3?'rgba(101,77,45,.08)':'rgba(255,241,196,.13)';c.lineWidth=.5+(i%3)*.35;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x+Math.sin(i)*3,h*.3,x+Math.cos(i)*3,h*.7,x,h);c.stroke();}});textures.add(woodMap);const wood=material('#fff',{map:woodMap,bumpMap:woodMap,bumpScale:.0014,roughness:.60}),shelf=material('#786443',{roughness:.76});
  const floorMap=finishes.tile?.clone()||texture(512,512,(c,w,h)=>{c.fillStyle='#b3c1c3';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=128)for(let x=0;x<w;x+=128){c.fillStyle=((x+y)/128)%2?'#adbdc1':'#b8c6c8';c.fillRect(x+1,y+1,126,126);c.strokeStyle='#9aaeb3';c.lineWidth=1.5;c.strokeRect(x+.5,y+.5,127,127);}});textures.add(floorMap);floorMap.wrapS=floorMap.wrapT=T.RepeatWrapping;floorMap.repeat.set(finishes.tile?11:6.75,finishes.tile?13:8);floorMap.needsUpdate=true;
- const floor=material('#e3ebee',{map:floorMap,roughness:.43});
- const floorMesh=render(own(new T.PlaneGeometry(13.75,16.25)),floor,[.275,.007,-1.825],fixed,[-Math.PI/2,0,0]);floorMesh.name='toilet-tiled-floor';floorMesh.castShadow=false;
+ const floor=material('#a9b7c6',{map:floorMap,roughness:.57});
+ const floorMesh=render(own(new T.PlaneGeometry(13.85,18.80)),floor,[.275,.007,-.60],fixed,[-Math.PI/2,0,0]);floorMesh.name='toilet-tiled-floor';floorMesh.castShadow=false;
  const wallMap=texture(256,256,(c,w,h)=>{c.fillStyle='#e3e5de';c.fillRect(0,0,w,h);c.strokeStyle='#b8c1bb';c.lineWidth=1.2;for(let p=0;p<=256;p+=64){c.beginPath();c.moveTo(p,0);c.lineTo(p,h);c.moveTo(0,p);c.lineTo(w,p);c.stroke();}});textures.add(wallMap);wallMap.wrapS=wallMap.wrapT=T.RepeatWrapping;wallMap.repeat.set(3.6,.32);const wallTile=material('#fff',{map:wallMap,roughness:.58});
  // Low tile wainscot only; the host retains existing exterior walls/windows.
  box(wallTile,[-6.615,.56,-1.825],[.025,1.1,16.25],null,fixed);box(wallTile,[.275,.56,-9.965],[13.8,1.1,.025],null,fixed);
@@ -35,12 +36,14 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,fini
  const signGeo=own(new T.PlaneGeometry(.43,.134));
  const posterMap=texture(256,384,(c,w,h)=>{c.fillStyle='#ececdf';c.fillRect(0,0,w,h);c.strokeStyle='#343b36';c.lineWidth=5;c.strokeRect(8,8,w-16,h-16);c.beginPath();c.ellipse(130,130,58,33,0,0,Math.PI*2);c.stroke();c.strokeRect(146,45,42,65);c.beginPath();c.moveTo(92,145);c.lineTo(100,207);c.lineTo(150,207);c.lineTo(163,148);c.stroke();c.strokeStyle='#b73325';c.lineWidth=12;c.beginPath();c.arc(128,125,88,0,Math.PI*2);c.moveTo(66,62);c.lineTo(189,188);c.stroke();c.fillStyle='#252e29';c.font='bold 27px sans-serif';c.textAlign='center';for(const[t,y]of[['请勿往马桶里',278],['丢垃圾',320]])c.fillText(t,w/2,y);});textures.add(posterMap);const posterMat=material('#fff',{map:posterMap,roughness:.85,side:T.DoubleSide}),posterGeo=own(new T.PlaneGeometry(.39,.585));
  const seats=new Map(),cabinets=new Map(),doors=new Map();
+ const bowlMouth=own(new T.CylinderGeometry(.245,.215,.09,16)),interactionMaterial=new T.MeshBasicMaterial({visible:false});materials.add(interactionMaterial);
  for(const s of TOILET_STALLS){
   const stall=new T.Group();stall.name='toilet-stall-'+s.id;stall.position.set(s.x,0,s.z);fixed.add(stall);
   const sideTop=TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height,sideMiddle=TOILET_STALL_SIZE.bottom+TOILET_STALL_SIZE.height/2;
-  for(const x of[-1.05,1.05]){box(panel,[x,sideMiddle,0],[.045,TOILET_STALL_SIZE.height,2.38],null,stall);for(const z of[-1.19,1.19]){box(edge,[x,sideMiddle,z],[.06,TOILET_STALL_SIZE.height,.055],null,stall);box(feet,[x,.115,z],[.065,.18,.07],null,stall);}box(edge,[x,sideTop-.0225,0],[.06,.045,2.43],null,stall);}
-  box(panel,[0,sideMiddle,-1.19],[2.10,TOILET_STALL_SIZE.height,.045],null,stall);box(edge,[0,sideTop-.0225,-1.19],[2.15,.045,.055],null,stall);
-  for(const x of[-.99,.99])box(panel,[x,1.035,1.19],[.12,1.71,.045],null,stall);
+  const halfWidth=TOILET_STALL_SIZE.width/2;
+  for(const x of s.col===0?[-halfWidth,halfWidth]:[halfWidth]){box(panel,[x,sideMiddle,0],[.045,TOILET_STALL_SIZE.height,2.38],null,stall);for(const z of[-1.19,1.19]){box(edge,[x,sideMiddle,z],[.06,TOILET_STALL_SIZE.height,.055],null,stall);box(feet,[x,.115,z],[.065,.18,.07],null,stall);}box(edge,[x,sideTop-.0225,0],[.06,.045,2.43],null,stall);}
+  box(panel,[0,sideMiddle,-1.19],[TOILET_STALL_SIZE.width-.045,TOILET_STALL_SIZE.height,.045],null,stall);box(edge,[0,sideTop-.0225,-1.19],[TOILET_STALL_SIZE.width-.06,.045,.055],null,stall);
+  for(const x of[-halfWidth+.072,halfWidth-.072])box(panel,[x,1.035,1.19],[.096,1.71,.045],null,stall);
   const fixture=new T.Group();fixture.name='toilet-fixture-'+s.id;fixture.position.set(-.18,0,-.48);stall.add(fixture);
   const supplied=placeFurniture67(fixture,'toilet');
   if(!supplied){
@@ -56,12 +59,14 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,fini
   const seatTarget=new T.Object3D();seatTarget.name='toilet-seat-target-'+s.id;seatTarget.position.set(s.x-.18,.36,s.z-.48);group.add(seatTarget);
   const exitTarget=new T.Object3D();exitTarget.position.set(s.x-.18,0,s.z+1.68);group.add(exitTarget);
   const pick=render(own(new T.CylinderGeometry(.235,.235,.08,12)),new T.MeshBasicMaterial({visible:false}),[s.x-.18,.36,s.z-.48],group);materials.add(pick.material);pick.name='toilet-seat-pick-'+s.id;pick.userData={animated:true,seatId:s.id,interaction:'sit',kind:'toilet'};
-  seats.set(s.id,{group:stall,toilet:pick,target:pick,fixture,seatTarget,exitTarget,...TOILET_SEATS[s.id]});
+  const mouth=render(bowlMouth,interactionMaterial,[s.x-.18,.50,s.z-.38],group);
+  mouth.name='toilet-bowl-opening-'+s.id;mouth.castShadow=mouth.receiveShadow=false;
+  seats.set(s.id,{group:stall,toilet:pick,target:pick,fixture,mouth,seatTarget,exitTarget,...TOILET_SEATS[s.id]});
   const hinge=new T.Group();hinge.name='toilet-door-hinge-'+s.id;hinge.position.set(s.x+TOILET_DOOR.hingeX,0,s.z+TOILET_DOOR.hingeZ);group.add(hinge);
   const door=box(panel,[TOILET_DOOR.width/2,TOILET_DOOR.bottom+TOILET_DOOR.height/2,0],[TOILET_DOOR.width,TOILET_DOOR.height,TOILET_DOOR.depth],null,hinge);door.name='toilet-door-'+s.id;door.userData={animated:true,seatId:s.id,doorId:s.id,interaction:'cubicle-door'};
-  box(steel,[1.70,.91,0],[.098,.148,.057],null,hinge);
+  box(steel,[TOILET_DOOR.handleX,.91,0],[.098,.148,.057],null,hinge);
   for(const y of[.49,1.55])render(hingeGeo,steel,[.004,y,0],hinge);
-  for(const side of[-1,1]){render(knobGeo,edge,[1.70,.91,side*.048],hinge);const plaque=render(signGeo,signMaps[0],[1.04,1.59,side*.027],hinge,[0,side<0?Math.PI:0,0]);plaque.name='toilet-occupancy-'+s.id+'-'+side;}
+  for(const side of[-1,1]){render(knobGeo,edge,[TOILET_DOOR.handleX,.91,side*.048],hinge);const plaque=render(signGeo,signMaps[0],[TOILET_DOOR.width*.56,1.59,side*.027],hinge,[0,side<0?Math.PI:0,0]);plaque.name='toilet-occupancy-'+s.id+'-'+side;}
   render(posterGeo,posterMat,[.77,.91,-.026],hinge,[0,Math.PI,0]);
   hinge.traverse(o=>{o.userData.animated=true;});
   Object.assign(hinge.userData,{doorId:s.id,interaction:'cubicle-door'});
@@ -81,14 +86,21 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,fini
  // geometry still shared with the main classroom or another map.
  fixed.traverse(o=>{if(o.isMesh&&!geometries.has(o.geometry))borrowedGeometry.add(o.geometry);});
  if(bakeStatic){bakeStatic(fixed);fixed.traverse(o=>{if(o.isMesh&&!borrowedGeometry.has(o.geometry))geometries.add(o.geometry);});}
- let disposed=false;
+ // Door panels still provide the individual pick targets. Occupancy signs
+ // change material independently, so keep them out of the rigid batches.
+ const fittings=[...doors.values()].flatMap(d=>d.hinge.children.filter(m=>!m.name.startsWith('toilet-occupancy-')));
+ for(const c of cabinets.values())fittings.push(...c.door.children);
+ const batch=batchHardware?.(fittings,group);
+ let disposed=false,batchReady=false;
  return{group,seats,cabinets,doors,solids:TOILET_SOLIDS,
   update(state={},dt=0){
    if(disposed)return;const people=[...(state.students||[]),...(state.player?[state.player]:[])];const occupied=new Set(people.filter(p=>p.seated&&!p.caught&&!p.officeChair).map(p=>p.seatId));
-   for(const[id,d]of doors){const doorState=getState(state.toiletDoors,id);d.open=typeof doorState==='number'?doorState:damp(d.open,doorState?1:0,dt);d.openness=d.open;d.hinge.rotation.y=TOILET_DOOR.angle*d.open;const isOccupied=occupied.has(id);if(isOccupied!==d.occupied){d.occupied=isOccupied;d.hinge.traverse(o=>{if(o.name.startsWith('toilet-occupancy-'))o.material=signMaps[Number(isOccupied)];});}}
-   for(const[id,c]of cabinets){const local=state.player?.seated&&state.player.seatId===id&&state.drawer?.open,remote=people.some(p=>p.seated&&p.seatId===id&&(p.drawerOpen??p.drawer?.open));const cabinetState=getState(state.toiletCabinets,id,local||remote);c.open=typeof cabinetState==='number'?cabinetState:damp(c.open,cabinetState?1:0,dt);c.openness=c.open;c.door.rotation.y=TOILET_CABINET.doorAngle*c.open;}
+   let moved=!batchReady;
+   for(const[id,d]of doors){const doorState=getState(state.toiletDoors,id);d.open=typeof doorState==='number'?doorState:damp(d.open,doorState?1:0,dt);if(d.open!==d.openness)moved=true;d.openness=d.open;d.hinge.rotation.y=TOILET_DOOR.angle*d.open;const isOccupied=occupied.has(id);if(isOccupied!==d.occupied){d.occupied=isOccupied;d.hinge.traverse(o=>{if(o.name.startsWith('toilet-occupancy-'))o.material=signMaps[Number(isOccupied)];});}}
+   for(const[id,c]of cabinets){const local=state.player?.seated&&state.player.seatId===id&&state.drawer?.open,remote=people.some(p=>p.seated&&p.seatId===id&&(p.drawerOpen??p.drawer?.open));const cabinetState=getState(state.toiletCabinets,id,local||remote);c.open=typeof cabinetState==='number'?cabinetState:damp(c.open,cabinetState?1:0,dt);if(c.open!==c.openness)moved=true;c.openness=c.open;c.door.rotation.y=TOILET_CABINET.doorAngle*c.open;}
+   if(batch&&moved&&group.visible){batch.sync();batchReady=true;}
   },
   dynamicSolids(){return[...doors].flatMap(([id,d])=>toiletDoorSolids(id,d.open)).concat([...cabinets].flatMap(([id,c])=>toiletCabinetDoorSolids(id,c.open)));},
-  dispose(){if(disposed)return;disposed=true;group.removeFromParent();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();for(const t of textures)t.dispose();}
+  dispose(){if(disposed)return;disposed=true;batch?.dispose();group.removeFromParent();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();for(const t of textures)t.dispose();}
  };
 }

@@ -82,7 +82,7 @@ test('social poses are shared while standing and end when the performer walks, s
 test('the driver can reach both decks and the ordinary classroom retains its centre aisle',()=>{
  const layout={busDeparted:true};assert.equal(busBlocked(BUS.driver.x,BUS.driver.z,.24,0,layout),false);
  assert.ok(busRoute(BUS.driver,{x:6.03,z:-12.91,busDeck:1},.24,layout).length>2);
- const seats=createSeatLayout(6,'classroom');assert.equal(seats[0].pattern,'facing-aisle');assert.equal(seats.length,20);
+ const seats=createSeatLayout(6,'classroom');assert.equal(seats[0].pattern,'facing-aisle');assert.equal(seats.length,28);
 });
 
 test('the campus radio awards one tenth per full playing second, including after a pause, on both excursion maps',()=>{

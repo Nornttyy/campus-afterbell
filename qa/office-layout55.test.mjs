@@ -11,9 +11,9 @@ function lab(scene,screenContent=null,officeScreens=new Map()){
  const variants=createRoomVariants({scene,box:make,rounded:(m,p,s,rad,r,g)=>make(m,p,s,r,g),mat,texture:()=>new T.Texture(),bakeStatic:()=>{},screenContent,officeScreens});return{variants,dispose(){variants.dispose();scene.traverse(o=>o.geometry?.dispose());materials.forEach(m=>m.dispose());}};
 }
 
-test('larger office has five full-size non-overlapping workstations and reachable chair exits',()=>{
+test('larger office has three full-size non-overlapping workstations and reachable chair exits',()=>{
  const f=campusScene(),ctx=createLayoutContext();try{
-  assert.ok((OFFICE.maxX-OFFICE.minX)*(OFFICE.maxZ-OFFICE.minZ)>130);assert.equal(OFFICE_DESKS.length,5);assert.equal(f.campus.officeScreens.size,5);
+  assert.ok((OFFICE.maxX-OFFICE.minX)*(OFFICE.maxZ-OFFICE.minZ)>130);assert.equal(OFFICE_DESKS.length,3);assert.equal(f.campus.officeScreens.size,3);
   const entries=OFFICE_DESKS.map(d=>({id:d.id,box:box(f.scene.getObjectByName(d.id==='office-lunch'?'office-openable-lunch-desk':d.id))}));
   for(const c of OFFICE_CHAIRS)entries.push({id:c.id,box:box(f.scene.getObjectByName(c.id==='office-chair'?'office-sittable-chair':c.id))});
   entries.push({id:'whiteboard',box:box(f.scene.getObjectByName('office-mobile-board'))});
@@ -46,8 +46,8 @@ test('complete courtyard tree crowns stay beyond the enlarged office and school 
 
 test('each office drawer opens independently and retains its own item parent and pick target',()=>{
  const f=campusScene();try{
-  const targets=f.campus.getTargets();assert.equal(targets.officeDesks.length,5);assert.equal(targets.officeChairs.length,5);assert.equal(f.campus.officeDrawers.size,5);
-  const selected=OFFICE_DESKS[3].id;
+  const targets=f.campus.getTargets();assert.equal(targets.officeDesks.length,3);assert.equal(targets.officeChairs.length,3);assert.equal(f.campus.officeDrawers.size,3);
+  const selected=OFFICE_DESKS.at(-1).id;
   for(let i=0;i<12;i++)f.campus.update({officeDrawers:OFFICE_DESKS.map(d=>({id:d.id,open:d.id===selected}))},.1);
   for(const d of OFFICE_DESKS){const drawer=f.campus.officeDrawers.get(d.id),target=targets.officeDesks.find(t=>t.id===d.id);assert.equal(target.drawer,drawer);assert.equal(target.itemParent,drawer);if(d.id===selected)assert.ok(drawer.position.z<-.599);else assert.equal(drawer.position.z,-.08);}
   const chair=OFFICE_CHAIRS.find(c=>c.deskId===selected);assert.ok(chair);assert.ok(targets.officeChairs.some(c=>c.id===chair.id));

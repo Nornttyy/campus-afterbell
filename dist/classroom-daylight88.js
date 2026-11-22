@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-93';
+import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-94';
 
 // The three colour channels store window bounce near the floor, window bounce
 // at eye height, and diffuse light near the suspended hall tubes. One bilinear
@@ -67,20 +67,38 @@ const location=`
  vec2 uv88=(p88.xz-vec2(${f(left)},${f(back)}))/vec2(${f(right-left)},${f(front-back)});
 `;
 
-// The courtyard-side windows occupy six real bays. When shadow maps are off,
-// project the existing sun direction back to their sills, heads and mullions.
-// With dynamic shadows enabled the renderer already does this per fragment.
+// A mipmapped transmission mask follows the actual aperture, aluminium meeting
+// rail and transom of each window. Distant light pools have broader penumbrae.
+function makeWindowMask(openings){
+ const w=256,h=64,data=new Uint8Array(w*h*4),height=4.51,span=CLASSROOM.maxZ-CLASSROOM.minZ;
+ const side=openings.filter(o=>o.side===-1);
+ for(let row=0;row<h;row++)for(let col=0;col<w;col++){
+  const z=CLASSROOM.minZ+(col+.5)*span/w,y=(row+.5)*height/h;
+  const pane=side.find(o=>z>o.minZ&&z<o.maxZ&&y>o.bottom&&y<o.top);
+  let value=0;
+  if(pane){
+   const jamb=Math.min(z-pane.minZ,pane.maxZ-z,y-pane.bottom,pane.top-y);
+   const stile=Math.abs(z-(pane.minZ+pane.maxZ)/2),rail=Math.abs(y-(pane.top-.50));
+   value=T.MathUtils.smoothstep(Math.min(jamb-.065,stile-.035,rail-.04),0,.075);
+  }
+  const index=(row*w+col)*4;data[index]=data[index+1]=data[index+2]=Math.round(value*255);data[index+3]=255;
+ }
+ const mask=new T.DataTexture(data,w,h,T.RGBAFormat);mask.name='ordinary-window-transmission';
+ mask.minFilter=T.LinearMipmapLinearFilter;mask.magFilter=T.LinearFilter;mask.generateMipmaps=true;mask.needsUpdate=true;return mask;
+}
+const sunlight=`
+ uniform sampler2D campusWindow94;
+ float windowTransmission94(vec3 p,float blur){
+  float distanceToWindow=max(0.0,p.x-${f(CLASSROOM.minX-.10)});
+  vec2 hit=vec2(p.z+distanceToWindow*(9.0/17.0),p.y+distanceToWindow*(6.75/17.0));
+  vec2 uv=(hit-vec2(${f(CLASSROOM.minZ)},0.0))/vec2(${f(CLASSROOM.maxZ-CLASSROOM.minZ)},4.51);
+  if(any(lessThan(uv,vec2(0.0)))||any(greaterThan(uv,vec2(1.0))))return 0.0;
+  return texture2D(campusWindow94,uv,blur).r;
+ }
+`;
 const portableSun=`
  #ifndef USE_SHADOWMAP
-  float reach88=max(0.0,p88.x-${f(CLASSROOM.minX-.10)});
-  vec2 hit88=vec2(p88.z+reach88*(9.0/17.0),p88.y+reach88*(6.75/17.0));
-  float bay88=(hit88.x-${f(CLASSROOM.minZ)})/${f((CLASSROOM.maxZ-CLASSROOM.minZ)/6)};
-  float pane88=abs(fract(bay88)-.5),soft88=.025+.004*reach88;
-  float open88=smoothstep(.025-soft88,.055+soft88,pane88)*(1.0-smoothstep(.44-soft88,.48+soft88,pane88));
-  open88*=smoothstep(.43-soft88,.55+soft88,abs(hit88.x-${f(CLASSROOM.minZ+2*(CLASSROOM.maxZ-CLASSROOM.minZ)/6)}));
-  open88*=smoothstep(1.1-soft88,1.23+soft88,hit88.y)*(1.0-smoothstep(3.70-soft88,3.83+soft88,hit88.y));
-  open88*=smoothstep(.015,.09+soft88,abs(hit88.y-3.33))*step(0.0,bay88)*(1.0-step(6.0,bay88));
-  reflectedLight.directDiffuse*=mix(.29,1.0,hall88?0.0:open88);
+  reflectedLight.directDiffuse*=mix(.42,1.0,hall88?0.0:windowTransmission94(p88,1.5));
  #endif`;
 
 const finishes={
@@ -94,15 +112,9 @@ const finishes={
  frame:`diffuseColor.rgb*=mix(vec3(.75,.74,.66),vec3(.92,.89,.84),day88);`,
  floor:`diffuseColor.rgb*=mix(vec3(.65,.74,.73),vec3(.99,1.00,.98),day88);
   diffuseColor.rgb*=mix(.88,1.0,field88.a);
-  // Broad penumbra beyond the sill; its footprint follows the actual six bays.
-  float reach=max(0.0,p88.x-${f(CLASSROOM.minX)});
-  float hit=p88.z+reach*(9.0/17.0);
-  float across=abs(fract((hit-${f(CLASSROOM.minZ)})/${f((CLASSROOM.maxZ-CLASSROOM.minZ)/6)})-.5);
-  float strip=smoothstep(.028,.105,across)*(1.0-smoothstep(.37,.51,across));
-  float lightPool=strip*smoothstep(2.12,3.25,reach)*(1.0-smoothstep(8.3,10.6,reach));
   if(!hall88){
-   // Sunlit strips retain the warm daylight. The shaded aggregate reads as grey stone.
-   diffuseColor.rgb*=mix(vec3(.87,.91,.95),vec3(1.29,1.23,1.13),lightPool);
+   float pool=windowTransmission94(p88,2.8);
+   diffuseColor.rgb*=mix(vec3(.88,.91,.96),vec3(1.13,1.10,1.065),pool);
   }`,
  furniture:`float wood88=smoothstep(1.22,1.72,diffuseColor.r/max(.001,diffuseColor.g))*(1.0-smoothstep(.50,.86,diffuseColor.b/max(.001,diffuseColor.g)));
   diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.90,1.04,.89),wood88);`,
@@ -127,7 +139,7 @@ const finishes={
 };
 
 export function createClassroomDaylight(openings,lamps){
- const map=makeBounceMap(openings,lamps),enabled={value:false},bound=new Set(),glassMaterials=[];
+ const map=makeBounceMap(openings,lamps),windowMask=makeWindowMask(openings),enabled={value:false},bound=new Set(),glassMaterials=[];
  // Include both poses of the swinging classroom doors and the office door.
  const paneBounds=[
   new T.Box3(new T.Vector3(partition-1.7,1.04,CLASSROOM.minZ-.2),new T.Vector3(partition+1.7,4.22,CLASSROOM.maxZ+.2)),
@@ -141,7 +153,7 @@ export function createClassroomDaylight(openings,lamps){
   const previous=material.onBeforeCompile,key=material.customProgramCacheKey();
   material.onBeforeCompile=function(shader,renderer){
    previous.call(this,shader,renderer);
-   shader.uniforms.campusDay88=enabled;shader.uniforms.campusBounce88={value:map};
+   shader.uniforms.campusWindow94={value:windowMask};shader.uniforms.campusDay88=enabled;shader.uniforms.campusBounce88={value:map};
    const vary='varying vec3 vCampusPosition88;\n'+(finish==='glass'?'varying vec2 vPaneUv88;\n':'');
    shader.vertexShader=vary+shader.vertexShader.replace('#include <worldpos_vertex>',`#include <worldpos_vertex>
     vec4 local88=vec4(transformed,1.0);
@@ -153,7 +165,7 @@ export function createClassroomDaylight(openings,lamps){
     #endif
     vCampusPosition88=(modelMatrix*local88).xyz;
     ${finish==='glass'?'vPaneUv88=uv;':''}`);
-   shader.fragmentShader=vary+'uniform bool campusDay88;\nuniform sampler2D campusBounce88;\n'+shader.fragmentShader
+   shader.fragmentShader=sunlight+vary+'uniform bool campusDay88;\nuniform sampler2D campusBounce88;\n'+shader.fragmentShader
     .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
      ${location}
      float day88=0.0;vec4 field88=vec4(1.0);
@@ -170,7 +182,7 @@ export function createClassroomDaylight(openings,lamps){
   };
   material.customProgramCacheKey=()=>key+'-daylight88-'+finish;material.needsUpdate=true;
  }
- return{map,sky:makeDaySky(),bind,
+ return{map,windowMask,sky:makeDaySky(),bind,
   setActive(value){
    if(enabled.value===Boolean(value))return;
    enabled.value=Boolean(value);

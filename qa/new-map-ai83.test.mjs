@@ -40,18 +40,18 @@ for(const map of ['dorm','toilet','hotpot'])test(`${map} patrol reaches checkpoi
   r.step(.1);
   if(map==='dorm'){assert.notEqual(r.teacher.phase,'board');if(r._plan.intent==='inspect'&&!r._plan.route.length)levels.add(r.teacher.pitch>0?'lower':'upper');}
   for(const [key,at] of Object.entries(r._inspectionVisits))if(!seen.has(key)){
-   seen.add(key);const p=inspectionPoints(map).find(p=>p.checkpointId===key);
+   seen.add(key);const p=inspectionPoints(map,r.seats).find(p=>p.checkpointId===key);
    assert.ok(Math.hypot(p.x-r.teacher.x,p.z-r.teacher.z)<.3,`${key} marked at a distance`);
   }
  }
- assert.ok(seen.size>=(map==='toilet'?12:6),[...seen].join(','));
+ assert.ok(seen.size>=(map==='toilet'?12:map==='hotpot'?inspectionPoints(map,r.seats).length:6),[...seen].join(','));
  if(map==='dorm'){assert.equal(levels.size,2);assert.ok(r.teacher.stamina>0);}
  if(map==='toilet')assert.ok(Object.values(r.toiletDoors).some(v=>v>.9));
 });
 
 test('toilet closed door hides seated food user and opened door reveals them',()=>{
- const r=quiet('toilet'),a=r.students[10],s=TOILET_STALLS[10],t=face({...r.teacher,x:s.x-.18,z:s.z+4.1},a);
- assert.equal(canSee(t,a,[],r.layout),false);r.toiletDoors[10]=1;r._toiletDoorTargets[10]=true;r._advanceFurniture(0);assert.equal(canSee(t,a,[],r.layout),true);
+ const r=quiet('toilet'),a=r.students[10],s=TOILET_STALLS[a.seatId],t=face({...r.teacher,x:s.x-.18,z:s.z+2.92},a);
+ assert.equal(canSee(t,a,[],r.layout),false);r.toiletDoors[s.id]=1;r._toiletDoorTargets[s.id]=true;r._advanceFurniture(0);assert.equal(canSee(t,a,[],r.layout),true);
 });
 
 test('dorm lower and upper bunk visibility uses their real heights and each room wall',()=>{

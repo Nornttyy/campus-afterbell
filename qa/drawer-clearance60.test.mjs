@@ -31,7 +31,7 @@ test('actual imported and computer trays stay clear of chair triangles and neigh
  }
 });
 
-test('all five office drawers remain above actual chair seats and inside their authoritative opened bounds',()=>{
+test('all three office drawers remain above actual chair seats and inside their authoritative opened bounds',()=>{
  const f=campusScene();try{
   const chairs=OFFICE_CHAIRS.map(c=>shape(f.scene.getObjectByName(c.id==='office-chair'?'office-sittable-chair':c.id))),layout=createLayoutContext();
   syncDrawerCollisions(layout,'classroom',OFFICE_DESKS.map(d=>({seated:true,_drawerOpen:true,_officeChair:true,_officeDeskId:d.id})));

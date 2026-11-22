@@ -14,7 +14,7 @@ const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
 const projectile=(map,layout,values)=>Object.assign(createSmokeProjectile({id:9,x:6.5,z:6,yaw:0},90,0,map,layout),values);
 
 test('special maps keep genuine actor places without synthesizing ordinary desks or chairs',()=>{
- for(const [map,count] of [['hotpot',24],['toilet',12],['dorm',24],['playground',24]]){
+ for(const [map,count] of [['hotpot',32],['toilet',28],['dorm',32],['playground',24]]){
   const c=context(map);assert.equal(c.seats.length,count);assert.equal(c.desks.length,0);assert.ok(c.furnitureVolumes.length);
   if(map!=='hotpot')assert.equal(c.chairBacks.length,OFFICE_DESKS.length);
   if(map!=='hotpot')assert.ok(!c.walkSolids.includes(LECTERN));

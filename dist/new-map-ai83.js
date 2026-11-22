@@ -1,18 +1,18 @@
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-92';
-import {DORM_ROOMS,DORM_BUNK_ROWS,dormRoomPoint} from './dorm-layout70.js?v=campus-92';
-import {HOTPOT_TABLES} from './hotpot-layout70.js?v=campus-92';
-import {TOILET_STALLS} from './toilet-layout70.js?v=campus-92';
+import {DORM_ROOMS,DORM_BUNK_ROWS,dormRoomPoint} from './dorm-layout70.js?v=campus-94';
+import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
+import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94';
 import {NORMAL_WALK_SPEEDS} from './movement55.js?v=campus-93';
-import {startMapActivity,releaseMapActivity} from './map-activities77.js?v=campus-93';
+import {startMapActivity,releaseMapActivity} from './map-activities77.js?v=campus-94';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const vendingApproach=v=>({x:v.x+Math.sin(v.yaw)*.95,z:v.z+Math.cos(v.yaw)*.95});
 // Locations come from the existing reference-based furnishings. Delays and
 // decision weights are local AI tuning, not measured original-game constants.
-export function inspectionPoints(map){
+export function inspectionPoints(map,seats){
  if(map==='bus')return [{x:5.62,z:-13.31,busDeck:0,checkpointId:'coach-aisle'},{x:-4.38,z:-14.26,busDeck:0,checkpointId:'coach-washroom'},{x:6.03,z:-12.91,busDeck:1,checkpointId:'coach-study-deck'}];
  if(map==='dorm')return DORM_ROOMS.flatMap(r=>DORM_BUNK_ROWS.map((z,i)=>({...dormRoomPoint(r.id,0,z),roomId:r.id,row:i,checkpointId:`bed-${r.id}-${i}`})));
- if(map==='toilet')return TOILET_STALLS.map(s=>({x:s.x+1.34,z:s.z+1.87,stallId:s.id,checkpointId:`stall-${s.id}`}));
- if(map==='hotpot')return HOTPOT_TABLES.map(t=>({x:t.x+2.05,z:t.z+2.05,tableId:t.id,checkpointId:`table-${t.id}`}));
+ if(map==='toilet')return TOILET_STALLS.map(s=>({x:s.x,z:s.z+2.90,stallId:s.id,checkpointId:`stall-${s.id}`}));
+ if(map==='hotpot')return diningPlanForSeats(seats).tables.map(t=>({x:t.x+t.size/2+.51,z:t.z+t.size/2+.51,tableId:t.id,checkpointId:`table-${t.id}`}));
  if(map==='playground')return [...PLAYGROUND_LAYOUT.vending.map(v=>({...vendingApproach(v),checkpointId:v.id})),...PLAYGROUND_LAYOUT.bars.filter((_,i)=>i%2===0).map(b=>({x:b.x-1.8,z:b.z,checkpointId:b.id}))];
  return [];
 }

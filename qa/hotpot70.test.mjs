@@ -2,15 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import * as T from '../dist/vendor/three.module.js';
-import {HOTPOT_TABLE_SIZE,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from '../dist/hotpot-layout70.js';
+import {HOTPOT_TABLE_SIZE,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS,hotpotLayout} from '../dist/hotpot-layout70.js';
 import {createHotpotRoom} from '../dist/hotpot-room70.js';
 import {hotpotHelpers} from './hotpot70-helpers.mjs';
 import {loadGeometry} from './gltf-geometry.mjs';
 const inside=(x,z,r=0)=>HOTPOT_SOLIDS.some(s=>x>s.minX-r&&x<s.maxX+r&&z>s.minZ-r&&z<s.maxZ+r);
 test('hotpot layout data can be shared by renderer and server without loading Three or DOM',async()=>{const code=await readFile(new URL('../dist/hotpot-layout70.js',import.meta.url),'utf8');assert.doesNotMatch(code,/^import\s/m);assert.ok(Object.isFrozen(HOTPOT_SEATS)&&Object.isFrozen(HOTPOT_SOLIDS));});
-test('each independent hotpot table has four differently facing usable seats and existing drawer/book anchors',()=>{
- assert.equal(HOTPOT_SEATS.length,24);assert.equal(new Set(HOTPOT_SEATS.map(s=>s.id)).size,24);
- for(const table of HOTPOT_TABLES){const seats=HOTPOT_SEATS.filter(s=>s.tableId===table.id);assert.equal(seats.length,4);assert.equal(new Set(seats.map(s=>s.yaw)).size,4);for(const s of seats){assert.equal(s.map,'hotpot');assert.ok(Math.abs(Math.hypot(s.x-s.deskX,s.z-s.deskZ)-.78)<1e-9);assert.ok(Math.abs(Math.hypot(s.deskX-table.x,s.deskZ-table.z)-(HOTPOT_TABLE_SIZE/2-.385))<1e-9);assert.ok(!inside(s.x,s.z,.20));const dx=table.x-s.x,dz=table.z-s.z;assert.ok(dx*Math.sin(s.yaw)+dz*Math.cos(s.yaw)>HOTPOT_TABLE_SIZE/2+.38);}}
+test('both dining rooms have four-sided seating, complete drawer anchors and accessible places',()=>{
+ for(const [seed,count,places] of [[73,4,32],[6,7,36]]){
+  const plan=hotpotLayout(seed);assert.equal(plan.tables.length,count);assert.equal(plan.seats.length,places);
+  for(const table of plan.tables){
+   const seats=plan.seats.filter(s=>s.tableId===table.id);assert.equal(seats.length,4*table.perSide);assert.equal(new Set(seats.map(s=>s.yaw)).size,4);
+   for(const s of seats){
+    assert.equal(s.map,'hotpot');assert.ok(Math.abs(Math.hypot(s.x-s.deskX,s.z-s.deskZ)-.78)<1e-9);
+    const dx=table.x-s.x,dz=table.z-s.z;assert.ok(Math.abs(dx*Math.sin(s.yaw)+dz*Math.cos(s.yaw)-(table.size/2+.395))<1e-6);
+    assert.ok(!plan.walk.some(v=>s.x>v.minX-.2&&s.x<v.maxX+.2&&s.z>v.minZ-.2&&s.z<v.maxZ+.2));
+   }
+  }
+ }
 });
 test('all seats have a connected walking exit, both doors and the lectern aisle stay clear',()=>{
  const minX=-6.4,minZ=-9.75,step=.15,nx=90,nz=123,clear=(i,j)=>i>=0&&i<nx&&j>=0&&j<nz&&!inside(minX+i*step,minZ+j*step,.2),index=(x,z)=>[Math.round((x-minX)/step),Math.round((z-minZ)/step)];
@@ -24,7 +33,7 @@ test('folding-screen neighbours meet without a floating panel gap; their collisi
 test('actual hotpot geometry has closed bowl surfaces, red soup, square pedestal tops and stays below 8000 triangles per table',()=>{
  const parent=new T.Group(),helpers=hotpotHelpers(parent),room=createHotpotRoom(helpers);parent.updateMatrixWorld(true);
  for(const data of HOTPOT_TABLES){const table=room.group.getObjectByName('hotpot-table-'+data.id);let triangles=0;table.traverse(o=>{if(o.isMesh){triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;assert.ok(o.geometry.attributes.normal);assert.ok(o.geometry.attributes.position.array.every(Number.isFinite));}});assert.ok(triangles<8000,'table '+data.id+': '+triangles);const bounds=new T.Box3().setFromObject(table);assert.ok(Math.abs(bounds.min.x-(data.x-HOTPOT_TABLE_SIZE/2))<.003);assert.ok(Math.abs(bounds.max.x-(data.x+HOTPOT_TABLE_SIZE/2))<.003);assert.ok(bounds.max.y<=1.17);assert.ok(room.group.getObjectByName('hotpot-pot-'+data.id));}
- assert.equal(room.group.children.filter(g=>g.name.startsWith('hotpot-steam-')).length,6);room.dispose();helpers.dispose();
+ assert.equal(room.group.children.filter(g=>g.name.startsWith('hotpot-steam-')).length,HOTPOT_TABLES.length);room.dispose();helpers.dispose();
 });
 test('steam and broth animate by shared time without scaling furniture or leaking outside a hidden room',()=>{
  const parent=new T.Group(),helpers=hotpotHelpers(parent),room=createHotpotRoom(helpers),before=[];room.group.traverse(o=>before.push([o,o.position.toArray(),o.scale.toArray()]));room.update(4);room.update(NaN);room.update(8);

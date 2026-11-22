@@ -1,8 +1,9 @@
+import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import * as T from './vendor/three.module.js';
 
-import {CORRIDOR,PARTITIONS} from './classroom-layout.js?v=campus-93';
-import {HOTPOT_TABLE_SIZE,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-92';
-export {HOTPOT_TABLE_SIZE,HOTPOT_TABLE_HEIGHT,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-92';
+import {CORRIDOR,PARTITIONS} from './classroom-layout.js?v=campus-94';
+import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
+export {HOTPOT_TABLE_SIZE,HOTPOT_TABLE_HEIGHT,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-94';
 
 function chamferedSlab(width,depth,height,cut){
  const x=width/2,z=depth/2,s=new T.Shape();s.moveTo(-x+cut,-z);s.lineTo(x-cut,-z);s.lineTo(x,-z+cut);s.lineTo(x,z-cut);s.lineTo(x-cut,z);s.lineTo(-x+cut,z);s.lineTo(-x,z-cut);s.lineTo(-x,-z+cut);s.closePath();
@@ -14,7 +15,8 @@ const steamFragment=`uniform float uTime; varying vec2 vUv;
  float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
  void main(){vec2 q=vUv;float n=noise(vec2(q.x*5.,q.y*7.-uTime*.65));float n2=noise(vec2(q.x*11.+uTime*.13,q.y*13.-uTime));float width=.24+.20*q.y;float side=exp(-pow((q.x-.5+.07*sin(q.y*9.-uTime))/width,2.)*4.);float fade=smoothstep(0.,.13,q.y)*(1.-smoothstep(.48,1.,q.y));float a=side*fade*(.055+.12*n+.08*n2);gl_FragColor=vec4(.93,.94,.91,a);}`;
 
-export function createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,finishes={},menus=null}){
+export function createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,finishes={},menus=null,seats=null}){
+ const plan=diningPlanForSeats(seats);
  const group=new T.Group();group.name='hotpot-classroom-furniture';parent.add(group);
  const fixed=new T.Group();fixed.name='hotpot-fixed-furniture';group.add(fixed);
  const ownedGeometries=new Set(),ownedMaterials=new Set(),ownedTextures=new Set();
@@ -23,19 +25,21 @@ export function createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,fini
  const grain=texture(512,256,(c,w,h)=>{c.fillStyle='#dda63e';c.fillRect(0,0,w,h);for(let i=0;i<112;i++){const y=(i*37.71)%h;c.strokeStyle=i%3?'rgba(126,64,19,.085)':'rgba(255,226,142,.16)';c.lineWidth=.5+(i%4)*.36;c.beginPath();c.moveTo(0,y);c.bezierCurveTo(w*.25,y+Math.sin(i)*4,w*.7,y+Math.cos(i)*5,w,y+Math.sin(i*.7)*3);c.stroke();}});ownedTextures.add(grain);grain.wrapS=grain.wrapT=T.RepeatWrapping;
  const wood=material(finishes.veneer?'#d3b49a':'#ffffff',{map:finishes.veneer||grain,roughness:.46}),edge=material('#a35d21',{roughness:.56}),pedestal=material('#8d391f',{roughness:.61}),screenWood=material('#985723',{roughness:.58}),screenLight=material('#bb7830',{roughness:.57}),steel=material('#b4afa0',{metalness:.62,roughness:.34}),silver=material('#d3cfc0',{metalness:.68,roughness:.29}),broth=material(finishes.broth?'#ffffff':'#a61713',{map:finishes.broth||null,roughness:.31,metalness:.03}),oil=material('#c77c35',{roughness:.24}),cabbage=material('#e8d9a0',{roughness:.67}),greens=material('#6e8d38',{roughness:.68});
  const soupTime={value:0};broth.onBeforeCompile=shader=>{shader.uniforms.hotpotTime=soupTime;shader.vertexShader='uniform float hotpotTime;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n transformed.z += .0016 * sin(uv.x*19. + hotpotTime*1.5) * cos(uv.y*17. - hotpotTime);');};broth.customProgramCacheKey=()=> 'hotpot-broth70';
- const topGeo=ownGeometry(chamferedSlab(HOTPOT_TABLE_SIZE-.016,HOTPOT_TABLE_SIZE-.016,.040,.13)),footGeo=ownGeometry(chamferedSlab(1.40,1.40,.10,.24)),capGeo=ownGeometry(chamferedSlab(.98,.98,.14,.17)),neckGeo=ownGeometry(new T.CylinderGeometry(.49,.64,.54,8)),bowlGeo=ownGeometry(new T.LatheGeometry([[0,0],[.58,0],[.65,.027],[.72,.13],[.765,.245],[.761,.265],[.735,.265],[.705,.135],[.63,.055],[.56,.028],[0,.028]].map(([x,y])=>new T.Vector2(x,y)),48)),rimGeo=ownGeometry(new T.TorusGeometry(.748,.015,6,48)),soupGeo=ownGeometry(new T.CircleGeometry(.719,48)),oilGeo=ownGeometry(new T.CircleGeometry(.028,8));
+ const tops=new Map(plan.tables.map(t=>t.size).filter((s,i,a)=>a.indexOf(s)===i).map(size=>[size,ownGeometry(chamferedSlab(size-.016,size-.016,.040,.13))]));
+ const footGeo=ownGeometry(chamferedSlab(1.40,1.40,.10,.24)),capGeo=ownGeometry(chamferedSlab(.98,.98,.14,.17)),neckGeo=ownGeometry(new T.CylinderGeometry(.49,.64,.54,8)),bowlGeo=ownGeometry(new T.LatheGeometry([[0,0],[.58,0],[.65,.027],[.72,.13],[.765,.245],[.761,.265],[.735,.265],[.705,.135],[.63,.055],[.56,.028],[0,.028]].map(([x,y])=>new T.Vector2(x,y)),48)),rimGeo=ownGeometry(new T.TorusGeometry(.748,.015,6,48)),soupGeo=ownGeometry(new T.CircleGeometry(.719,48)),oilGeo=ownGeometry(new T.CircleGeometry(.028,8));
  const chilli=material('#9a2e1b',{roughness:.47}),leek=material('#799344',{roughness:.70});
  const pepper=ownGeometry(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(-.044,0,-.009),new T.Vector3(0,.006,.008),new T.Vector3(.047,.001,.002)]),5,.009,5,false));
  const scallion=ownGeometry(new T.TorusGeometry(.014,.0045,4,8));
  const noodleGeo=ownGeometry(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(-.11,0,0),new T.Vector3(-.04,.008,.03),new T.Vector3(.035,.012,-.02),new T.Vector3(.12,0,.018)]),8,.014,4,false));
  const steamGeo=ownGeometry(new T.PlaneGeometry(.65,1.18,1,1));const steamMaterial=new T.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,side:T.DoubleSide,uniforms:{uTime:{value:0}},vertexShader:steamVertex,fragmentShader:steamFragment});ownedMaterials.add(steamMaterial);
- const steam=[];
- for(const t of HOTPOT_TABLES){
+ const steam=[],targets=[],pieces=new Map();
+ const pickGeometry=ownGeometry(new T.CircleGeometry(.73,32)),pickMaterial=new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false,side:T.DoubleSide});ownedMaterials.add(pickMaterial);
+ for(const t of plan.tables){
   const table=new T.Group();table.name='hotpot-table-'+t.id;table.position.set(t.x,0,t.z);fixed.add(table);
-  render(topGeo,wood,[0,.847,0],table);
+  render(tops.get(t.size),wood,[0,.847,0],table);
   // Keep four real drawer openings under the shared top, not a solid apron
   // passing through the imported sliding drawers (whose top is .8104m).
-  for(const side of[-1,1])for(const corner of[-.83,.83]){box(edge,[corner,.767,side*(HOTPOT_TABLE_SIZE/2-.065)],[.62,.11,.06],null,table);box(edge,[side*(HOTPOT_TABLE_SIZE/2-.065),.767,corner],[.06,.11,.62],null,table);}render(footGeo,pedestal,[0,.061,0],table);render(neckGeo,pedestal,[0,.370,0],table);render(capGeo,edge,[0,.700,0],table);box(edge,[0,.801,0],[.84,.052,.84],null,table);
+  for(const side of[-1,1])for(const corner of[-t.size/2+.135,t.size/2-.135]){box(edge,[corner,.767,side*(t.size/2-.065)],[.24,.11,.06],null,table);box(edge,[side*(t.size/2-.065),.767,corner],[.06,.11,.24],null,table);}render(footGeo,pedestal,[0,.061,0],table);render(neckGeo,pedestal,[0,.370,0],table);render(capGeo,edge,[0,.700,0],table);box(edge,[0,.801,0],[.84,.052,.84],null,table);
   const pot=new T.Group();pot.name='hotpot-pot-'+t.id;pot.position.y=.875;table.add(pot);render(bowlGeo,steel,[0,0,0],pot);render(rimGeo,silver,[0,.257,0],pot,[Math.PI/2,0,0]);const soup=render(soupGeo,broth,[0,.214,0],pot,[-Math.PI/2,0,0]);soup.userData.animated=true;
   for(let i=0;i<14;i++){const angle=i*2.399+t.id*.5,r=.19+((i*37)%43)/100;render(oilGeo,oil,[Math.cos(angle)*r,.216,Math.sin(angle)*r],pot,[-Math.PI/2,0,angle]);}
   for(let i=0;i<4;i++){const angle=i*2.1+t.id*.8,r=.13+(i%2)*.085;const strand=render(noodleGeo,cabbage,[Math.cos(angle)*r,.221,Math.sin(angle)*r],pot);strand.rotation.y=angle;}
@@ -45,9 +49,10 @@ export function createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,fini
    const garnish=render(i%3?pepper:scallion,i%3?chilli:leek,[r*Math.cos(a),.221,r*Math.sin(a)],pot);
    garnish.rotation.set(i%3?0:Math.PI/2,a+.37*i,0,'YXZ');
   }
+  const target=render(pickGeometry,pickMaterial,[t.x,1.099,t.z],group,[-Math.PI/2,0,0]);target.castShadow=target.receiveShadow=false;targets.push(target);
   const plume=render(steamGeo,steamMaterial,[t.x,1.70,t.z],group);plume.name='hotpot-steam-'+t.id;plume.castShadow=false;plume.receiveShadow=false;plume.userData.animated=true;plume.renderOrder=2;steam.push(plume);
  }
- for(const p of HOTPOT_SCREENS){
+ for(const p of plan.screens){
   const screen=new T.Group();screen.name='hotpot-screen-'+p.id;screen.position.set(p.x,0,p.z);screen.rotation.y=p.yaw;fixed.add(screen);
   for(const x of[-p.width/2+.025,p.width/2-.025])rounded(screenWood,[x,1.18,0],[.05,p.height,.065],.006,null,screen);
   for(const y of[.055,.53,2.315])box(screenWood,[0,y,0],[p.width,.065,.065],null,screen);
@@ -85,5 +90,20 @@ export function createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,fini
  }
  if(bakeStatic){bakeStatic(fixed);fixed.traverse(o=>{if(o.isMesh)ownedGeometries.add(o.geometry);});}
  let disposed=false;
- return{group,update(time){if(disposed)return;const t=Number.isFinite(time)?time:0;soupTime.value=t;steamMaterial.uniforms.uTime.value=t;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();for(const g of ownedGeometries)g.dispose();for(const m of ownedMaterials)m.dispose();for(const t of ownedTextures)t.dispose();},tables:HOTPOT_TABLES,seats:HOTPOT_SEATS,solids:HOTPOT_SOLIDS};
+ function showPieces(pots,time){
+  const seen=new Set();
+  for(const pot of pots){
+   const table=plan.tables[pot.id];if(!table)continue;
+   for(const p of pot.pieces){
+    const key=pot.id+':'+p.id;seen.add(key);let mesh=pieces.get(key);
+    const style=p.readyAt<=time+1e-6?'cooked':'raw';
+    if(!mesh){mesh=hotpotFood(style,p.dish);mesh.name='hotpot-food-'+key;group.add(mesh);pieces.set(key,mesh);}
+    else setDish(mesh,p.dish,style);
+    const angle=p.id*2.39996+pot.id*.62,r=.12+.46*Math.sqrt(((p.id*13+7)%47)/47);
+    mesh.position.set(table.x+r*Math.cos(angle),1.096+.004*Math.sin(time*2+p.id),table.z+r*Math.sin(angle));mesh.rotation.y=angle;mesh.scale.setScalar(2.5);
+   }
+  }
+  for(const [key,mesh] of pieces)if(!seen.has(key)){mesh.removeFromParent();pieces.delete(key);}
+ }
+ return{group,targets,update(time,pots=[]){if(disposed)return;const t=Number.isFinite(time)?time:0;soupTime.value=t;steamMaterial.uniforms.uTime.value=t;showPieces(pots,t);},dispose(){if(disposed)return;disposed=true;group.removeFromParent();for(const g of ownedGeometries)g.dispose();for(const m of ownedMaterials)m.dispose();for(const t of ownedTextures)t.dispose();},tables:plan.tables,seats:plan.seats,solids:plan.solids,pattern:plan.pattern};
 }

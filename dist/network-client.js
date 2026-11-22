@@ -1,8 +1,8 @@
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-93';
-import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-93';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-94';
+import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-94';
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-93';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-93';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-94';
 import {applyNetworkDelta} from './network-state65.js?v=campus-83';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
@@ -182,7 +182,7 @@ export class NetworkRound{
  async leave(){if(this._closed)return;this._closed=true;this._disconnected();clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this.voice.close();this._controller?.abort();try{await this._post('/api/leave',{});}catch{}}
  dispose(){return this.leave();}
 }
-for(const method of ['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','pressVendingButton','collectVendingFood','takeMeal','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
+for(const method of ['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
  NetworkRound.prototype[method]=function(...args){return this.command(method,...args);};
 }
 

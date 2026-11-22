@@ -267,3 +267,11 @@ campus-86 已将 G 接入单人和多人电梯。实装了出发站侧门、车�
 从出电梯到登车的连续画面可以看到候车区的磨砂窗、脚印和墙上海报。车里橙色座背有浅色滚边，侧窗投下斜影。站台与车厢据此调整，车外街区按房间种子生成。行车保留街景和轮胎的运动，人物和第一人称镜头保持平稳。[站台实况](https://www.bilibili.com/video/BV1WgytzLEfB/?t=40) · [车厢实况](https://www.bilibili.com/video/BV14ssv6gEit/?t=32)
 
 秋游天空采用 Greg Zaal 和 Jarod Guest 的 CC0 全景摄影。[Poly Haven 素材页](https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky)
+
+## 2026-11-22 教室通行和楼层玩法
+
+从讲台看，相向两桌在桌面处相接，学生座位和抽屉分布在外侧。办公室从门口能看到后窗，三张办公桌分开朝向两侧，各有一份便当。普通教室分配 20 名学生，相向桌布局有 28 个可选座位。本版按这两条视线布置家具，分别检查了窗框接缝、教室隔墙、办公室门口和电梯口。过道宽度、窗光和材质明度按画面估计。[普通教室讲台](https://www.bilibili.com/video/BV1CHypzaEDF/?t=7) · [办公室实机](https://www.bilibili.com/video/BV1WgytzLEfB/?t=806) · [普通教室楼层资料](https://wikily.gg/worst-class-ever/classrooms/classroom)
+
+火锅层有四锅 32 座和七锅 36 座两种布局。六种食材按盘下锅，十秒煮熟，每人实际夹到一块才能吃。宿舍有四间卧室、32 个上下铺床位，九根罚站柱留在通道两侧。考场有 32 个座位和四种排法，中间走道、桌距和考卷摆放按实机画面推定。[火锅教室](https://wikily.gg/worst-class-ever/classrooms/hot-pot-classroom) · [宿舍](https://wikily.gg/worst-class-ever/classrooms/dormitory) · [考场](https://wikily.gg/worst-class-ever/final-exam)
+
+厕所的实机镜头里，隔间共用侧板，老师从门外检查。每间内有马桶、柜子和皮搋子。当前楼层资料记录 28 间、20 名学生，本版按四排七间重建。门宽、排距和墙边净距是估算。吃完零食会留下包装，玩家可选中马桶冲掉包装或手机，堵塞后须先疏通。[厕所连续实机](https://www.bilibili.com/video/BV1LsWj6eEEU/?t=1380) · [厕所楼层资料](https://wikily.gg/worst-class-ever/classrooms/restroom)

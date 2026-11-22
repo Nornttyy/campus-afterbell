@@ -8,12 +8,12 @@ import {createLayoutContext,walkRoute,blocked,moveInRoom,enclosureVolumes,clearW
 import {hotpotHelpers} from './hotpot70-helpers.mjs';
 const inside=(x,z,r=.2)=>DORM_WALK_SOLIDS.some(s=>x>s.minX-r&&x<s.maxX+r&&z>s.minZ-r&&z<s.maxZ+r);
 test('dorm server layout is pure frozen data and upper/lower beds have independent seats, cupboards and support heights',async()=>{
- const code=await readFile(new URL('../dist/dorm-layout70.js',import.meta.url),'utf8');assert.doesNotMatch(code,/^import\s/m);assert.equal(DORM_SEATS,DORM_BEDS);assert.ok(Object.isFrozen(DORM_BEDS)&&Object.isFrozen(DORM_SOLIDS));assert.ok(DORM_BEDS.length>=12&&DORM_BEDS.length<=30);assert.equal(new Set(DORM_BEDS.map(b=>b.id)).size,DORM_BEDS.length);
+ const code=await readFile(new URL('../dist/dorm-layout70.js',import.meta.url),'utf8');assert.doesNotMatch(code,/^import\s/m);assert.equal(DORM_SEATS,DORM_BEDS);assert.ok(Object.isFrozen(DORM_BEDS)&&Object.isFrozen(DORM_SOLIDS));assert.equal(DORM_BEDS.length,32);assert.equal(new Set(DORM_BEDS.map(b=>b.id)).size,DORM_BEDS.length);
  for(const bunk of DORM_BUNKS){const beds=DORM_BEDS.filter(b=>b.bunkId===bunk.id);assert.equal(beds.length,2);assert.equal(beds[1].supportHeight-beds[0].supportHeight,1.44);assert.notEqual(beds[0].cabinetId,beds[1].cabinetId);for(const b of beds){assert.equal(b.id,b.seatId);assert.equal(b.id,b.bedId);assert.equal(b.map,'dorm');assert.ok(b.hidePen&&b.hideBook);assert.ok(b.foodY>b.cabinetY&&b.foodY<b.cabinetY+DORM_CABINET.height);assert.ok(!inside(b.exitX,b.exitZ),'unblocked exit '+b.id);}}
 });
-test('three independent narrow dorm rooms connect to one corridor and every bunk is reachable',()=>{
+test('four independent narrow dorm rooms connect to one corridor and every bunk is reachable',()=>{
  const c=createLayoutContext(DORM_SEATS),entrance={x:9.2,z:-8};
- assert.equal(DORM_BUNKS.length,12);assert.equal(DORM_ROOMS.length,3);for(const room of DORM_ROOMS){assert.equal(DORM_BEDS.filter(b=>b.roomId===room.id).length,8);}assert.ok(DORM_ROOM_BOUNDS.maxX-DORM_ROOM_BOUNDS.minX<7);
+ assert.equal(DORM_BUNKS.length,16);assert.equal(DORM_ROOMS.length,4);for(const room of DORM_ROOMS){assert.equal(DORM_BEDS.filter(b=>b.roomId===room.id).length,8);}assert.ok(DORM_ROOM_BOUNDS.maxX-DORM_ROOM_BOUNDS.minX<7);
  for(const b of DORM_BEDS){const dest={x:b.exitX,z:b.exitZ};assert.equal(blocked(dest.x,dest.z,.2,c),false,'exit '+b.id);const route=walkRoute(entrance,dest,.2,c);assert.ok(route.length,'path to '+b.id);let p=entrance;for(const next of route){const steps=Math.ceil(Math.hypot(next.x-p.x,next.z-p.z)/.04),dx=(next.x-p.x)/steps,dz=(next.z-p.z)/steps;for(let i=0;i<steps;i++)p=moveInRoom(p,dx,dz,.2,c);assert.ok(Math.hypot(p.x-next.x,p.z-next.z)<1e-5,'walkable path '+b.id);}}
  assert.equal(clearWallSegment({x:8,z:-8},{x:6.6,z:-8},c),true);
  assert.equal(clearWallSegment({x:8,z:7},{x:6.6,z:7},c),false,'old front door is a solid wall');

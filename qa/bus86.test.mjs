@@ -11,15 +11,15 @@ import {ordinaryStudyState} from '../dist/npc-study58.js';
 
 test('the G stop is separate from 1–10 and uses the normal cabin and one-trip rules',()=>{
  assert.equal(CAMPUS_MAPS.length,10);assert.ok(isCampusMap('bus'));assert.equal(campusFloor('bus'),0);
- assert.equal(elevatorDuration('exam','bus'),12);assert.equal(elevatorDuration('bus','classroom'),3);
+ assert.equal(elevatorDuration('exam','bus'),12);assert.equal(elevatorDuration('bus','classroom'),4);
  assert.equal(isCampusMap('bus11'),false);
  for(const role of ['teacher','student']){
   const r=createSoloRound({role,map:'classroom'});r.start({gathering:true});Object.assign(r.player,{x:LIFT.x,z:LIFT.z,seated:false});
-  assert.ok(r.travelFloor('bus'));r.step(2.9);assert.equal(r.map,'classroom');r.step(.1);assert.equal(r.snapshot().floor,0);assert.equal(r.map,'bus');assert.equal(r.travelFloor('exam'),false);
+  assert.ok(r.travelFloor('bus'));r.step(3.9);assert.equal(r.map,'classroom');r.step(.1);assert.equal(r.snapshot().floor,0);assert.equal(r.map,'bus');assert.equal(r.travelFloor('exam'),false);
  }
  const r=new CampusRoom({code:'86',map:'classroom'}),a=r.join({name:'甲'}),b=r.join({name:'乙'});
  Object.assign(a.context.player,{x:LIFT.x,z:LIFT.z,seated:false});assert.throws(()=>r.command(a,'travelFloor',['bus']),/所有玩家/);
- Object.assign(b.context.player,{x:LIFT.x+.3,z:LIFT.z,seated:false});assert.ok(r.command(a,'travelFloor',['bus']));r.tick(3);
+ Object.assign(b.context.player,{x:LIFT.x+.3,z:LIFT.z,seated:false});assert.ok(r.command(a,'travelFloor',['bus']));r.tick(4);
  for(const m of [a,b]){const state=r.snapshot(m);assert.equal(state.floor,0);assert.equal(state.room.floor,0);assert.equal(state.map,'bus');assert.equal(state.seats.length,28);}
 });
 
