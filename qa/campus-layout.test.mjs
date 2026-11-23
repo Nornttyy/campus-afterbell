@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SEATS,CLASSROOM,START_BELL_POSITION,OFFICE,LIFT,BOARD,TEACHER_SPAWN,OFFICE_CHAIR,OFFICE_CHAIRS,OFFICE_DESKS,DETENTION,DOORS,DOOR_LEAVES,CORRIDOR,CAMPUS_MAPS,LAYOUT_PATTERNS,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,createSeatLayout,createLayoutContext,updateLayoutDoors,mapKind,teachingRoomHeight,ceilingVolumes,enclosureVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight,floorTiles} from '../dist/classroom-layout.js';
 import {DORM_BOUNDS} from '../dist/dorm-layout70.js';
+import {OPEN_CAMPUS_MAPS} from '../dist/campus-destinations.js';
 import {chalkHit} from '../dist/teacher-rules.js';
 import {createSmokeProjectile,stepSmokeProjectile} from '../dist/smoke-physics.js';
 
@@ -75,7 +76,7 @@ test('throws collide with each room layout and update when that room closes a do
  const seat=ctx.seats[0],p=createSmokeProjectile({id:0,x:seat.x,z:seat.z,yaw:seat.yaw,pitch:0,seated:true},2,0,'tiered',ctx);for(let i=0;i<240;i++){stepSmokeProjectile(p,1/120,ctx);assert.ok(p.y>=floorHeight(p.x,p.z,'tiered')+.07499);}assert.ok(p.bounces>0);
 });
 
-test('rendered walls, floors, ten-floor controls and interactive furniture agree with collision coordinates',async()=>{
+test('rendered walls, floors, open floor controls and interactive furniture agree with collision coordinates',async()=>{
  const T=await import('../dist/vendor/three.module.js'),{buildReferenceCampus}=await import('../dist/reference-campus.js'),scene=new T.Scene(),room=new T.Group();scene.add(room);const assets=new Set(),materials=new Set();
  const mat=(color,o={})=>{const m=new T.MeshStandardMaterial({color,...o});materials.add(m);return m;},mesh=(g,m,p,s=[1,1,1],r=null,parent=room)=>{const o=new T.Mesh(g,m);o.position.set(...p);o.scale.set(...s);if(r)o.rotation.set(...r);parent.add(o);return o;},box=(m,p,s,r=null,parent=room)=>mesh(new T.BoxGeometry(...s),m,p,[1,1,1],r,parent),rounded=(m,p,s,rad,r=null,parent=room)=>box(m,p,s,r,parent),cylinder=(m,p,s,r=null,parent=room)=>mesh(new T.CylinderGeometry(s[0],s[2],s[1],8),m,p,[1,1,1],r,parent),texture=()=>new T.Texture(),base=mat('#fff'),M=new Proxy({},{get:()=>base});
  const campus=buildReferenceCampus({scene,room,M,mat,mesh,box,rounded,cylinder,texture,assets,materials,floorMat:base});campus.enclosure.visible=true;campus.attachUpperArchitecture();scene.updateMatrixWorld(true);
@@ -86,8 +87,9 @@ test('rendered walls, floors, ten-floor controls and interactive furniture agree
  const planarOverlap=(a,b)=>Math.min(a.max.x,b.max.x)-Math.max(a.min.x,b.min.x)>1e-6&&Math.min(a.max.z,b.max.z)-Math.max(a.min.z,b.min.z)>1e-6;
  for(const [objects,count] of [[scene.getObjectsByProperty('name','campus-continuous-floor'),5],[['classroom','corridor','office'].map(part=>scene.getObjectByName('campus-ceiling-'+part)),3]]){assert.equal(objects.length,count);assert.ok(objects.every(Boolean));const boxes=objects.map(o=>new T.Box3().setFromObject(o,true));for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++)assert.equal(planarOverlap(boxes[i],boxes[j]),false,'coplanar school slabs overlap and flicker at the room seam');}
  const floorButtons=campus.liftPanel.children.filter(o=>o.userData.floorMap);
- assert.deepEqual(floorButtons.map(o=>o.userData.floor),Array.from({length:11},(_,i)=>i));
- const [ground,first]=floorButtons;assert.equal(ground.userData.floorMap,'bus');assert.equal(ground.position.y,first.position.y);assert.ok(ground.position.z>first.position.z);
+ assert.deepEqual(floorButtons.map(o=>o.userData.floorMap),OPEN_CAMPUS_MAPS);
+ assert.deepEqual(floorButtons.map(o=>o.userData.floor),OPEN_CAMPUS_MAPS.map(map=>CAMPUS_MAPS.indexOf(map)+1));
+ const [left,right]=floorButtons;assert.equal(left.position.y,right.position.y);assert.ok(left.position.z>right.position.z);
  const t=campus.getTargets();assert.equal(t.doors.length,4);assert.deepEqual([...new Set(t.doors.map(d=>d.id))].sort(),['front','office','rear']);assert.equal(t.officeDesks.length,OFFICE_DESKS.length);assert.equal(t.officeChairs.length,OFFICE_CHAIRS.length);assert.equal(t.lockers.length,1);for(const target of[...t.doors,...t.officeDesks,...t.officeChairs,...t.lockers])target.object.traverse(o=>{if(o.isMesh&&o.userData.campusTarget)assert.equal(o.userData.animated,true);});
  const liftRay=new T.Raycaster(new T.Vector3(LIFT.x,1.6,CORRIDOR.maxZ-.6),new T.Vector3(0,0,1),0,1.4),closed={elevator:{doorClosed:true}},opened={elevator:{doorClosed:false}};
  assert.equal(campus.liftDoors.length,2);assert.equal(liftRay.intersectObjects(campus.liftDoors,true).length,0);

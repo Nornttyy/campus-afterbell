@@ -1,4 +1,5 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
+import {playableCampusMap} from './campus-destinations.js?v=campus-98';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
@@ -9,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-97';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-97';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-98';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -231,7 +232,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     }
   }
   function start(nextOptions){
-    if(nextOptions?.role)options={role:nextOptions.role==='teacher'?'teacher':'student',map:nextOptions.map||'classroom',duration:nextOptions.duration||600,target:nextOptions.target||120,chalkStamina:nextOptions.chalkStamina===true,tuning:nextOptions.tuning,character:nextOptions.character||options.character};
+    if(nextOptions?.role)options={role:nextOptions.role==='teacher'?'teacher':'student',map:playableCampusMap(nextOptions.map)??'classroom',duration:nextOptions.duration||600,target:nextOptions.target||120,chalkStamina:nextOptions.chalkStamina===true,tuning:nextOptions.tuning,character:nextOptions.character||options.character};
     else if(active)options={...options,...round.snapshot().settings};
     if(!externalRound)round=createSoloRound(options);
     cancelAnimationFrame(raf);if(pauseDialog.open)pauseDialog.close();if(resultDialog.open)resultDialog.close();release();keys.clear();session.reset();teacherFootsteps.reset();round.reset(Date.now()>>>0);if(!round.network&&options.character){round.player.character=options.character;round.player.variant=options.character;}round.start({gathering:!externalRound||nextOptions?.gathering===true});yaw=round.player.yaw||0;pitch=round.player.pitch||0;round.setLook(yaw,pitch);

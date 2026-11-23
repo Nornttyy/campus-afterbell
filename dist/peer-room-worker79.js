@@ -1,4 +1,4 @@
-import {PeerRoomHost} from './peer-room-host79.js?v=campus-97';
+import {PeerRoomHost} from './peer-room-host79.js?v=campus-98';
 let host,timer,last;
 self.onmessage=({data:m})=>{
  if(m.type==='init'){

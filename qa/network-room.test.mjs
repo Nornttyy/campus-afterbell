@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {createCampusServer} from '../server/server.js';
 import {CampusRoom} from '../server/room-simulation.js';
 import {elevatorDuration} from '../dist/elevator-session.js';
+import {OPEN_CAMPUS_MAPS} from '../dist/campus-destinations.js';
 import {TEACHER_SPAWN,SEATS,DOORS,LIFT} from '../dist/classroom-layout.js';
 
 async function api(base,path,data,token,extra={}){const res=await fetch(base+path,{method:data?'POST':'GET',headers:{...(data?{'content-type':'application/json'}:{}),...(token?{authorization:`Bearer ${token}`} :{}),...extra},body:data?JSON.stringify(data):undefined});return{status:res.status,data:await res.json()};}
@@ -14,7 +15,8 @@ test('two independent HTTP peers share authoritative room, roles, movement, reco
  try{
   assert.equal((await fetch(base+'/')).status,200);
   assert.equal((await api(base,'/api/rooms',{name:'reject'},null,{origin:'https://attacker.example'})).status,403);
-  const a=(await api(base,'/api/rooms',{name:'房主',rolePreference:'teacher'})).data,b=(await api(base,`/api/rooms/${a.room.code}/join`,{name:'同学乙'})).data;
+  const a=(await api(base,'/api/rooms',{name:'房主',rolePreference:'teacher',map:'exam',floor:10})).data,b=(await api(base,`/api/rooms/${a.room.code}/join`,{name:'同学乙'})).data;
+  for(const joined of [a,b]){assert.equal(joined.room.map,'classroom');assert.equal(joined.state.map,'classroom');assert.equal(joined.state.floor,2);}
   assert.equal(a.room.code.length,6);assert.notEqual(a.token,b.token);assert.equal(b.room.members.length,2);assert.equal(JSON.stringify(b.room).includes(a.token),false);
   assert.equal((await api(base,`/api/command?room=${a.room.code}`,{name:'setMovement',args:[1,0]},'wrong')).status,401);
   first=await stream(base,a);second=await stream(base,b);
@@ -24,8 +26,8 @@ test('two independent HTTP peers share authoritative room, roles, movement, reco
   assert.equal((await command(b,'setMovement',[999,0])).status,400);
   assert.equal((await command(a,'travelFloor',['computer7'])).status,409);
   const live=runtime.rooms.get(a.room.code);let passenger=0;for(const m of live.members.values())Object.assign(m.context.player,{x:LIFT.x+(passenger++?-.4:.4),z:LIFT.z,seated:false});
-  assert.equal((await command(a,'travelFloor',['computer7'])).data.ok,true);assert.equal(live.map,'classroom');live.tick(elevatorDuration('classroom','computer7'));
-  await second.wait(m=>m.type==='state'&&m.data.map==='computer7');
+  assert.equal((await command(a,'travelFloor',['computer7'])).data.ok,true);assert.equal(live.map,'classroom');live.tick(elevatorDuration('classroom','computer'));
+  await second.wait(m=>m.type==='state'&&m.data.map==='computer'&&m.data.floor===5);
   assert.equal((await command(a,'startBell')).data.results[0],true);
   const teacher=(await first.wait(m=>m.type==='state'&&m.data.role==='teacher')).data;
   const student=(await second.wait(m=>m.type==='state'&&m.data.stage==='seating')).data;
@@ -73,17 +75,29 @@ test('browser adapter predicts each mouse delta immediately and reconciles ackno
  }finally{await a?.leave();await b?.leave();await runtime.close();}
 });
 
-test('two connected clients share the dispenser, pickup and Q return over the room stream',async()=>{
+test('two HTTP clients share the published playground availability and its vending state',async()=>{
  const {connectCampusRoom}=await import('../dist/network-client.js');
  const {PLAYGROUND_LAYOUT}=await import('../dist/playground-layout70.js');
  const runtime=createCampusServer();await new Promise(resolve=>runtime.server.listen(0,'127.0.0.1',resolve));
  const endpoint='http://127.0.0.1:'+runtime.server.address().port,errors=[];
- const wait=async check=>{for(let i=0;i<180;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,15));}throw new Error('售货机状态没有同步');};
+ const wait=async check=>{for(let i=0;i<180;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,15));}throw new Error('房间状态没有同步');};
  let host,guest;
  try{
   host=await connectCampusRoom({endpoint,map:'playground',onError:error=>errors.push(error)});
   guest=await connectCampusRoom({endpoint,code:host.room.code,onError:error=>errors.push(error)});
   const room=runtime.rooms.get(host.room.code),v=PLAYGROUND_LAYOUT.vending[0];
+  if(!OPEN_CAMPUS_MAPS.includes('playground')){
+   await wait(()=>host.snapshot().connection==='connected'&&guest.snapshot().connection==='connected');
+   for(const client of [host,guest]){
+    const s=client.snapshot();assert.equal(s.map,'classroom');assert.equal(s.floor,2);assert.equal(s.vendingStock,undefined);
+   }
+   await assert.rejects(host._post('/api/command',{name:'travelFloor',args:['playground']}),/暂未开放/);
+   assert.deepEqual((await guest._post('/api/command',{name:'pressVendingButton',args:[v.id]})).results,[false]);
+   for(const member of room.members.values())Object.assign(member.context.player,{x:LIFT.x,z:LIFT.z,seated:false});
+   host.travelFloor('computer');await wait(()=>guest.snapshot().elevator.targetMap==='computer');room.tick(elevatorDuration('classroom','computer'));
+   await wait(()=>host.snapshot().map==='computer'&&guest.snapshot().map==='computer');
+   assert.deepEqual(errors,[]);return;
+  }
   for(const member of room.members.values())Object.assign(member.context.player,{x:v.x+1.2,z:v.z,seated:false});
   await wait(()=>host.snapshot().connection==='connected'&&guest.snapshot().connection==='connected'&&Math.abs(guest._state.player.x-v.x-1.2)<.01);
   host.pressVendingButton(v.id);

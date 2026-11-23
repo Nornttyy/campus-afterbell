@@ -1,7 +1,7 @@
-import {ClassroomRound} from './classroom-rules.js?v=campus-97';
-import {TeacherRound} from './teacher-rules.js?v=campus-97';
-import {updateLayoutDoors,CAMPUS_MAPS,campusFloor} from './classroom-layout.js?v=campus-95';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-95';
+import {ClassroomRound} from './classroom-rules.js?v=campus-98';
+import {TeacherRound} from './teacher-rules.js?v=campus-98';
+import {updateLayoutDoors,campusFloor} from './classroom-layout.js?v=campus-95';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-98';
 
 const elevatorRound=Base=>class extends Base{
  reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();return this.snapshot();}
@@ -28,7 +28,7 @@ const elevatorRound=Base=>class extends Base{
   const error=departureError(this.elevator,[{player:this.player}],{map,currentMap:this.map,stage:this.stage,status:this.status});
   if(error||this.paused){if(error)this._events.push({type:'elevator-denied',message:error});return false;}
   this.hold(false);this._movement={x:0,z:0};this._doorUse=false;this._doorProgress=0;this.player.crouched=false;
-  this._endJump(this.player);departElevator(this.elevator,map,this.map);updateLayoutDoors(this.layout,{elevatorClosed:true});this._events.push({type:'elevator-start',map});return true;
+  this._endJump(this.player);departElevator(this.elevator,map,this.map);updateLayoutDoors(this.layout,{elevatorClosed:true});this._events.push({type:'elevator-start',map:this.elevator.targetMap});return true;
  }
  step(dt){
   if(this.elevator?.phase!=='travel')return super.step(dt);

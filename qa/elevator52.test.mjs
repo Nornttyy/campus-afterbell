@@ -22,7 +22,7 @@ for(const role of ['student','teacher'])test(`solo ${role}: no server, all-human
  assert.deepEqual({x:r.player.x,z:r.player.z},pose);assert.equal(r.layout.elevatorClosed,false);assert.equal(r.snapshot().elevator.doorAmount,1);
  assert.equal(r.elevator.used,true);assert.equal(r.travelFloor('computer'),false);assert.equal(r.snapshot().role,role);
  r._finish('won','mischief');r.returnToGathering();assert.equal(r.elevator.used,false);assert.equal(r.map,'night');
- board(r.player);assert.equal(r.travelFloor('computer7'),true);r.step(elevatorDuration('night','computer7'));assert.equal(r.map,'computer7');
+ board(r.player);assert.equal(r.travelFloor('computer7'),true);r.step(elevatorDuration('night','computer'));assert.equal(r.map,'computer');assert.equal(r.snapshot().floor,5);
 });
 
 test('solo pause freezes cabin and an edge-standing passenger cannot close doors through their body',()=>{
@@ -83,11 +83,11 @@ test('travel time grows with actual floor separation and is symmetric',()=>{
 
 for(const role of ['student','teacher'])test(`solo ${role}: moving passengers remain within closed cabin until arrival`,()=>{
  const r=createSoloRound({role,seed:22});r.start({gathering:true});board(r.player);
- r.travelFloor('tiered8');const stamina=r.teacher.stamina;
- r.setMovement(0,1);r.step(3);assert.ok(r.player.z<=LIFT.maxZ-.18+1e-8);assert.equal(r.map,'classroom');
- r.setMovement(-1,0);r.step(3);assert.ok(r.player.x>=LIFT.minX+.18-1e-8);assert.ok(r.player.x<LIFT.x);
+ r.travelFloor('tiered8');const stamina=r.teacher.stamina,third=r.elevator.duration/3;
+ r.setMovement(0,1);r.step(third);assert.ok(r.player.z<=LIFT.maxZ-.18+1e-8);assert.equal(r.map,'classroom');
+ r.setMovement(-1,0);r.step(third);assert.ok(r.player.x>=LIFT.minX+.18-1e-8);assert.ok(r.player.x<LIFT.x);
  assert.equal(r.teacher.stamina,stamina,'elevator movement is still before class');
- const pose={x:r.player.x,z:r.player.z};r.setMovement(0,0);r.step(3);assert.equal(r.map,'tiered8');
+ const pose={x:r.player.x,z:r.player.z};r.setMovement(0,0);r.step(third);assert.equal(r.map,'tiered');
  assert.deepEqual({x:r.player.x,z:r.player.z},pose,'arrival preserves current cabin position');
 });
 

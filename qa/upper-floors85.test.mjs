@@ -9,20 +9,20 @@ import {paperQuestion} from '../dist/upper-floor-view85.js';
 import {interactionIntent} from '../dist/interaction-intent54.js';
 
 const enterLift=(p,i=0)=>Object.assign(p,{seated:false,x:LIFT.x+i*.25,z:LIFT.z});
-for(const [index,map] of ['cafeteria','exam'].entries())test('both roles can ride into '+map+'; room requires every human and keeps the 8-player limit',()=>{
+for(const [index,map] of ['cafeteria','exam'].entries())test('the archived '+map+' retains its geometry and floor number; both room modes decline travel',()=>{
  const floor=9+index;
  assert.equal(CAMPUS_MAPS[floor-1],map);assert.equal(campusFloor(map),floor);
  assert.equal(elevatorDuration('classroom',map),floor);assert.equal(elevatorDuration('cafeteria','exam'),3);
  for(const role of ['teacher','student']){
   const r=createSoloRound({role});r.start({gathering:true});enterLift(r.player);
-  assert.equal(r.travelFloor(map),true);r.step(floor-.1);assert.equal(r.map,'classroom');r.step(.1);
-  assert.equal(r.snapshot().floor,floor);assert.equal(r.seats[0].map,map);assert.equal(r.snapshot().elevator.canTravel,false);
+  assert.equal(r.travelFloor(map),false);r.step(floor);
+  assert.equal(r.snapshot().floor,2);assert.equal(r.seats[0].map,'classroom');assert.equal(r.snapshot().elevator.canTravel,true);
  }
  const room=new CampusRoom({code:'100009'}),host=room.join({name:'甲'}),guest=room.join({name:'乙'});
- enterLift(host.context.player);assert.throws(()=>room.command(host,'travelFloor',[map]),/所有玩家/);
+ enterLift(host.context.player);
  enterLift(guest.context.player,1);assert.throws(()=>room.command(guest,'travelFloor',[map]),/房主/);
- assert.equal(room.command(host,'travelFloor',[map]),true);room.tick(floor+1);
- for(const m of [host,guest]){const s=room.snapshot(m);assert.equal(s.floor,floor);assert.equal(s.map,map);assert.equal(s.seats.length,map==='exam'?32:20);assert.equal(s.elevator.used,true);}
+ assert.throws(()=>room.command(host,'travelFloor',[map]),/暂未开放/);room.tick(floor+1);
+ for(const m of [host,guest]){const s=room.snapshot(m);assert.equal(s.floor,2);assert.equal(s.map,'classroom');assert.equal(s.elevator.used,false);}
  assert.equal(MAX_ROOM_PLAYERS,8);assert.throws(()=>new CampusRoom({code:'x',maxPlayers:9}),/2–8/);
 });
 
