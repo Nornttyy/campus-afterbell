@@ -7,7 +7,7 @@ import {createExcursionRoad} from './excursion-road91.js?v=campus-93';
 import {BUS,BUS_SEATS,BUS_DECK_SLABS,COACH_CUSHION} from './bus-layout86.js?v=campus-94';
 import {seatPads,stationFrost,stationSunlight,coachSunlight,queuePrint} from './coach-finish93.js?v=campus-94';
 import {paintCityBays,paintFoliage} from './excursion-city93.js?v=campus-93';
-import {placeFurniture67} from './furniture-assets67.js?v=campus-83';
+import {placeFurniture67} from './furniture-assets67.js?v=campus-99';
 
 export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,roleLocker,schoolBell,hallLamp,boardInk,stationFloor,finishes={}}){
  const group=new T.Group();group.name='excursion-ground-floor';scene.add(group);group.visible=false;

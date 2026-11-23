@@ -4,8 +4,8 @@ import {requireModelBudget} from './model-budget64.js';
 const registry=new Map();
 export const FURNITURE_SOURCES67=Object.freeze(Object.assign(Object.fromEntries(['mouse','keyboard','computer-tower','monitor','office-desk','office-chair','cabinet'].map(name=>[name,`./assets/models/${name}-v67.glb?v=tripo67`])),{toilet:'./assets/models/toilet-v78.glb?v=campus-83'}));
 export const MONITOR67=Object.freeze({width:.598,height:.328,x:0,y:.305,z:-.037});
-export async function loadFurniture67({loader=new GLTFLoader()}={}){
- return Promise.all(Object.entries(FURNITURE_SOURCES67).map(async([name,path])=>{
+export async function loadFurniture67({loader=new GLTFLoader(),sources=FURNITURE_SOURCES67}={}){
+ return Promise.all(Object.entries(sources).map(async([name,path])=>{
   try{const url=new URL(path,import.meta.url).href,gltf=await loader.loadAsync(url);requireModelBudget(gltf,name);if(gltf.animations?.length)throw Error('Furniture must be static');const root=gltf.scene;root.updateMatrixWorld(true);const bounds=new T.Box3().setFromObject(root,true);if(bounds.isEmpty()||bounds.min.y<-.01)throw Error('Invalid floor contact');root.traverse(o=>{if(o.isSkinnedMesh)throw Error('Unexpected skin');if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});root.userData.furnitureAsset=url;registry.set(name,root);return{name,ok:true};}catch(e){registry.delete(name);return{name,ok:false,error:String(e)};}
  }));
 }

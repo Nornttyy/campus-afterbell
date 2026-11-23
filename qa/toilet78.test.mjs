@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
-import {loadFurniture67,cloneFurniture67} from '../dist/furniture-assets67.js?v=campus-83';
+import {loadFurniture67,cloneFurniture67} from '../dist/furniture-assets67.js?v=campus-99';
 import {createToiletRoom} from '../dist/toilet-room70.js?v=campus-84';
 import {TOILET_SOLIDS,TOILET_STALLS} from '../dist/toilet-layout70.js?v=campus-84';
 import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js?v=campus-84';

@@ -1,4 +1,4 @@
-import {CampusRoom,RoomError} from './room-simulation.js?v=campus-98';
+import {CampusRoom,RoomError} from './room-simulation.js?v=campus-99';
 import {diffNetworkState} from './network-state65.js?v=campus-83';
 import {validCommand,validVoice} from './room-validation79.js?v=campus-83';
 

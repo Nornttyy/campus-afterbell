@@ -1,11 +1,23 @@
-import {CAMPUS_MAPS,isCampusMap,mapKind} from './classroom-layout.js?v=campus-95';
+import {isCampusMap,mapKind} from './classroom-layout.js?v=campus-95';
 
 // Keep the authored floor numbers so reopening a destination does not move any other map.
-const suspended=new Set(['playground','exam','bus','cafeteria']);
-export const OPEN_CAMPUS_MAPS=Object.freeze(['bus',...CAMPUS_MAPS].filter(map=>!suspended.has(map)));
+export const OPEN_CAMPUS_MAPS=Object.freeze(['classroom','night','tiered','computer']);
 
 export function playableCampusMap(map){
   if(!isCampusMap(map))return null;
   const kind=mapKind(map);
   return OPEN_CAMPUS_MAPS.includes(kind)?kind:null;
+}
+
+const assetMaps={
+  turf:['playground'],track:['playground'],facade:['playground','bus'],upholstery:['bus'],
+  tile:['toilet'],toilet:['toilet','bus'],cloth:['dorm'],
+  broth:['hotpot'],hotpotMenus:['hotpot'],hotpotVegetables:['hotpot']
+};
+
+export function assetsForOpenMaps(sources){
+  return Object.fromEntries(Object.entries(sources).filter(([key])=>{
+    const maps=Object.hasOwn(assetMaps,key)?assetMaps[key]:null;
+    return !maps||maps.some(map=>OPEN_CAMPUS_MAPS.includes(map));
+  }));
 }

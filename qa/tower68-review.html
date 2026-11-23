@@ -3,7 +3,7 @@
 <nav><button id="front">正面</button><button id="side">斜侧</button><button id="open">拉开抽屉</button><button id="close">关闭抽屉</button></nav><div id="status">加载中</div>
 <script type="module">
 import * as T from '../dist/vendor/three.module.js';
-import {loadFurniture67} from '../dist/furniture-assets67.js?v=campus-83';
+import {loadFurniture67} from '../dist/furniture-assets67.js?v=campus-99';
 import {createRoomVariants} from '../dist/room-variants.js?v=campus-84';
 await loadFurniture67();
 const renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(devicePixelRatio);renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.NeutralToneMapping;document.body.append(renderer.domElement);

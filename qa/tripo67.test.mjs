@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import*as T from '../dist/vendor/three.module.js';
-import{loadGeometry}from './gltf-geometry.mjs';import{loadFurniture67,cloneFurniture67,MONITOR67}from '../dist/furniture-assets67.js?v=campus-83';
+import{loadGeometry}from './gltf-geometry.mjs';import{loadFurniture67,cloneFurniture67,MONITOR67}from '../dist/furniture-assets67.js?v=campus-99';
 import{createRoomVariants}from '../dist/room-variants.js?v=campus-84';import{modelTriangles}from '../dist/model-budget64.js';
 const loader={loadAsync:url=>loadGeometry(new URL(url).pathname.split('/').pop())};const report=await loadFurniture67({loader});
 const V=()=>new T.Vector3(),bounds=o=>{o.updateWorldMatrix(true,true);return new T.Box3().setFromObject(o,true);};
