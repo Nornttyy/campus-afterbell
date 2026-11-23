@@ -10,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-97';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-99';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-100';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -113,6 +113,11 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     feedbackTimer=setTimeout(()=>box.classList.remove('pop'),duration);
   }
   function finish(s){
+    if(pauseDialog.open){
+      const settingsDialog=$('#settings-dialog');
+      if(settingsDialog?.open)settingsDialog.close();
+      pauseDialog.close();round.pause(false);
+    }
     release();stopMovement();unlock();audio.effect?.('school-bell-out');
     scene.playFeedback?.((s.role==='teacher'?s.status==='lost':s.status==='won')?'bell':'caught');
     $('#result-title').textContent=s.status==='won'?'学生获胜':'老师获胜';$('#result-score').textContent=Math.round(s.score);$('#result-goal').textContent='捣乱值';

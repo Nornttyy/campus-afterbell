@@ -29,6 +29,17 @@ function gameFixture(){
   return{round,doc,win,send,element:doc.querySelector,tick(seconds){now+=seconds*1000;const pending=[...callbacks.values()];callbacks.clear();for(const fn of pending)fn(now);},close(){game.exit();for(const[name,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name];}}};
 }
 
+test('a classroom result arriving while the pause menu is open replaces the menu and settings',()=>{
+  const f=gameFixture();
+  try{
+    f.send(f.element('#pause-game'),'click');assert.equal(f.element('#pause-dialog').open,true);
+    f.element('#settings-dialog').showModal();
+    f.round._finish('won','teacher-left');f.tick(.12);
+    assert.equal(f.element('#result-dialog').open,true);
+    assert.equal(f.element('#pause-dialog').open,false);assert.equal(f.element('#settings-dialog').open,false);
+  }finally{f.close();}
+});
+
 test('both Shift keys hold crawling, preserve movement and release independently',()=>{
   const f=gameFixture();try{
     Object.assign(f.round.player,{x:7,z:0,yaw:0,seated:false,seatId:null});

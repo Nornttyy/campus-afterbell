@@ -3,14 +3,14 @@ import {returnPose,reachedHall} from './class-dismissal92.js?v=campus-95';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-92';
 import {reachesSchoolDoor} from './door-interaction54.js?v=campus-95';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-99';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-100';
 import {validComputerPlayback} from './computer-rules55.js?v=campus-96';
 import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-93';
 import {movementScale} from './movement55.js?v=campus-93';
-const randomUUID=()=>globalThis.crypto.randomUUID();
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-99';
-import {TeacherRound} from './teacher-rules.js?v=campus-99';
+const newMemberId=()=>globalThis.crypto.randomUUID?.()??randomToken();
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-100';
+import {TeacherRound} from './teacher-rules.js?v=campus-100';
 import * as Layout from './classroom-layout.js?v=campus-95';
 import {playableCampusMap} from './campus-destinations.js?v=campus-99';
 import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-99';
@@ -111,7 +111,7 @@ export class CampusRoom{
   if(this.members.size>=this.maxPlayers)throw new RoomError(409,`房间已满，最多${this.maxPlayers}人`);
   const used=new Set([...this.members.values()].map(m=>m.studentId)),actor=this.sim.students.find(s=>!used.has(s.id));
   if(!actor)throw new RoomError(409,'没有空位');
-  const id=randomUUID(),member={id,token:randomToken(),name:cleanName(name),character:variants.has(character)?character:'boy',rolePreference:rolePreference==='teacher'?'teacher':'student',role:'student',studentId:actor.id,connected:true,lastInput:Date.now(),lastSeen:Date.now(),lastSequence:0};
+  const id=newMemberId(),member={id,token:randomToken(),name:cleanName(name),character:variants.has(character)?character:'boy',rolePreference:rolePreference==='teacher'?'teacher':'student',role:'student',studentId:actor.id,connected:true,lastInput:Date.now(),lastSeen:Date.now(),lastSequence:0};
   this._prepareHuman(member,actor);member.context=context(actor);this.members.set(id,member);if(!this.hostId)this.hostId=id;this.sim._team.add(actor.id);this.updatedAt=Date.now();this.sequence++;return member;
  }
  _prepareHuman(member,actor,i=this.members.size){this._restoreDecoy(actor);Object.assign(actor,{...(this.map==='bus'?{busDeck:0}:{}),visible:true,networkHuman:true,isPlayer:false,isTeammate:false,name:member.name,character:member.character,variant:member.character,_profile:null,_decisionAt:Infinity,_speed:1,seated:false,seatId:null,x:Layout.CORRIDOR.minX+1.86+(i%3)*.66,z:Layout.CORRIDOR.maxZ-2.5-Math.floor(i/3)*.85,yaw:Math.PI,pitch:0,caught:false,captivity:'free',holding:false,_drawnSlot:null,_drawerOpen:false});

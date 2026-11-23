@@ -86,7 +86,8 @@ $('#fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenEl
 document.addEventListener('fullscreenchange',()=>{$('#fullscreen').setAttribute('aria-label',document.fullscreenElement?'退出全屏':'全屏');});
 function prepareEntry(mode,button){
   if(disposed||game?.active)return;
-  entryMode=mode;entryRequest++;
+  cancelRoomConnection();entryMode=mode;entryRequest++;
+  roomEntryKind='create';$('#room-code').value='';
   syncRoundOptions();syncRoomCreation();$('#room-character').textContent='入场随机';
   $('.room-connect').hidden=mode==='solo';$('#room-title').textContent=mode==='solo'?'单人游戏':'多人教室';
   $('#room-error').hidden=true;$('#room-solo').hidden=mode==='solo';syncServerNotice();
@@ -109,8 +110,12 @@ async function startSolo(){
 $('#enter-classroom').addEventListener('click',startGame);
 $('#enter-solo').addEventListener('click',startSolo);
 let roomEntryKind='create';
+function cancelRoomConnection(){
+  roomConnecting?.abort();roomConnecting=null;
+}
+$('#room-dialog').addEventListener('close',()=>{if(!$('#room-dialog').open)cancelRoomConnection();});
 function syncRoomCreation(){
-  const joining=entryMode==='online'&&(roomEntryKind==='join'||!!$('#room-code').value.trim());
+  const joining=entryMode==='online'&&roomEntryKind==='join';
   $('#room-settings').hidden=entryMode!=='online'||joining;
   $('#room-code-label').hidden=roomEntryKind!=='join';
   $('#room-create-tab').setAttribute('aria-pressed',String(roomEntryKind==='create'));
@@ -121,34 +126,41 @@ function syncServerNotice(){
   syncRoomCreation();
   if(entryMode==='online'){
     const button=$('#room-enter');
-    if(roomConnecting===entryRequest){button.disabled=true;button.textContent='连接中…';}
+    if(roomConnecting){button.disabled=true;}
     else if(sceneReady){button.disabled=false;button.textContent=roomEntryKind==='join'?'加入房间':'创建房间';}
     else if($('#room-load').dataset.state==='error'){button.disabled=false;button.textContent='重新准备';}
     else{button.disabled=true;button.textContent='准备中…';}
   }
 }
-$('#room-code').addEventListener('input',syncRoomCreation);
+$('#room-code').addEventListener('input',()=>{$('#room-error').hidden=true;});
 for(const [id,kind]of [['#room-create-tab','create'],['#room-join-tab','join']])$(id).addEventListener('click',()=>{
- if(roomConnecting===entryRequest)return;roomEntryKind=kind;if(kind==='create')$('#room-code').value='';$('#room-error').hidden=true;syncServerNotice();
+ if(roomConnecting)return;roomEntryKind=kind;if(kind==='create')$('#room-code').value='';$('#room-error').hidden=true;syncServerNotice();
 });
 $('#room-solo').addEventListener('click',startSolo);
 $('#room-enter').addEventListener('click',async()=>{
   if(entryMode==='solo'){startSolo();return;}
-  if(roomConnecting===entryRequest)return;
-  if(roomEntryKind==='join'&&!/^\d{6}$/.test($('#room-code').value.trim())){$('#room-error').hidden=false;$('#room-error').textContent='请输入六位房间号';return;}
+  if(roomConnecting)return;
+  const joining=roomEntryKind==='join',code=joining?$('#room-code').value.trim():'';
+  if(joining&&!/^\d{6}$/.test(code)){$('#room-error').hidden=false;$('#room-error').textContent='请输入六位房间号';return;}
   if(!sceneReady||!game){ensureWorld();return;}
   // Read the final visible values at submission, including an input that has
   // not blurred yet. Joining an existing room never changes its host settings.
-  if(!$('#room-code').value.trim()&&!commitRoomSettings())return;
-  const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;roomConnecting=request;button.disabled=true;button.textContent='连接中…';error.hidden=true;
+  const button=$('#room-enter'),error=$('#room-error'),request=entryRequest;
+  if(!joining&&!commitRoomSettings()){
+    const rules=$('#room-settings').querySelector('.room-advanced');
+    if(rules)rules.open=true;
+    error.textContent='请检查更多规则中的数值，再创建房间。';error.hidden=false;return;
+  }
+  const connection=new AbortController();roomConnecting=connection;button.disabled=true;button.textContent='连接中…';error.hidden=true;
   try{
     entryCharacter=randomStudent();
-    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-99');
-    const online=await connectCampusRoom({code:$('#room-code').value.trim(),name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina,tuning:roundOptions.tuning},onError:e=>toast(typeof e==='string'?e:e.message)});
-    if(disposed||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
+    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-100');
+    const online=await connectCampusRoom({code,name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina,tuning:roundOptions.tuning},signal:connection.signal,onRetry:()=>{if(roomConnecting===connection)button.textContent='正在重连…';},onError:e=>toast(typeof e==='string'?e:e.message)});
+    if(disposed||connection.signal.aborted||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){online.leave();return;}
+    roomConnecting=null;game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
     scene.setMap(online.snapshot().map);scene.setCharacter(online.player?.character||entryCharacter);scene.setActive(true);game.start({...roundOptions});
-  }catch(e){if(request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接失败，请检查网络后重试。':e.message;}}
-  finally{if(roomConnecting===request)roomConnecting=null;if(request===entryRequest&&entryMode==='online')syncServerNotice();}
+  }catch(e){if(!connection.signal.aborted&&request===entryRequest&&entryMode==='online'&&$('#room-dialog').open){error.hidden=false;error.textContent=e.message==='Failed to fetch'?'连接失败，请检查网络后重试。':e.message;}}
+  finally{if(roomConnecting===connection)roomConnecting=null;if(request===entryRequest&&entryMode==='online')syncServerNotice();}
 });
 document.addEventListener('keydown',e=>{if(e.repeat)return;if(e.key==='Enter'&&!$('dialog[open]')&&!game?.active&&!["BUTTON","INPUT","SELECT"].includes(document.activeElement?.tagName)){e.preventDefault();startSolo();}});
 document.addEventListener('pointerdown',()=>audio.start(),{passive:true});
@@ -172,7 +184,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-99&entry=2'),import('./classroom-game.js?v=campus-99')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-100&entry=2'),import('./classroom-game.js?v=campus-100')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true,onProgress:(fraction,label)=>loadStep(38+Math.round(55*fraction),label)});
       if(disposed){prepared.dispose();return null;}
@@ -191,4 +203,4 @@ function ensureWorld(){
   return worldPromise;
 }
 document.body.classList.add('menu-ready');
-window.addEventListener('pagehide',e=>{if(!e.persisted){disposed=true;controlSettings?.dispose();game?.dispose();scene?.dispose();audio.dispose();}});
+window.addEventListener('pagehide',e=>{if(!e.persisted){disposed=true;cancelRoomConnection();controlSettings?.dispose();game?.dispose();scene?.dispose();audio.dispose();}});

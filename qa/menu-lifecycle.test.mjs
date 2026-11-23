@@ -35,7 +35,7 @@ function fixture(saved={},options={}){
     return{createClassroom:(canvas,options)=>{calls.creates.push(options);return new Promise((resolve,reject)=>pending.push({resolve:()=>resolve(scene),reject}));}};
   };
   let randomIndex=0;const math=Object.create(Math);math.random=()=>options.randomValues?.[randomIndex++]??.25;
-  const context={...roomTuning,Event,Math:math,prefersMobileRendering,initialQuality,navigator:{maxTouchPoints:0},setupControlSettings:()=>null,connectCampusRoom:async args=>{calls.connectionOptions=args;calls.connections++;await options.connection;return{snapshot:()=>({map:'classroom'}),leave(){calls.leaves++;}};},defaultCampusEndpoint:()=>options.endpoint??'http://localhost:8931',playCampusFoley:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
+  const context={...roomTuning,Event,AbortController,Math:math,prefersMobileRendering,initialQuality,navigator:{maxTouchPoints:0},setupControlSettings:()=>null,connectCampusRoom:async args=>{calls.connectionOptions=args;calls.connections++;await options.connection;return{snapshot:()=>({map:'classroom'}),leave(){calls.leaves++;}};},defaultCampusEndpoint:()=>options.endpoint??'http://localhost:8931',playCampusFoley:()=>false,document:doc,window:win,matchMedia:()=>({matches:false}),localStorage:{getItem:()=>JSON.stringify(saved),setItem:(key,value)=>calls.saved.push(JSON.parse(value))},console:{error:(...args)=>calls.errors.push(args)},setTimeout,clearTimeout,setInterval,clearInterval,loadModule};
   // Substitute only dynamic imports, leaving the production lifecycle and DOM
   // event handlers intact. This is an event-only test, not a browser renderer.
   vm.runInNewContext(source.replace(/^import .*;\n/gm,'').replace(/\bimport\(/g,'loadModule('),context,{filename:'app.js'});
@@ -149,9 +149,13 @@ test('room creation owns duration and target, while joining cannot configure ano
   assert.equal(f.calls.connectionOptions.settings.duration,1200);assert.equal(f.calls.connectionOptions.settings.target,45);
   assert.equal(f.calls.connectionOptions.rolePreference,'student');assert.equal(f.calls.connectionOptions.map,'classroom');
   f.game.exit();f.click('#enter-classroom');
-  f.el('#room-code').value='ABC123';f.el('#room-code').dispatchEvent(new Event('input'));
+  f.el('#room-code').value='123456';f.el('#room-code').dispatchEvent(new Event('input'));
+  assert.equal(f.el('#room-settings').hidden,false);assert.equal(f.el('#round-minutes').disabled,false);
+  f.click('#room-enter');await flush();assert.equal(f.calls.connectionOptions.code,'','hidden autofill cannot change a create request into a join');
+  f.game.exit();f.click('#enter-classroom');f.click('#room-join-tab');
   assert.equal(f.el('#room-settings').hidden,true);assert.equal(f.el('#round-minutes').disabled,true);
-  f.el('#room-code').value='';f.el('#room-code').dispatchEvent(new Event('input'));
+  f.el('#room-code').value='123456';f.el('#room-dialog').close();f.click('#enter-classroom');
+  assert.equal(f.el('#room-code').value,'');assert.equal(f.el('#room-create-tab').attrs['aria-pressed'],'true');
   assert.equal(f.el('#room-settings').hidden,false);assert.equal(f.el('#round-goal').disabled,false);
 });
 
@@ -169,4 +173,22 @@ test('changing room mode during a pending connection cannot submit a second room
  f.click('#enter-classroom');await flush();f.pending[0].resolve();await flush();f.click('#room-enter');await flush();
  f.click('#room-join-tab');f.click('#room-enter');await flush();
  assert.equal(f.el('#room-enter').disabled,true);assert.equal(f.calls.connections,1);resolve();await flush();assert.equal(f.calls.starts.length,1);
+});
+
+test('closing a retry cancels that connection; a late response cannot take over a new entry',async()=>{
+ let resolve;const connection=new Promise(r=>resolve=r),f=fixture({}, {connection});
+ f.click('#enter-classroom');await flush();f.pending[0].resolve();await flush();f.click('#room-enter');await flush();
+ const first=f.calls.connectionOptions;first.onRetry(1);assert.equal(f.el('#room-enter').textContent,'正在重连…');
+ f.el('#room-dialog').close();assert.equal(first.signal.aborted,true);
+ f.click('#enter-classroom');f.click('#room-enter');await flush();
+ assert.equal(f.calls.connections,2);assert.equal(f.calls.connectionOptions.signal.aborted,false);
+ resolve();await flush();assert.equal(f.calls.starts.length,1);assert.equal(f.calls.leaves,1);
+});
+test('an invalid advanced rule explains why no room opened and can be corrected in place',async()=>{
+ const f=fixture();f.click('#enter-classroom');await flush();f.pending[0].resolve();await flush();
+ f.el('#room-rule-chalkCost').value='100';f.click('#room-enter');await flush();
+ assert.equal(f.calls.connections,0);assert.equal(f.el('#room-error').hidden,false);
+ assert.equal(f.el('#room-settings').querySelector('.room-advanced').open,true);
+ f.el('#room-rule-chalkCost').value='9';f.click('#room-enter');await flush();
+ assert.equal(f.calls.connectionOptions.settings.tuning.chalkCost,9);assert.equal(f.calls.starts.length,1);
 });
