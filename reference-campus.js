@@ -2,14 +2,15 @@ import {DORM_CORRIDOR_SOLIDS} from './dorm-layout70.js?v=campus-95';
 import {createBoardInk} from './board-ink93.js?v=campus-93';
 import {makeOfficeFloor,fitOfficeInterior,staffroomFinish} from './staff-office92.js?v=campus-94';
 import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campus-83';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-97';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-98';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-92';
 import * as T from './vendor/three.module.js';
 import {createCampusWallProps} from './campus-wall-props54.js?v=campus-95';
 import {buildDesktop55} from './computer-hardware55.js?v=campus-93';
 import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-94';
 import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-95';
-import {PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,CAMPUS_MAPS,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-95';
+import {PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-95';
+import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-98';
 import {END_ORIGIN,endPoint,officeOffset,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD,officeShelfCenters,officeBinPlan} from './campus-ends.js?v=campus-94';
 const [OFFICE_DESK]=OFFICE_DESKS,[OFFICE_CHAIR]=OFFICE_CHAIRS;
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
@@ -475,10 +476,18 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  B(cream,[9.35,(3.12+CEILING_HEIGHT)/2,-10.1],[2.5,CEILING_HEIGHT-3.12,.2],lift).name='lift-entry-lintel';
  const liftDoors=[-1,1].map(side=>{const g=new T.Group();g.name=side<0?'lift-door-left':'lift-door-right';g.position.set(9.35+side*.625,0,-10.10);lift.add(g);B(liftBlue,[0,1.56,0],[1.25,3.08,.08],g);B(liftInset,[0,1.56,-.046],[1.15,2.95,.012],g);B(edge,[-side*.605,1.56,-.055],[.025,3.03,.012],g);markDynamic(g);return g;});
  for(const x of [8.73,9.97]){B(liftInset,[x,1.57,-12.99],[1.18,2.94,.018],lift);B(edge,[x+.575,1.57,-12.975],[.018,2.92,.01],lift);}for(const x of [8.125,10.575])B(edge,[x,1.02,-11.6],[.03,.04,2.1],lift);
- const liftPanel=new T.Group();liftPanel.name='floor-selection';liftPanel.position.set(8.13,1.50,-10.85);lift.add(liftPanel);B(edge,[0,0,.135],[.06,1.40,.84],liftPanel);
- const panelRows=Math.ceil(CAMPUS_MAPS.length/2);
- for(let row=1;row<panelRows;row++)B(liftInset,[.034,(row-(panelRows-1)/2)*.255,.405],[.015,.22,.22],liftPanel);
- for(let n=0;n<=CAMPUS_MAPS.length;n++){const row=n?Math.floor((n-1)/2):0,col=n?(n-1)%2:-1,t=texture(96,96,(c,w,h)=>{c.fillStyle='#455f71';c.fillRect(0,0,w,h);c.strokeStyle='#9eb4c2';c.lineWidth=4;c.strokeRect(4,4,88,88);c.fillStyle='#f5f6ed';c.textAlign='center';c.font='bold 64px sans-serif';c.fillText(n?String(n):'G',48,72);});const button=B(mat('#fff',{map:t}),[.034,(row-(panelRows-1)/2)*.255,.135-col*.27],[.015,.22,.22],liftPanel);button.userData.floorMap=n?CAMPUS_MAPS[n-1]:'bus';button.userData.floor=n;}
+ const liftPanel=new T.Group();liftPanel.name='floor-selection';liftPanel.position.set(8.13,1.50,-10.85);lift.add(liftPanel);
+ const panelRows=Math.ceil(OPEN_CAMPUS_MAPS.length/2);
+ B(edge,[0,0,.135],[.06,panelRows*.255+.15,.66],liftPanel);
+ for(const [index,map] of OPEN_CAMPUS_MAPS.entries()){
+  const floor=campusFloor(map),row=Math.floor(index/2),col=index%2;
+  const label=texture(96,96,(c,w,h)=>{
+   c.fillStyle='#455f71';c.fillRect(0,0,w,h);c.strokeStyle='#9eb4c2';c.lineWidth=4;c.strokeRect(4,4,88,88);
+   c.fillStyle='#f5f6ed';c.textAlign='center';c.font='bold 64px sans-serif';c.fillText(floor===0?'G':String(floor),48,72);
+  });
+  const button=B(mat('#fff',{map:label}),[.034,(row-(panelRows-1)/2)*.255,.135+(.5-col)*.27],[.015,.22,.22],liftPanel);
+  button.userData.floorMap=map;button.userData.floor=floor;
+ }
  markDynamic(liftPanel);liftPanel.visible=ELEVATOR_ENABLED;
  // Two actual paper strips lie just in front of the closed leaves. Separate
  // depths prevent flicker where the strips cross; the door geometry stays intact.

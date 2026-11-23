@@ -1,11 +1,11 @@
-import {CampusRoom,RoomError} from './room-simulation.js?v=campus-97';
+import {CampusRoom,RoomError} from './room-simulation.js?v=campus-98';
 import {diffNetworkState} from './network-state65.js?v=campus-83';
 import {validCommand,validVoice} from './room-validation79.js?v=campus-83';
 
 // One authoritative simulation per host. Transport identities are assigned by
 // the data connection, never by fields inside a guest's packet.
 export class PeerRoomHost {
- constructor(options,send){this.room=new CampusRoom(options);this.send=send;this.clients=new Map();this.previous=new Map();this.limits=new Map();this.closed=false;this.frames=0;}
+ constructor(options,send){this.room=CampusRoom.forPlay(options);this.send=send;this.clients=new Map();this.previous=new Map();this.limits=new Map();this.closed=false;this.frames=0;}
  request(client,path,data={}){
   if(this.closed)throw new RoomError(410,'房主已关闭房间');
   const now=Date.now(),limit=this.limits.get(client)||{time:now,count:0};

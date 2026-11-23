@@ -2,8 +2,9 @@ import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=cam
 import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-95';
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-93';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-95';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-98';
 import {applyNetworkDelta} from './network-state65.js?v=campus-83';
+import {playableCampusMap} from './campus-destinations.js?v=campus-98';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
 const NO_ROOM_SERVICE='这个地址没有多人房间服务，请先玩单人模式，或填写已部署的联机服务器地址。';
@@ -14,6 +15,9 @@ const finite=value=>typeof value==='number'&&Number.isFinite(value);
 const text=value=>typeof value==='string'&&value.length>0&&value.length<=160&&!/[<>\u0000-\u001f]/.test(value);
 export class RoomConnectionError extends Error{constructor(message,{terminal=true,status=0}={}){super(message);this.name='RoomConnectionError';this.terminal=terminal;this.status=status;}}
 const protocolError=()=>new RoomConnectionError(INVALID_RESPONSE);
+function checkRoomMap(map){
+ if(!playableCampusMap(map))throw new RoomConnectionError('这个房间的地图暂未开放，请让房主更新游戏后重新开房。');
+}
 function mime(response){return (response.headers.get('content-type')||'').split(';',1)[0].trim().toLowerCase();}
 function isJSON(response){return /^application\/(?:json|[\w.+-]+\+json)$/.test(mime(response));}
 function httpError(response,body){
@@ -45,7 +49,10 @@ function validSession(result){return object(result)&&typeof result.token==='stri
 export function readEvent(data,type,room,previous){
  let message;try{message=JSON.parse(data);}catch{throw protocolError();}
  if(type==='patch'){if(!object(message)||!previous||message.baseSequence!==previous.sequence||!Number.isSafeInteger(message.sequence)||message.sequence<message.baseSequence)throw protocolError();try{const next=applyNetworkDelta(previous,message.patch);if(next.sequence!==message.sequence)throw protocolError();message=next;}catch{throw protocolError();}}
- if((type==='state'||type==='patch')&&!validState(message,room))throw protocolError();
+ if(type==='state'||type==='patch'){
+  if(!validState(message,room))throw protocolError();
+  if(message.map!==previous?.map)checkRoomMap(message.map);
+ }
  if(type==='voice'&&(!object(message)||typeof message.from!=='string'||!['offer','answer','ice','mute'].includes(message.kind)||!object(message.payload)))throw protocolError();
  if(type==='error'&&(!object(message)||!text(message.message)))throw protocolError();
  return message;
@@ -68,6 +75,7 @@ export async function connectCampusRoom({endpoint=defaultCampusEndpoint(),code='
 }
 export class NetworkRound{
  constructor({endpoint,result,onRoom=()=>{},onError=()=>{},onVoice=()=>{}}){
+  checkRoomMap(result.state.map);
   this.network=true;this.endpoint=endpoint;this.token=result.token;this.room=result.room;this._state=result.state;this._events=[...result.state.events];this._sequence=result.state.sequence;this._queued=[];this._last={};this._localPaused=false;this._closed=false;this._connected=false;this._onRoom=onRoom;this._onError=onError;this._controller=null;this._retry=null;this._busy=false;this._look=null;this._jumpSeq=result.state.inputAck?.jump||0;this._pendingJump=null;this._lookSeq=0;this._frames=[];this._moveSeq=0;this._localMotion={x:0,z:0};this._visualPosition=null;this._correction={x:0,z:0};this._receivedAt=performance.now();this._rtt=60;this._predictionLayout=null;this._visualTime=result.state.sceneElapsed;this._clockCorrection=0;
   this.voice=new RoomVoice(this,onVoice);this._timer=setInterval(()=>this._flush(),40);this._listen();this._onRoom(this.room,this._state);
  }

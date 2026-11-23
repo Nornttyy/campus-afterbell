@@ -1,4 +1,5 @@
-import {LIFT,CAMPUS_MAPS,isCampusMap,campusFloor,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-95';
+import {LIFT,isCampusMap,campusFloor,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-95';
+import {playableCampusMap} from './campus-destinations.js?v=campus-98';
 
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-93';
 
@@ -34,15 +35,23 @@ export function departureError(trip,people,{map,currentMap,stage,status,host=tru
  if(!ELEVATOR_ENABLED)return '电梯已封闭';
  if(!host)return '只有房主可以选楼层';
  if(!isCampusMap(map))return '楼层不存在';
+ const destination=playableCampusMap(map);
+ if(!destination)return '该地图暂未开放';
  if(trip.phase==='travel')return '电梯正在运行';
  if(trip.used)return '本局电梯已使用';
  if(stage!=='gathering'||status!=='playing')return '请在课前集合时选楼层';
- if(map===currentMap)return '已经在这一层';
+ if(destination===playableCampusMap(currentMap))return '已经在这一层';
  if(people.some(p=>p.connected===false))return '等待断线同学重连或离开';
  if(!elevatorSnapshot(trip,people,{stage,status,host}).canTravel)return '所有玩家进入电梯后才能出发';
  return null;
 }
-export function departElevator(trip,map,currentMap='classroom'){if(!ELEVATOR_ENABLED)return false;const duration=elevatorDuration(currentMap,map);Object.assign(trip,{phase:'travel',used:true,remaining:duration,duration,targetMap:map});}
+export function departElevator(trip,map,currentMap='classroom'){
+ const targetMap=playableCampusMap(map);
+ if(!ELEVATOR_ENABLED||!targetMap)return false;
+ const duration=elevatorDuration(playableCampusMap(currentMap)??currentMap,targetMap);
+ Object.assign(trip,{phase:'travel',used:true,remaining:duration,duration,targetMap});
+ return true;
+}
 export function advanceElevator(trip,dt){
  if(!ELEVATOR_ENABLED||trip.phase!=='travel'||!Number.isFinite(dt)||dt<=0)return null;
  trip.remaining=Math.max(0,trip.remaining-dt);
