@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {placeFurniture67} from './furniture-assets67.js?v=campus-83';
+import {placeFurniture67} from './furniture-assets67.js?v=campus-99';
 import {TOILET_STALL_SIZE,TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-94';
 export * from './toilet-layout70.js?v=campus-94';
 

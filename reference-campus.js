@@ -1,16 +1,16 @@
 import {DORM_CORRIDOR_SOLIDS} from './dorm-layout70.js?v=campus-95';
 import {createBoardInk} from './board-ink93.js?v=campus-93';
 import {makeOfficeFloor,fitOfficeInterior,staffroomFinish} from './staff-office92.js?v=campus-94';
-import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campus-83';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-98';
+import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campus-99';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-99';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-92';
 import * as T from './vendor/three.module.js';
 import {createCampusWallProps} from './campus-wall-props54.js?v=campus-95';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-93';
-import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-94';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-99';
+import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-99';
 import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-95';
 import {PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-95';
-import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-98';
+import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-99';
 import {END_ORIGIN,endPoint,officeOffset,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD,officeShelfCenters,officeBinPlan} from './campus-ends.js?v=campus-94';
 const [OFFICE_DESK]=OFFICE_DESKS,[OFFICE_CHAIR]=OFFICE_CHAIRS;
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
