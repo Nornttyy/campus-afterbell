@@ -1,42 +1,62 @@
 import * as T from './vendor/three.module.js';
 
-// Keep the measured top, seat and back from the supplied furniture. Give the
-// veneer a continuous projection across the original atlas seams.
-function plywood(source, kind, material) {
-  const parts = [];
-  source.traverse(node => {
-    if (!node.isMesh || node.material?.name !== 'TripoFurnitureOriginalPBR') return;
-    const g = node.geometry, p = g.attributes.position, n = g.attributes.normal;
-    const index = g.index, count = index ? index.count : p.count;
-    const positions = [], normals = [], uvs = [], indices = [], seen = new Map();
-    const coordinate = (i, axis) => axis === 1 ? p.getY(i) : p.getZ(i);
-    for (let i = 0; i < count; i += 3) {
-      const ids = [0, 1, 2].map(j => index ? index.getX(i+j) : i+j);
-      const mean = axis => ids.reduce((sum,id) => sum + coordinate(id,axis),0)/3;
-      const y = mean(1), z = mean(2);
-      if (kind === 'top' ? y < .812 : kind === 'seat' ? y < .379 || y > .448 || z < -.203 : y < .729) continue;
-      for (const id of ids) {
-        if (!seen.has(id)) {
-          seen.set(id, positions.length/3);
-          const x = p.getX(id), py = p.getY(id), pz = p.getZ(id);
-          positions.push(x,kind==='top'?.875-(.875-py)*.61:py,pz);
-          const up = n.getY(id);
-          if (kind === 'top' && py > .864 && up > .73) normals.push(0,1,0);
-          else normals.push(n.getX(id),up,n.getZ(id));
-          uvs.push(.5+x*.83,kind==='back' ? .19+py*.73 : .5+pz*1.06);
-        }
-        indices.push(seen.get(id));
-      }
-    }
-    if (!indices.length) return;
-    const board = new T.BufferGeometry();
-    board.setAttribute('position',new T.Float32BufferAttribute(positions,3));
-    board.setAttribute('normal',new T.Float32BufferAttribute(normals,3));
-    board.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));
-    board.setIndex(indices); board.computeBoundingSphere();
-    parts.push(new T.Mesh(board,material));
-  });
-  return parts;
+// Sections measured on the supplied furniture. A closed shell replaces height
+// cuts through the welded Tripo frame, which left holes along the back and seat.
+const boards={
+ top:{width:1.198,span:.846,radius:.066,thickness:.028},
+ seat:{width:.548,span:.481,radius:.063,thickness:.029},
+ back:{width:.546,span:.279,radius:.048,thickness:.032}
+};
+function plywood(kind,material){
+ const {width,span,radius,thickness}=boards[kind],hw=width/2,hh=span/2;
+ const outline=[];
+ for(let corner=0;corner<4;corner++){
+  const angle=corner*Math.PI/2,sx=corner===0||corner===3?1:-1,sy=corner<2?1:-1;
+  for(let i=0;i<=6;i++){
+   const a=angle+i*Math.PI/12;
+   outline.push([sx*(hw-radius)+radius*Math.cos(a),sy*(hh-radius)+radius*Math.sin(a)]);
+  }
+  const x=sx*(hw-radius)+radius*Math.cos(angle+Math.PI/2),y=sy*(hh-radius)+radius*Math.sin(angle+Math.PI/2);
+  const nextX=corner%2===0?-x:x,nextY=corner%2===1?-y:y;
+  for(let i=1;i<6;i++)outline.push([x+(nextX-x)*i/6,y+(nextY-y)*i/6]);
+ }
+ const xyz=[],uv=[],colors=[],index=[];
+ function vertex(x,y,z,tone){
+  const across=(x/hw)**2,along=y/hh,back=kind==='back';
+  if(back)xyz.push(x,.847+y,-.327-.229*y+.024*across+z);
+  else if(kind==='seat')xyz.push(x,.406+z+.007*across+.006*along*along,.024-y);
+  else xyz.push(x,.875-thickness/2+z,-y);
+  uv.push(.50+x*.86,.50+y*(back?1.09:.99));
+  colors.push(tone,tone,tone);return colors.length/3-1;
+ }
+ const rings=[];
+ function ring(scale,z,tone,inset=0){
+  rings.push(outline.map(([x,y])=>vertex(x*scale*(1-inset/hw),y*scale*(1-inset/hh),z,tone)));
+ }
+ const half=thickness/2,bevel=.004;
+ const bottom=vertex(0,0,-half,.83);
+ for(const scale of [.36,.70,1])ring(scale,-half,.83,bevel);
+ ring(1,-half+.003,.72,.0008);
+ ring(1,-half+.006,.82);
+ ring(1,-.002,.79);
+ ring(1,.0003,.67);
+ ring(1,.0022,.83);
+ ring(1,half-bevel,.89);
+ ring(1,half-.001,.96,.0014);
+ for(const scale of [1,.70,.36])ring(scale,half,1,bevel);
+ const top=vertex(0,0,half,1),last=rings.at(-1);
+ for(let i=0;i<outline.length;i++){
+  const j=(i+1)%outline.length;index.push(bottom,rings[0][j],rings[0][i],top,last[i],last[j]);
+  for(let k=1;k<rings.length;k++){
+   const a=rings[k-1],b=rings[k];index.push(a[i],a[j],b[i],a[j],b[j],b[i]);
+  }
+ }
+ const geometry=new T.BufferGeometry();
+ geometry.setAttribute('position',new T.Float32BufferAttribute(xyz,3));
+ geometry.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+ geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));
+ geometry.setIndex(index);geometry.computeVertexNormals();geometry.computeBoundingSphere();
+ const part=new T.Mesh(geometry,material);part.name='school-plywood-'+kind;return part;
 }
 
 function tube(group, material, points, radius) {
@@ -56,16 +76,14 @@ function tube(group, material, points, radius) {
 }
 
 export function finishSchoolFurniture(body,drawer,chair,grain){
-  const oak=new T.MeshStandardMaterial({color:grain?'#ffffff':'#dba64f',map:grain,roughness:.48});
+  const oak=new T.MeshStandardMaterial({color:grain?'#ffffff':'#dba64f',map:grain,roughness:.50,vertexColors:true});
   const steel=new T.MeshStandardMaterial({color:'#99a19d',metalness:.30,roughness:.48});
   const cap=new T.MeshStandardMaterial({color:'#444944',roughness:.86});
   const tray=new T.MeshStandardMaterial({color:'#afb5af',metalness:.14,roughness:.60});
   oak.name='School-maple';steel.name='School-tubular-steel';cap.name='School-foot-caps';tray.name='School-drawer-enamel';
   const table=new T.Group(),seat=new T.Group();
   table.name=body.name;seat.name=chair.name;
-  const slab=plywood(body,'top',oak),seatPan=plywood(chair,'seat',oak),back=plywood(chair,'back',oak);
-  if(!slab.length||!seatPan.length||!back.length) throw Error('School furniture source panels missing');
-  table.add(...slab);seat.add(...seatPan,...back);
+  table.add(plywood('top',oak));seat.add(plywood('seat',oak),plywood('back',oak));
   for(const x of [-.532,.532]){
     tube(table,steel,[[x,.018,-.325],[x,.831,-.275],[x,.831,.278],[x,.018,.325]],.0155);
     tube(table,steel,[[x,.17,-.311],[x,.17,.311]],.010);

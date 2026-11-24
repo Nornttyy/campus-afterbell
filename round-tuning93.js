@@ -1,7 +1,7 @@
 // Ranges and units are shared by both host forms and the authoritative round.
 export const RULE_FIELDS=Object.freeze([
  ['chalkCost','每发粉笔消耗','体力',1,20,8],['chalkInterval','投掷间隔','毫秒',250,2000,720],
- ['chalkStun','粉笔眩晕','秒',1,12,5],['correctGrabGain','抓对恢复','体力',0,50,20],
+ ['chalkStun','粉笔眩晕','秒',1,12,3],['correctGrabGain','抓对恢复','体力',0,50,20],
  ['wrongGrabCost','抓错扣除','体力',0,80,40],['writingRegen','板书每秒恢复','体力',1,20,10],
  ['forwardDrainMs','前进扣一点体力','毫秒',100,1000,200],['backDrainMs','后退扣一点体力','毫秒',200,1800,600],
  ['deskRefill','课桌刷新','秒',1,15,3],['labRefill','机房抽屉刷新','秒',1,15,3],

@@ -1,11 +1,11 @@
-import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-93';
+import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-102';
 import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-101';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-101';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-102';
 import {teacherViewHeight} from './camera-height58.js?v=campus-83';
 import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,actorFloorHeight} from './classroom-layout.js?v=campus-101';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-101';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-102';
 
 import {BOARD_SECONDS} from './board-lesson93.js?v=campus-93';
 export class TeacherRound extends ClassroomRound{
@@ -47,11 +47,11 @@ export class TeacherRound extends ClassroomRound{
   _perceive(){} // The human observes. No evidence meter, memory-based aim or auto-capture.
   _hear(){} // Sound cues stay spatial; they must not reveal hidden identity to the UI.
   throwChalk(){
-    if(!this._inputAllowed()||!['gathering','seating','class'].includes(this.stage)||this._writing||this._sessionElapsed<this._nextThrow||this.teacher.carriedId!==null)return false;
-    if(this._restrained(this.player))return false;
-    if(!canThrowWithStamina(this)){this._events.push({type:'stamina-low'});return false;}
+    if(this.paused||this.status==='ready'||this._sessionElapsed+1e-9<this._nextThrow)return false;
+    if(!canThrowWithStamina(this)){if(!this._restrained(this.player))this._events.push({type:'stamina-low'});return false;}
+    if(this._writing)this.setWriting(false);
     const p=this.player,cp=Math.cos(p.pitch),d={x:Math.sin(p.yaw)*cp,y:-Math.sin(p.pitch),z:Math.cos(p.yaw)*cp};
-    this.chalks.push({id:this._chalkId++,x:p.x,y:actorFloorHeight(p,this.map)+teacherViewHeight(p),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
+    this.chalks.push({id:this._chalkId++,throwerId:p.id,x:p.x,y:actorFloorHeight(p,this.map)+teacherViewHeight(p),z:p.z,vx:d.x*16,vy:d.y*16,vz:d.z*16,age:0});
     this.teacher.stamina=Math.max(0,this.teacher.stamina-chalkStaminaCost(this));this.player._emote=null;this._lastThrow=this._sessionElapsed;this._nextThrow=this._sessionElapsed+this.tuning.chalkInterval/1000;this._events.push({type:'chalk-throw',x:this.player.x,z:this.player.z});return true;
   }
   aimedStudent(range=9){

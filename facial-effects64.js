@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-83';
+import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-102';
 
 // Masks use the original model's metre-space rest pose, before skinning. They
 // therefore follow the head through sitting, struggling and floor stuns without
@@ -46,6 +46,7 @@ vec2 lidMask(vec4 eye){
  face*=1.-smoothstep(faceBounds.z-.025,faceBounds.z,abs(faceRestPosition.x));
  face*=smoothstep(faceBounds.w,faceBounds.w+.025,faceRestPosition.z);
  diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.002,.0025,.003),face*faceInk);
+${source.userData.opticalShell ? "diffuseColor.a=mix(diffuseColor.a,1.,max(lids.x*front*faceClosed,face*faceInk));" : ""}
 `);
    };
    material.customProgramCacheKey=()=>cache()+'-face64-'+variant;owned.push(material);return material;
