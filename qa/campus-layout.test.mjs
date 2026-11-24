@@ -89,7 +89,7 @@ test('rendered walls, floors, open floor controls and interactive furniture agre
  const floorButtons=campus.liftPanel.children.filter(o=>o.userData.floorMap);
  assert.deepEqual(floorButtons.map(o=>o.userData.floorMap),OPEN_CAMPUS_MAPS);
  assert.deepEqual(floorButtons.map(o=>o.userData.floor),OPEN_CAMPUS_MAPS.map(map=>CAMPUS_MAPS.indexOf(map)+1));
- const [left,right]=floorButtons;assert.equal(left.position.y,right.position.y);assert.ok(left.position.z>right.position.z);
+ const [ground,left,right]=floorButtons;assert.ok(ground.position.y<left.position.y);assert.equal(left.position.y,right.position.y);assert.ok(left.position.z>right.position.z);
  const t=campus.getTargets();assert.equal(t.doors.length,4);assert.deepEqual([...new Set(t.doors.map(d=>d.id))].sort(),['front','office','rear']);assert.equal(t.officeDesks.length,OFFICE_DESKS.length);assert.equal(t.officeChairs.length,OFFICE_CHAIRS.length);assert.equal(t.lockers.length,1);for(const target of[...t.doors,...t.officeDesks,...t.officeChairs,...t.lockers])target.object.traverse(o=>{if(o.isMesh&&o.userData.campusTarget)assert.equal(o.userData.animated,true);});
  const liftRay=new T.Raycaster(new T.Vector3(LIFT.x,1.6,CORRIDOR.maxZ-.6),new T.Vector3(0,0,1),0,1.4),closed={elevator:{doorClosed:true}},opened={elevator:{doorClosed:false}};
  assert.equal(campus.liftDoors.length,2);assert.equal(liftRay.intersectObjects(campus.liftDoors,true).length,0);

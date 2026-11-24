@@ -10,11 +10,11 @@ import {CAMPUS_SURFACE_SOURCES} from '../dist/surface-materials.js';
 import {CAMPUS_ARTWORK_SOURCES} from '../dist/campus-artwork.js';
 import {FURNITURE_SOURCES67} from '../dist/furniture-assets67.js';
 
-const archived=['bus','playground','cafeteria','exam','toilet','hotpot','dorm'];
+const archived=['cafeteria','exam','toilet','dorm'];
 const board=p=>Object.assign(p,{x:LIFT.x,z:LIFT.z,seated:false});
 
 test('the public lift lists all and only the open canonical destinations in floor order',()=>{
- const expected=['classroom','night','tiered','computer'];
+ const expected=['bus','playground','classroom','night','tiered','computer','hotpot'];
  assert.deepEqual(OPEN_CAMPUS_MAPS,expected);
  assert.deepEqual(['bus',...CAMPUS_MAPS].filter(map=>!archived.includes(map)),expected);
  for(const map of archived)assert.equal(playableCampusMap(map),null);
@@ -32,9 +32,9 @@ test('playable rooms load their furnishings and artwork while map-exclusive asse
   for(const key of removed){assert.ok(Object.hasOwn(all,key));assert.ok(!Object.hasOwn(selected,key));}
   for(const [key,path] of Object.entries(all))if(!removed.includes(key))assert.equal(selected[key],path);
  };
- only(CAMPUS_SURFACE_SOURCES,['turf','track','tile','cloth','facade','upholstery','broth']);
- only(CAMPUS_ARTWORK_SOURCES,['hotpotMenus','hotpotVegetables']);
- only(FURNITURE_SOURCES67,['toilet']);
+ only(CAMPUS_SURFACE_SOURCES,['tile','cloth']);
+ only(CAMPUS_ARTWORK_SOURCES,[]);
+ only(FURNITURE_SOURCES67,[]);
 });
 
 test('blocked requests cannot move either solo role, close the doors, or spend the elevator trip',()=>{

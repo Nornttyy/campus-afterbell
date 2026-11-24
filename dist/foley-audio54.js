@@ -1,5 +1,5 @@
 // Recorded campus bells, footsteps and arcade confirmations share the effects bus with procedural Foley.
-const DURATIONS=Object.freeze({tap:.075,open:.20,back:.12,step:.22,'drawer-open':.49,'drawer-close':.35,'rear-door':.50,'book-open':.34,'book-close':.24,'pen-pickup':.14,'pen-putdown':.16,'pen-write':.34,'pen-twirl':.30,pen:.30,chair:.39,phone:.10,snack:.42,burger:.38,banana:.35,garlic:.37,lunch:.39,drink:.46,blow:.54,bubble:.13,'gum-pop':.16,'gum-score':.13,'bubble-release':.24,'bubble-hit':.20,'bananaPeel-throw':.18,'banana-slip':.47,stunned:.34,burp:.53,'smoke-throw':.19,'smoke-impact':.20,'smoke-bloom':1.70,'flash-burst':.70,'ink-splash':.34,'chalk-hit':.16,caught:.25,warning:.19,complete:.23,bell:1.05});
+const DURATIONS=Object.freeze({tap:.075,open:.20,back:.12,step:.22,'drawer-open':.49,'drawer-close':.35,'rear-door':.50,'lift-depart':.56,'lift-arrive':.92,'book-open':.34,'book-close':.24,'pen-pickup':.14,'pen-putdown':.16,'pen-write':.34,'pen-twirl':.30,pen:.30,chair:.39,phone:.10,snack:.42,burger:.38,banana:.35,garlic:.37,lunch:.39,drink:.46,blow:.54,bubble:.13,'gum-pop':.16,'gum-score':.13,'bubble-release':.24,'bubble-hit':.20,'bananaPeel-throw':.18,'banana-slip':.47,stunned:.34,burp:.53,'smoke-throw':.19,'smoke-impact':.20,'smoke-bloom':1.70,'flash-burst':.70,'ink-splash':.34,'chalk-hit':.16,caught:.25,warning:.19,complete:.23,bell:1.05});
 const ACTION_DURATIONS=Object.freeze({'school-bell-in':1.05,'school-bell-out':1.05,'use-crunch':.34,'use-gulp':.48,'food-complete':.24,'drink-complete':.24,'gum-inflate':.62,'chalk-throw':.18,'phone-notification':.55,'snake-food':.24,'snake-failed':.60,'game-kill-1':.45,'game-kill-2':.45,'game-kill-3':.45,'game-kill-4':.45,'game-kill-5':.60});
 export const FOLEY_KINDS=Object.freeze([...Object.keys(DURATIONS),...Object.keys(ACTION_DURATIONS)]);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
@@ -25,6 +25,11 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
  function latch(at=0,level=.3){noise(at,.022,level,{lo:650,hi:7800,decay:6});impact(at,.065,level*.25,[183,529,1337]);}
  function scuff(at=0,level=.2){noise(at,.18,level,{lo:170,hi:2100,decay:3,pulse:31});}
  switch(kind){
+  case 'lift-depart':
+   impact(0,.10,.16,[243,602]);noise(.045,.36,.11,{lo:66,hi:390,decay:1.4,attack:.074});
+   impact(.42,.13,.15,[71,147]);break;
+  case 'lift-arrive':
+   impact(0,.21,.12,[66,129]);impact(.065,.47,.22,[988,1996]);impact(.32,.59,.18,[784,1573]);break;
   case 'tap':latch(0,.20);noise(.008,.055,.12,{lo:90,hi:1100,decay:7});break;
   case 'open':paper(0,.18);latch(.025,.13);break;
   case 'back':noise(0,.09,.25,{lo:650,hi:4100,decay:5});impact(.005,.06,.045,[165,379]);break;

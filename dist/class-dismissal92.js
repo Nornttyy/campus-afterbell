@@ -1,5 +1,5 @@
 // Dismissal uses the same seats, paths, collision and walking speeds as the lesson.
-import {CORRIDOR,LIFT,DOORS,OFFICE,OFFICE_CHAIRS,blocked,chairExit,queueLayoutDoors} from './classroom-layout.js?v=campus-95';
+import {CORRIDOR,LIFT,DOORS,OFFICE,OFFICE_CHAIRS,blocked,chairExit,queueLayoutDoors} from './classroom-layout.js?v=campus-101';
 import {schoolDoorMotionBlocked} from './school-door-motion65.js?v=campus-92';
 import {BUS} from './bus-layout86.js?v=campus-94';
 

@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
-import {createDeskItem} from './game-actors.js?v=campus-100';
+import {createDeskItem} from './game-actors.js?v=campus-101';
 import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-92';
 export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-92';
 
@@ -90,6 +90,15 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
   diffuseColor.rgb*=vec3(.79,.82,.62)*(.88+.12*mowing+.074*patches);`);
  };grass.customProgramCacheKey=()=> 'mown-school-field91';
  const concrete=mat('#ffffff',{map:ownTexture(surfaceTexture('concrete')),roughness:.86}),wall=mat('#e9e4d3'),cap=mat('#c9cabc'),steel=mat('#516d6a',{metalness:.27,roughness:.6}),white=mat('#f0efdc'),wood=mat('#ffffff',{map:ownTexture(surfaceTexture('wood')),roughness:.75}),chalk=mat('#113f33'),frame=mat('#84958a',{metalness:.45,roughness:.42});
+ // Let rubber aggregate show through the lane paint at the same metre-based UV as the track.
+ const lanePaint=mat('#e8dfcb',{map:track.map,roughness:.92});
+ lanePaint.onBeforeCompile=shader=>{
+  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`
+   vec3 grain=texture2D(map,vMapUv).rgb;
+   float coverage=.70+.23*smoothstep(.04,.42,grain.r);
+   diffuseColor.rgb=mix(grain,diffuseColor.rgb,coverage);`);
+ };
+ lanePaint.customProgramCacheKey=()=> 'worn-track-markings101';
  const fenceMap=ownTexture(paintedTexture('fence')),fence=mat('#ffffff',{map:fenceMap,side:T.DoubleSide,alphaTest:.25,roughness:.72,metalness:.12});
  const machineColors=[mat('#265b81',{roughness:.4}),mat('#e0ddd0',{roughness:.4}),mat('#c44631',{roughness:.4})],dark=mat('#263d46'),glass=mat('#7bb8be',{roughness:.25}),lightGlass=mat('#d3e5d6',{roughness:.28}),amber=mat('#e8b649'),blue=mat('#2799b7'),red=mat('#d84532'),yellow=mat('#d9bd3b');
  const unitBox=new T.BoxGeometry(1,1,1); // Geometry transforms are baked, never stretch a downloaded prop.
@@ -119,7 +128,7 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  const groundGeo=new T.PlaneGeometry(b.width,b.length);rectangleUV(groundGeo,b.width,b.length,3.2);add(groundGeo,concrete,[(b.minX+b.maxX)/2,-.006,(b.minZ+b.maxZ)/2],[-Math.PI/2,0,0]);groundGeo.dispose();
  const fieldGeo=playgroundField(t,t.innerRadius);add(fieldGeo,grass,[0,.003,0]);fieldGeo.dispose();
  const ring=playgroundTrackRing(t,t.outerRadius,t.innerRadius);add(ring,track,[0,.004,0]);ring.dispose();
- for(let lane=0;lane<=t.laneCount;lane++){const r=t.innerRadius+lane*t.laneWidth,g=playgroundTrackRing(t,r+t.lineWidth/2,r-t.lineWidth/2);add(g,white,[0,.008,0]);g.dispose();}
+ for(let lane=0;lane<=t.laneCount;lane++){const r=t.innerRadius+lane*t.laneWidth,g=playgroundTrackRing(t,r+t.lineWidth/2,r-t.lineWidth/2);add(g,lanePaint,[0,.008,0]);g.dispose();}
  // Broad field markings visible in the reference. No invented sports goal.
  const fieldW=t.innerRadius*1.45,fieldL=t.straightHalf*2+t.innerRadius*1.05;
  for(const x of[-1,1])box(white,[t.cx+x*fieldW/2,.007,t.cz],[.065,.004,fieldL]);

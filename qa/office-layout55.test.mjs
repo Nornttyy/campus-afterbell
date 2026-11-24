@@ -11,9 +11,9 @@ function lab(scene,screenContent=null,officeScreens=new Map()){
  const variants=createRoomVariants({scene,box:make,rounded:(m,p,s,rad,r,g)=>make(m,p,s,r,g),mat,texture:()=>new T.Texture(),bakeStatic:()=>{},screenContent,officeScreens});return{variants,dispose(){variants.dispose();scene.traverse(o=>o.geometry?.dispose());materials.forEach(m=>m.dispose());}};
 }
 
-test('larger office has three full-size non-overlapping workstations and reachable chair exits',()=>{
+test('compact office has three full-size non-overlapping workstations and reachable chair exits',()=>{
  const f=campusScene(),ctx=createLayoutContext();try{
-  assert.ok((OFFICE.maxX-OFFICE.minX)*(OFFICE.maxZ-OFFICE.minZ)>130);assert.equal(OFFICE_DESKS.length,3);assert.equal(f.campus.officeScreens.size,3);
+  const area=(OFFICE.maxX-OFFICE.minX)*(OFFICE.maxZ-OFFICE.minZ);assert.ok(area>70&&area<80);assert.equal(OFFICE_DESKS.length,3);assert.equal(f.campus.officeScreens.size,3);
   const entries=OFFICE_DESKS.map(d=>({id:d.id,box:box(f.scene.getObjectByName(d.id==='office-lunch'?'office-openable-lunch-desk':d.id))}));
   for(const c of OFFICE_CHAIRS)entries.push({id:c.id,box:box(f.scene.getObjectByName(c.id==='office-chair'?'office-sittable-chair':c.id))});
   entries.push({id:'whiteboard',box:box(f.scene.getObjectByName('office-mobile-board'))});
@@ -23,7 +23,7 @@ test('larger office has three full-size non-overlapping workstations and reachab
  }finally{f.dispose();}
 });
 
-test('office exterior and ceiling enclose expanded floor with no leftover old wall',()=>{
+test('office exterior and ceiling enclose staffroom floor with no leftover old wall',()=>{
  const f=campusScene();try{
   const cast=(origin,dir)=>new T.Raycaster(new T.Vector3(...origin),new T.Vector3(...dir),0,2).intersectObject(f.scene,true).filter(h=>h.object.material&&!h.object.material.transparent);
   for(const z of[OFFICE.maxZ-.5,OFFICE.maxZ-4,OFFICE.minZ+4,OFFICE.minZ+.75]){const left=cast([OFFICE.minX+.5,3,z],[-1,0,0]);assert.ok(left.some(h=>Math.abs(h.point.x-OFFICE.minX)<1e-5));const right=cast([OFFICE.maxX-.5,3,z],[1,0,0]);assert.ok(right.some(h=>Math.abs(h.point.x-OFFICE.maxX)<1e-5));}

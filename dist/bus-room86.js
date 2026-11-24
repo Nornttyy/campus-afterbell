@@ -208,14 +208,20 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
    B(paint,(min+max)/2,U+.209,z,max-min-.08,.447,.149);B(edgeLight,(min+max)/2,U+.439,z,max-min-.10,.035,.157);}
   for(const x of [min+.15,max-.16]){B(paint,x,U+.209,midZ,.156,.447,near-far-.13);for(const h of [.446,.79])rod(red,[x,U+h,far+.13],[x,U+h,near-.13],h>.6?.049:.029);}
   // Every visible tread rests on the ramp used for foot and camera support.
+  const ribbedTread=texture(256,96,(c,w,h)=>{
+   c.fillStyle='#444b4b';c.fillRect(0,0,w,h);
+   for(let i=3;i<w;i+=18){c.fillStyle='#293233';c.fillRect(i,0,4,h);c.fillStyle='#637070';c.fillRect(i+4,0,2,h);}
+  });
+  const stepRubber=C('#f0f2ed',.94,{map:ribbedTread});
+  const stepNose=C('#cca857',.74);
   const totalSteps=15;for(let i=0;i<totalSteps;i++){const a=i/totalSteps,b=(i+1)/totalSteps,x=S.maxX-(a+b)*.5*(S.maxX-S.minX),h=L+(U-L)*(a+b)*.5;
-   B(rubber,x,h-.08,(S.minZ+S.maxZ)/2,(S.maxX-S.minX)/totalSteps+.003,.16,S.maxZ-S.minZ);B(edge,x+(S.maxX-S.minX)/totalSteps*.46,h+.006,(S.minZ+S.maxZ)/2,.044,.013,S.maxZ-S.minZ);}
+   B(stepRubber,x,h-.08,(S.minZ+S.maxZ)/2,(S.maxX-S.minX)/totalSteps+.003,.16,S.maxZ-S.minZ);B(stepNose,x+(S.maxX-S.minX)/totalSteps*.46,h+.006,(S.minZ+S.maxZ)/2,.044,.013,S.maxZ-S.minZ);}
   for(const z of [S.minZ-.03,S.maxZ+.03]){rod(iron,[S.maxX,L+.75,z],[S.minX,U+.75,z],.05);for(let i=0;i<5;i++){const q=i/4,x=S.maxX+(S.minX-S.maxX)*q,h=L+(U-L)*q;rod(iron,[x,h,z],[x,h+.74,z],.039);}}
   for(const z of [S.minZ-.047,S.maxZ+.005]){
    const side=new T.Shape();side.moveTo(S.maxX,L+.033);side.lineTo(S.maxX,L+.29);side.lineTo(S.minX,U+.29);side.lineTo(S.minX,U-.10);side.closePath();
    shape(new T.ExtrudeGeometry(side,{depth:.042,bevelEnabled:false}),cream,0,0,z);
   }
-  for(let i=0;i<4;i++){const z=-9.82-i*.24;B(rubber,10.05,.081+i*.087,z,1.74,.16+i*.175,.25);B(edge,10.05,.163+i*.174,z+.10,1.70,.014,.037);}
+  for(let i=0;i<4;i++){const z=-9.82-i*.24;B(rubber,10.05,.081+i*.087,z,1.74,.16+i*.175,.25);B(stepNose,10.05,.163+i*.174,z+.10,1.70,.014,.037);}
   for(const side of [-1,1]){
    const jamb=new T.Group(),knuckle=new T.Group(),half=.45;
    jamb.position.set(10.05+side*.90,L-.35,near+.015);knuckle.position.x=-side*half;jamb.add(knuckle);vehicle.add(jamb);
@@ -296,7 +302,7 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   const approach=(x,target,speed)=>T.MathUtils.damp(x,target,speed,Math.min(dt,.15));
   doorAmount=approach(doorAmount,state.busDeparted?0:(state.doorMotion?.front?.amount??(state.frontDoorClosed?0:1)),8);liftAmount=approach(liftAmount,state.elevator?.doorClosed?0:1,9);driverAmount=approach(driverAmount,state.officeLocked?0:1,8);
   for(const {o,side,lift,knuckle}of leaves){
-   if(lift)o.position.x=10.49+side*(.49+liftAmount*.95);
+   if(lift)o.position.x=10.49+side*(.49+liftAmount*liftAmount*(3-2*liftAmount)*.95);
    else {o.rotation.y=-side*doorAmount*1.48;knuckle.rotation.y=-2*o.rotation.y;}
   }
   driverGate.position.z=-12.12-driverAmount*2.71;

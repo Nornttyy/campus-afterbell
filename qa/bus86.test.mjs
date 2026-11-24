@@ -9,19 +9,19 @@ import {canSee,chalkHit} from '../dist/classroom-rules.js';
 import {surveillanceMounts,reachesSurveillance} from '../dist/surveillance54.js';
 import {ordinaryStudyState} from '../dist/npc-study58.js';
 
-test('the archived G stop keeps its floor number but cannot consume a solo or multiplayer trip',()=>{
+test('G takes a solo class or a boarded multiplayer party to the bus stop once',()=>{
  assert.equal(CAMPUS_MAPS.length,10);assert.ok(isCampusMap('bus'));assert.equal(campusFloor('bus'),0);
  assert.equal(elevatorDuration('exam','bus'),12);assert.equal(elevatorDuration('bus','classroom'),4);
  assert.equal(isCampusMap('bus11'),false);
  for(const role of ['teacher','student']){
   const r=createSoloRound({role,map:'classroom'});r.start({gathering:true});Object.assign(r.player,{x:LIFT.x,z:LIFT.z,seated:false});
-  assert.equal(r.travelFloor('bus'),false);assert.equal(r.elevator.used,false);assert.equal(r.elevator.targetMap,null);
-  assert.ok(r.travelFloor('night'));r.step(3);assert.equal(r.map,'night');
+  assert.ok(r.travelFloor('bus'));assert.equal(r.elevator.used,true);assert.equal(r.elevator.targetMap,'bus');
+  r.step(4);assert.equal(r.map,'bus');assert.equal(r.snapshot().floor,0);assert.equal(r.travelFloor('night'),false);
  }
  const r=new CampusRoom({code:'86',map:'classroom'}),a=r.join({name:'甲'}),b=r.join({name:'乙'});
  Object.assign(a.context.player,{x:LIFT.x,z:LIFT.z,seated:false});Object.assign(b.context.player,{x:LIFT.x+.3,z:LIFT.z,seated:false});
- assert.throws(()=>r.command(a,'travelFloor',['bus']),/暂未开放/);
- for(const m of [a,b]){const state=r.snapshot(m);assert.equal(state.floor,2);assert.equal(state.map,'classroom');assert.equal(state.elevator.used,false);}
+ assert.ok(r.command(a,'travelFloor',['bus']));r.tick(4);
+ for(const m of [a,b]){const state=r.snapshot(m);assert.equal(state.floor,0);assert.equal(state.map,'bus');assert.equal(state.elevator.used,true);}
 });
 
 function walk(from,to,ctx={},radius=.18){
