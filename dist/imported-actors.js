@@ -1,25 +1,27 @@
+import {fitUniform} from './uniform-detail102.js?v=campus-102';
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
-import {createFacialEffects} from './facial-effects64.js?v=campus-83';
+import {createFacialEffects} from './facial-effects64.js?v=campus-102';
 import {requireModelBudget} from './model-budget64.js';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {normalWalkCycleRate} from './movement55.js?v=campus-93';
 import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-83';
 import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-93';
-import {createCrawlPose} from './crawl-pose.js?v=campus-101';
+import {createCrawlPose} from './crawl-pose.js?v=campus-102';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-101';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-102';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-90';
 
 export async function loadTeacherModel(){
   const url=new URL('./assets/models/teacher-v2.glb?v=mesh-64',import.meta.url);
   const source=await new GLTFLoader().loadAsync(url.href);
+  fitUniform(source.scene,'teacher');
   requireModelBudget(source,'teacher-v2');
   const create=()=>createRiggedTeacher({...source,scene:cloneSkin(source.scene)});
   const actor=create();actor.createClone=create;return actor;
 }
 
-import {finishSchoolFurniture} from './school-furniture91.js?v=campus-91';
+import {finishSchoolFurniture} from './school-furniture91.js?v=campus-102';
 
 export async function loadDeskModel(grain=null){
   const loader=new GLTFLoader();
@@ -45,12 +47,13 @@ export function createRiggedTeacher(gltf){
   const model=gltf.scene;group.add(model);
   const metric=gltf.parser?.json?.asset?.extras?.characters40?.normalized===true;
   if(!metric){const bounds=new THREE.Box3().setFromObject(model,true),size=bounds.getSize(new THREE.Vector3()),factor=TEACHER_PROPORTIONS.height/size.y;model.scale.multiplyScalar(factor);model.position.y-=bounds.min.y*factor;}
-  if(metric)model.scale.multiplyScalar(TEACHER_PROPORTIONS.height/(gltf.parser.json.asset.extras.characters40.height||TEACHER_PROPORTIONS.sourceHeight));
   group.updateMatrixWorld(true);
   group.userData.asset=metric?'teacher-v2':'teacher-v1';group.userData.fingersPerHand=4;
   model.traverse(o=>{if(o.isMesh){o.castShadow=true;if(o.isSkinnedMesh)o.frustumCulled=false;}});
   useCharacterBaseColor(model);
   const faceEffects=createFacialEffects(model,{variant:'teacher'});
+  if(metric)model.scale.multiplyScalar(TEACHER_PROPORTIONS.height/(gltf.parser.json.asset.extras.characters40.height||TEACHER_PROPORTIONS.sourceHeight));
+  group.updateMatrixWorld(true);
   const bones={};model.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig[:_]?/,'')]=o;});
   for(const name of ['Head','LeftHand','RightHand'])if(!bones[name])throw new Error(`Teacher rig missing ${name}`);
   const mixer=new THREE.AnimationMixer(model),actions={};

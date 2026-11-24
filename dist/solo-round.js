@@ -1,5 +1,5 @@
-import {ClassroomRound} from './classroom-rules.js?v=campus-101';
-import {TeacherRound} from './teacher-rules.js?v=campus-101';
+import {ClassroomRound} from './classroom-rules.js?v=campus-102';
+import {TeacherRound} from './teacher-rules.js?v=campus-102';
 import {updateLayoutDoors,campusFloor} from './classroom-layout.js?v=campus-101';
 import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-101';
 
@@ -35,8 +35,8 @@ const elevatorRound=Base=>class extends Base{
   if(this.paused||this.status!=='playing')return this.snapshot();
   if(!Number.isFinite(dt)||dt<=0)return this.snapshot();
   const step=Math.min(dt,this.elevator.remaining,30);
-  moveElevatorPassenger(this.player,this._movement,step,this.layout);
-  this._sessionElapsed+=step;
+  if(!this._restrained(this.player))moveElevatorPassenger(this.player,this._movement,step,this.layout);
+  this._sessionElapsed+=step;this._advanceBreakChalk(step);
   if(this.player.id===-1)Object.assign(this.teacher,{x:this.player.x,z:this.player.z,yaw:this.player.yaw});
   const map=advanceElevator(this.elevator,step);
   if(map){

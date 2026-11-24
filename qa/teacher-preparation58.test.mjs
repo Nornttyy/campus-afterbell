@@ -48,3 +48,22 @@ test('bright daytime profile returns after switching maps; the existing blackout
  const refs={ambient:new T.HemisphereLight(),sun:new T.DirectionalLight(),fill:new T.DirectionalLight(),teachingFill:new T.DirectionalLight(),lampMat:new T.MeshStandardMaterial(),ceilingMaterial:new T.MeshStandardMaterial(),scene:{background:new T.Color(),fog:{color:new T.Color()}}};
  for(const night of [false,true,false]){applyRoomLighting(night,refs);const p=ROOM_LIGHTING[night?'night':'day'];assert.equal(refs.ambient.intensity,p.ambient);assert.equal(refs.fill.intensity,p.fill);assert.equal('#'+refs.scene.background.getHexString(),p.background);}
 });
+
+test('chalk hits a pupil before the bell and the remaining three-second stun crosses the lesson boundary',()=>{
+ const r=new TeacherRound();r.start({gathering:true});r.startBell();r.step(29.5);
+ const p=r.player,target=r.students[0];
+ Object.assign(p,{x:9.8,z:1,yaw:0,pitch:.40});Object.assign(target,{x:9.8,z:2.25,visible:true,seated:false});
+ r._seatingRoutes.delete(target.id);assert.ok(r.throwChalk());r.step(.20);
+ assert.equal(target.captivity,'stunned');const remaining=r.snapshot().students[0].stunLeft;assert.ok(remaining>2.8&&remaining<=3);
+ r.step(.4);assert.equal(r.stage,'class');assert.equal(target.captivity,'stunned');
+ assert.ok(Math.abs(remaining-.4-r.snapshot().students[0].stunLeft)<.03);
+ r.step(2.7);assert.equal(target.captivity,'free');
+});
+test('a lobby teacher preference can hit another player before roles are drawn, and cannot hit itself',()=>{
+ const room=new CampusRoom({code:'012345',seed:7});
+ const host=room.join({rolePreference:'teacher'}),guest=room.join();
+ Object.assign(host.context.player,{x:9.8,z:1,yaw:0,pitch:.4});Object.assign(guest.context.player,{x:9.8,z:2.2});
+ assert.equal(room.command(host,'throwChalk'),true);room.tick(.18);
+ assert.equal(room.snapshot(guest).player.captivity,'stunned');assert.equal(room.snapshot(host).player.captivity,'free');
+ for(let n=0;n<31;n++)room.tick(.1);assert.equal(room.snapshot(guest).player.captivity,'free');
+});

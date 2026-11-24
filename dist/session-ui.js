@@ -1,5 +1,5 @@
 import {createRadioUI} from './radio-player93.js?v=campus-97';
-import {RULE_FIELDS,tuningForm,readTuning} from './round-tuning93.js?v=campus-93';
+import {RULE_FIELDS,tuningForm,readTuning} from './round-tuning93.js?v=campus-102';
 import {SOCIAL_ACTIONS,canEmote} from './social-actions93.js?v=campus-93';
 import {readControls,applyTouchStyle,actionForCode,usesTouchControls} from './control-settings64.js?v=campus-93';
 // Browser input and presentation only; score, inventory and Snake live on the server.

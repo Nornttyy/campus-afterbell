@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {handFrame} from './hand-motion.js?v=campus-101';
+import {handFrame} from './hand-motion.js?v=campus-102';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const clamp=T.MathUtils.clamp;
 function frame(along,normal){const y=along.clone().normalize(),z=normal.clone().addScaledVector(y,-normal.dot(y)).normalize(),x=V().crossVectors(y,z).normalize();return Q().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));}
@@ -27,7 +27,7 @@ export function createCrawlPose(group,bones){
   feet[side]={height:at(side+'Foot').y};
   limbs[side]={arm:at(side+'Arm').distanceTo(at(side+'ForeArm'))+at(side+'ForeArm').distanceTo(at(side+'Hand')),leg:at(side+'UpLeg').distanceTo(at(side+'Leg'))+at(side+'Leg').distanceTo(at(side+'Foot')),hipX:at(side+'UpLeg').x};
  }
- const meshes=[];group.traverse(o=>{if(o.isSkinnedMesh)meshes.push(o);});
+ const meshes=[];group.traverse(o=>{if(o.isSkinnedMesh&&!o.material.userData?.opticalShell)meshes.push(o);});
  // Contact padding comes from delivered sole geometry, not a guessed ankle
  // joint height. Palm padding is measured after its flat orientation below.
  const samples={};for(const side of ['Left','Right'])for(const part of ['Foot','Hand']){
@@ -58,8 +58,8 @@ export function createCrawlPose(group,bones){
  function apply({active=false,time=0,dt=0,speed=0,reset=false}={}){
   if(saved.size)restore();
   const rewind=reset||(lastTime!==null&&time<lastTime);lastTime=time;
-  if(rewind){blend=active?1:0;transitionFrom=transitionTo=blend;transitionAge=.65;phase=0;travel=0;gaitWeight=active&&speed>.015?1:0;}
-  else{const goal=active?1:0;if(goal!==transitionTo){transitionFrom=blend;transitionTo=goal;transitionAge=0;}transitionAge=Math.min(.65,transitionAge+Math.max(0,dt));blend=T.MathUtils.lerp(transitionFrom,transitionTo,T.MathUtils.smoothstep(transitionAge,0,.65));}
+  if(rewind){blend=active?1:0;transitionFrom=transitionTo=blend;transitionAge=1;phase=0;travel=0;gaitWeight=active&&speed>.015?1:0;}
+  else{const goal=active?1:0;if(goal!==transitionTo){transitionFrom=blend;transitionTo=goal;transitionAge=0;}const duration=goal===1?.10:.65;transitionAge=Math.min(duration,transitionAge+Math.max(0,dt));blend=T.MathUtils.lerp(transitionFrom,transitionTo,T.MathUtils.smoothstep(transitionAge,0,duration));}
   if(blend<.0001&&!active){blend=0;return;}
   const amount=clamp(Number(speed)||0,0,1.8),cycle=STRIDE/STANCE;
   gaitWeight=T.MathUtils.damp(gaitWeight,active&&amount>.015?1:0,12,Math.max(0,dt));

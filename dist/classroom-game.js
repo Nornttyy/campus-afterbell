@@ -6,11 +6,11 @@ import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
 import {createReferenceHUD} from './reference-hud54.js?v=campus-93';
 import {interactionIntent} from './interaction-intent54.js?v=campus-97';
-import {createSessionUI} from './session-ui.js?v=campus-97';
+import {createSessionUI} from './session-ui.js?v=campus-102';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-101';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-102';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -158,6 +158,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function render(s){
     playInteractionChanges(s);
     const p=s.player,teacher=s.role==='teacher',alive=s.teamSize-s.caughtCount;
+    $('#student-controls').hidden=teacher;$('#teacher-controls').hidden=!teacher;
     const beforeClass=s.stage&&s.stage!=='class',formatTime=n=>`${Math.floor(Math.ceil(n)/60).toString().padStart(2,'0')}:${(Math.ceil(n)%60).toString().padStart(2,'0')}`;
     ui.dataset.stage=s.stage||'class';
     ui.dataset.elevatorPhase=s.elevator?.phase||'idle';ui.dataset.elevatorUsed=String(!!s.elevator?.used);ui.dataset.elevatorRemaining=String(s.elevator?.remaining||0);
@@ -231,7 +232,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     playFootsteps(s);
     if(now-lastHud>80){lastHud=now;render(s);}else scene.setGameplay(s);
     if(s.stage==='gathering'&&s.status==='playing'&&finished){
-      finished=false;continued=false;if(resultDialog.open)resultDialog.close();session.reset();teacherFootsteps.reset();render(s);
+      if(!round.network&&s.role==='teacher')chooseRole('student');
+      keys.clear();inputs.clear();finished=false;continued=false;if(resultDialog.open)resultDialog.close();session.reset();teacherFootsteps.reset();render(round.snapshot());canvas.focus({preventScroll:true});lock();
     }else if((s.status==='won'||s.status==='lost')&&!finished){
       finished=true;continued=!!s.continued;render(s);if(!continued)finish(s);
     }
@@ -254,6 +256,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function pause(value=true){if(!active||finished)return;release();stopMovement();round.pause(value);if(value){unlock();if(!pauseDialog.open)pauseDialog.showModal();}else{if(pauseDialog.open)pauseDialog.close();lock();}render(round.snapshot());}
   const canInput=()=>active&&!resultDialog.open&&!session.modal&&!round.paused&&(round.status==='playing'||finished&&continued);
   function hold(id,value){if(!canInput())return;
+    const state=round.snapshot();
+    if((state.lobbyRole||state.role)==='teacher'){if(value)round.throwChalk();processEvents();render(round.snapshot());return;}
     const monitor=scene.getAimedComputer?scene.getAimedComputer():scene.getInteraction?.();
     if(computerStation!=null||session.computer||monitor?.kind==='computer'){
       if(value)computerClick();

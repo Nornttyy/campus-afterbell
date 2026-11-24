@@ -1,16 +1,16 @@
 import {actorEmote} from './social-actions93.js?v=campus-93';
-import {returnPose,reachedHall} from './class-dismissal92.js?v=campus-101';
+import {nextStudentAppearance} from './class-dismissal92.js?v=campus-102';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-92';
 import {reachesSchoolDoor} from './door-interaction54.js?v=campus-101';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-101';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-102';
 import {validComputerPlayback} from './computer-rules55.js?v=campus-96';
-import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-93';
+import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-102';
 import {movementScale} from './movement55.js?v=campus-93';
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
 const newMemberId=()=>globalThis.crypto.randomUUID?.()??randomToken();
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-101';
-import {TeacherRound} from './teacher-rules.js?v=campus-101';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-102';
+import {TeacherRound} from './teacher-rules.js?v=campus-102';
 import * as Layout from './classroom-layout.js?v=campus-101';
 import {playableCampusMap} from './campus-destinations.js?v=campus-101';
 import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-101';
@@ -26,8 +26,6 @@ const teacherFeedbackEvents=new Set(['wrong-grab','correct-capture','stamina-low
 function context(actor){return{player:actor,selected:actor.id===-1?'chalk':actor.action||actor._slots?.[0]?.action||'snack',holding:false,_movement:{x:0,z:0},_rescueId:null,_rescueProgress:0,completed:actor.completed||Object.fromEntries(Object.keys(CLASSROOM_ACTIONS).map(k=>[k,0]))};}
 
 class SharedRound extends TeacherRound{
- _dismissalHumans(){return [...this.room.members.values()].filter(m=>m.connected).map(m=>m.context.player);}
- _dismissalConfirmed(){return [...this.room.members.values()].every(m=>!m.connected||m.continued);}
  _finishDismissal(){/* CampusRoom restores all member contexts together after the tick. */}
  canStartBell(){return this._inputAllowed()&&this.stage==='gathering';}
  _advanceStudents(dt){
@@ -131,6 +129,8 @@ export class CampusRoom{
   this.sim._team.clear();
   for(const p of this.members.values()){
    p.role=p===chosen?'teacher':'student';
+   p.character=nextStudentAppearance(p.character,()=>this.sim._random());
+   if(p!==chosen)Object.assign(p.context.player,{character:p.character,variant:p.character});
    if(p===chosen){this._restoreDecoy(this.sim.students[p.studentId]);p.context=this.teacherContext;Object.assign(this.teacherActor,Layout.teacherSpawnFor(this.map),{seated:false,crouched:false});}
    else this.sim._team.add(p.studentId);
   }
@@ -145,7 +145,7 @@ export class CampusRoom{
   this.map=map;this.seed=seed>>>0;this.floor=Layout.campusFloor(map);
   this.sim=new SharedRound({...this.settings,seed:this.seed,map});this.sim.room=this;this.teacherActor=this.sim.player;this.teacherContext=context(this.teacherActor);this.teacherMember=null;this.sim.start({gathering:true});this.sim._team=new Set();this.events=[];
   this._initializeStudents();
-  let i=0;for(const m of this.members.values()){m.role='student';m.continued=false;m.doorUse=false;m.doorProgress=0;m.lastInput=Date.now();const actor=this.sim.students[m.studentId];this._prepareHuman(m,actor,i++);m.context=context(actor);this.sim._team.add(actor.id);}
+  let i=0;for(const m of this.members.values()){m.role='student';m.continued=false;m.lobbyNextThrow=0;m.doorUse=false;m.doorProgress=0;m.lastInput=Date.now();const actor=this.sim.students[m.studentId];this._prepareHuman(m,actor,i++);m.context=context(actor);this.sim._team.add(actor.id);}
   this.sequence++;return true;
  }
  travelFloor(member,map){
@@ -159,7 +159,11 @@ export class CampusRoom{
  rematch(member){
   if(member.id!==this.hostId)throw new RoomError(403,'等待房主开始下一局');
   if(this.sim.status==='playing')throw new RoomError(409,'本局尚未结束');
+  return this._returnClassToHall();
+ }
+ _returnClassToHall(){
   this.elevator=createElevator();
+  for(const m of this.members.values())m.rolePreference='student';
   return this._rebuild(this.map,(this.seed+1)>>>0);
  }
  configureRound(member,settings){
@@ -183,13 +187,22 @@ export class CampusRoom{
   if(command==='setRescue'&&args[0]===null&&member.role==='teacher')return false;
   // Walking/look remain live in the cabin; seating and outside interactions
   // wait for arrival. Repeated floor commands still pass through validation.
+  const chalkInput=command==='throwChalk'||command==='hold'&&args[0]===true;
+  const lobbyTeacher=this.sim.stage==='gathering'&&member.rolePreference==='teacher';
+  if(lobbyTeacher&&chalkInput){
+   return this.withMember(member,sim=>{
+    const next=sim._nextThrow;sim._nextThrow=member.lobbyNextThrow||0;
+    try{return TeacherRound.prototype.throwChalk.call(sim);}
+    finally{member.lobbyNextThrow=sim._nextThrow;sim._nextThrow=next;}
+   });
+  }
   if(this.elevator.phase==='travel'&&!['setMovement','setLook','travelFloor'].includes(command))return false;
   if(command==='startBell')return this.begin(member,args[0]);
   if(command==='continueAfterClass'||command==='rematch'){
    if(!member.connected||!this.sim.continueAfterClass())return false;
    member.continued=true;member.context._movement={x:0,z:0};this.sequence++;return true;
   }
-  if(this.sim.stage==='dismissal'&&(!member.continued||!['setLook','setMovement'].includes(command)))return false;
+  if(this.sim.stage==='dismissal'&&!(member.role==='teacher'&&chalkInput)&&!['setLook','setMovement'].includes(command))return false;
   if(command==='configureRound')return this.configureRound(member,args[0]);
   if(command==='setDoorUse'){
    const id=args[2]??'rear',key=id==='office'?'officeDoorClosed':id+'DoorClosed';
@@ -238,8 +251,8 @@ export class CampusRoom{
   if(this.elevator.phase==='travel'){
    if(!Number.isFinite(dt)||dt<=0)return;
    const step=Math.min(dt,this.elevator.remaining,30);
-   for(const m of this.members.values()){if(!m.connected)continue;if(Date.now()-m.lastInput>500)m.context._movement={x:0,z:0};moveElevatorPassenger(m.context.player,m.context._movement,step,this.sim.layout);}
-   this.sim._sessionElapsed+=step;
+   for(const m of this.members.values()){if(!m.connected)continue;if(Date.now()-m.lastInput>500)m.context._movement={x:0,z:0};if(!this.sim._restrained(m.context.player))moveElevatorPassenger(m.context.player,m.context._movement,step,this.sim.layout);}
+   this.sim._sessionElapsed+=step;this.sim._advanceBreakChalk(step);
    const map=advanceElevator(this.elevator,step);
    if(map){
     const trip=this.elevator,poses=new Map([...this.members.values()].map(m=>{const p=m.context.player;return[m.id,{x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch}];}));
@@ -255,9 +268,7 @@ export class CampusRoom{
   if(this.teacherMember&&(Date.now()-this.teacherMember.lastInput>500||this.sim.stage==='dismissal'&&!this.teacherMember.continued)){this.sim._movement={x:0,z:0};this.sim.player.sprinting=false;}
   this.sim.step(dt);for(const key of CONTEXT)ctx[key]=this.sim[key];
   if(this.sim._dismissal?.complete){
-   const poses=new Map([...this.members.values()].filter(m=>reachedHall(m.context.player,this.map)).map(m=>[m.id,returnPose(m.context.player)]));
-   this.elevator=createElevator();this._rebuild(this.map,(this.seed+1)>>>0);
-   for(const m of this.members.values())if(poses.has(m.id))Object.assign(m.context.player,poses.get(m.id));
+   this._returnClassToHall();
    return;
   }
   for(const member of this.members.values()){

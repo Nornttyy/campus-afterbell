@@ -37,6 +37,6 @@ test('network idle human identity is a correct capture while an ordinary AI pupi
 
 test('a stunned teacher never emits low-stamina guidance, while a free teacher at zero does',()=>{
  const r=new TeacherRound();r.start();for(const p of r.students)p._decisionAt=Infinity;r._stunAny(r.teacher,4,'bananaPeel');
- for(const stamina of[100,0]){r.teacher.stamina=stamina;r.drainEvents();assert.equal(r.throwChalk(),false);assert.equal(r.drainEvents().some(e=>e.type==='stamina-low'),false);assert.equal(r.chalks.length,0);}
+ r.teacher.stamina=100;assert.equal(r.throwChalk(),true);assert.equal(r.chalks.length,1);r.step(.8);r.teacher.stamina=0;r.drainEvents();assert.equal(r.throwChalk(),false);assert.equal(r.drainEvents().some(e=>e.type==='stamina-low'),false);
  r.step(4);r.teacher.stamina=0;r.drainEvents();assert.equal(r.throwChalk(),false);assert.deepEqual(r.drainEvents().map(e=>e.type),['stamina-low']);r.teacher.stamina=.1;assert.equal(r.throwChalk(),true);assert.equal(r.teacher.stamina,.1);
 });

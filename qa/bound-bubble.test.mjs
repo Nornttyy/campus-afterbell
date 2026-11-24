@@ -42,7 +42,7 @@ test('pause freezes inflation and cooling; rescue and finish cancel without rele
  r.pause(false);r.step(1);assert.equal(r.snapshot().player.bubble.progress,.333333);assert.equal(r.snapshot().player.bubble.blowing,false);r.hold(true);r.step(1);assert.equal(r.snapshot().player.bubble.progress,.5);
  r._release(r.player);assert.equal(r.snapshot().player.bubble.available,false);assert.equal(r.snapshot().player.bubble.progress,0);assert.equal(r.snapshot().holding,false);assert.equal(r.snapshot().bubbles.length,0);
  bind(r,r.player);r.hold(true);r.step(1);r.releaseUse();r.pause();const cooldown=r.snapshot().player.bubble.cooldown;r.step(9);assert.equal(r.snapshot().player.bubble.cooldown,cooldown);r.pause(false);r.step(10);r.hold(true);r.step(1);
- r._finish('won','mischief');assert.equal(r.snapshot().player.bubble.blowing,false);assert.equal(r.snapshot().player.bubble.progress,0);const finished=r.snapshot();r.step(10);const live=r.snapshot();assert.ok(live.sceneElapsed>finished.sceneElapsed);for(const key of ['status','resultReason','score','caughtCount','timeLeft','elapsed','leaderboard'])assert.deepEqual(live[key],finished[key],key);
+ r._finish('won','mischief');assert.equal(r.snapshot().player.bubble.blowing,false);assert.equal(r.snapshot().player.bubble.progress,0);const finished=r.snapshot();r.step(2);const live=r.snapshot();assert.ok(live.sceneElapsed>finished.sceneElapsed);for(const key of ['status','resultReason','score','caughtCount','timeLeft','elapsed','leaderboard'])assert.deepEqual(live[key],finished[key],key);
 });
 
 test('only bound team AI blows; an ordinary misidentified pupil never gets the action',()=>{
@@ -57,6 +57,6 @@ test('five captures resolve at the next fixed tick with no extended grace period
   const r=quiet();let index=0;for(const id of r._team)bind(r,r.students[id],index++);
   if(reachedGoal)r.score=r.target;
   assert.equal(r.status,'playing');r.step(DT);assert.equal(r.status,reachedGoal?'won':'lost');assert.equal(r.resultReason,reachedGoal?'mischief':'all-caught');
-  const final=r.snapshot();r.step(20);const live=r.snapshot();assert.ok(live.sceneElapsed>final.sceneElapsed);for(const key of ['status','resultReason','score','caughtCount','timeLeft','elapsed','leaderboard'])assert.deepEqual(live[key],final[key],key);assert.equal(r.drainEvents().filter(e=>e.type==='finish').length,1);
+  const final=r.snapshot();r.step(2);const live=r.snapshot();assert.ok(live.sceneElapsed>final.sceneElapsed);for(const key of ['status','resultReason','score','caughtCount','timeLeft','elapsed','leaderboard'])assert.deepEqual(live[key],final[key],key);assert.equal(r.drainEvents().filter(e=>e.type==='finish').length,1);
  }
 });

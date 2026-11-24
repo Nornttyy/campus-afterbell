@@ -1,8 +1,6 @@
 import * as T from './vendor/three.module.js';
 
-// The source's raised dots are repaired once. A locally refined sclera mesh
-// then forms a real recessed cup around each moving pupil in the vertex shader.
-// The original model, UV atlas, skeleton and outside eye silhouette are retained.
+// Eye dimensions are measured in the authored bind pose, before gameplay scaling.
 export const STUDENT_EYE_REGIONS = Object.freeze({
  boy: [
   {center:[-.108,1.443,.213], radius:[.082,.075], front:[.232,.273]},
@@ -23,8 +21,6 @@ export function eyeSurfaceWeight(point,region){
  const r=Math.hypot((point.x-x)/rx,(point.y-y)/ry);
  return (1-smooth(.78,1.10,r))*smooth(...region.front,point.z);
 }
-const fract=x=>x-Math.floor(x);
-const noise=x=>fract(Math.sin(x*12.9898+78.233)*43758.5453);
 const geometryCache=new WeakMap();
 // Sclera curvature measured on the ring 24–50 mm around each old pupil,
 // excluding the raised black mesh. z = a + bx + cy + dx² + exy + fy²,
@@ -62,219 +58,126 @@ function repairPupilCaps(geometry,restFromLocal,variant){
  position.needsUpdate=true;if(normal)normal.needsUpdate=true;
  geometry.computeBoundingBox();geometry.computeBoundingSphere();
 }
-// Refine only the visible eye front. Midpoints preserve UVs and merge bone
-// influences by joint ID, so the new triangles follow the existing head rig.
-// No per-frame CPU mesh upload and no extra meshes/materials/draw calls.
-export function refineStudentEyeGeometry(geometry,restFromLocal,regions){
- const names=Object.keys(geometry.attributes),arrays=Object.fromEntries(names.map(name=>[name,Array.from(geometry.attributes[name].array)]));
- const itemSizes=Object.fromEntries(names.map(name=>[name,geometry.attributes[name].itemSize]));
- const points=[],point=new T.Vector3(),p=geometry.attributes.position;
- for(let i=0;i<p.count;i++)points.push(point.fromBufferAttribute(p,i).applyMatrix4(restFromLocal).clone());
- const midpoints=new Map();
- function midpoint(a,b){
-  const key=a<b?a+','+b:b+','+a;if(midpoints.has(key))return midpoints.get(key);
-  const index=points.length;points.push(points[a].clone().add(points[b]).multiplyScalar(.5));
-  for(const name of names){
-   if(name==='skinIndex'||name==='skinWeight')continue;
-   const size=itemSizes[name],src=arrays[name];for(let j=0;j<size;j++)src.push((src[a*size+j]+src[b*size+j])*.5);
-   if(name==='normal'){const offset=index*size,n=Math.hypot(...src.slice(offset,offset+3));for(let j=0;j<3;j++)src[offset+j]/=n||1;}
-  }
-  if(arrays.skinIndex&&arrays.skinWeight){
-   const influence=new Map(),size=itemSizes.skinIndex;
-   for(const v of [a,b])for(let j=0;j<size;j++){const joint=arrays.skinIndex[v*size+j],w=arrays.skinWeight[v*size+j]*.5;influence.set(joint,(influence.get(joint)||0)+w);}
-   const chosen=[...influence].sort((a,b)=>b[1]-a[1]).slice(0,size),sum=chosen.reduce((n,i)=>n+i[1],0);
-   for(let j=0;j<size;j++){arrays.skinIndex.push(chosen[j]?.[0]||0);arrays.skinWeight.push((chosen[j]?.[1]||0)/(sum||1));}
-  }
-  midpoints.set(key,index);return index;
+// Reuse the authored front of each eyeball as its translucent outer wall.
+// The rest of the head stays in the normal opaque pass. Shared positions,
+// skinning and UVs keep the material boundary welded even while the head turns.
+function prepareEyeShell(source,restFromLocal,variant){
+ const regions=STUDENT_EYE_REGIONS[variant],body=source.clone();
+ repairPupilCaps(body,restFromLocal,variant);
+ const pos=body.attributes.position,weights=new Float32Array(pos.count*2),p=new T.Vector3();
+ const points=Array.from({length:pos.count},(_,i)=>p.fromBufferAttribute(pos,i).applyMatrix4(restFromLocal).clone());
+ for(let i=0;i<points.length;i++)for(let e=0;e<2;e++)weights[i*2+e]=eyeSurfaceWeight(points[i],regions[e]);
+ body.setAttribute('studentEyeWeights',new T.BufferAttribute(weights,2));
+ const outer=[],opaque=[],idx=body.index.array;
+ const rim=(v,r)=>Math.hypot((v.x-r.center[0])/r.radius[0],(v.y-r.center[1])/r.radius[1])<1.38&&v.z>r.center[2]-.020;
+ for(let i=0;i<idx.length;i+=3){
+  const a=idx[i],b=idx[i+1],c=idx[i+2];
+  const eyeFace=regions.some(r=>[a,b,c].some(v=>rim(points[v],r)))||
+    regions.some(r=>eyeSurfaceWeight(p.copy(points[a]).add(points[b]).add(points[c]).multiplyScalar(1/3),r)>0);
+  (eyeFace?outer:opaque).push(a,b,c);
  }
- let triangles=geometry.index?Array.from(geometry.index.array):Array.from({length:p.count},(_,i)=>i);
- // Mark shared edges first, then split every incident triangle. This keeps
- // the patch watertight; independently subdividing faces can create cracks
- // when the cup moves across an edge containing a hanging midpoint.
- const edgeKey=(a,b)=>a<b?a+','+b:b+','+a;
- for(let pass=0;pass<5;pass++){
-  const split=new Set();
-  for(let i=0;i<triangles.length;i+=3){
-   const [a,b,c]=triangles.slice(i,i+3),pa=points[a],pb=points[b],pc=points[c],center=pa.clone().add(pb).add(pc).multiplyScalar(1/3);
-   const front=regions.some(r=>eyeSurfaceWeight(center,r)>.025||[pa,pb,pc].some(v=>eyeSurfaceWeight(v,r)>.04));
-   if(!front)continue;
-   for(const [u,v] of [[a,b],[b,c],[c,a]])if(points[u].distanceToSquared(points[v])>.010*.010)split.add(edgeKey(u,v));
-  }
-  if(!split.size)break;
-  const result=[];
-  for(let i=0;i<triangles.length;i+=3){
-   const [a,b,c]=triangles.slice(i,i+3),ab=split.has(edgeKey(a,b))?midpoint(a,b):-1,bc=split.has(edgeKey(b,c))?midpoint(b,c):-1,ca=split.has(edgeKey(c,a))?midpoint(c,a):-1;
-   const mask=(ab>=0?1:0)|(bc>=0?2:0)|(ca>=0?4:0);
-   if(mask===0)result.push(a,b,c);
-   else if(mask===1)result.push(a,ab,c,ab,b,c);
-   else if(mask===2)result.push(a,b,bc,a,bc,c);
-   else if(mask===4)result.push(a,b,ca,ca,b,c);
-   else if(mask===3)result.push(b,bc,ab,a,ab,c,ab,bc,c);
-   else if(mask===5)result.push(a,ab,ca,ab,b,c,ab,c,ca);
-   else if(mask===6)result.push(c,ca,bc,a,b,ca,b,bc,ca);
-   else result.push(a,ab,ca,ab,b,bc,ca,bc,c,ab,bc,ca);
-  }
-  triangles=result;
- }
- for(const name of names){const old=geometry.attributes[name];geometry.setAttribute(name,new T.BufferAttribute(new old.array.constructor(arrays[name]),old.itemSize,old.normalized));}
- geometry.setIndex(triangles);geometry.computeBoundingBox();geometry.computeBoundingSphere();return geometry;
+ if(!outer.length){body.dispose();return null;}
+ const shell=new T.BufferGeometry();
+ for(const [name,attribute] of Object.entries(body.attributes))shell.setAttribute(name,attribute);
+ shell.setIndex(outer);body.setIndex(opaque);
+ return {body,shell,count:new Set(outer).size,refs:0};
 }
-function pupilCenter(region,variant){const index=STUDENT_EYE_REGIONS[variant].indexOf(region),[x,y]=SCLERA_PATCHES[variant][Math.max(0,index)];return new T.Vector3(x,y,region.center[2]);}
-export const STUDENT_PUPIL_GEOMETRY=Object.freeze({boy:{radius:.18,depth:.0035},girl:{radius:.18,depth:.0035},ponytail:{radius:.225,depth:.0045}});
-// CPU counterpart used to inspect actual GPU vertex positions, not a visual
-// assertion. It is also useful for tooling that exports a static eye pose.
-export function studentEyeVertex(point,region,variant,yaw=0,pitch=0){
- const spec=STUDENT_PUPIL_GEOMETRY[variant],radius=new T.Vector3(...region.radius,variant==='boy'?.075:variant==='girl'?.064:.063);
- const center=pupilCenter(region,variant),surface=point.clone().sub(center).divide(radius).normalize();
- const direction=new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch));
- const amount=smooth(Math.cos(spec.radius+.09),Math.cos(spec.radius*.46),surface.dot(direction))*smooth(.015,.12,eyeSurfaceWeight(point,region));
- const normal=surface.clone().divide(radius).normalize();
- return point.clone().addScaledVector(normal,-spec.depth*amount);
+function milkyMaterial(source,regions,rest,optics){
+ const mat=source.clone();mat.name='student-milky-eye-wall';mat.transparent=true;
+ mat.depthWrite=false;mat.side=T.FrontSide;mat.userData.opticalShell=true;
+ mat.onBeforeCompile=function(shader,renderer){
+  source.onBeforeCompile.call(this,shader,renderer);
+  Object.assign(shader.uniforms,optics);
+  shader.uniforms.eyeRestFromLocal={value:rest};
+  for(const [i,r] of regions.entries()){
+   shader.uniforms['eyeArea'+i]={value:new T.Vector4(r.center[0],r.center[1],...r.radius)};
+   shader.uniforms['eyeFront'+i]={value:new T.Vector2(...r.front)};
+  }
+  shader.vertexShader='uniform mat4 eyeRestFromLocal; varying vec3 eyeRest,eyeView;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\neyeRest=(eyeRestFromLocal*vec4(position,1.)).xyz;');
+  shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\neyeView=mvPosition.xyz;');
+  shader.fragmentShader=`varying vec3 eyeRest,eyeView;
+   uniform mat4 eyeBindFromView;
+   uniform vec4 eyeBall0,eyeBall1;
+   // Transmit only rays meeting the matching physical pupil. Every other ray
+   // sees the white lining, including grazing views near the hair and temples.
+   float pupilTransmission(vec4 sphere,vec3 origin,vec3 direction){
+    vec3 offset=sphere.xyz-origin;
+    float t=dot(offset,direction);
+    float d=length(offset-direction*t);
+    float aa=max(fwidth(d)*.45,.00008);
+    return step(0.,t)*(1.-smoothstep(sphere.w-aa,sphere.w+aa,d));
+   }
+   uniform vec4 eyeArea0,eyeArea1; uniform vec2 eyeFront0,eyeFront1;
+   float eyeWall(vec4 area,vec2 front){
+    return (1.-smoothstep(.78,1.10,length((eyeRest.xy-area.xy)/area.zw)))*smoothstep(front.x,front.y,eyeRest.z);
+   }
+   `+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+   float wall=max(eyeWall(eyeArea0,eyeFront0),eyeWall(eyeArea1,eyeFront1));
+   // The original atlas has an ivory-to-gray gradient along the bulb rim.
+   // Isolate the neutral sclera texels to leave adjacent warm skin intact.
+   float low=min(min(diffuseColor.r,diffuseColor.g),diffuseColor.b);
+   float high=max(max(diffuseColor.r,diffuseColor.g),diffuseColor.b);
+   float neutral=smoothstep(.25,.49,low)*(1.-smoothstep(.06,.16,high-low));
+   float rim=1.-smoothstep(1.18,1.35,min(length((eyeRest.xy-eyeArea0.xy)/eyeArea0.zw),length((eyeRest.xy-eyeArea1.xy)/eyeArea1.zw)));
+   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.),max(wall,neutral*rim));
+   vec3 origin=(eyeBindFromView*vec4(eyeView,1.)).xyz;
+   vec3 ray=normalize(mat3(eyeBindFromView)*(isOrthographic?vec3(0.,0.,-1.):normalize(eyeView)));
+   float left=pupilTransmission(eyeBall0,origin,ray)*eyeWall(eyeArea0,eyeFront0);
+   float right=pupilTransmission(eyeBall1,origin,ray)*eyeWall(eyeArea1,eyeFront1);
+   diffuseColor.a=1.-.98*max(left,right);
+  `);
+ };
+ mat.customProgramCacheKey=()=>source.customProgramCacheKey()+'-milky-eye102';
+ return mat;
 }
-// Large side glances, upward looks and occasional crossed-eye poses.
-// Hold each direction instead of continuously shaking; the second eye follows
-// 70 ms later. Both eyes still use the same bounded sclera surface.
-export function studentEyeGaze(time,seed=0){
- const period=3.6+noise(seed+4)*2.2,offset=noise(seed+17)*period;
- function eye(delay,index){
-  const t=(Math.max(0,time)+offset-delay)/period,k=Math.floor(t),phase=fract(t);
-  const target=n=>{
-   if(noise(seed*5+n*7+44)<.12)return [index===0?.58:-.58,.13];
-   const side=noise(seed*17+n*3+8)*2-1;
-   return clampStudentEyeLook(Math.sign(side)*(.16+.62*Math.pow(Math.abs(side),.6)),
-     (noise(seed*11+n*7+21)*2-1)*.62);
-  };
-  const before=target(k-1),after=target(k),alpha=smooth(0,.085,phase);
-  return before.map((v,i)=>T.MathUtils.lerp(v,after[i],alpha));
+// The pupils sit at the rear of the eye sockets. Their actual mesh centres
+// drive the optical mask, so a turn of either the head or the camera produces
+// parallax without moving a dot on the white surface.
+function createInteriors(head,variant){
+ const geometry=new T.SphereGeometry(1,20,14);
+ const material=new T.MeshBasicMaterial({color:0x141319,toneMapped:false,fog:false});
+ const eyes=new T.InstancedMesh(geometry,material,2);eyes.name='student-eye-interiors';
+ eyes.userData.characterSurface=true;eyes.frustumCulled=false;eyes.matrixAutoUpdate=false;
+ eyes.matrix.copy(head.matrixWorld).invert();head.add(eyes);
+ const optics={eyeBindFromView:{value:new T.Matrix4()},eyeBall0:{value:new T.Vector4()},eyeBall1:{value:new T.Vector4()}};
+ const transform=new T.Matrix4(),regions=STUDENT_EYE_REGIONS[variant];
+ for(const [i,region] of regions.entries()){
+  const [cx,cy,profile]=SCLERA_PATCHES[variant][i];
+  const radius=variant==='ponytail'?.016:.013,z=region.center[2]-.33*(profile[0]-region.center[2]);
+  transform.makeScale(radius,radius,radius).setPosition(cx,cy,z);
+  eyes.setMatrixAt(i,transform);optics['eyeBall'+i].value.set(cx,cy,z,radius);
  }
- return [...eye(0,0),...eye(.07,1)];
-}
-export function clampStudentEyeLook(yaw=0,pitch=0){
- const x=T.MathUtils.clamp(Number(yaw)||0,-.78,.78),y=T.MathUtils.clamp(Number(pitch)||0,-.62,.62);
- const scale=Math.min(1,.82/Math.hypot(x,y));
- return [x*scale,y*scale];
-}
-function shaderPatch(shader,uniforms){
- Object.assign(shader.uniforms,uniforms);
- shader.vertexShader=`attribute vec2 studentEyeWeights;
- varying vec2 studentEyeMask;
- varying vec3 studentEyeRest;
- uniform mat4 studentEyeRestFromLocal;
- uniform mat4 studentEyeLocalFromRest;
- uniform mat3 studentEyeRestNormalFromLocal;
- uniform mat3 studentEyeLocalNormalFromRest;
- uniform vec4 studentEyeGaze;
- uniform vec3 studentEyeCenterL;
- uniform vec3 studentEyeCenterR;
- uniform vec3 studentEyeRadius;
- uniform vec3 studentPupilCup;
- vec3 studentEyeCup(vec3 rest,vec3 center,vec2 angles,float coverage){
-  vec3 surface=normalize((rest-center)/studentEyeRadius);
-  vec3 direction=vec3(sin(angles.x)*cos(angles.y),sin(angles.y),cos(angles.x)*cos(angles.y));
-  float amount=smoothstep(studentPupilCup.x,studentPupilCup.y,dot(surface,direction))*smoothstep(.015,.12,coverage);
-  vec3 outward=normalize(surface/studentEyeRadius);
-  return -outward*studentPupilCup.z*amount;
- }
- vec3 studentEyeBothCups(vec3 rest){
-  return studentEyeCup(rest,studentEyeCenterL,studentEyeGaze.xy,studentEyeWeights.x)
-       + studentEyeCup(rest,studentEyeCenterR,studentEyeGaze.zw,studentEyeWeights.y);
- }
- `+shader.vertexShader;
- shader.vertexShader=shader.vertexShader.replace('#include <beginnormal_vertex>',`#include <beginnormal_vertex>
- if(studentEyeWeights.x+studentEyeWeights.y>.001){
-  vec3 p=(studentEyeRestFromLocal*vec4(position,1.)).xyz;
-  vec3 n=normalize(studentEyeRestNormalFromLocal*objectNormal);
-  vec3 tangent=normalize(cross(n,abs(n.z)<.95?vec3(0.,0.,1.):vec3(0.,1.,0.)));
-  vec3 bitangent=normalize(cross(n,tangent));
-  float stepSize=.00035;
-  vec3 dx=tangent+(studentEyeBothCups(p+tangent*stepSize)-studentEyeBothCups(p-tangent*stepSize))/(2.*stepSize);
-  vec3 dy=bitangent+(studentEyeBothCups(p+bitangent*stepSize)-studentEyeBothCups(p-bitangent*stepSize))/(2.*stepSize);
-  objectNormal=normalize(studentEyeLocalNormalFromRest*cross(dx,dy));
- }
- `);
- shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
- studentEyeRest=(studentEyeRestFromLocal*vec4(position,1.)).xyz;
- studentEyeMask=studentEyeWeights;
- if(studentEyeWeights.x+studentEyeWeights.y>.001){
-  vec3 studentEyeInset=studentEyeBothCups(studentEyeRest);
-  transformed=(studentEyeLocalFromRest*vec4(studentEyeRest+studentEyeInset,1.)).xyz;
- }
- `);
- shader.fragmentShader=`varying vec2 studentEyeMask;
- varying vec3 studentEyeRest;
- uniform vec4 studentEyeGaze;
- uniform vec3 studentEyeCenterL;
- uniform vec3 studentEyeCenterR;
- uniform vec3 studentEyeRadius;
- uniform vec2 studentPupilEdge;
- vec3 studentEyeSurface(vec3 base,vec3 center,vec2 angles,float coverage){
-  vec3 surface=normalize((studentEyeRest-center)/studentEyeRadius);
-  vec3 direction=vec3(sin(angles.x)*cos(angles.y),sin(angles.y),cos(angles.x)*cos(angles.y));
-  float alignment=dot(surface,direction);
-  float edge=max(fwidth(alignment),.00015);
-  float pupil=smoothstep(studentPupilEdge.x-edge,studentPupilEdge.x+edge,alignment);
-  vec3 white=vec3(.96,.965,.95);
-  // The white blends into the authored eye boundary. The black pupil must
-  // not inherit that translucent blend when a glance reaches the edge.
-  vec3 sclera=mix(base,white,coverage);
-  float visible=smoothstep(.015,.12,coverage);
-  // Solid black at the bottom of the geometrically recessed cup. No painted
-  // shadow ring: the inward edge is supplied by the vertex displacement.
-  vec3 inner=vec3(.002,.0025,.003);
-  return mix(sclera,inner,pupil*visible);
- }
- `+shader.fragmentShader;
- shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
- if(studentEyeMask.x+studentEyeMask.y>.001){
-  diffuseColor.rgb=studentEyeSurface(diffuseColor.rgb,studentEyeCenterL,studentEyeGaze.xy,studentEyeMask.x);
-  diffuseColor.rgb=studentEyeSurface(diffuseColor.rgb,studentEyeCenterR,studentEyeGaze.zw,studentEyeMask.y);
- }
- `);
+ eyes.instanceMatrix.needsUpdate=true;
+ return {optics,beforeDraw(camera){
+  optics.eyeBindFromView.value.copy(eyes.matrixWorld).invert().multiply(camera.matrixWorld);
+ },dispose(){eyes.removeFromParent();eyes.dispose();geometry.dispose();material.dispose();}};
 }
 
-export function createStudentEyes(model,{variant='boy',seed=0,enabled=true}={}){
- const regions=enabled&&STUDENT_EYE_REGIONS[variant],entries=[],materials=new Set();
- let current=[0,0,0,0],disposed=false;
- // The glasses source has opaque lenses and no visible pupil. Leave the entire
- // frame and lenses untouched instead of inventing eyes over the original art.
- if(!regions)return {update(){},dispose(){},diagnostics:()=>({enabled:false,reason:variant==='glasses'?'opaque-original-lenses':'unsupported-legacy-model',gaze:[0,0,0,0],vertices:0})};
+export function createStudentEyes(model,{variant='boy',enabled=true}={}){
+ const regions=enabled&&STUDENT_EYE_REGIONS[variant],entries=[];let disposed=false;
+ if(!regions)return {dispose(){},diagnostics:()=>({enabled:false,reason:variant==='glasses'?'opaque-original-lenses':'unsupported-legacy-model',fixed:true,vertices:0})};
  model.updateWorldMatrix(true,true);
- model.traverse(mesh=>{
-  if(!mesh.isSkinnedMesh)return;
-  const sourceGeometry=mesh.geometry,position=sourceGeometry.attributes.position;
-  const restFromLocal=mesh.matrixWorld.clone();
-  let cache=geometryCache.get(sourceGeometry);if(!cache){cache=new Map();geometryCache.set(sourceGeometry,cache);}
-  const cacheKey=variant+':'+restFromLocal.elements.join(',');let prepared=cache.get(cacheKey);
-  if(!prepared){
-   const geometry=sourceGeometry.clone();repairPupilCaps(geometry,restFromLocal,variant);
-   refineStudentEyeGeometry(geometry,restFromLocal,regions);
-   const refined=geometry.attributes.position,weights=new Float32Array(refined.count*2),point=new T.Vector3();let count=0;
-   for(let i=0;i<refined.count;i++){
-    point.fromBufferAttribute(refined,i).applyMatrix4(restFromLocal);
-    for(let e=0;e<2;e++)weights[i*2+e]=eyeSurfaceWeight(point,regions[e]);
-    if(weights[i*2]+weights[i*2+1]>.0001)count++;
-   }
-   if(!count){geometry.dispose();return;}
-   geometry.setAttribute('studentEyeWeights',new T.BufferAttribute(weights,2));
-   prepared={geometry,count,refs:0};cache.set(cacheKey,prepared);
-  }
-  prepared.refs++;const {geometry,count}=prepared;mesh.geometry=geometry;
-  const {radius:pupilRadius,depth}=STUDENT_PUPIL_GEOMETRY[variant];
-  const uniforms={studentEyeGaze:{value:new T.Vector4()},studentEyeCenterL:{value:pupilCenter(regions[0],variant)},studentEyeCenterR:{value:pupilCenter(regions[1],variant)},studentEyeRestFromLocal:{value:restFromLocal},studentEyeLocalFromRest:{value:restFromLocal.clone().invert()},studentEyeRestNormalFromLocal:{value:new T.Matrix3().getNormalMatrix(restFromLocal)},studentEyeLocalNormalFromRest:{value:new T.Matrix3().getNormalMatrix(restFromLocal.clone().invert())},studentPupilCup:{value:new T.Vector3(Math.cos(pupilRadius+.09),Math.cos(pupilRadius*.46),depth)},studentEyeRadius:{value:new T.Vector3(...regions[0].radius,variant==='boy'?.075:variant==='girl'?.064:.063)},studentPupilEdge:{value:new T.Vector2(Math.cos(pupilRadius),Math.cos(pupilRadius+.016))}};
-  function materialFor(source){
-   const material=source.clone(),previousCompile=source.onBeforeCompile;
-   material.name=source.name+'-moving-eyes';material.userData={...source.userData,studentEyes:true};
-   material.onBeforeCompile=function(shader,renderer){previousCompile.call(this,shader,renderer);shaderPatch(shader,uniforms);};
-   material.customProgramCacheKey=()=>`student-eyes70-inset-geometry:${source.customProgramCacheKey()}`;
-   materials.add(material);return material;
-  }
-  const sourceMaterial=mesh.material;
-  mesh.material=Array.isArray(sourceMaterial)?sourceMaterial.map(materialFor):materialFor(sourceMaterial);
-  entries.push({mesh,geometry,sourceGeometry,sourceMaterial,uniforms,count,prepared,cache,cacheKey});
- });
+ const targets=[];model.traverse(mesh=>{if(mesh.isSkinnedMesh)targets.push(mesh);});
+ for(const mesh of targets){
+  const source=mesh.geometry,rest=mesh.matrixWorld.clone(),key=variant+':'+rest.elements.join(',');
+  let cache=geometryCache.get(source);if(!cache){cache=new Map();geometryCache.set(source,cache);}
+  let part=cache.get(key);if(!part){part=prepareEyeShell(source,rest,variant);if(!part)continue;cache.set(key,part);}
+  const head=mesh.skeleton.bones.find(b=>/Head$/.test(b.name));
+  const interiors=createInteriors(head,variant),material=milkyMaterial(mesh.material,regions,rest,interiors.optics);
+  const shell=new T.SkinnedMesh(part.shell,material);shell.name='student-sclera-shell';
+  shell.bindMode=mesh.bindMode;shell.bind(mesh.skeleton,mesh.bindMatrix);
+  shell.frustumCulled=false;shell.castShadow=mesh.castShadow;shell.userData.characterSurface=true;
+  shell.onBeforeRender=(_renderer,_scene,camera)=>interiors.beforeDraw(camera);
+  mesh.add(shell);mesh.geometry=part.body;part.refs++;
+  entries.push({mesh,source,cache,key,part,shell,material,interiors});
+ }
  return {
-  update(time,look=null){if(disposed)return;current=look?[...clampStudentEyeLook(look.yaw,look.pitch),...clampStudentEyeLook(look.yaw,look.pitch)]:studentEyeGaze(time,seed);for(const entry of entries)entry.uniforms.studentEyeGaze.value.fromArray(current);},
-  diagnostics:()=>({enabled:entries.length>0,gaze:[...current],vertices:entries.reduce((n,e)=>n+e.count,0),pupilDepthMm:STUDENT_PUPIL_GEOMETRY[variant].depth*1000,geometry:'subdivided-sclera-with-inward-vertex-cup',triangles:entries.reduce((n,e)=>n+e.geometry.index.count/3,0)}),
-  dispose(){if(disposed)return;disposed=true;for(const entry of entries){entry.mesh.geometry=entry.sourceGeometry;entry.mesh.material=entry.sourceMaterial;if(--entry.prepared.refs===0){entry.geometry.dispose();entry.cache.delete(entry.cacheKey);}}for(const material of materials)material.dispose();entries.length=0;materials.clear();}
+  diagnostics:()=>({enabled:!!entries.length,fixed:true,vertices:entries.reduce((n,e)=>n+e.part.count,0),geometry:'two-inner-spheres-behind-milky-sclera'}),
+  dispose(){if(disposed)return;disposed=true;for(const e of entries){
+   e.interiors.dispose();e.mesh.geometry=e.source;e.shell.removeFromParent();e.material.dispose();
+   if(--e.part.refs===0){e.part.body.dispose();e.part.shell.dispose();e.cache.delete(e.key);}
+  }entries.length=0;}
  };
 }

@@ -45,7 +45,8 @@ function verifySurfaces(root,before){
     const sourcePosition=sourceGeometry.attributes.position,bounds=new T.Box3(),v=new T.Vector3();
     for(let i=0;i<sourcePosition.count;i++)if(eyeMask.getX(i)+eyeMask.getY(i)>0)bounds.expandByPoint(v.fromBufferAttribute(sourcePosition,i));
     bounds.expandByScalar(.02);
-    const indices=mesh.geometry.index.array,triangles=new Set();
+    const shell=mesh.getObjectByName('student-sclera-shell');
+    const indices=[...mesh.geometry.index.array,...(shell?.geometry.index.array||[])],triangles=new Set();
     for(let i=0;i<indices.length;i+=3)triangles.add([indices[i],indices[i+1],indices[i+2]].join(','));
     const original=sourceGeometry.index.array;
     for(let i=0;i<original.length;i+=3){

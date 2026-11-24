@@ -66,8 +66,9 @@ for(const [variant,file]of cases){
    for(const key of ['faceClosed','faceInk','faceBounds','faceRestFromLocal'])assert.equal(nightShader.uniforms[key].value,dayShader.uniforms[key].value);
    for(const key of ['faceClosed','faceInk'])assert.equal(nightShader.uniforms[key],dayShader.uniforms[key],'updates must reach the already-compiled night shader');
    if(!['teacher','glasses'].includes(variant)){
-    assert.ok(dayShader.uniforms.studentEyeGaze,'facial patch must not replace animated pupils');
-    assert.equal(nightShader.uniforms.studentEyeGaze,dayShader.uniforms.studentEyeGaze);
+    const wall=a.actor.group.getObjectByName('student-sclera-shell'),optics=compile(wall.material);
+    assert.equal(optics.uniforms.faceClosed,nightShader.uniforms.faceClosed);
+    assert.ok(optics.uniforms.eyeBall0.value.w>0&&optics.uniforms.eyeBall1.value.w>0);
    }
    const state=a.advance({stunned:false,inkLeft:.75},30);assert.ok(state.closed<.01);assert.ok(state.ink>0&&state.ink<1);
    assert.equal(nightShader.uniforms.faceClosed.value,state.closed);assert.equal(nightShader.uniforms.faceInk.value,state.ink);

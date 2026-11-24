@@ -63,8 +63,8 @@ test('aim selects the lab monitor, clicking snake scores food, looking away rele
   f.take('burger');f.mouse(true);f.advance(2);f.mouse(false);assert.equal(f.rendered.drawer.slots.length,1);assert.equal(f.rendered.drawer.slots[0].readyIn,3);f.advance(3-1/60);assert.equal(f.rendered.drawer.slots[0].action,null);f.advance(1/60);assert.ok(f.rendered.drawer.slots[0].action);
  }finally{f.close();}
 });
-test('teacher production left click requires but does not consume stamina and is blocked while stunned',()=>{
- const f=fixture({teacher:true});try{const r=f.round;r.teacher.stamina=20;f.mouse(true);f.mouse(false);assert.equal(r.teacher.stamina,20);f.advance(.8);f.mouse(true);f.mouse(false);assert.equal(r.teacher.stamina,20);r.teacher.stamina=100;r._stunAny(r.teacher,4,'bananaPeel');f.mouse(true);f.mouse(false);assert.equal(r.teacher.stamina,100);assert.equal(f.rendered.teacher.phase,'stunned');assert.ok(f.rendered.teacher.stunLeft>0);
+test('teacher production left click requires but does not consume stamina and keeps the teacher’s stunned pose when firing',()=>{
+ const f=fixture({teacher:true});try{const r=f.round;r.teacher.stamina=20;f.mouse(true);f.mouse(false);assert.equal(r.teacher.stamina,20);f.advance(.8);f.mouse(true);f.mouse(false);assert.equal(r.teacher.stamina,20);r.teacher.stamina=100;r._stunAny(r.teacher,4,'bananaPeel');f.advance(.8);const count=r._chalkId;f.mouse(true);assert.equal(r._chalkId,count+1);f.mouse(false);assert.equal(r.teacher.stamina,100);assert.equal(f.rendered.teacher.phase,'stunned');assert.ok(f.rendered.teacher.stunLeft>0);
  }finally{f.close();}
 });
 

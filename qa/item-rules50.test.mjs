@@ -54,9 +54,9 @@ test('ordinary writing decays suspicion, pauses safely, and carries the pen into
 test('stunning a pupil returns the temporary pen to its desk without changing drawer stock',()=>{
  const r=quiet(),seatId=r.player.seatId,before=r.snapshot().drawer.slots;assert.equal(r.takePen(),true);r.hold(true);r.step(.7);assert.equal(r._stun(r.player),true);assert.equal(r.snapshot().player.penTaken,false);assert.equal(r.player._drawnSlot,null);assert.equal(r.player._slots.some(s=>s.temporary),false);assert.deepEqual(r.snapshot().drawer.slots,before);r.step(5);assert.equal(r.interact(seatId),'seated');assert.equal(r.takePen(),true,'the desk pen must be usable again after recovering');
 });
-test('teacher chalk requires positive stamina but does not consume it; stun sits and blocks casts, ink only blinds',()=>{
+test('teacher chalk requires positive stamina but does not consume it; stun keeps the teacher seated during a cast, ink only blinds',()=>{
  const r=quiet('classroom',TeacherRound);r.teacher.stamina=20;assert.equal(r.throwChalk(),true);assert.equal(r.teacher.stamina,20);r.step(1);assert.equal(r.throwChalk(),true);assert.equal(r.teacher.stamina,20);r.teacher.stamina=0;r.step(1);assert.equal(r.throwChalk(),false);
- r.teacher.stamina=100;r._stunAny(r.teacher,4,'bananaPeel');assert.equal(r.snapshot().teacher.phase,'stunned');assert.ok(r.snapshot().teacher.stunLeft>=4);assert.equal(r.throwChalk(),false);r.step(4);assert.equal(r.player.captivity,'free');
+ r.teacher.stamina=100;r._stunAny(r.teacher,4,'bananaPeel');assert.equal(r.snapshot().teacher.phase,'stunned');assert.ok(r.snapshot().teacher.stunLeft>=4);assert.equal(r.throwChalk(),true);r.step(4);assert.equal(r.player.captivity,'free');
  r._applyProjectileEffect({id:1,ownerId:0},{kind:'ink',x:r.teacher.x,y:1.9,z:r.teacher.z,hitActorId:-1});assert.ok(r.snapshot().teacher.inkLeft>0);assert.equal(r.throwChalk(),true);
 });
 test('preparation locks the teacher for thirty seconds while AI starts a normal-speed queue early',()=>{
@@ -81,4 +81,13 @@ test('the local snapshot preserves the chosen chair heading independently of hea
  const r=quiet();r.reset(2);r.start();for(const s of r.students){s.seated=false;s.seatId=null;}const seat=r.seats.find(s=>s.yaw===Math.PI);assert.ok(seat,'four-seat layout needs inward facing chairs');Object.assign(r.player,{x:seat.x,z:seat.z});assert.equal(r.interact(seat.id),'seated');r.setLook(.45,.2);
  assert.equal(r.snapshot().player.seatYaw,Math.PI);assert.equal(r.snapshot().player.yaw,.45);assert.equal(r.snapshot().students[r.player.id].seatYaw,Math.PI);
  const teacher=quiet('classroom',TeacherRound);Object.assign(teacher.player,{x:OFFICE_CHAIR.x,z:OFFICE_CHAIR.z});assert.equal(teacher.interact('office-chair'),'seated');teacher.setLook(1,.1);assert.equal(teacher.snapshot().player.seatYaw,OFFICE_CHAIR.yaw);assert.equal(teacher.snapshot().player.officeChair,true);
+});
+
+test('legitimate computer use stays a disguise while the game applications generate evidence',()=>{
+ const r=quiet('computer');assert.ok(r.startComputer());r._canSee=()=>true;r._propVisibility=()=>1;
+ const m=r._remember(r.player);m.evidence=15;
+ for(const app of ['photoshop','unity','desktop','snake']){
+  assert.ok(r.computerApp(app));r.hold(true);const before=m.evidence;r._perceive(.1);
+  assert.ok(app==='snake'?m.evidence>before:m.evidence<before,app);
+ }
 });

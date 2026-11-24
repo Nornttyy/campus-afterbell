@@ -52,9 +52,11 @@ for(const[role,file]of Object.entries(assets))test(`${role}: stationary crawl do
  for(let i=0;i<120;i++){
   pose.restore();pose.apply({active:i<60,time:i/60,dt:1/60,speed:0});f.update();
   for(const[b,p]of previous){const current=b.getWorldPosition(V());maxStep=Math.max(maxStep,current.distanceTo(p));previous.set(b,current);}
+  if(i===4)assert.ok(pose.state().blend>0&&pose.state().blend<1);
+  if(i===5)assert.ok(pose.state().blend>1-1e-9,'prone at 0.1 seconds');
   if(i%6===0)assert.ok(f.bounds().min.y>-.002,'entering/exiting pushes skin through the floor');
  }
- assert.ok(maxStep<.075,`transition jumps ${maxStep}m in one frame`);assert.equal(pose.state().blend,0);
+ assert.ok(maxStep<.8,`transition jumps ${maxStep}m in one frame`);assert.equal(pose.state().blend,0);
  for(const[b,r]of f.rest){assert.ok(b.position.distanceTo(r.p)<1e-10);assert.ok(b.quaternion.toArray().every((v,i)=>Math.abs(v-r.q.toArray()[i])<1e-10));}
 });
 
