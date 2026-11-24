@@ -888,7 +888,11 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   function updateItemHover(){
     const target=getInteraction();aimedComputer=target?.kind==='computer'?target:null;hoveredSlot=target?.kind==='item'?target.slot:null;
     let prop=campusTargetObject(target?.kind,target?.id);
-    if(!prop)prop=target?.kind==='bell'?(mapVariant==='bus'?variants.bus.bell:startBellCap):target?.kind==='lift'?(mapVariant==='bus'?variants.bus.liftPanel:campus.liftPanel):target?.kind==='post'?postModels[target.id]:['rescue','release'].includes(target?.kind)?pupilRecords[target.id]?.actor?.group:hoveredSlot===null?target?.kind==='computer'?variants.screens.get(target.id):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?(variants.cabinetFor(gameplay.player.bedId??gameplay.player.seatId)?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(gameplay.player.seatId):deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group)):null:drawerSlotProps[hoveredSlot]?.props.get(gameplay.drawer.slots[hoveredSlot].action);
+    if(target?.kind==='lift'){
+      const panel=mapVariant==='bus'?variants.bus.liftPanel:campus.liftPanel;
+      prop=panel.children.find(button=>button.userData.floorMap===target.map);
+    }
+    if(!prop)prop=target?.kind==='bell'?(mapVariant==='bus'?variants.bus.bell:startBellCap):target?.kind==='post'?postModels[target.id]:['rescue','release'].includes(target?.kind)?pupilRecords[target.id]?.actor?.group:hoveredSlot===null?target?.kind==='computer'?variants.screens.get(target.id):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?(variants.cabinetFor(gameplay.player.bedId??gameplay.player.seatId)?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(gameplay.player.seatId):deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group)):null:drawerSlotProps[hoveredSlot]?.props.get(gameplay.drawer.slots[hoveredSlot].action);
     itemOutline.select(prop||null);canvas.dataset.hoveredSlot=hoveredSlot===null?'':String(hoveredSlot);canvas.dataset.interaction=target?JSON.stringify(target):'';
     if(gameplay?.drawer?.open)canvas.dataset.drawerTargets=JSON.stringify(drawerSlotProps.map((slot,id)=>{const p=slot.group.getWorldPosition(new THREE.Vector3());p.project(camera);return{id,x:(p.x+1)/2,y:(1-p.y)/2};}));
   }
