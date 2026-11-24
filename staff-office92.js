@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {officePlan as office,officeDeskPlans,END_ORIGIN} from './campus-ends.js?v=campus-94';
+import {officePlan as office,officeDeskPlans,END_ORIGIN} from './campus-ends.js?v=campus-101';
 
 // Window bounce is localized to the staffroom. The adjacent hallway shares
 // neither its ceiling finish nor its window, including on the touch renderer.
@@ -13,16 +13,18 @@ export function staffroomFinish(material,kind,day){
   shader.fragmentShader='varying vec3 staffPosition; uniform bool staffroomDay;\n'+shader.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
    if(staffroomDay){
     vec2 p=vec2(${END_ORIGIN.x.toFixed(3)},${END_ORIGIN.z.toFixed(3)})-staffPosition.xz;
-    float nearGlass=smoothstep(9.3,19.35,p.y)*(1.0-smoothstep(2.5,6.5,abs(p.x-6.02)));
-    float edge=max(0.0,min(min(p.x+.4,12.44-p.x),min(p.y-9.02,19.34-p.y)));
+    float nearGlass=smoothstep(${office.minZ.toFixed(3)},${office.maxZ.toFixed(3)},p.y)*(1.0-smoothstep(2.5,6.5,abs(p.x-${((office.minX+office.maxX)/2).toFixed(3)})));
+    float edge=max(0.0,min(min(p.x-${office.minX.toFixed(3)},${office.maxX.toFixed(3)}-p.x),min(p.y-${office.minZ.toFixed(3)},${office.maxZ.toFixed(3)}-p.y)));
     ${kind==='ceiling'?`float cove=smoothstep(.04,.95,edge);
-     reflectedLight.indirectDiffuse*=mix(vec3(.46,.49,.46),vec3(.73,.75,.72),cove)+vec3(.08,.11,.13)*nearGlass;`
+     vec3 ceilingBounce=mix(vec3(.39,.43,.42),vec3(.66,.69,.67),cove)+vec3(.08,.11,.13)*nearGlass;
+     reflectedLight.indirectDiffuse*=ceilingBounce;
+     reflectedLight.directDiffuse*=mix(vec3(.77,.81,.79),vec3(.94,.96,.94),cove);`
     :`float footing=smoothstep(.1,.86,staffPosition.y)*smoothstep(.0,.48,3.95-staffPosition.y);
-     float corner=smoothstep(.0,1.32,min(min(abs(p.x+.4),abs(12.44-p.x))+min(abs(p.y-9.02),abs(19.34-p.y)),2.0));
+     float corner=smoothstep(.0,1.32,min(min(abs(p.x-${office.minX.toFixed(3)}),abs(${office.maxX.toFixed(3)}-p.x))+min(abs(p.y-${office.minZ.toFixed(3)}),abs(${office.maxZ.toFixed(3)}-p.y)),2.0));
      reflectedLight.indirectDiffuse*=mix(vec3(.57,.60,.55),vec3(.81,.80,.75),footing*corner)+vec3(.09,.14,.18)*nearGlass;`}
    }`);
  };
- material.customProgramCacheKey=()=>key+'-office-'+kind+'-94';
+ material.customProgramCacheKey=()=>key+'-office-'+kind+'-101';
  return material;
 }
 
@@ -35,7 +37,7 @@ export function makeOfficeFloor(material,assets,mesh,parent){
   const x=x0+pos.getX(i),z=z0+pos.getZ(i);
   uv.setXY(i,x/4.68,z/2.40);
   const edge=Math.max(0,Math.min(x-minX,maxX-x,z-minZ,maxZ-z));
-  const windowRay=Math.max(0,1-Math.abs(x-6.02)/5.2)*Math.max(0,(z-minZ)/(maxZ-minZ));
+  const windowRay=Math.max(0,1-Math.abs(x-x0)/(w*.41))*Math.max(0,(z-minZ)/(maxZ-minZ));
   let shade=.86+.18*windowRay-.24*Math.exp(-edge*1.7);
   for(const desk of officeDeskPlans){
    const c=Math.cos(desk.yaw),s=Math.sin(desk.yaw),lx=(x-desk.x)*c-(z-desk.z)*s,lz=(x-desk.x)*s+(z-desk.z)*c;
@@ -52,7 +54,7 @@ export function makeOfficeFloor(material,assets,mesh,parent){
 export function fitOfficeInterior({parent,B,rounded,mat,mesh,texture,assets,clock,cream,edge,blue,skirting,cabinetPaint,cabinetBack,seal,wood,paper,blackboard}){
  const {minX,maxX,minZ,maxZ}=office,middle=(minX+maxX)/2,zBack=maxZ+.10;
  const put=(m,x,y,z,w,h,d)=>B(m,[x,y,z],[w,h,d],parent);
- const windowWidth=7.36,sill=1.02,top=3.41,left=middle-windowWidth/2,right=middle+windowWidth/2;
+ const windowWidth=(maxX-minX)*.62,sill=1.02,top=3.41,left=middle-windowWidth/2,right=middle+windowWidth/2;
  put(cream,middle,sill/2,zBack,maxX-minX,sill,.20);
  put(cream,middle,(office.height+top)/2,zBack,maxX-minX,office.height-top,.20);
  for(const [a,b] of [[minX,left],[right,maxX]])put(cream,(a+b)/2,(sill+top)/2,zBack,b-a,top-sill,.20);
@@ -117,7 +119,7 @@ export function fitOfficeInterior({parent,B,rounded,mat,mesh,texture,assets,cloc
   const z=zCab+(i-1)*.98;put(darkFrame,xWall,3.53,z,.055,.49,.385);
   mesh(paperGeo,ink,[xWall-.031,3.53,z],[1,1,1],[0,-Math.PI/2,0],parent);
  }
- const dial=clock.clone(true);dial.name='staffroom-wall-clock';dial.rotation.y=Math.PI/2;dial.position.set(minX+.06,3.63,18.7);parent.add(dial);
+ const dial=clock.clone(true);dial.name='staffroom-wall-clock';dial.rotation.y=Math.PI/2;dial.position.set(minX+.06,3.63,maxZ-.64);parent.add(dial);
  const frost=texture(192,256,(c,w,h)=>{
   const g=c.createLinearGradient(0,h,w,0);g.addColorStop(0,'#8ebbbc');g.addColorStop(.46,'#b5d5d6');g.addColorStop(1,'#d1e7e2');c.fillStyle=g;c.fillRect(0,0,w,h);
   let seed=345;for(let i=0;i<5300;i++){seed=seed*16807%2147483647;const x=seed%w;seed=seed*16807%2147483647;const y=seed%h;c.fillStyle=i%2?'rgba(65,104,106,.055)':'rgba(255,255,255,.10)';c.fillRect(x,y,1,1);}

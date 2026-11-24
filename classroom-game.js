@@ -1,5 +1,5 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
-import {playableCampusMap} from './campus-destinations.js?v=campus-99';
+import {playableCampusMap} from './campus-destinations.js?v=campus-101';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
@@ -10,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-97';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-100';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-101';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -130,8 +130,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     const notice=referenceNotice(e,role);if(notice)feedback(notice.text,notice.kind);
     if(['food-complete','drink-complete','gum-pop','phone-notification','burp','chalk-hit'].includes(e.type))scene.playWorldEffect?.(e);
     const sound=soundForEvent(e,round.player);if(sound)audio.effect?.(sound.kind,sound.gain);
-    if(e.type==='elevator-start'){release();audio.click();}
-    if(e.type==='elevator-arrived'){options.map=e.map;audio.effect?.('bell',.35);}
+    if(e.type==='elevator-start'){release();audio.effect?.('lift-depart',.58);}
+    if(e.type==='elevator-arrived'){options.map=e.map;audio.effect?.('lift-arrive',.46);}
     if(e.type==='school-bell'){audio.effect?.('school-bell-in');scene.playFeedback?.('bell');}
     if(e.type==='flash-burst'||e.type==='ink-splash')audio.effect?.(e.type,.6);
     if(e.type==='complete'&&e.studentId===round.player.id&&e.points>0)scene.playFeedback?.('complete');

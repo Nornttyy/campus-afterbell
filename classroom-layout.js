@@ -11,7 +11,7 @@ import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 export const ELEVATOR_ENABLED=true;
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
 export const TEACHER_EYE_HEIGHT=TEACHER_PROPORTIONS.eyeHeight;
-import {HALL,END_ORIGIN,officePlan,liftPlan,officeDeskPlans,officeChairPlans,officeBoardPlan,officeBinPlan,officeShelfCenters,officeOffset,endPoint,endBounds} from './campus-ends.js?v=campus-94';
+import {HALL,END_ORIGIN,officePlan,liftPlan,officeDeskPlans,officeChairPlans,officeBoardPlan,officeBinPlan,officeShelfCenters,officeOffset,endPoint,endBounds} from './campus-ends.js?v=campus-101';
  // In the walkthrough a player leaving the lift for the office has the classroom on the left.
 export const CLASSROOM=Object.freeze({minX:-6.65,maxX:7.20,minZ:-10.00,maxZ:8.80});
 export const CORRIDOR=HALL;

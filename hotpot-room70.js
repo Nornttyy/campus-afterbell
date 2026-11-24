@@ -1,7 +1,7 @@
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import * as T from './vendor/three.module.js';
 
-import {CORRIDOR,PARTITIONS} from './classroom-layout.js?v=campus-95';
+import {CORRIDOR,PARTITIONS} from './classroom-layout.js?v=campus-101';
 import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
 export {HOTPOT_TABLE_SIZE,HOTPOT_TABLE_HEIGHT,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-94';
 
@@ -9,11 +9,28 @@ function chamferedSlab(width,depth,height,cut){
  const x=width/2,z=depth/2,s=new T.Shape();s.moveTo(-x+cut,-z);s.lineTo(x-cut,-z);s.lineTo(x,-z+cut);s.lineTo(x,z-cut);s.lineTo(x-cut,z);s.lineTo(-x+cut,z);s.lineTo(-x,z-cut);s.lineTo(-x,-z+cut);s.closePath();
  const g=new T.ExtrudeGeometry(s,{depth:height,bevelEnabled:true,bevelThickness:.008,bevelSize:.008,bevelSegments:1,steps:1,curveSegments:1});g.translate(0,0,-height/2);g.rotateX(-Math.PI/2);return g;
 }
-const steamVertex=`uniform float uTime; varying vec2 vUv; void main(){vUv=uv; vec4 c=modelViewMatrix*vec4(0.,0.,0.,1.);vec3 p=position;p.x+=.075*sin(uTime*1.4+uv.y*5.)*uv.y;p.y+=.035*sin(uTime*.9+uv.x*4.);c.xy+=p.xy;gl_Position=projectionMatrix*c;}`;
-const steamFragment=`uniform float uTime; varying vec2 vUv;
+// Each burner drives its own two rising wisps, all from one shader and one quad per pot.
+const steamVertex=`uniform float uTime; varying vec2 vUv; varying float phase;
+ void main(){
+  vUv=uv; phase=dot(modelMatrix[3].xz,vec2(2.73,1.19));
+  vec4 center=modelViewMatrix*vec4(0.,0.,0.,1.);
+  vec2 sheet=position.xy;
+  sheet.x+=uv.y*uv.y*.083*sin(uTime*.87+phase+uv.y*3.);
+  center.xy+=sheet; gl_Position=projectionMatrix*center;
+ }`;
+const steamFragment=`uniform float uTime; varying vec2 vUv; varying float phase;
  float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
  float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
- void main(){vec2 q=vUv;float n=noise(vec2(q.x*5.,q.y*7.-uTime*.65));float n2=noise(vec2(q.x*11.+uTime*.13,q.y*13.-uTime));float width=.24+.20*q.y;float side=exp(-pow((q.x-.5+.07*sin(q.y*9.-uTime))/width,2.)*4.);float fade=smoothstep(0.,.13,q.y)*(1.-smoothstep(.48,1.,q.y));float a=side*fade*(.055+.12*n+.08*n2);gl_FragColor=vec4(.93,.94,.91,a);}`;
+ void main(){
+  float h=vUv.y,t=uTime+phase;
+  float curl=.075*sin(h*9.-t*1.1)+.05*sin(h*14.-t*.8);
+  float width=.065+.17*h;
+  vec2 offsets=(vec2(vUv.x-.36,vUv.x-.62)+vec2(curl,-curl*.78)*h)/width;
+  vec2 ribbons=exp(-offsets*offsets);
+  float cloud=noise(vec2(vUv.x*7.+phase,h*6.-t*.9));
+  float fade=smoothstep(0.,.09,h)*(1.-smoothstep(.44,1.,h));
+  gl_FragColor=vec4(.94,.94,.89,dot(ribbons,vec2(.16,.12))*fade*(.18+cloud));
+ }`;
 
 export function createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,finishes={},menus=null,seats=null}){
  const plan=diningPlanForSeats(seats);
