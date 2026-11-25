@@ -31,3 +31,23 @@ for(const variant of ['boy','girl','glasses','ponytail'])for(const kind of Objec
    }
   }}finally{actor.dispose();}
 });
+
+for(const [variant,{file}] of Object.entries(STUDENT_ASSETS)){
+ test(variant+': switching fitted items closes the fingers continuously on the first frame',async()=>{
+  const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant});
+  const digits=Object.entries(actor.bones).filter(([name])=>/^LeftHand(?:Thumb|Index|Middle|Pinky)[123]$/.test(name)).map(([,bone])=>bone);
+  let time=0,previous;
+  try{
+   for(const item of ['drink','banana','burger']){
+    actor.setMood(item);actor.setMotion({seated:true,carrying:true,heldAction:item,using:false});
+    for(let frame=0;frame<90;frame++){
+     actor.update(time+=1/60);
+     if(item!=='drink'&&frame<30){
+      for(const [index,bone] of digits.entries())assert.ok(bone.quaternion.angleTo(previous[index])<.125,item+' snapped '+bone.name);
+     }
+     previous=digits.map(bone=>bone.quaternion.clone());
+    }
+   }
+  }finally{actor.dispose();}
+ });
+}

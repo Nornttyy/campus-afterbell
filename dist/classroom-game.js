@@ -10,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-102';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-83';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-104';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-105';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
