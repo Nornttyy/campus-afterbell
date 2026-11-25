@@ -17,12 +17,12 @@ const keys=keyboardBoxes();assert.equal(keys.length,33);
 function handSkin(actor){const points=[];actor.group.updateMatrixWorld(true);actor.group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const {skinIndex,skinWeight}=mesh.geometry.attributes;for(let i=0;i<skinIndex.count;i++){let max=-1,j=0;for(let k=0;k<4;k++)if(skinWeight.getComponent(i,k)>max){max=skinWeight.getComponent(i,k);j=skinIndex.getComponent(i,k);}if(/(?:Left|Right)Hand/.test(mesh.skeleton.bones[j].name))points.push({mesh,index:i});}});return points;}
 
 for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: computer uses both real hands above keyboard, not Write, with alternating presses`,async t=>{
- const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:true}),points=handSkin(actor),tips={Left:[],Right:[]};
+ const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:true}),points=handSkin(actor),tips={Left:[],Right:[]},keyX={Left:[],Right:[]};
  actor.setMood('computer');actor.setMotion({seated:true,carrying:false});let time=0,maxDeskDepth=0,maxKeyDepth=0,worstKey=null;
  for(let frame=0;frame<300;frame++){
   actor.update(time+=1/60);if(frame<180)continue;
   const d=actor.diagnostics();assert.ok(d.weights.Write<1e-8);assert.equal(actor.group.getObjectByName('held-writing-pencil').visible,false);
-  for(const side of ['Left','Right']){const p=d.gestures.typingTips[side];assert.ok(p[2]>.519&&p[2]<.55,`${side} finger misses the real near key row: ${p}`);assert.ok(p[1]>.899&&p[1]<.915,`${side} finger floats or penetrates keys: ${p}`);tips[side].push(p[1]);}
+  for(const side of ['Left','Right']){const p=d.gestures.typingTips[side];assert.ok(p[2]>.519&&p[2]<.55,`${side} finger misses the real near key row: ${p}`);assert.ok(p[1]>.899&&p[1]<.915,`${side} finger floats or penetrates keys: ${p}`);tips[side].push(p[1]);keyX[side].push(p[0]);}
   if(frame%12)continue;actor.group.updateMatrixWorld(true);const updated=new Set();
   for(const {mesh,index}of points){if(!updated.has(mesh.skeleton)){mesh.skeleton.update();updated.add(mesh.skeleton);}const p=mesh.getVertexPosition(index,new T.Vector3()).applyMatrix4(mesh.matrixWorld);
    if(Math.abs(p.x)<.61&&p.z>.38&&p.z<1.18)maxDeskDepth=Math.max(maxDeskDepth,.8625-p.y);
@@ -31,6 +31,7 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: co
  }
  assert.ok(maxDeskDepth<.001,`hand skin enters desktop: ${maxDeskDepth}`);assert.ok(maxKeyDepth<.002,`hand skin enters keyboard: ${maxKeyDepth} ${JSON.stringify(worstKey)}`);
  for(const side of ['Left','Right'])assert.ok(Math.max(...tips[side])-Math.min(...tips[side])>.005,`${side} does not press keys`);
+ for(const side of ['Left','Right'])assert.ok(Math.max(...keyX[side])-Math.min(...keyX[side])>.018,'fingers should travel between neighbouring keys');
  const mean=a=>a.reduce((x,y)=>x+y,0)/a.length,lm=mean(tips.Left),rm=mean(tips.Right),correlation=mean(tips.Left.map((y,i)=>(y-lm)*(tips.Right[i]-rm)))/Math.sqrt(mean(tips.Left.map(y=>(y-lm)**2))*mean(tips.Right.map(y=>(y-rm)**2)));
  assert.ok(correlation<-.65,'hands must alternate, not move together');
  const reference=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:true});reference.setMood('resting');for(let f=1;f<=300;f++)reference.update(f/60);reference.group.updateMatrixWorld(true);

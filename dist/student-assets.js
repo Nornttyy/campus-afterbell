@@ -1,30 +1,30 @@
 import {fitUniform} from './uniform-detail102.js?v=campus-109';
 import {setDish} from './hotpot-food94.js?v=campus-94';
-import {createStudentSize} from './student-size73.js?v=campus-108';
+import {createStudentSize} from './student-size73.js?v=campus-110';
 import {createFacialEffects} from './facial-effects64.js?v=campus-109';
 import {requireModelBudget} from './model-budget64.js';
 import {WRITING_PROPS} from './writing-props58.js?v=campus-83';
 import {WRITING_GRIPS} from './writing-grips58.js?v=campus-83';
 import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-109';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-110';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
-import {createToiletSeatPose} from './toilet-seat78.js?v=campus-109';
-import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-109';
-import {createBedPose} from './bed-pose78.js?v=campus-109';
-import {createMapActivityPose} from './map-activity-pose77.js?v=campus-109';
+import {createToiletSeatPose} from './toilet-seat78.js?v=campus-110';
+import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-110';
+import {createBedPose} from './bed-pose78.js?v=campus-110';
+import {createMapActivityPose} from './map-activity-pose77.js?v=campus-110';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-109';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-110';
 import {propContact} from './prop-assets.js?v=campus-83';
 import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-108';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-109';
-import {createCrawlPose} from './crawl-pose.js?v=campus-109';
-import {createStudentGestures} from './student-gestures.js?v=campus-109';
+import {createCrawlPose} from './crawl-pose.js?v=campus-110';
+import {createStudentGestures} from './student-gestures.js?v=campus-110';
 import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-83';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-105';
 import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-93';
 import {createStudentFaceShape} from './student-face-shape75.js?v=campus-83';
 import {createStudentEyes} from './student-eyes56.js?v=campus-109';
-import {createStudyBook,writingPageY} from './study-book58.js?v=campus-108';
+import {createStudyBook,writingPageY} from './study-book58.js?v=campus-110';
 import {normalWalkCycleRate} from './movement55.js?v=campus-93';
 import {writingStroke,thirdPersonPenTime} from './study-motion64.js?v=campus-108';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
@@ -34,6 +34,8 @@ export const STUDENT_ASSETS=Object.freeze({
  glasses:Object.freeze({file:'student-glasses-v2',contact:'boy'}),
  ponytail:Object.freeze({file:'student-ponytail-v1',contact:'girl'})
 });
+// Resting gaze above an upright book, fitted to each rig’s brow and glasses.
+const readingPitch={boy:.39,girl:.47,glasses:.41,ponytail:.51};
 export function normalizeStudentVariant(value,{glasses=false}={}){
  if(glasses&&(value===undefined||value==='boy'))return 'glasses';
  return Object.hasOwn(STUDENT_ASSETS,value)?value:'boy';
@@ -176,7 +178,6 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,passengerSeed=seed,
 
  for(const name of ['Head','Hips','LeftArm','LeftForeArm','LeftHand','RightArm','RightForeArm','RightHand'])if(!bones[name])throw new Error(`${group.userData.asset}: missing ${name} bone`);
  const head=bones.Head;
- let studyHeadRest=null;
  const bodySize=metric?createStudentSize(group,model,bones,variant):null;
  const mixer=new T.AnimationMixer(model),actions={},weights={};
  for(const clip of gltf.animations){const a=mixer.clipAction(clip);actions[clip.name]=a;a.setEffectiveWeight(0).play();a.time=(seed*.17)%clip.duration;weights[clip.name]=0;}
@@ -273,10 +274,17 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,passengerSeed=seed,
  function poseWritingStroke(time,enabled){
   if(!enabled||!motionProfile.writeContact42||(weights.Write||0)<.99)return;
   group.updateMatrixWorld(true);
-  const hand=bones.RightHand,frame=handFrame(bones,'Right'),matrix=new T.Matrix4().makeBasis(frame.across,frame.along,frame.normal).setPosition(hand.getWorldPosition(V()));
+  const {x:dx,z:dz}=writingStroke(time);
+  const hand=bones.RightHand,parent=hand.parent.getWorldQuaternion(new T.Quaternion());
+  const yaw=4.2*dx+2.1*dz;
+  const turn=new T.Quaternion().setFromAxisAngle(V(0,1,0).applyQuaternion(group.getWorldQuaternion(new T.Quaternion())),yaw);
+  saveThrowBone(hand);
+  hand.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));
+  hand.updateWorldMatrix(false,true);
+  const frame=handFrame(bones,'Right'),matrix=new T.Matrix4().makeBasis(frame.across,frame.along,frame.normal).setPosition(hand.getWorldPosition(V()));
   matrix.multiply(new T.Matrix4().compose(pencilRest.position,pencilRest.quaternion,V(1,1,1)));
   const nib=group.worldToLocal(V(0,-.129,0).applyMatrix4(matrix));
-  const {x:dx,z:dz}=writingStroke(time),dy=writingPageY(nib.x+dx)-nib.y;
+  const dy=writingPageY(nib.x+dx)-nib.y;
   liftWritingHand(0,V(dx,dy,dz));
  }
  function posePenTwirl(dt,reset,enabled){
@@ -284,19 +292,21 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,passengerSeed=seed,
   if(enabled&&penTwirlBlend>.99)penTwirlAge+=dt;
   if(penTwirlBlend<.0001||captivity!=='free'||!isSeated)return;
   const phase=thirdPersonPenTime(penTwirlAge)*Math.PI*2/1.6;
-  liftWritingHand(0,V(.005*Math.sin(phase),.075+.007*Math.sin(phase-.38),.003*Math.cos(phase)).multiplyScalar(penTwirlBlend));
+  const push=Math.sin(phase),catchBeat=.5+.5*Math.cos(phase);
+  liftWritingHand(0,V(.014*push,.076+.011*Math.sin(phase-.38),.008*(1-catchBeat)).multiplyScalar(penTwirlBlend));
   for(const d of penDigits.digits){
    if(!['Index','Middle','Pinky'].includes(d.finger))continue;
    saveThrowBone(d.bone);
-   const offset=d.finger==='Index'?0:d.finger==='Middle'?-.6:-1.1;
-   const amount=(d.finger==='Middle'?-.10:.055)*Math.sin(phase+offset)*penTwirlBlend;
+   const offset=d.finger==='Index'?0:d.finger==='Middle'?-.76:-1.24;
+   const curl=d.finger==='Middle'?-.145:d.finger==='Index'?.095:.065;
+   const amount=curl*Math.sin(phase+offset)*penTwirlBlend;
    d.bone.quaternion.multiply(new T.Quaternion().setFromAxisAngle(d.axis,amount));
   }
  }
  function poseHeadLook(dt,reset,study){
   const yaw=headTarget.yaw??0;
   const basePitch=Number.isFinite(headTarget.pitch)?headTarget.pitch:0;
-  const pitch=study==='reading'?Math.max(basePitch,.66):study==='writing'?Math.max(basePitch,.77):basePitch-(isSeated?.08*(weights.Phone||0):0),alpha=reset?1:1-Math.exp(-16*dt);
+  const pitch=study==='reading'?Math.max(basePitch,readingPitch[variant]??readingPitch.boy):study==='writing'?Math.max(basePitch,.77):basePitch-(isSeated?.08*(weights.Phone||0):0),alpha=reset?1:1-Math.exp(-16*dt);
   const difference=Math.atan2(Math.sin(yaw-headLook.yaw),Math.cos(yaw-headLook.yaw));headLook.yaw+=difference*alpha;headLook.pitch=T.MathUtils.lerp(headLook.pitch,pitch,alpha);
   const character=group.getWorldQuaternion(new T.Quaternion());
   if(study==='writing'){
@@ -307,15 +317,6 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,passengerSeed=seed,
    headLookSaved.set(neck,neck.quaternion.clone());
    neck.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));
    neck.updateWorldMatrix(false,true);
-  }
-  if(study==='reading'){
-   // Pitch the oversized head around its centre rather than sweeping the
-   // brow through the page about the low neck pivot.
-   const radius=variant==='boy'?.425:variant==='glasses'?.27:.22;
-   const pivot=V(0,radius,0),turn=new T.Quaternion().setFromAxisAngle(V(1,0,0),headLook.pitch);
-   const shift=pivot.clone().sub(pivot.applyQuaternion(turn)).applyQuaternion(character);
-   studyHeadRest=head.position.clone();
-   head.position.copy(head.parent.worldToLocal(head.getWorldPosition(V()).add(shift)));head.updateWorldMatrix(false,true);
   }
   for(const [name,weight]of [['Neck',.32],['Head',.68]]){const bone=bones[name];if(!bone)continue;if(!headLookSaved.has(bone))headLookSaved.set(bone,bone.quaternion.clone());const parent=bone.parent.getWorldQuaternion(new T.Quaternion()),turn=new T.Quaternion().setFromEuler(new T.Euler(headLook.pitch*weight,headLook.yaw*weight,0,'YXZ'));turn.premultiply(character).multiply(character.clone().invert());bone.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));group.updateMatrixWorld(true);}
  }
@@ -371,7 +372,6 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,passengerSeed=seed,
    a.setEffectiveTimeScale(name.startsWith('Walk')?walkRate:name==='Snack'&&idleCarry?0:1);if(name==='Snack'&&idleCarry)a.time=0;
   }
   bedPose.restore();mapPose.restore();coachPose?.restore();toiletPose.restore();seatedClearance?.restore();bodySize?.restore();
-  if(studyHeadRest){head.position.copy(studyHeadRest);studyHeadRest=null;}
   for(const [bone,rotation]of headLookSaved)bone.quaternion.copy(rotation);headLookSaved.clear();
   crawlPose.restore();
   for(const [bone,rotation]of throwSaved)bone.quaternion.copy(rotation);throwSaved.clear();
@@ -381,7 +381,7 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,passengerSeed=seed,
   handMotion.apply({time:t,dt:resumed?1:dt,reset:reset||cut,seated:isSeated&&!passengerRest,mood:handMood,sitWeight:weights.Sit,writeWeight:weights.Write,restraint:captivity,moving,carrying:held,capture:capturePose.state()});gestureMotion?.apply({time:idleCarry?0:studyTime,dt,reset:reset||cut,seated:isSeated&&!passengerRest,mood:gestureMood,carrying:held,moving,restraint:captivity,walkTime:actions.Walk.time,bookPose});
   walkingArms?.apply({jumpHeight,weight:(weights.Walk||0)+(weights.WalkCarry||0),seated:isSeated,crawling,restraint:captivity,mood,carrying:held,walkTime:actions.Walk.time,cycleDuration:actions.Walk.getClip().duration});
   for(const {bone,delta}of writingGrip){if(!bone||!isSeated||captivity!=='free'||(weights.Write||0)<.01)continue;saveThrowBone(bone);bone.quaternion.multiply(new T.Quaternion().slerp(delta,T.MathUtils.smoothstep(weights.Write,.10,.99)));}
-  clearWritingTransition();poseWritingStroke(studyTime,captivity==='free'&&hasDesk&&isSeated&&(mood==='writing'||writingPen));poseThrow(dt,reset);poseWholeGrip(itemKind,dt,reset,captivity==='free'&&Boolean(foods[itemKind]?.userData.propAsset)&&(held||(weights.Snack||0)>.01));posePenTwirl(dt,reset,heldPen&&!writingPen&&captivity==='free');crawlPose.apply({active:crawling&&!isSeated&&captivity==='free',time:t,dt,speed:moving,reset});poseHeadLook(dt,reset||cut,study);bodySize?.apply({cutStudy:cut,seated:isSeated,crawling,restraint:captivity,dt,reset,tableSupport:hasDesk&&!FOOD_ITEM_KINDS.includes(itemKind)&&!throwable&&itemKind!=='phone',pairedHands:itemKind==='phone',schoolChair:!onBed&&!seatSurface&&!mapActivity,studyPose:poseMood,deskArms:hasDesk&&!held&&(mood==='resting'||mood==='listening'||mood==='writing'||mood==='computer'||mood==='computer-idle')});seatedClearance?.apply({seated:isSeated&&hasDesk&&!bookPose.active,crawling,restraint:captivity,transition:1-Math.max(...Object.values(weights)),settledSupport:Math.max(weights.Sit||0,weights.Write||0)>.999999});toiletPose.apply({active:isSeated&&seatSurface==='toilet'&&captivity==='free',carrying:held});
+  clearWritingTransition();poseWritingStroke(studyTime,captivity==='free'&&hasDesk&&isSeated&&(mood==='writing'||writingPen));poseThrow(dt,reset);poseWholeGrip(itemKind,dt,reset,captivity==='free'&&Boolean(foods[itemKind]?.userData.propAsset)&&(held||(weights.Snack||0)>.01));posePenTwirl(dt,reset,heldPen&&!writingPen&&captivity==='free');crawlPose.apply({active:crawling&&!isSeated&&captivity==='free',time:t,dt,speed:moving,reset});poseHeadLook(dt,reset||cut,study);bodySize?.apply({cutStudy:cut,seated:isSeated,crawling,restraint:captivity,dt,reset,tableSupport:hasDesk&&!FOOD_ITEM_KINDS.includes(itemKind)&&!throwable&&itemKind!=='phone',pairedHands:itemKind==='phone',schoolChair:!onBed&&!seatSurface&&!mapActivity,studyPose:poseMood,lookYaw:headLook.yaw,deskArms:hasDesk&&!held&&(mood==='resting'||mood==='listening'||mood==='writing'||mood==='computer'||mood==='computer-idle')});seatedClearance?.apply({seated:isSeated&&hasDesk&&!bookPose.active,crawling,restraint:captivity,transition:1-Math.max(...Object.values(weights)),settledSupport:Math.max(weights.Sit||0,weights.Write||0)>.999999});toiletPose.apply({active:isSeated&&seatSurface==='toilet'&&captivity==='free',carrying:held});
   coachPose?.apply({surface:seatSurface,seated:isSeated,captivity,resting:passengerRest,carrying:held,twoHands:bookPose.active||itemKind==='phone'||heldPen,drawerOpen:seatDrawerOpen&&!held,time:t,dt,reset});
   mapPose.apply(mapActivity);bedPose.apply({onBed,lying,time:t,dt,reset,carrying:held,using});group.updateMatrixWorld(true);group.getWorldQuaternion(inv).invert();
   for(const [side,a]of Object.entries(grips)){

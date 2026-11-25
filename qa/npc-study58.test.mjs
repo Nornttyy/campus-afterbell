@@ -19,11 +19,17 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: re
   for(const tip of Object.values(actor.diagnostics().gestures.readingTips))assert.ok(Math.abs(tip[0])>TEXTBOOK.leafWidth*.74,'hands hold near the book spine instead of its outer lower corners');
   for(const {mesh,index,head,side}of samples){if(!updated.has(mesh.skeleton)){updated.add(mesh.skeleton);mesh.skeleton.update();}const p=mesh.getVertexPosition(index,V()).applyMatrix4(mesh.matrixWorld);if(!head&&Math.abs(p.x)<.55&&p.z>.3557&&p.z<1.12)maxDeskDepth=Math.max(maxDeskDepth,.875-p.y);for(const {box,inverse}of pages){const q=p.clone().applyMatrix4(inverse);if(head)headGap=Math.min(headGap,box.distanceToPoint(q));else{const gap=box.distanceToPoint(q);minHandGap=Math.min(minHandGap,gap);if(side)sideGap[side]=Math.min(sideGap[side],gap);}if(box.containsPoint(q))maxBookDepth=Math.max(maxBookDepth,Math.min(q.x-box.min.x,box.max.x-q.x,q.y-box.min.y,box.max.y-q.y,q.z-box.min.z,box.max.z-q.z));}}
   worstSideGap=Math.max(worstSideGap,sideGap.Left,sideGap.Right);
-  for(const [bone,p]of lengths)assert.ok(bone.position.distanceTo(p)<.00002,'reading stretches bone');
+  for(const [bone,p] of lengths){
+   if(/(?:ForeArm|Hand)$/.test(bone.name)){
+    const extension=bone.position.length()/p.length();
+    assert.ok(extension>1.05&&extension<=1.851,'both reading arm segments should extend towards the cover');
+    assert.ok(bone.position.clone().normalize().distanceTo(p.clone().normalize())<1e-5,'extension must follow the joint axis');
+   }else assert.ok(bone.position.distanceTo(p)<.00002,'reading changes finger length');
+  }
  }
  assert.ok(headGap>.012,'the face must stay behind the desk-supported book: '+headGap);
  assert.ok(worstSideGap<.008,`one reading hand floats away during breath ${worstSideGap}`);
- actor.setMood('computer-idle');for(let n=0;n<180;n++){actor.update(time+=1/60);assert.equal(actor.group.getObjectByName('held-writing-pencil').visible,false,'computer idle shows a pencil while changing pose');}assert.equal(actor.studyBookVisible(),false);assert.ok(actor.diagnostics().weights.Write<1e-8);assert.ok(actor.diagnostics().weights.Sit>.9999);
+ actor.setMood('computer-idle');for(let n=0;n<180;n++){actor.update(time+=1/60);assert.equal(actor.group.getObjectByName('held-writing-pencil').visible,false,'computer idle shows a pencil while changing pose');}assert.equal(actor.studyBookVisible(),false);for(const [bone,p] of lengths)assert.ok(bone.position.distanceTo(p)<.00002,'arm extension carried over into keyboard pose');assert.ok(actor.diagnostics().weights.Write<1e-8);assert.ok(actor.diagnostics().weights.Sit>.9999);
  actor.setMood('computer');for(let n=0;n<180;n++)actor.update(time+=1/60);assert.ok(actor.diagnostics().gestures.typingTips);actor.setMood('computer-idle');for(let n=0;n<180;n++)actor.update(time+=1/60);assert.equal(actor.diagnostics().gestures.typingTips,null);
  t.diagnostic(JSON.stringify({maxDeskDepth,maxBookDepth,minHandGap,worstSideGap,headGap}));actor.dispose();
 });

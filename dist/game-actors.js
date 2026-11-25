@@ -1,4 +1,4 @@
-import {writingPageY} from './study-book58.js?v=campus-108';
+import {writingPageY} from './study-book58.js?v=campus-110';
 import {snackWrapper} from './snack-wrapper94.js?v=campus-94';
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import {requireModelBudget} from './model-budget64.js';
@@ -9,8 +9,8 @@ import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-108';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-109';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-110';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-110';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.

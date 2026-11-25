@@ -1,4 +1,4 @@
-import {TEXTBOOK,bookAngle,bookSpineHeight,BOOK_PAPER_FACE} from './study-book58.js?v=campus-108';
+import {TEXTBOOK,bookAngle,bookSpineHeight,BOOK_PAPER_FACE} from './study-book58.js?v=campus-110';
 import * as T from './vendor/three.module.js';
 import {FIRST_PERSON_PEN_FITS} from './first-person-pen-fit58.js?v=campus-83';
 import {createPenFingerContact} from './pen-motion.js?v=campus-93';

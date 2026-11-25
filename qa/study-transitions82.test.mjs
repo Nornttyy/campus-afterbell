@@ -49,6 +49,9 @@ test('an upright textbook stays supported on its own desk as the pupil turns',()
 
 for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: reading and writing cut on the first frame with both hands on the upright book`,async t=>{
  const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:true}),book=sourceBook(),scene=new T.Group();scene.add(book,actor.group);actor.setStudyBook(book);actor.setMotion({seated:true});const samples=handSamples(actor);let time=0,maxStep=0,maxGap=0,lastHands=null,maxCut=0;
+ // The same bone-space pose must work at desks facing across the classroom.
+ scene.rotation.y=Math.PI/2;
+ const head=actor.bones.Head,neck=actor.bones.Neck,restHead=head.position.clone();
  for(const mood of ['resting','reading','writing','reading','listening']){
   actor.setMood(mood);
   for(let frame=0;frame<150;frame++){
@@ -57,6 +60,12 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: re
    assert.equal(info.blend,Number(mood==='reading'));assert.equal(info.contact,info.blend);
    assert.equal(actor.group.getObjectByName('held-writing-pencil').visible,mood==='writing');
    if(info.blend>.02)assert.equal(actor.group.getObjectByName('held-writing-pencil').visible,false,'writing begins with the book still in the air');
+   if(mood==='reading'){
+    const localPoint=bone=>actor.group.worldToLocal(bone.getWorldPosition(new T.Vector3()));
+    const direction=localPoint(head).sub(localPoint(neck));
+    assert.ok(Math.atan2(direction.z,direction.y)>.60,'neck should lean from collar towards book, including the first frame');
+    assert.ok(head.position.distanceTo(restHead)<1e-6,'reading should rotate the neck without moving the head off its joint');
+   }
    if(frame%3)continue;
    const pages=[];holder.traverse(mesh=>{if(mesh.isMesh){mesh.geometry.computeBoundingBox();pages.push({box:mesh.geometry.boundingBox,inv:mesh.matrixWorld.clone().invert()});}});
    const gap={Left:Infinity,Right:Infinity};for(const {mesh,index,side}of samples){const p=mesh.getVertexPosition(index,new T.Vector3()).applyMatrix4(mesh.matrixWorld);for(const page of pages)gap[side]=Math.min(gap[side],page.box.distanceToPoint(p.clone().applyMatrix4(page.inv)));}
@@ -68,6 +77,17 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: re
  assert.ok(maxGap<.025,`a hand separates from the moving book by ${maxGap} m`);
  // Minor desk overlap is allowed: preserve the book gesture instead of
  // raising elbows or shrinking the motion to satisfy furniture clearance.
+ // Watch the teacher on either side. Shoulder motion should not pull the
+ // resting hands across the desk as the chest turns.
+ actor.setMood('listening');const shoulderTurns=[],restingHands=[];
+ for(const lookYaw of [-.7,.7]){
+  actor.setMotion({seated:true,lookYaw});for(let i=0;i<90;i++)actor.update(time+=1/60);
+  const local=bone=>actor.group.worldToLocal(bone.getWorldPosition(new T.Vector3()));
+  const across=local(actor.bones.LeftArm).sub(local(actor.bones.RightArm));
+  shoulderTurns.push(Math.atan2(-across.z,across.x));restingHands.push(local(actor.bones.RightHand));
+ }
+ assert.ok(shoulderTurns[1]-shoulderTurns[0]>.25,'both shoulders remain square while looking around');
+ assert.ok(restingHands[0].distanceTo(restingHands[1])<.025,'looking around pulls the hand away from the desk');
  actor.setMood('reading');for(let i=0;i<100;i++)actor.update(time+=1/60);actor.setStudyBook(null);actor.setMood('resting');actor.update(time+=1/60);assert.equal(actor.studyBookVisible(),false,'old seat book remains after the source is removed');assert.equal(actor.group.getObjectByName('held-study-book').children.length,0);
  t.diagnostic(JSON.stringify({maxStep,maxGap}));actor.dispose();
 });
