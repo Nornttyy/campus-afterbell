@@ -11,7 +11,7 @@ const profiles={
  glasses:{bounds:[1.16,1.65,.32,-.025],skin:'#ffc8a5'},
  teacher:{bounds:[1.48,2.04,.36,-.025],skin:'#ffdc71',eyes:[{center:[-.116,1.827,.219],radius:[.089,.107]},{center:[.114,1.827,.219],radius:[.089,.107]}]}
 };
-const hairPalette={boy:'#403b34',girl:'#8b809e',ponytail:'#997a5c',glasses:'#4b4138'};
+const hairPalette={boy:'#403b34',girl:'#7d738e',ponytail:'#8a6e53',glasses:'#4b4138'};
 export function createFacialEffects(model,{variant='boy'}={}){
  const profile=profiles[variant]||profiles.boy,rawEyes=profile.eyes||STUDENT_EYE_REGIONS[variant]||[],owned=[];
  // Gaze regions deliberately cover only the pupil/front. A closed eyelid must
