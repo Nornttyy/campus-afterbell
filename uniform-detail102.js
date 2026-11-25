@@ -1,6 +1,7 @@
 // Small skinned garment fittings, authored in the original Tripo bind-pose metres.
 // Colours sample the character's own atlas. Each classmate clone shares one mesh.
 import * as T from './vendor/three.module.js';
+import {repairJacketWeights} from './character-jacket106.js';
 
 const fits={
  boy:{badge:[.136,1.038,.024,.031],zip:[.101,.698],palette:[ [.25214,.97129],[.25253,.96964],[.92092,.33274],[.67239,.91383],[.64916,.89361],[.63708,.95106] ]},
@@ -76,6 +77,7 @@ function fittings(fit,point,triangle){
 
 export function fitUniform(model,variant){
  const fit=fits[variant];if(!fit)return;
+ repairJacketWeights(model);
  model.updateMatrixWorld(true);
  model.traverse(mesh=>{
   if(!mesh.isSkinnedMesh||mesh.geometry.userData.uniformFitted)return;
