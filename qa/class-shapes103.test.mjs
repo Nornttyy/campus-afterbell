@@ -38,3 +38,29 @@ test('daylight shading is baked for all five bodies and both pairs of first-pers
   assert.ok(shaded,name);
  }
 });
+
+test('the blunt bob replaces the painted locks in both delivery meshes and follows the same head bone',async()=>{
+ const {refitSchoolBob}=await import('../dist/student-hair109.js');
+ for(const schoolMesh of [false,true]){
+  const name='student-girl-v4',model=await loadGeometry(name+'.glb');
+  if(schoolMesh)applyClassShape(model,table[name],indices);
+  model.scene.updateMatrixWorld(true);
+  let meshes=0;
+  model.scene.traverse(mesh=>{
+   if(!mesh.isSkinnedMesh)return;
+   meshes++;
+   const g=mesh.geometry,original=g.attributes.position.count,before=g.index.count;
+   refitSchoolBob(mesh);
+   const {position,normal,skinIndex,skinWeight,uv}=g.attributes;
+   assert.ok(position.count>original&&g.index.count<before,'new bob must replace the cost of the old locks');
+   for(let i=original;i<position.count;i++){
+    assert.equal(mesh.skeleton.bones[skinIndex.getX(i)].name,'mixamorigHead');
+    assert.equal(skinWeight.getX(i),1);
+    assert.ok(Math.abs(Math.hypot(normal.getX(i),normal.getY(i),normal.getZ(i))-1)<.001);
+    assert.ok(uv.getX(i)>=0&&uv.getY(i)>=0);
+   }
+   const shape=g.index;refitSchoolBob(mesh);assert.equal(g.index,shape);
+  });
+  assert.equal(meshes,1);
+ }
+});

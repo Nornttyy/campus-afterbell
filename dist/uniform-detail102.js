@@ -1,6 +1,7 @@
 // Small skinned garment fittings, authored in the original Tripo bind-pose metres.
 // Colours sample the character's own atlas. Each classmate clone shares one mesh.
 import * as T from './vendor/three.module.js';
+import {refitSchoolBob} from './student-hair109.js?v=campus-109';
 import {repairJacketWeights} from './character-jacket106.js';
 
 const fits={
@@ -131,12 +132,78 @@ function softenSilhouettes(mesh,variant){
  position.needsUpdate=true;normal.needsUpdate=true;mesh.geometry.computeBoundingSphere();
 }
 
+// The scan carries raised, irregular moustache ridges. Relax this narrow
+// strip onto the upper lip measured at six cross sections. The grin, nose
+// and surrounding jaw keep their existing silhouette.
+function smoothTeacherLip(mesh){
+ const samples=[[0,.282],[.045,.273],[.090,.246],[.135,.213],[.16,.187],[.19,.148]];
+ const {position,normal}=mesh.geometry.attributes,rest=mesh.matrixWorld;
+ const local=rest.clone().invert(),toLocal=new T.Matrix3().getNormalMatrix(local);
+ const point=new T.Vector3(),targetNormal=new T.Vector3(),authored=new T.Vector3();
+ for(let i=0;i<position.count;i++){
+  point.fromBufferAttribute(position,i).applyMatrix4(rest);
+  const x=Math.abs(point.x),axis=1.680+.73*x*x,dy=point.y-axis;
+  if(x>=.187||Math.abs(dy)>.031||point.z<.144)continue;
+  const j=samples.findIndex(pair=>pair[0]>x),[a,b]=[samples[j-1],samples[j]];
+  const slope=(b[1]-a[1])/(b[0]-a[0]);
+  const z=a[1]+slope*(x-a[0])+.26*dy;
+  if(Math.abs(z-point.z)>.036)continue;
+  const w=(1-T.MathUtils.smoothstep(Math.abs(dy),.013,.031))*(1-T.MathUtils.smoothstep(x,.16,.187));
+  point.z+=.79*w*(z-point.z);point.applyMatrix4(local);
+  position.setXYZ(i,point.x,point.y,point.z);
+  targetNormal.set(-slope*Math.sign(point.x),-.26,1).applyMatrix3(toLocal).normalize();
+  authored.fromBufferAttribute(normal,i).lerp(targetNormal,.91*w).normalize();
+  normal.setXYZ(i,authored.x,authored.y,authored.z);
+ }
+ position.needsUpdate=normal.needsUpdate=true;
+}
+// Fit the school jacket around the forearm axis. Both UV copies of a seam
+// move by the same distance; the hand, its knuckles and their grip are intact.
+function fitStudentDetails(mesh,variant){
+ if(variant==='teacher'){smoothTeacherLip(mesh);return;}
+ const {position}=mesh.geometry.attributes,inverse=mesh.matrixWorld.clone().invert();
+ const joints=mesh.skeleton.bones,point=new T.Vector3(),delta=new T.Vector3();
+ const cuffs=['Left','Right'].map(side=>{
+  const joint=suffix=>joints.find(b=>b.name.endsWith(side+suffix)).getWorldPosition(new T.Vector3());
+  const wrist=joint('Hand');
+  return {wrist,axis:wrist.clone().sub(joint('ForeArm')).normalize()};
+ });
+ const edge={boy:-.484,girl:-.500,glasses:-.504,ponytail:-.481}[variant];
+ const smooth=T.MathUtils.smoothstep;
+ for(let i=0;i<position.count;i++){
+  point.fromBufferAttribute(position,i).applyMatrix4(mesh.matrixWorld);
+  const x=Math.abs(point.x),y=point.y,z=point.z;
+  if(variant!=='girl'&&x>.210&&y>1.20&&y<1.50&&Math.abs(z+.030)<.16){
+   const above=variant==='ponytail'?1.29:1.35;
+   const lobe=smooth(x,.214,.288)*(1-smooth(Math.abs(z+.025),.060,.15))*(1-smooth(Math.abs(y-above),.071,.115));
+   point.x-=Math.sign(point.x)*.027*lobe;point.y+=(above-y)*.22*lobe;
+  }
+  if(x>.27&&y<1.0&&y>.64){
+   const t=.48*x-.877*y-edge;
+   const taper=smooth(t,-.095,-.037)*(1-smooth(t,-.011,.001));
+   const cuff=cuffs[point.x>0?0:1];delta.copy(point).sub(cuff.wrist);
+   delta.addScaledVector(cuff.axis,-delta.dot(cuff.axis));
+   point.addScaledVector(delta,-.16*taper);
+  }
+  if(variant==='glasses'&&y>1.53&&y<1.77&&z>.125){
+   const t=T.MathUtils.clamp((y-1.53)/.23,0,1);
+   const gap=Math.min(Math.abs(point.x+.111-.031*t),Math.abs(point.x-.035+.025*t));
+   const groove=(1-smooth(gap,.001,.018))*(1-t)*smooth(z,.12,.19);
+   point.z-=.015*groove;point.y+=.007*groove;
+  }
+  point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);
+ }
+ position.needsUpdate=true;mesh.geometry.computeBoundingSphere();
+}
+
 export function fitUniform(model,variant){
  const fit=fits[variant];if(!fit)return;
  repairJacketWeights(model);
  model.updateMatrixWorld(true);
  model.traverse(mesh=>{
   if(!mesh.isSkinnedMesh||mesh.geometry.userData.uniformFitted)return;
+  fitStudentDetails(mesh,variant);
+  if(variant==='girl')refitSchoolBob(mesh);
   softenSilhouettes(mesh,variant);
   const geometry=mesh.geometry,attributes=geometry.attributes,sample=frontSampler(mesh);
   const inverse=mesh.matrixWorld.clone().invert(),normalToLocal=new T.Matrix3().getNormalMatrix(inverse);

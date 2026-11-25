@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-108';
+import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-109';
 
 // Masks use the original model's metre-space rest pose, before skinning. They
 // therefore follow the head through sitting, struggling and floor stuns without
@@ -11,7 +11,7 @@ const profiles={
  glasses:{bounds:[1.16,1.65,.32,-.025],skin:'#ffc8a5'},
  teacher:{bounds:[1.48,2.04,.36,-.025],skin:'#ffdc71',eyes:[{center:[-.116,1.827,.219],radius:[.089,.107]},{center:[.114,1.827,.219],radius:[.089,.107]}]}
 };
-const hairPalette={boy:'#403b34',girl:'#906e83',ponytail:'#876e59',glasses:'#4b4138'};
+const hairPalette={boy:'#403b34',girl:'#906e83',ponytail:'#876e59',glasses:'#4d493e'};
 // Rest-pose heights of the white shoulder yokes and midtones sampled on each
 // imported jacket. The sewn panels keep their shape when an arm is raised.
 const jackets={
@@ -38,7 +38,18 @@ function garmentFragment(variant){
  float blueDye=smoothstep(.18,.48,c.b-c.r)*smoothstep(.08,.23,c.g-c.r);
  float badge=smoothstep(.10,.24,c.r-c.b)*smoothstep(.035,.085,p.z);
  vec3 whiteCloth=vec3(.995,.990,1.)*clamp(dot(c,vec3(.30,.59,.11)),.912,.997);
- diffuseColor.rgb=mix(diffuseColor.rgb,whiteCloth,shoulder*(1.-max(blueDye,badge)));`;
+ diffuseColor.rgb=mix(diffuseColor.rgb,whiteCloth,shoulder*(1.-max(blueDye,badge)));
+ // A single cut of white cloth crosses the top of each outer sleeve. Its
+ // edge follows the shoulder instead of the irregular source UV islands.
+ float outer=cloth*smoothstep(.162,.234,ax)*smoothstep(.86,.90,p.y)*(1.-smoothstep(1.13,1.16,p.y));
+ float seamY=uniformYoke-.32*max(0.,ax-.20)+.045*p.z;
+ float aa=max(fwidth(p.y-seamY),.0014);
+ float panel=smoothstep(-aa,aa,p.y-seamY);
+ vec3 sleeve=mix(uniformTone*(.94+.07*smoothstep(-.10,.09,p.z)),vec3(.957,.954,.949),panel);
+ diffuseColor.rgb=mix(diffuseColor.rgb,sleeve,outer);
+ float back=(1.-smoothstep(-.042,.034,p.z))*(1.-smoothstep(.19,.24,ax));
+ float yokeBack=cloth*back*smoothstep(.886,.91,p.y)*(1.-smoothstep(1.117,1.154,p.y));
+ diffuseColor.rgb=mix(diffuseColor.rgb,sleeve,yokeBack);`;
 }
 export function createFacialEffects(model,{variant='boy'}={}){
  const profile=profiles[variant]||profiles.boy,rawEyes=profile.eyes||STUDENT_EYE_REGIONS[variant]||[],owned=[];
@@ -113,15 +124,32 @@ vec2 lidMask(vec4 eye){
  hairColor*=1.-crest*(.25+.44*underside);`:''}
  ${variant==='girl'||variant==='ponytail'?`float plane=smoothstep(-.45,.85,dot(n,normalize(vec3(.36,.83,.25))));
  hairColor*=.71+.32*plane;`:''}
- ${variant==='girl'?`float t=clamp((faceRestPosition.y-1.50)/.145,0.,1.);
- float part=min(abs(faceRestPosition.x+.089-.017*t),abs(faceRestPosition.x-.034-.019*t));
- float seam=(1.-smoothstep(.002,.012*(1.-t)+.003,part))*smoothstep(.17,.235,faceRestPosition.z)*smoothstep(1.49,1.53,faceRestPosition.y)*(1.-smoothstep(.62,1.,t));
- hairColor*=1.-.48*seam;`:''}
+ ${variant==='girl'?`float hemShade=1.-smoothstep(1.20,1.41,p.y);
+ hairColor*=mix(vec3(1.),vec3(.80,.75,.84),hemShade);`:''}
  diffuseColor.rgb=mix(c,hairColor,hairMask);
- // Retain the warmer baked folds around the ears and nose, cooling just the
- // peach pigment shared by visible skin on the original student atlas.
+ // Unify the clay skin midtone and keep the small folds from the original atlas.
  float complexion=smoothstep(.105,.28,c.r-c.g)*smoothstep(.045,.13,c.g-c.b)*smoothstep(.33,.65,c.r);
- diffuseColor.rgb*=mix(vec3(1.),vec3(.839,.938,1.024),complexion);
+ vec3 warmSkin=mix(c,vec3(.990,.640,.435),.25);
+ diffuseColor.rgb=mix(diffuseColor.rgb,warmSkin,complexion*(1.-hairMask));
+ ${variant==='glasses'?`// Only the front discs get this finish. Keep the frame, bridge and arms.
+ float lensFront=smoothstep(.132,.194,p.z)*smoothstep(1.332,1.363,p.y)*(1.-smoothstep(1.52,1.558,p.y));
+ float lens= lensFront*smoothstep(.21,.51,min(c.r,min(c.b,c.g)))*(1.-smoothstep(.038,.13,c.r-c.b));
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.931,.909,.800),lens);
+ float t=clamp((p.y-1.535)/.18,0.,1.);
+ float gap=min(abs(p.x+.111-.031*t),abs(p.x-.035+.025*t));
+ float part=(1.-smoothstep(.001,.004+.009*(1.-t),gap))*(1.-smoothstep(.50,1.,t))*smoothstep(.12,.19,p.z);
+ diffuseColor.rgb*=1.-.61*part*hairMask;`:''}
+ ${variant==='girl'||variant==='ponytail'?`
+ // On the two girls the lip reads as one short pen-like stroke from a desk away.
+ float mouthY=${variant==='girl'?'1.303':'1.250'};
+ float mouthX=p.x+.004;
+ float lipZone=(1.-smoothstep(.052,.068,abs(mouthX)))*(1.-smoothstep(.012,.022,abs(p.y-mouthY)))*smoothstep(.09,.13,p.z);
+ float oldLip=smoothstep(.10,.28,c.r-c.g)*(1.-smoothstep(.43,.65,c.g));
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.974,.603,.407),oldLip*lipZone);
+ float strokeY=mouthY+.025*mouthX-.26*mouthX*mouthX;
+ float lipDist=length(vec2(max(abs(mouthX)-.049,0.),p.y-strokeY))-.0029;
+ float lipAA=max(fwidth(lipDist)*.60,.00045);
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.165,.058,.028),lipZone*(1.-smoothstep(-lipAA,lipAA,lipDist)));`:''}
  ${variant==='girl'?`// The little light-coloured bar belongs to this side of the bob.
  float temple=smoothstep(.185,.220,p.x)*smoothstep(1.526,1.548,p.y)*(1.-smoothstep(1.636,1.655,p.y))*
               smoothstep(-.012,.008,p.z)*(1.-smoothstep(.116,.135,p.z));
@@ -135,7 +163,7 @@ vec2 lidMask(vec4 eye){
  diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.98,.79,.84),temple*pin);`:''}`:''}
  ${variant==='teacher'?`float axis=1.680+.73*p.x*p.x;
  float band=(1.-smoothstep(.017,.024,abs(p.y-axis)))*(1.-smoothstep(.163,.188,abs(p.x)))*smoothstep(.142,.162,p.z);
- float stain=1.-smoothstep(.35,.82,c.r);
+ float stain=1.-smoothstep(.54,.96,c.r);
  vec3 skin=mix(vec3(.965,.63,.15),vec3(.89,.56,.13),smoothstep(.03,.19,abs(p.x)));
  diffuseColor.rgb=mix(diffuseColor.rgb,skin,band*stain);
  float tri=1.-4.*abs(fract((p.x+.006)/.022)-.5);
@@ -151,6 +179,17 @@ vec2 lidMask(vec4 eye){
  face*=smoothstep(faceBounds.w,faceBounds.w+.025,faceRestPosition.z);
  diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.002,.0025,.003),face*faceInk);
 `);
+   if(variant==='glasses'){
+    // The broad, opaque panes have a continuous face. Interpolating the
+    // imported fan's cavity at its centre produces a spurious pinwheel.
+    shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
+     #ifndef CAMPUS_NIGHT
+      float paneLight=.94+.045*smoothstep(1.355,1.52,p.y);
+      outgoingLight=mix(outgoingLight,diffuseColor.rgb*paneLight,.97*lens*(1.-faceInk));
+     #endif
+     #include <opaque_fragment>`);
+   }
+
    };
    material.customProgramCacheKey=()=>cache()+'-face64-'+variant;owned.push(material);return material;
   };
