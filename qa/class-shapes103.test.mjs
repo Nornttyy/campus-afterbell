@@ -20,3 +20,21 @@ for(const [name,parts] of Object.entries(table))test(name+' uses the lighter geo
  }
  assert.ok(removed>0,'a verified GLB must render fewer triangles');
 });
+
+test('daylight shading is baked for all five bodies and both pairs of first-person hands',async()=>{
+ const {applyCharacterOcclusion}=await import('../dist/model-delivery93.js');
+ const raw=await readFile(new URL('../dist/assets/models/character-occlusion108.bin',import.meta.url));
+ const offset=raw.readUInt32LE(0),parts=JSON.parse(raw.toString('utf8',4,offset)),bytes=raw.subarray(offset);
+ const names=['student-boy-v4','student-girl-v4','student-glasses-v2','student-ponytail-v1','teacher-v2','hand-left-v3','hand-right-v3','teacher-hand-left-v1','teacher-hand-right-v1'];
+ for(const name of names){
+  const model=await loadGeometry(name+'.glb');applyCharacterOcclusion(model,parts[name],bytes);
+  let shaded=false;
+  model.scene.traverse(mesh=>{
+   if(!mesh.isMesh)return;
+   const ao=mesh.geometry.attributes.campusOcclusion;
+   assert.equal(ao.count,mesh.geometry.attributes.position.count);assert.ok(ao.normalized);
+   shaded||=ao.array.some(x=>x>80)&&ao.array.some(x=>x<12);
+  });
+  assert.ok(shaded,name);
+ }
+});

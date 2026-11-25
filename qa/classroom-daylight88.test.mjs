@@ -4,6 +4,21 @@ import * as T from '../dist/vendor/three.module.js';
 import {CLASSROOM,CORRIDOR,DOORS,START_BELL_POSITION} from '../dist/classroom-layout.js';
 import {campusScene} from './campus-geometry54-helpers.mjs';
 
+test('ordinary classroom floor shade follows the physical desk and chair when a layout changes',()=>{
+ const {campus,dispose}=campusScene();
+ try{
+  const {setSeats,seatShade}=campus.daylight,{data,width,height}=seatShade.image;
+  const sample=(x,z)=>data[Math.floor((z-CLASSROOM.minZ)/(CLASSROOM.maxZ-CLASSROOM.minZ)*height)*width+
+    Math.floor((x-CLASSROOM.minX)/(CLASSROOM.maxX-CLASSROOM.minX)*width)];
+  setSeats([{deskX:-2,deskZ:1,x:-2.78,z:1,yaw:Math.PI/2}]);
+  assert.ok(sample(-2,1)>95&&sample(-2.78,1)>75);
+  assert.equal(sample(1,1),0);
+  setSeats([{deskX:2,deskZ:-2,x:2,z:-2.78,yaw:0}]);
+  assert.equal(sample(-2,1),0);
+  assert.ok(sample(2,-2)>95&&sample(2,-2.78)>75);
+ }finally{dispose();}
+});
+
 test('daylight comes through real openings and follows both rows of hall fixtures',()=>{
  const {campus,dispose}=campusScene();
  try{

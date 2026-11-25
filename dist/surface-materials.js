@@ -44,7 +44,7 @@ export function addTerrazzoGrout(material){
     vec2 cellEdge=min(fract(slabUv),1.0-fract(slabUv));
     vec2 antialias=max(fwidth(slabUv),vec2(0.0001));
     vec2 seam=(1.0-smoothstep(vec2(0.0013),vec2(0.0013)+antialias,cellEdge))
-                   *min(vec2(1.0),vec2(.0055)/antialias);
+                   *min(vec2(1.0),vec2(.009)/antialias);
     float slabTone=fract(sin(mod(dot(floor(slabUv),vec2(13.1,27.7)),6.283))*476.48);
     diffuseColor.rgb*=(.967+.045*slabTone)*(1.0-terrazzoJointStrength*max(seam.x,seam.y));
    #endif`).replace('#include <aomap_fragment>',`#include <aomap_fragment>

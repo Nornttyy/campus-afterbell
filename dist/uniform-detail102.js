@@ -75,12 +75,69 @@ function fittings(fit,point,triangle){
  }
 }
 
+// Work on the imported bind-pose surface before cloning classmates. UV seams
+// have duplicate indices; moving those indices together keeps the cuff closed.
+function softenSilhouettes(mesh,variant){
+ const {position,normal,skinIndex,skinWeight}=mesh.geometry.attributes;
+ const bones=mesh.skeleton.bones,teacher=variant==='teacher';
+ const joint=teacher?'ForeArm':'Hand';
+ const anchors=bones.filter(b=>b.name.endsWith('Left'+joint)||b.name.endsWith('Right'+joint)).map(b=>b.getWorldPosition(new T.Vector3()));
+ const sleeveJoint=bones.map(b=>teacher?/Arm$/.test(b.name):/ForeArm$/.test(b.name));
+ const inverse=mesh.matrixWorld.clone().invert(),toLocal=new T.Matrix3().getNormalMatrix(inverse);
+ const points=[],byPosition=new Map(),nodes=[],up=new T.Vector3(),surface=new T.Vector3(),side=new T.Vector3();
+ for(let i=0;i<position.count;i++){
+  const p=new T.Vector3().fromBufferAttribute(position,i).applyMatrix4(mesh.matrixWorld);
+  points.push(p);
+  const crown=teacher?0:T.MathUtils.smoothstep(p.y,variant==='ponytail'?1.53:1.59,variant==='ponytail'?1.63:1.69);
+  let cloth=0;
+  if(anchors.some(a=>a.distanceToSquared(p)<.15*.15)){
+   for(let k=0;k<4;k++)if(sleeveJoint[skinIndex.getComponent(i,k)])cloth+=skinWeight.getComponent(i,k);
+  }
+  const weight=Math.max(crown,T.MathUtils.smoothstep(cloth,.35,.84));
+  if(!weight)continue;
+  const key=[p.x,p.y,p.z].map(v=>Math.round(v*1e5)).join('/');
+  let node=byPosition.get(key);
+  if(!node){node={p,weight,neighbors:new Map(),normal:new T.Vector3(),indices:[]};byPosition.set(key,node);}
+  node.indices.push(i);nodes[i]=node;
+ }
+ const idx=mesh.geometry.index.array;
+ for(let i=0;i<idx.length;i+=3){
+  const a=idx[i],b=idx[i+1],c=idx[i+2];
+  if(!nodes[a]&&!nodes[b]&&!nodes[c])continue;
+  surface.subVectors(points[b],points[a]).cross(side.subVectors(points[c],points[a]));
+  for(const [j,k,l] of [[a,b,c],[b,c,a],[c,a,b]]){
+   const node=nodes[j];if(!node)continue;
+   node.normal.add(surface);node.neighbors.set(nodes[k]||k,points[k]);node.neighbors.set(nodes[l]||l,points[l]);
+  }
+ }
+ const authored=new T.Vector3();
+ for(const node of byPosition.values()){
+  if(!node.neighbors.size||node.normal.lengthSq()<1e-18)continue;
+  up.set(0,0,0);for(const v of node.neighbors.values())up.add(v);
+  up.divideScalar(node.neighbors.size).sub(node.p);
+  node.normal.normalize();
+  // Round only the normal component so the cut line at the wrist stays put.
+  const distance=T.MathUtils.clamp(up.dot(node.normal)*.58,-.008,.008)*node.weight;
+  up.copy(node.p).addScaledVector(node.normal,distance).applyMatrix4(inverse);
+  node.normal.applyMatrix3(toLocal).normalize();
+  for(const i of node.indices){
+   position.setXYZ(i,up.x,up.y,up.z);
+   authored.fromBufferAttribute(normal,i);
+   if(authored.dot(node.normal)>.42){
+    authored.lerp(node.normal,.55*node.weight).normalize();normal.setXYZ(i,authored.x,authored.y,authored.z);
+   }
+  }
+ }
+ position.needsUpdate=true;normal.needsUpdate=true;mesh.geometry.computeBoundingSphere();
+}
+
 export function fitUniform(model,variant){
  const fit=fits[variant];if(!fit)return;
  repairJacketWeights(model);
  model.updateMatrixWorld(true);
  model.traverse(mesh=>{
   if(!mesh.isSkinnedMesh||mesh.geometry.userData.uniformFitted)return;
+  softenSilhouettes(mesh,variant);
   const geometry=mesh.geometry,attributes=geometry.attributes,sample=frontSampler(mesh);
   const inverse=mesh.matrixWorld.clone().invert(),normalToLocal=new T.Matrix3().getNormalMatrix(inverse);
   const extra=Object.fromEntries(Object.keys(attributes).map(k=>[k,[]])),cache=new Map(),indices=[];
@@ -99,6 +156,7 @@ export function fitUniform(model,variant){
    const joints=[...weights.entries()].sort((a,b)=>b[1]-a[1]).slice(0,4);
    const sum=joints.reduce((s,j)=>s+j[1],0);
    while(joints.length<4)joints.push([0,0]);
+   if(extra.campusOcclusion)extra.campusOcclusion.push(v.s.ids.reduce((sum,id,i)=>sum+attributes.campusOcclusion.getX(id)*v.s.weights[i],0));
    extra.position.push(...local.toArray());extra.normal.push(...normal.toArray());
    extra.uv.push(...fit.palette[color]);extra.skinIndex.push(...joints.map(j=>j[0]));extra.skinWeight.push(...joints.map(j=>j[1]/sum));
   }

@@ -103,7 +103,17 @@ export function finishSchoolFurniture(body,drawer,chair,grain){
   }
   tube(table,steel,[[-.532,.21,.311],[.532,.21,.311]],.014);
   tube(table,steel,[[-.532,.821,-.298],[.532,.821,-.298]],.014);
-  drawer.traverse(o=>{if(o.isMesh&&o.material?.name==='TripoFurnitureOriginalPBR')o.material=tray;});
+  drawer.traverse(o=>{
+    if(!o.isMesh)return;
+    if(['TripoFurnitureOriginalPBR','TrayInteriorPaint'].includes(o.material?.name))o.material=tray;
+    if(o.material?.name==='DrawerHandleRubber'){
+      // Keep the imported handle mounts against the front at z=-.387.
+      // The reference uses a shallow stamped pull rather than a deep rubber loop.
+      const g=o.geometry.clone(),a=g.attributes.position;
+      for(let i=0;i<a.count;i++)a.setXYZ(i,a.getX(i)*.80,.741+(a.getY(i)-.741)*.50,-.387+(a.getZ(i)+.387)*.32);
+      g.computeVertexNormals();g.computeBoundingSphere();g.computeBoundingBox();o.geometry=g;o.material=steel;
+    }
+  });
   for(const root of [table,seat,drawer])root.traverse(o=>{if(o.isMesh)o.castShadow=o.receiveShadow=true;});
   return {body:table,drawer,chair:seat,source:'tripo-furniture-v2',drawerFloor:.659};
 }

@@ -39,6 +39,27 @@ async function modelBytes(url,onProgress){
  return decoded;
 }
 
+let occlusionPack;
+function loadOcclusion(){
+ if(!occlusionPack)occlusionPack=fetch(new URL('./assets/models/character-occlusion108.bin',import.meta.url)).then(async response=>{
+  if(!response.ok)throw Error('Character shading '+response.status);
+  const bytes=await response.arrayBuffer(),offset=new DataView(bytes).getUint32(0,true);
+  return {parts:JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,4,offset-4))),values:new Uint8Array(bytes,offset)};
+ }).catch(error=>{occlusionPack=null;console.warn('Using unbaked character lighting',error);return null;});
+ return occlusionPack;
+}
+export function applyCharacterOcclusion(model,parts,values){
+ if(!parts)return;
+ model.scene.traverse(mesh=>{
+  if(!mesh.isMesh)return;
+  const id=model.parser.associations.get(mesh),range=parts[id?.meshes+'/'+id?.primitives];
+  if(!range)return;
+  const [start,count]=range;
+  if(count!==mesh.geometry.attributes.position.count||start+count>values.length)return;
+  mesh.geometry.setAttribute('campusOcclusion',new BufferAttribute(values.subarray(start,start+count),1,true));
+ });
+}
+
 let shapePack;
 function loadClassShapes(){
  if(!shapePack){
@@ -71,8 +92,9 @@ export class CampusModelLoader extends GLTFLoader{
  async loadAsync(url,onProgress){
   const asset=new URL(url,import.meta.url),file=asset.pathname.split('/').pop().replace(/\.glb$/,'');
   const packed=typeof window!=='undefined'&&asset.origin===manifestUrl.origin?loadClassShapes():null;
-  const model=await this.loadSource(url,onProgress);
-  const shapes=await packed;
+  const baked=packed&&/^(student-|teacher-|hand-)/.test(file)?loadOcclusion():null;
+  const [model,shapes,shade]=await Promise.all([this.loadSource(url,onProgress),packed,baked]);
+  if(shade)applyCharacterOcclusion(model,shade.parts[file],shade.values);
   return shapes?applyClassShape(model,shapes.table[file],shapes.indices):model;
  }
  async loadSource(url,onProgress){

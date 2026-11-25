@@ -146,3 +146,13 @@ test('power-cut lighting switches every real character and viewmodel surface to 
   setCharacterNight(scene,false);for(const [mesh,day]of originals){assert.equal(mesh.material,day);assert.equal(mesh.receiveShadow,false);}
  }
 });
+
+test('ordinary classroom characters receive window shadows and restore both alternate lighting states',()=>{
+ const model=new T.Group(),mesh=new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial());
+ model.add(mesh);useCharacterBaseColor(model);const base=mesh.material;
+ setCharacterNight(model,false,true);const window=mesh.material;
+ assert.equal(mesh.receiveShadow,true);assert.ok(window.isMeshLambertMaterial);
+ setCharacterNight(model,true);assert.notEqual(mesh.material,window);
+ setCharacterNight(model,false,true);assert.equal(mesh.material,window);
+ setCharacterNight(model,false,false);assert.equal(mesh.material,base);assert.equal(mesh.receiveShadow,false);
+});

@@ -23,6 +23,6 @@ export function ordinaryStudyState(actor,teacher,elapsed,seed=0,map=false){
  return {mood,holding:false,action:computer?'computer':null,
   _computerActive:mood==='computer',_computerApp:computer?'photoshop':'desktop',
   yaw:watch?seatYaw+clamp(wrap(toward-seatYaw),-.72,.72):seatYaw,
-  pitch:watch?-.035:mood==='reading'?.16:mood==='writing'?.24:-.02,
+  pitch:watch?-.035:mood==='reading'?.16:mood==='writing'?.48+.055*Math.sin((elapsed+offset)*.91):-.02,
   studyBookHeld:mood==='reading'};
 }

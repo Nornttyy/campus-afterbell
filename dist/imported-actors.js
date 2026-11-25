@@ -1,15 +1,15 @@
-import {fitUniform} from './uniform-detail102.js?v=campus-106';
+import {fitUniform} from './uniform-detail102.js?v=campus-108';
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
-import {createFacialEffects} from './facial-effects64.js?v=campus-106';
+import {createFacialEffects} from './facial-effects64.js?v=campus-108';
 import {requireModelBudget} from './model-budget64.js';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {normalWalkCycleRate} from './movement55.js?v=campus-93';
 import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-83';
-import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-107';
-import {createCrawlPose} from './crawl-pose.js?v=campus-107';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-107';
+import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-108';
+import {createCrawlPose} from './crawl-pose.js?v=campus-108';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-108';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-108';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-105';
 
 export async function loadTeacherModel(){
@@ -21,7 +21,7 @@ export async function loadTeacherModel(){
   const actor=create();actor.createClone=create;return actor;
 }
 
-import {finishSchoolFurniture} from './school-furniture91.js?v=campus-107';
+import {finishSchoolFurniture} from './school-furniture91.js?v=campus-108';
 
 export async function loadDeskModel(grain=null){
   const loader=new GLTFLoader();

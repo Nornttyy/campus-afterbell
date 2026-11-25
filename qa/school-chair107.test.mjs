@@ -1,3 +1,4 @@
+import {TEXTBOOK,bookSpineHeight} from '../dist/study-book58.js';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFile} from 'node:fs/promises';
@@ -53,7 +54,7 @@ for(const [variant,{file}] of Object.entries(STUDENT_ASSETS)){
  test(variant+' sits on the actual wooden chair with both shoes clear of the floor',async()=>{
   const model=await loadGeometry(file+'.glb');applyClassShape(model,table[file],indices);fitUniform(model.scene,variant);
   const actor=createRiggedStudent(model,{variant}),book=new T.Group();
-  book.position.set(0,.88,.50);book.rotation.x=Math.PI/2;actor.setStudyBook(book);
+  book.position.set(0,bookSpineHeight(Math.PI/2),TEXTBOOK.seatDistance);book.rotation.x=Math.PI/2;actor.setStudyBook(book);
   let time=0;
   for(const mood of ['resting','reading','writing','computer','snack']){
    const eating=mood==='snack';
