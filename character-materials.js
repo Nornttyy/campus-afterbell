@@ -8,32 +8,44 @@ const classroomDay={value:false};
 export function setCharacterClassroomDay(active){classroomDay.value=Boolean(active);}
 function classroomShading(shader){
  shader.uniforms.classroomDay=classroomDay;
- shader.vertexShader='attribute float campusOcclusion; varying float cavity; varying float windowValue;\n'+shader.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
+ shader.vertexShader='attribute float campusOcclusion; varying float cavity; varying vec3 classroomNormalV;\n'+shader.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
   #if defined(USE_SKINNING) || defined(USE_ENVMAP)
    vec3 classroomNormal=transformedNormal;
   #else
    vec3 classroomNormal=normalMatrix*normal;
   #endif
   cavity=campusOcclusion;
-  vec3 windowDir=mat3(viewMatrix)*normalize(vec3(-.75,.62,.24));
-  windowValue=dot(normalize(classroomNormal),windowDir)*.5+.5;`);
- shader.fragmentShader='varying float cavity; uniform bool classroomDay; varying float windowValue;\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+  classroomNormalV=normalize(classroomNormal);`);
+ shader.fragmentShader='varying float cavity; uniform bool classroomDay; varying vec3 classroomNormalV;\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
   if(classroomDay){
    // The blue textile catches cyan window light. Preserve the paper, sclera
    // and skin hues; the broad wrap gives the chin and sleeve a shaded side.
    vec3 col=diffuseColor.rgb;
    float cloth=smoothstep(.07,.29,col.b-max(col.r,col.g))*smoothstep(.12,.46,col.b);
-   diffuseColor.rgb=mix(col,vec3(col.r*.88+.018*col.b,col.g*.93+.075*col.b,col.b*.88),cloth);
+   diffuseColor.rgb=mix(col,vec3(col.r*.80+.037*col.b,col.g*.90+.114*col.b,col.b*.90),cloth);
 
   }`);
  // Apply shading after the eye, hair and shirt pigments have been restored.
  shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
   if(classroomDay){
-   float facing=smoothstep(.07,.94,windowValue);
-   outgoingLight*=mix(vec3(.61,.65,.71),vec3(1.105,1.075,1.035),facing);
+   // Broad window light and warm desk bounce read on curved surfaces. Neither
+   // depends on camera yaw. Soft cloth catches a wider lobe than skin.
+   vec3 n=normalize(classroomNormalV);
+   vec3 win=mat3(viewMatrix)*normalize(vec3(-.75,.62,.24));
+   float facing=smoothstep(-.68,.91,dot(n,win));
+   float top=dot(n,viewMatrix[1].xyz);
+   float down=smoothstep(.04,.97,-top);
+   vec3 paint=diffuseColor.rgb;
+   float skin=smoothstep(.11,.30,paint.r-paint.b)*smoothstep(.035,.12,paint.g-paint.b);
+   float blue=smoothstep(.07,.25,paint.b-paint.r)*smoothstep(.08,.40,paint.b);
+   vec3 sky=mix(vec3(.65,.67,.72),vec3(1.13,1.095,1.05),facing);
+   sky+=down*vec3(.090,.047,.018);
+   sky+=skin*(1.-facing)*vec3(.09,.034,.008);
+   float textile=pow(max(dot(n,win),0.),4.)*blue;
+   outgoingLight=outgoingLight*sky+textile*vec3(.012,.018,.024);
   }
   #ifndef CAMPUS_NIGHT
-   outgoingLight*=mix(vec3(1.),vec3(.40,.365,.35),smoothstep(.015,.76,cavity));
+   outgoingLight*=mix(vec3(1.),vec3(.46,.395,.375),smoothstep(.025,.76,cavity));
   #endif
   #include <opaque_fragment>`);
 }
@@ -54,7 +66,7 @@ function baseColorMaterial(source){
   });
   material.name=source.name;material.defaultAttributeValues={campusOcclusion:[0]};
   material.onBeforeCompile=classroomShading;
-  material.customProgramCacheKey=()=>'campus-character-window-wrap';
+  material.customProgramCacheKey=()=>'campus-character-window-cloth109';
   material.userData={...source.userData,characterBaseColor:true};
   baseMaterials.set(source,material);
  }

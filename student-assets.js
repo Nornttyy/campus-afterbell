@@ -1,29 +1,29 @@
-import {fitUniform} from './uniform-detail102.js?v=campus-108';
+import {fitUniform} from './uniform-detail102.js?v=campus-109';
 import {setDish} from './hotpot-food94.js?v=campus-94';
 import {createStudentSize} from './student-size73.js?v=campus-108';
-import {createFacialEffects} from './facial-effects64.js?v=campus-108';
+import {createFacialEffects} from './facial-effects64.js?v=campus-109';
 import {requireModelBudget} from './model-budget64.js';
 import {WRITING_PROPS} from './writing-props58.js?v=campus-83';
 import {WRITING_GRIPS} from './writing-grips58.js?v=campus-83';
 import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-108';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-109';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
-import {createToiletSeatPose} from './toilet-seat78.js?v=campus-108';
-import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-108';
-import {createBedPose} from './bed-pose78.js?v=campus-108';
-import {createMapActivityPose} from './map-activity-pose77.js?v=campus-108';
+import {createToiletSeatPose} from './toilet-seat78.js?v=campus-109';
+import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-109';
+import {createBedPose} from './bed-pose78.js?v=campus-109';
+import {createMapActivityPose} from './map-activity-pose77.js?v=campus-109';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-108';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-109';
 import {propContact} from './prop-assets.js?v=campus-83';
 import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-108';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-108';
-import {createCrawlPose} from './crawl-pose.js?v=campus-108';
-import {createStudentGestures} from './student-gestures.js?v=campus-108';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-109';
+import {createCrawlPose} from './crawl-pose.js?v=campus-109';
+import {createStudentGestures} from './student-gestures.js?v=campus-109';
 import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-83';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-105';
 import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-93';
 import {createStudentFaceShape} from './student-face-shape75.js?v=campus-83';
-import {createStudentEyes} from './student-eyes56.js?v=campus-108';
+import {createStudentEyes} from './student-eyes56.js?v=campus-109';
 import {createStudyBook,writingPageY} from './study-book58.js?v=campus-108';
 import {normalWalkCycleRate} from './movement55.js?v=campus-93';
 import {writingStroke,thirdPersonPenTime} from './study-motion64.js?v=campus-108';
@@ -101,6 +101,21 @@ function sculptFringe(model){
   const p=new T.Vector3(),inverse=mesh.matrixWorld.clone().invert();
   for(let i=0;i<positions.count;i++){
    p.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
+   if(p.z<-.10&&p.y>1.375){
+    // Slim the raised tail and sweep the end back over one shoulder. The
+    // empty gap between the tail and scalp widens toward its free tip.
+    const crest=T.MathUtils.smoothstep(p.y,1.662,1.729);
+    const split=-.347+.196*crest;
+    const strand=(1-T.MathUtils.smoothstep(p.z,split-.014,split+.018))*T.MathUtils.smoothstep(p.y,1.375,1.43);
+    if(strand){
+     const travel=T.MathUtils.smoothstep(-p.z,.165,.390);
+     p.x+=(.055*travel-.32*p.x)*strand;
+     p.z-=.025*strand*travel;
+     p.y+=strand*(.039*travel*(1-crest)-.012*crest);
+     p.applyMatrix4(inverse);positions.setXYZ(i,p.x,p.y,p.z);
+    }
+    continue;
+   }
    if(p.y<1.442||p.y>1.596||p.z<.179||Math.abs(p.x)>.14)continue;
    const t=(p.y-1.442)/.154;
    const left=-.063+.023*t,right=.070-.018*t;
@@ -129,7 +144,9 @@ function sculptSweptHair(model){
    const swept=1-T.MathUtils.smoothstep(p.x,-.08,.17);
    const tip=T.MathUtils.smoothstep(p.z,.268,.328);
    p.y+=crest*tip*(.003+.020*swept)-.020*T.MathUtils.smoothstep(p.y,1.67,1.79)*(1-front);
-   p.z-=crest*(.046+.014*(1-swept));p.x-=crest*.009*swept;
+   const part=1-T.MathUtils.smoothstep(Math.abs(p.x+.096-.39*(p.z-.24)),.006,.043);
+   p.z-=crest*(.046+.014*(1-swept)+.028*part);
+   p.y+=crest*tip*(.011*swept-.013*part);p.x-=crest*.009*swept;
    p.applyMatrix4(inv);pos.setXYZ(i,p.x,p.y,p.z);
   }
   pos.needsUpdate=true;g.computeBoundingSphere();
