@@ -87,7 +87,7 @@ function prepareEyeShell(source,restFromLocal,variant){
  shapeSclera(body,points,restFromLocal,variant,weights);
  body.setAttribute('studentEyeWeights',new T.BufferAttribute(weights,2));
  const outer=[],opaque=[],idx=body.index.array;
- const rim=(v,r)=>Math.hypot((v.x-r.center[0])/r.radius[0],(v.y-r.center[1])/r.radius[1])<1.38&&v.z>r.center[2]-.020;
+ const rim=(v,r)=>Math.hypot((v.x-r.center[0])/r.radius[0],(v.y-r.center[1])/r.radius[1])<1.46&&v.z>r.center[2]-.071;
  for(let i=0;i<idx.length;i+=3){
   const a=idx[i],b=idx[i+1],c=idx[i+2];
   const eyeFace=regions.some(r=>[a,b,c].some(v=>rim(points[v],r)))||
@@ -144,7 +144,13 @@ function eyeShellMaterial(source,regions,rest,optics){
    float neutral=smoothstep(.25,.49,low)*(1.-smoothstep(.06,.16,high-low));
    float eyeRadius=min(length((eyeRest.xy-eyeArea0.xy)/eyeArea0.zw),length((eyeRest.xy-eyeArea1.xy)/eyeArea1.zw));
    float rim=1.-smoothstep(1.18,1.35,eyeRadius);
-   float sclera=max(wall,neutral*rim);
+   vec4 area=abs(eyeRest.x-eyeArea0.x)<abs(eyeRest.x-eyeArea1.x)?eyeArea0:eyeArea1;
+   float edgeDepth=area.x==eyeArea0.x?eyeFront0.x:eyeFront1.x;
+   // The bulb's outer flank is behind its front plane. Dark, cool ink
+   // baked into that white rim must not reappear when viewed from the side.
+   float cool=smoothstep(.53,.77,diffuseColor.b/max(diffuseColor.r,.001));
+   float flank=(1.-smoothstep(1.29,1.42,eyeRadius))*smoothstep(edgeDepth-.085,edgeDepth-.059,eyeRest.z);
+   float sclera=max(max(wall,neutral*rim),cool*flank);
    float white=1.-.088*smoothstep(.64,1.10,eyeRadius);
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(white),sclera);
    vec3 origin=(eyeBindFromView*vec4(eyeView,1.)).xyz;

@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-105';
+import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-106';
 
 // Masks use the original model's metre-space rest pose, before skinning. They
 // therefore follow the head through sitting, struggling and floor stuns without
@@ -12,6 +12,34 @@ const profiles={
  teacher:{bounds:[1.48,2.04,.36,-.025],skin:'#ffdc71',eyes:[{center:[-.116,1.827,.219],radius:[.089,.107]},{center:[.114,1.827,.219],radius:[.089,.107]}]}
 };
 const hairPalette={boy:'#403b34',girl:'#906e83',ponytail:'#876e59',glasses:'#4b4138'};
+// Rest-pose heights of the white shoulder yokes and midtones sampled on each
+// imported jacket. The sewn panels keep their shape when an arm is raised.
+const jackets={
+ boy:[1.009,'#298ef9'],girl:[1.018,'#3187fb'],
+ ponytail:[.990,'#1e6cf5'],glasses:[.954,'#2d84f9']
+};
+function garmentFragment(variant){
+ if(variant==='teacher')return `
+ // Repair colour transferred from the arms onto the exposed shirt side.
+ // The original buttons, collar and pen sit on the front of the torso.
+ float sideCloth=cloth*smoothstep(.095,.15,abs(p.x))*(1.-smoothstep(.215,.255,abs(p.x)))*(1.-smoothstep(.09,.15,abs(p.z)));
+ float shirt=sideCloth*smoothstep(.86,.91,p.y)*(1.-smoothstep(1.32,1.39,p.y));
+ float gold=smoothstep(.035,.12,c.r-c.b);
+ float dirty=max(gold,1.-smoothstep(.26,.52,min(c.r,c.g)));
+ diffuseColor.rgb=mix(c,uniformTone*(.95+.05*smoothstep(.86,1.32,p.y)),shirt*dirty);`;
+ return `
+ float ax=abs(p.x);
+ float sideCloth=cloth*smoothstep(.103,.161,ax)*(1.-smoothstep(.082,.148,abs(p.z)));
+ float yoke=uniformYoke-.12*max(0.,ax-.22);
+ float flank=sideCloth*smoothstep(.672,.694,p.y)*(1.-smoothstep(yoke-.041,yoke-.008,p.y));
+ float shade=.90+.10*smoothstep(-.13,.11,p.z);
+ diffuseColor.rgb=mix(c,uniformTone*shade,flank);
+ float shoulder=cloth*smoothstep(.080,.146,ax)*smoothstep(yoke-.028,yoke+.002,p.y)*(1.-smoothstep(1.15,1.19,p.y));
+ float blueDye=smoothstep(.18,.48,c.b-c.r)*smoothstep(.08,.23,c.g-c.r);
+ float badge=smoothstep(.10,.24,c.r-c.b)*smoothstep(.035,.085,p.z);
+ vec3 whiteCloth=vec3(.995,.990,1.)*clamp(dot(c,vec3(.30,.59,.11)),.912,.997);
+ diffuseColor.rgb=mix(diffuseColor.rgb,whiteCloth,shoulder*(1.-max(blueDye,badge)));`;
+}
 export function createFacialEffects(model,{variant='boy'}={}){
  const profile=profiles[variant]||profiles.boy,rawEyes=profile.eyes||STUDENT_EYE_REGIONS[variant]||[],owned=[];
  // Gaze regions deliberately cover only the pupil/front. A closed eyelid must
@@ -22,14 +50,17 @@ export function createFacialEffects(model,{variant='boy'}={}){
  model.updateWorldMatrix(true,true);
  model.traverse(mesh=>{
   if(!mesh.isSkinnedMesh)return;
+  const joints=mesh.skeleton.bones;
+  const index=name=>joints.findIndex(b=>b.name.replace(/^mixamorig[:_]?/,'')===name);
+  const garmentBones=new T.Vector4(index('Spine'),index('LeftForeArm'),index('RightShoulder'),index('RightForeArm'));
   const rest=mesh.matrixWorld.clone(),normalFromLocal=new T.Matrix3().getNormalMatrix(rest);
   const patch=source=>{
    const material=source.clone(),previous=source.onBeforeCompile,cache=source.customProgramCacheKey.bind(source);
    material.onBeforeCompile=shader=>{
-    previous.call(source,shader);Object.assign(shader.uniforms,uniforms,{faceRestFromLocal:{value:rest},hairNormalFromLocal:{value:normalFromLocal}});
-    shader.vertexShader='varying vec3 faceRestPosition, hairNormal;\nuniform mat4 faceRestFromLocal; uniform mat3 hairNormalFromLocal;\n'+shader.vertexShader;
-    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nfaceRestPosition=(faceRestFromLocal*vec4(position,1.)).xyz;hairNormal=hairNormalFromLocal*normal;');
-    shader.fragmentShader=`varying vec3 faceRestPosition, hairNormal;
+    previous.call(source,shader);Object.assign(shader.uniforms,uniforms,{faceRestFromLocal:{value:rest},hairNormalFromLocal:{value:normalFromLocal},garmentBones:{value:garmentBones},uniformTone:{value:new T.Color(jackets[variant]?.[1]||'#dce5d1')},uniformYoke:{value:jackets[variant]?.[0]||0}});
+    shader.vertexShader='uniform vec4 garmentBones; varying float garmentWeight; varying vec3 faceRestPosition, hairNormal;\nuniform mat4 faceRestFromLocal; uniform mat3 hairNormalFromLocal;\n'+shader.vertexShader;
+    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvec4 armBones=step(garmentBones.x-.5,skinIndex)*(1.-step(garmentBones.y+.5,skinIndex))+step(garmentBones.z-.5,skinIndex)*(1.-step(garmentBones.w+.5,skinIndex));garmentWeight=dot(armBones+vec4(1.)-step(vec4(.5),skinIndex),skinWeight);faceRestPosition=(faceRestFromLocal*vec4(position,1.)).xyz;hairNormal=hairNormalFromLocal*normal;');
+    shader.fragmentShader=`varying float garmentWeight; uniform vec3 uniformTone; uniform float uniformYoke; varying vec3 faceRestPosition, hairNormal;
 ${hair?'uniform vec3 hairTone;':''}
 uniform float faceClosed;uniform float faceInk;uniform vec4 faceBounds;
 uniform vec4 faceEyeL;uniform vec4 faceEyeR;uniform vec3 faceSkin;
@@ -42,7 +73,10 @@ vec2 lidMask(vec4 eye){
 }
 `+shader.fragmentShader;
     shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
- ${hair?`vec3 c=diffuseColor.rgb;
+ vec3 p=faceRestPosition,c=diffuseColor.rgb;
+ float cloth=smoothstep(.58,.93,garmentWeight);
+ { ${garmentFragment(variant)} }
+ ${hair?`c=diffuseColor.rgb;
  // The dark hair in the existing atlas shares a material with brows, lenses,
  // pupils and skin. Restrict the change to the cranium and side/back locks.
  float crown=smoothstep(${variant==='ponytail'?'1.428,1.455':'1.485,1.52'},faceRestPosition.y);
@@ -54,6 +88,7 @@ vec2 lidMask(vec4 eye){
  ${variant==='girl'?`float violet=smoothstep(.018,.065,c.r-c.g)*smoothstep(.007,.05,c.b-c.g);
  hairMask=violet*smoothstep(.96,1.04,faceRestPosition.y);`:''}
  hairMask*=1.-smoothstep(.055,.18,c.b-1.6*c.r);
+ hairMask*=1.-cloth;
  float value=dot(c,vec3(.30,.59,.11));
  float crownLight=smoothstep(1.37,1.68,faceRestPosition.y+.20*faceRestPosition.z-.17*faceRestPosition.x);
  float shade=.56+.37*crownLight+.17*smoothstep(.001,.052,value);

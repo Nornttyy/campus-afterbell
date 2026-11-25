@@ -30,10 +30,19 @@ for(const file of files){
    const teacher=file==='teacher-v2';
    const face=p.z>(teacher ? .08 : .05)&&p.y>(teacher?1.48:1.18)&&p.y<(teacher?2.03:file.includes('ponytail')?1.45:1.52);
    if(face)protect[i]=1;
+   // Side-view ears and weighted hinge rings need their original edges.
+   // A triangle spanning one of these bends appears as a flat flap in motion.
+   const ear=Math.abs(p.x)>(teacher?.195:.18)&&p.y>(teacher?1.65:1.28)&&p.y<(teacher?1.90:1.50)&&p.z>-.115&&p.z<.07;
+   if(ear)protect[i]=1;
+   let dominant=0,hinge=false;
    for(let j=0;j<4;j++){
     const bone=node.skeleton.bones[joints.getComponent(i,j)];
-    if(weights.getComponent(i,j)>.05&&/Hand/.test(bone.name))protect[i]=1;
+    const weight=weights.getComponent(i,j);
+    if(weight>.05&&/Hand/.test(bone.name))protect[i]=1;
+    if(weight>.10&&/Shoulder|Arm|Leg/.test(bone.name))hinge=true;
+    dominant=Math.max(dominant,weight);
    }
+   if(hinge&&dominant<.80)protect[i]=1;
   }
   for(let i=0;i<old.length;i+=3){
    const target=protect[old[i]]||protect[old[i+1]]||protect[old[i+2]]?fixed:body;
