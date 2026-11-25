@@ -117,7 +117,8 @@ const finishes={
    diffuseColor.rgb*=mix(vec3(.88,.91,.96),vec3(1.13,1.10,1.065),pool);
   }`,
  furniture:`float wood88=smoothstep(1.22,1.72,diffuseColor.r/max(.001,diffuseColor.g))*(1.0-smoothstep(.50,.86,diffuseColor.b/max(.001,diffuseColor.g)));
-  diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.90,1.04,.89),wood88);`,
+  vec3 finish88=ordinaryClass103?vec3(.94,.80,.70):vec3(.90,1.04,.89);
+  diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*finish88,wood88);`,
  ceiling:`if(hall88){
    vec2 course88=vec2((p88.x-${f(CORRIDOR.minX)})/.67,p88.z/2.8);
    course88.y+=.5*mod(floor(course88.x),2.0);
@@ -139,7 +140,7 @@ const finishes={
 };
 
 export function createClassroomDaylight(openings,lamps){
- const map=makeBounceMap(openings,lamps),windowMask=makeWindowMask(openings),enabled={value:false},bound=new Set(),glassMaterials=[];
+ const map=makeBounceMap(openings,lamps),windowMask=makeWindowMask(openings),enabled={value:false},ordinary={value:false},bound=new Set(),glassMaterials=[];
  // Include both poses of the swinging classroom doors and the office door.
  const paneBounds=[
   new T.Box3(new T.Vector3(partition-1.7,1.04,CLASSROOM.minZ-.2),new T.Vector3(partition+1.7,4.22,CLASSROOM.maxZ+.2)),
@@ -153,7 +154,7 @@ export function createClassroomDaylight(openings,lamps){
   const previous=material.onBeforeCompile,key=material.customProgramCacheKey();
   material.onBeforeCompile=function(shader,renderer){
    previous.call(this,shader,renderer);
-   shader.uniforms.campusWindow94={value:windowMask};shader.uniforms.campusDay88=enabled;shader.uniforms.campusBounce88={value:map};
+   shader.uniforms.ordinaryClass103=ordinary;shader.uniforms.campusWindow94={value:windowMask};shader.uniforms.campusDay88=enabled;shader.uniforms.campusBounce88={value:map};
    const vary='varying vec3 vCampusPosition88;\n'+(finish==='glass'?'varying vec2 vPaneUv88;\n':'');
    shader.vertexShader=vary+shader.vertexShader.replace('#include <worldpos_vertex>',`#include <worldpos_vertex>
     vec4 local88=vec4(transformed,1.0);
@@ -165,7 +166,7 @@ export function createClassroomDaylight(openings,lamps){
     #endif
     vCampusPosition88=(modelMatrix*local88).xyz;
     ${finish==='glass'?'vPaneUv88=uv;':''}`);
-   shader.fragmentShader=sunlight+vary+'uniform bool campusDay88;\nuniform sampler2D campusBounce88;\n'+shader.fragmentShader
+   shader.fragmentShader=sunlight+vary+ 'uniform bool ordinaryClass103;uniform bool campusDay88;\nuniform sampler2D campusBounce88;\n'+shader.fragmentShader
     .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
      ${location}
      float day88=0.0;vec4 field88=vec4(1.0);
@@ -177,12 +178,16 @@ export function createClassroomDaylight(openings,lamps){
     .replace('#include <aomap_fragment>',`#include <aomap_fragment>
      if(campusDay88&&inside88){
       reflectedLight.indirectDiffuse*=mix(vec3(.86,.89,.87),vec3(1.14,1.11,1.07),day88);
+      if(ordinaryClass103&&!hall88){
+       // A cool shadow at the far aisle, a soft warm return from the courtyard.
+       reflectedLight.indirectDiffuse*=mix(vec3(.81,.91,.98),vec3(1.07,1.04,.99),day88);
+      }
       ${portableSun}
      }`);
   };
   material.customProgramCacheKey=()=>key+'-daylight88-'+finish;material.needsUpdate=true;
  }
- return{map,windowMask,sky:makeDaySky(),bind,
+ return{map,windowMask,sky:makeDaySky(),bind,setOrdinary(value){ordinary.value=value;},
   setActive(value){
    if(enabled.value===Boolean(value))return;
    enabled.value=Boolean(value);

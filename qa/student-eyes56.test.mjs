@@ -12,7 +12,8 @@ for(const variant of Object.keys(STUDENT_EYE_REGIONS))test(variant+' has two fix
  let mesh;asset.scene.traverse(o=>{if(o.isSkinnedMesh)mesh=o;});
  const source=mesh.geometry,oldUV=source.attributes.uv.array,originalTriangles=source.index.count;
  const eyes=createStudentEyes(asset.scene,{variant}),balls=asset.scene.getObjectByName('student-eye-interiors'),wall=asset.scene.getObjectByName('student-sclera-shell');
- assert.equal(balls.count,2);assert.equal(wall.skeleton,mesh.skeleton);assert.ok(wall.material.transparent);assert.equal(wall.material.depthWrite,false);
+ assert.equal(balls.count,2);assert.equal(wall.skeleton,mesh.skeleton);assert.equal(wall.material.transparent,false,'the near eye must occlude the far eye in profile');
+ assert.equal(wall.material.depthWrite,true,'adjacent skin triangles must respect the visible eye surface');
  assert.equal(mesh.geometry.index.count+wall.geometry.index.count,originalTriangles);
  assert.equal(wall.geometry.attributes.position,mesh.geometry.attributes.position);
  assert.deepEqual(mesh.geometry.attributes.uv.array,oldUV);

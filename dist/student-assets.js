@@ -1,29 +1,29 @@
 import {fitUniform} from './uniform-detail102.js?v=campus-102';
 import {setDish} from './hotpot-food94.js?v=campus-94';
 import {createStudentSize} from './student-size73.js?v=campus-83';
-import {createFacialEffects} from './facial-effects64.js?v=campus-102';
+import {createFacialEffects} from './facial-effects64.js?v=campus-103';
 import {requireModelBudget} from './model-budget64.js';
 import {WRITING_PROPS} from './writing-props58.js?v=campus-83';
 import {WRITING_GRIPS} from './writing-grips58.js?v=campus-83';
 import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-102';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-103';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
-import {createToiletSeatPose} from './toilet-seat78.js?v=campus-102';
-import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-102';
-import {createBedPose} from './bed-pose78.js?v=campus-102';
-import {createMapActivityPose} from './map-activity-pose77.js?v=campus-102';
+import {createToiletSeatPose} from './toilet-seat78.js?v=campus-103';
+import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-103';
+import {createBedPose} from './bed-pose78.js?v=campus-103';
+import {createMapActivityPose} from './map-activity-pose77.js?v=campus-103';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-102';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-103';
 import {propContact} from './prop-assets.js?v=campus-83';
-import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-93';
+import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-103';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-83';
-import {createCrawlPose} from './crawl-pose.js?v=campus-102';
-import {createStudentGestures} from './student-gestures.js?v=campus-102';
+import {createCrawlPose} from './crawl-pose.js?v=campus-103';
+import {createStudentGestures} from './student-gestures.js?v=campus-103';
 import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-83';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-90';
 import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-93';
 import {createStudentFaceShape} from './student-face-shape75.js?v=campus-83';
-import {createStudentEyes} from './student-eyes56.js?v=campus-102';
+import {createStudentEyes} from './student-eyes56.js?v=campus-103';
 import {createStudyBook} from './study-book58.js?v=campus-89';
 import {normalWalkCycleRate} from './movement55.js?v=campus-93';
 import {writingStroke,thirdPersonPenTime} from './study-motion64.js?v=campus-83';
@@ -91,10 +91,36 @@ function cloneSkin(source){
   function pair(a,b){map.set(a,b);a.children.forEach((c,i)=>pair(c,b.children[i]));}pair(source,copy);
   source.traverse(o=>{if(o.isSkinnedMesh){const n=map.get(o);n.skeleton=o.skeleton.clone();n.skeleton.bones=o.skeleton.bones.map(b=>map.get(b));n.bindMatrix.copy(o.bindMatrix);n.bind(n.skeleton,n.bindMatrix);n.frustumCulled=false;}});return copy;
 }
+// The two tapered separations in the fringe bend the actual head mesh. Use
+// the bind pose so the valleys remain joined to the hair through animation.
+function sculptFringe(model){
+ model.updateMatrixWorld(true);
+ model.traverse(mesh=>{
+  if(!mesh.isSkinnedMesh)return;
+  const geometry=mesh.geometry,positions=geometry.attributes.position;
+  const p=new T.Vector3(),inverse=mesh.matrixWorld.clone().invert();
+  for(let i=0;i<positions.count;i++){
+   p.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
+   if(p.y<1.442||p.y>1.596||p.z<.179||Math.abs(p.x)>.14)continue;
+   const t=(p.y-1.442)/.154;
+   const left=-.063+.023*t,right=.070-.018*t;
+   const distance=Math.min(Math.abs(p.x-left),Math.abs(p.x-right));
+   const width=.024*(1-t)+.005;
+   const cut=1-T.MathUtils.smoothstep(distance,0,width);
+   if(!cut)continue;
+   p.z-=.025*(1-t)*cut;p.y+=.009*cut*(1-t)*(1-t);
+   p.applyMatrix4(inverse);positions.setXYZ(i,p.x,p.y,p.z);
+  }
+  positions.needsUpdate=true;geometry.computeBoundingSphere();
+ });
+}
 export async function loadStudentAssets(){
  const loader=new GLTFLoader(),variants=Object.keys(STUDENT_ASSETS),files=[...variants.map(v=>STUDENT_ASSETS[v].file),'hand-left-v3','hand-right-v3','teacher-hand-left-v1','teacher-hand-right-v1'];
  const loaded=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=mesh-64`,import.meta.url).href)));
- variants.forEach((variant,i)=>fitUniform(loaded[i].scene,variant));
+ variants.forEach((variant,i)=>{
+  if(variant==='ponytail')sculptFringe(loaded[i].scene);
+  fitUniform(loaded[i].scene,variant);
+ });
  loaded.forEach((asset,i)=>requireModelBudget(asset,files[i]));
  const sources=Object.fromEntries(variants.map((v,i)=>[v,loaded[i]]));
  return {createStudent:(options={})=>{const variant=normalizeStudentVariant(options.variant,options),source=sources[variant];return createRiggedStudent({scene:cloneSkin(source.scene),animations:source.animations},{...options,variant,metric:true,motionProfile:source.parser.json.asset.extras.characters40,asset:STUDENT_ASSETS[variant].file});},createHand:(side,scale)=>createRiggedPalm(loaded[side<0?4:5],side,scale),createTeacherHand:(side,scale)=>{const hand=createRiggedPalm(loaded[side<0?6:7],side,scale);hand.group.userData.characterRole='teacher';hand.group.userData.asset=side<0?'teacher-hand-left-v1':'teacher-hand-right-v1';return hand;}};

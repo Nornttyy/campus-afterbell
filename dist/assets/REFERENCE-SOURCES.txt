@@ -28,3 +28,8 @@ These are identified third-party brand/reference assets, not CC0 or project-crea
 Photoshop and Unity screens display the sourced screenshots as static images; they do not embed or run those applications.
 
 Campus 79 networking dependency: PeerJS 1.5.5, https://www.npmjs.com/package/peerjs and https://github.com/peers/peerjs . MIT license bundled at ../vendor/peerjs-LICENSE.txt. Browser direct rooms use the public PeerJS signaling service, plus Cloudflare and Google STUN; no TURN relay or availability guarantee. No microphone is enabled automatically.
+
+Classroom textbook interior · 共和国教科书新国文, 莊俞 and 沈頤, 商務印書館, 1926.
+National Library of China scan NLC416-09jh005094-48138, PDF leaves 8 and 9.
+Public domain scan (PD-China / PD-scan). Full pages converted to lossless WebP.
+https://commons.wikimedia.org/wiki/File:NLC416-09jh005094-48138_共和國教科書新國文.pdf

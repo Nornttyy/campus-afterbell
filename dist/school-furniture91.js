@@ -12,13 +12,13 @@ function plywood(kind,material){
  const outline=[];
  for(let corner=0;corner<4;corner++){
   const angle=corner*Math.PI/2,sx=corner===0||corner===3?1:-1,sy=corner<2?1:-1;
-  for(let i=0;i<=6;i++){
-   const a=angle+i*Math.PI/12;
+  for(let i=0;i<=3;i++){
+   const a=angle+i*Math.PI/6;
    outline.push([sx*(hw-radius)+radius*Math.cos(a),sy*(hh-radius)+radius*Math.sin(a)]);
   }
   const x=sx*(hw-radius)+radius*Math.cos(angle+Math.PI/2),y=sy*(hh-radius)+radius*Math.sin(angle+Math.PI/2);
   const nextX=corner%2===0?-x:x,nextY=corner%2===1?-y:y;
-  for(let i=1;i<6;i++)outline.push([x+(nextX-x)*i/6,y+(nextY-y)*i/6]);
+  for(let i=1;i<3;i++)outline.push([x+(nextX-x)*i/3,y+(nextY-y)*i/3]);
  }
  const xyz=[],uv=[],colors=[],index=[];
  function vertex(x,y,z,tone){
@@ -35,15 +35,11 @@ function plywood(kind,material){
  }
  const half=thickness/2,bevel=.004;
  const bottom=vertex(0,0,-half,.83);
- for(const scale of [.36,.70,1])ring(scale,-half,.83,bevel);
- ring(1,-half+.003,.72,.0008);
+ ring(1,-half,.83,bevel);
  ring(1,-half+.006,.82);
- ring(1,-.002,.79);
  ring(1,.0003,.67);
- ring(1,.0022,.83);
  ring(1,half-bevel,.89);
- ring(1,half-.001,.96,.0014);
- for(const scale of [1,.70,.36])ring(scale,half,1,bevel);
+ ring(1,half,1,bevel);
  const top=vertex(0,0,half,1),last=rings.at(-1);
  for(let i=0;i<outline.length;i++){
   const j=(i+1)%outline.length;index.push(bottom,rings[0][j],rings[0][i],top,last[i],last[j]);
@@ -71,7 +67,7 @@ function tube(group, material, points, radius) {
     path.add(new T.LineCurve3(from,near));path.add(new T.QuadraticBezierCurve3(near,corner,far));from=far;
   }
   path.add(new T.LineCurve3(from,vertices.at(-1)));
-  const o=new T.Mesh(new T.TubeGeometry(path,vertices.length===2?1:vertices.length*5,radius,8,false),material);
+  const o=new T.Mesh(new T.TubeGeometry(path,vertices.length===2?1:vertices.length*3,radius,6,false),material);
   group.add(o);
 }
 
@@ -85,7 +81,7 @@ export function finishSchoolFurniture(body,drawer,chair,grain){
   table.name=body.name;seat.name=chair.name;
   table.add(plywood('top',oak));seat.add(plywood('seat',oak),plywood('back',oak));
   for(const x of [-.532,.532]){
-    tube(table,steel,[[x,.018,-.325],[x,.831,-.275],[x,.831,.278],[x,.018,.325]],.0155);
+    tube(table,steel,[[x,.018,-.325],[x,.834,-.275],[x,.834,.278],[x,.018,.325]],.0155);
     tube(table,steel,[[x,.17,-.311],[x,.17,.311]],.010);
     for(const z of [-.325,.325])tube(table,cap,[[x,.002,z],[x,.046,z]],.0183);
   }

@@ -58,7 +58,24 @@ function repairPupilCaps(geometry,restFromLocal,variant){
  position.needsUpdate=true;if(normal)normal.needsUpdate=true;
  geometry.computeBoundingBox();geometry.computeBoundingSphere();
 }
-// Reuse the authored front of each eyeball as its translucent outer wall.
+// Lower the height of the visible bulb slightly without moving its interior.
+function shapeSclera(geometry,points,restFromLocal,variant,weights){
+ const positions=geometry.attributes.position,inverse=restFromLocal.clone().invert(),local=new T.Vector3();
+ for(let i=0;i<points.length;i++){
+  const p=points[i];
+  for(const [side,r] of STUDENT_EYE_REGIONS[variant].entries()){
+   const [cx,cy]=SCLERA_PATCHES[variant][side];
+   const radius=Math.hypot((p.x-cx)/r.radius[0],(p.y-cy)/r.radius[1]);
+   const weight=(1-smooth(.99,1.43,radius))*smooth(r.center[2]-.026,r.center[2]+.01,p.z);
+   if(weight<=0)continue;
+   weights[2*i+side]=Math.max(weight,weights[2*i+side]);
+   local.copy(p);local.y-=.12*(p.y-cy)*weight;
+   local.applyMatrix4(inverse);positions.setXYZ(i,local.x,local.y,local.z);break;
+  }
+ }
+ positions.needsUpdate=true;
+}
+// Reuse the authored eye surface for the corneal optics.
 // The rest of the head stays in the normal opaque pass. Shared positions,
 // skinning and UVs keep the material boundary welded even while the head turns.
 function prepareEyeShell(source,restFromLocal,variant){
@@ -67,6 +84,7 @@ function prepareEyeShell(source,restFromLocal,variant){
  const pos=body.attributes.position,weights=new Float32Array(pos.count*2),p=new T.Vector3();
  const points=Array.from({length:pos.count},(_,i)=>p.fromBufferAttribute(pos,i).applyMatrix4(restFromLocal).clone());
  for(let i=0;i<points.length;i++)for(let e=0;e<2;e++)weights[i*2+e]=eyeSurfaceWeight(points[i],regions[e]);
+ shapeSclera(body,points,restFromLocal,variant,weights);
  body.setAttribute('studentEyeWeights',new T.BufferAttribute(weights,2));
  const outer=[],opaque=[],idx=body.index.array;
  const rim=(v,r)=>Math.hypot((v.x-r.center[0])/r.radius[0],(v.y-r.center[1])/r.radius[1])<1.38&&v.z>r.center[2]-.020;
@@ -82,9 +100,11 @@ function prepareEyeShell(source,restFromLocal,variant){
  shell.setIndex(outer);body.setIndex(opaque);
  return {body,shell,count:new Set(outer).size,refs:0};
 }
-function milkyMaterial(source,regions,rest,optics){
- const mat=source.clone();mat.name='student-milky-eye-wall';mat.transparent=true;
- mat.depthWrite=false;mat.side=T.FrontSide;mat.userData.opticalShell=true;
+function eyeShellMaterial(source,regions,rest,optics){
+ const mat=source.clone();mat.name='student-milky-eye-wall';mat.transparent=false;
+ // The shell includes adjacent skin triangles. Writing depth keeps the far eye
+ // and skin behind the near sclera when their silhouettes overlap.
+ mat.depthWrite=true;mat.side=T.FrontSide;mat.userData.opticalShell=true;
  mat.onBeforeCompile=function(shader,renderer){
   source.onBeforeCompile.call(this,shader,renderer);
   Object.assign(shader.uniforms,optics);
@@ -98,10 +118,12 @@ function milkyMaterial(source,regions,rest,optics){
   shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\neyeView=mvPosition.xyz;');
   shader.fragmentShader=`varying vec3 eyeRest,eyeView;
    uniform mat4 eyeBindFromView;
-   uniform vec4 eyeBall0,eyeBall1;
-   // Transmit only rays meeting the matching physical pupil. Every other ray
-   // sees the white lining, including grazing views near the hair and temples.
-   float pupilTransmission(vec4 sphere,vec3 origin,vec3 direction){
+   uniform vec4 eyeBall0,eyeBall1; uniform vec3 pupilColor;
+   // Sample the fixed sphere through the cornea. The refracted side view
+   // must use the sphere at its actual depth, even when skin lies behind it.
+   float pupilCoverage(vec4 sphere,vec3 origin,vec3 incident){
+    // Effective index ratio for this stylized forward-facing lens.
+    vec3 direction=refract(incident,vec3(0.,0.,1.),.85);
     vec3 offset=sphere.xyz-origin;
     float t=dot(offset,direction);
     float d=length(offset-direction*t);
@@ -121,31 +143,32 @@ function milkyMaterial(source,regions,rest,optics){
    float high=max(max(diffuseColor.r,diffuseColor.g),diffuseColor.b);
    float neutral=smoothstep(.25,.49,low)*(1.-smoothstep(.06,.16,high-low));
    float rim=1.-smoothstep(1.18,1.35,min(length((eyeRest.xy-eyeArea0.xy)/eyeArea0.zw),length((eyeRest.xy-eyeArea1.xy)/eyeArea1.zw)));
-   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.),max(wall,neutral*rim));
+   float sclera=max(wall,neutral*rim);
+   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.),sclera);
    vec3 origin=(eyeBindFromView*vec4(eyeView,1.)).xyz;
    vec3 ray=normalize(mat3(eyeBindFromView)*(isOrthographic?vec3(0.,0.,-1.):normalize(eyeView)));
-   float left=pupilTransmission(eyeBall0,origin,ray)*eyeWall(eyeArea0,eyeFront0);
-   float right=pupilTransmission(eyeBall1,origin,ray)*eyeWall(eyeArea1,eyeFront1);
-   diffuseColor.a=1.-.98*max(left,right);
+   vec4 pupil=abs(eyeRest.x-eyeArea0.x)<abs(eyeRest.x-eyeArea1.x)?eyeBall0:eyeBall1;
+   float pupilMask=pupilCoverage(pupil,origin,ray)*sclera;
+   diffuseColor.rgb=mix(diffuseColor.rgb,pupilColor,pupilMask);
   `);
  };
- mat.customProgramCacheKey=()=>source.customProgramCacheKey()+'-milky-eye102';
+ mat.customProgramCacheKey=()=>source.customProgramCacheKey()+'-milky-eye103';
  return mat;
 }
 // The pupils sit at the rear of the eye sockets. Their actual mesh centres
 // drive the optical mask, so a turn of either the head or the camera produces
 // parallax without moving a dot on the white surface.
 function createInteriors(head,variant){
- const geometry=new T.SphereGeometry(1,20,14);
+ const geometry=new T.SphereGeometry(1,12,8);
  const material=new T.MeshBasicMaterial({color:0x141319,toneMapped:false,fog:false});
  const eyes=new T.InstancedMesh(geometry,material,2);eyes.name='student-eye-interiors';
  eyes.userData.characterSurface=true;eyes.frustumCulled=false;eyes.matrixAutoUpdate=false;
  eyes.matrix.copy(head.matrixWorld).invert();head.add(eyes);
- const optics={eyeBindFromView:{value:new T.Matrix4()},eyeBall0:{value:new T.Vector4()},eyeBall1:{value:new T.Vector4()}};
+ const optics={pupilColor:{value:material.color},eyeBindFromView:{value:new T.Matrix4()},eyeBall0:{value:new T.Vector4()},eyeBall1:{value:new T.Vector4()}};
  const transform=new T.Matrix4(),regions=STUDENT_EYE_REGIONS[variant];
  for(const [i,region] of regions.entries()){
   const [cx,cy,profile]=SCLERA_PATCHES[variant][i];
-  const radius=variant==='ponytail'?.016:.013,z=region.center[2]-.33*(profile[0]-region.center[2]);
+  const radius=variant==='ponytail'?.020:.019,z=region.center[2]-.33*(profile[0]-region.center[2]);
   transform.makeScale(radius,radius,radius).setPosition(cx,cy,z);
   eyes.setMatrixAt(i,transform);optics['eyeBall'+i].value.set(cx,cy,z,radius);
  }
@@ -165,7 +188,7 @@ export function createStudentEyes(model,{variant='boy',enabled=true}={}){
   let cache=geometryCache.get(source);if(!cache){cache=new Map();geometryCache.set(source,cache);}
   let part=cache.get(key);if(!part){part=prepareEyeShell(source,rest,variant);if(!part)continue;cache.set(key,part);}
   const head=mesh.skeleton.bones.find(b=>/Head$/.test(b.name));
-  const interiors=createInteriors(head,variant),material=milkyMaterial(mesh.material,regions,rest,interiors.optics);
+  const interiors=createInteriors(head,variant),material=eyeShellMaterial(mesh.material,regions,rest,interiors.optics);
   const shell=new T.SkinnedMesh(part.shell,material);shell.name='student-sclera-shell';
   shell.bindMode=mesh.bindMode;shell.bind(mesh.skeleton,mesh.bindMatrix);
   shell.frustumCulled=false;shell.castShadow=mesh.castShadow;shell.userData.characterSurface=true;

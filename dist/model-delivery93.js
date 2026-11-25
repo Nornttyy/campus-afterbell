@@ -1,3 +1,4 @@
+import {BufferAttribute} from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 
 const manifestUrl=new URL('./assets/stream93/models.json?v=campus-93',import.meta.url);
@@ -38,10 +39,43 @@ async function modelBytes(url,onProgress){
  return decoded;
 }
 
+let shapePack;
+function loadClassShapes(){
+ if(!shapePack){
+  shapePack=fetch(new URL('./assets/models/class-shapes103.bin',import.meta.url)).then(async response=>{
+   if(!response.ok)throw Error('Classroom geometry '+response.status);
+   const bytes=await response.arrayBuffer(),offset=new DataView(bytes).getUint32(0,true);
+   const table=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,4,offset-4)));
+   return {table,indices:new Uint16Array(bytes,offset)};
+  }).catch(error=>{shapePack=null;console.warn('Using source geometry',error);return null;});
+ }
+ return shapePack;
+}
+export function applyClassShape(model,parts,indices){
+ if(!parts)return model;
+ model.scene.traverse(mesh=>{
+  if(!mesh.isMesh)return;
+  const id=model.parser.associations.get(mesh),g=mesh.geometry;
+  const part=parts[id?.meshes+'/'+id?.primitives];
+  if(!part)return;
+  const [start,count,original,vertices]=part;
+  if(g.index.count!==original||g.attributes.position.count!==vertices)return;
+  g.setIndex(new BufferAttribute(indices.subarray(start,start+count),1));
+ });
+ return model;
+}
+
 // Original authoring files are also the fallback on older browsers and when
 // delivery data fails. Caller-supplied loaders still receive the original URLs.
 export class CampusModelLoader extends GLTFLoader{
  async loadAsync(url,onProgress){
+  const asset=new URL(url,import.meta.url),file=asset.pathname.split('/').pop().replace(/\.glb$/,'');
+  const packed=typeof window!=='undefined'&&asset.origin===manifestUrl.origin?loadClassShapes():null;
+  const model=await this.loadSource(url,onProgress);
+  const shapes=await packed;
+  return shapes?applyClassShape(model,shapes.table[file],shapes.indices):model;
+ }
+ async loadSource(url,onProgress){
   if(typeof DecompressionStream==='function'&&typeof window!=='undefined'){
    const original=new URL(url,import.meta.url),name=original.pathname.split('/').pop();
    if(original.origin===manifestUrl.origin&&name.endsWith('.glb')){
