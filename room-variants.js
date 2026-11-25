@@ -1,9 +1,9 @@
 import {createBusRoom} from './bus-room86.js?v=campus-101';
 import {mountSchoolRadio} from './radio-model93.js?v=campus-97';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-106';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-107';
 import {createToiletRoom} from './toilet-room70.js?v=campus-99';
 import {createDormRoom} from './dorm-room70.js?v=campus-95';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-106';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-107';
 import {createHotpotRoom} from './hotpot-room70.js?v=campus-101';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-99';
 import * as T from './vendor/three.module.js';

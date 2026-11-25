@@ -29,10 +29,11 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
    $('#teacher-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n点奔跑切换速度 · 使用投粉笔\n交互抓住或绑住同学，返回放下':`${move} 移动 · 按住 ${keyLabel(key.crawl)} 奔跑 · 鼠标转向 · ${keyLabel(key.jump)} 跳跃\n${use} 投粉笔 · ${e} 抓住眩晕同学\n木桩前 ${e} 绑住 · ${q} 放下\n黑板前按住 ${e} 写字\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
    const model=hud54Model(s),signature=JSON.stringify(model.rows);ranking.hidden=s.stage!=='class';
    if(signature!==lastRank){lastRank=signature;rankList.replaceChildren(...model.rows.map((p,i)=>{const li=make('li');li.dataset.self=String(p.isSelf);li.append(make('span','rank-place',i+1),make('span','rank-name',p.name),make('strong','rank-points',p.points));return li;}));}
-   const p=s.player,carrying=s.drawer.drawnSlot!=null,pen=carrying&&s.selected==='pen';
-   const heldKey=JSON.stringify([carrying,s.selected,p.penWriting,p.caught,p.seated,s.paused,mobile,bindings().keys]);
-   if(heldKey!==lastHeld){lastHeld=heldKey;held.replaceChildren();held.hidden=!carrying||p.caught||s.paused;if(!held.hidden){if(pen)held.append(keyLine('E',p.penWriting?'转笔':'写字'));else held.append(keyLine('鼠标',['smoke','flash','ink','bananaPeel'].includes(s.selected)?'松开投掷':'使用'));held.append(keyLine('Q','放回'));}}
+   const p=s.player,carrying=s.drawer.drawnSlot!=null,pen=carrying&&s.selected==='pen',reading=p.seated&&p.bookRaised&&!carrying;
+   const heldKey=JSON.stringify([carrying,reading,s.selected,p.penWriting,p.caught,p.seated,s.paused,mobile,bindings().keys]);
+   if(heldKey!==lastHeld){lastHeld=heldKey;held.replaceChildren();held.hidden=!(carrying||reading)||p.caught||s.paused;if(!held.hidden){if(pen)held.append(keyLine('E',p.penWriting?'转笔':'写字'));else if(!reading)held.append(keyLine('鼠标',['smoke','flash','ink','bananaPeel'].includes(s.selected)?'松开投掷':'使用'));held.append(keyLine('Q','放回'));}}
    const prompt=$('#interaction-prompt'),text=prompt.textContent;
+   if(reading&&text.includes('放下书本')){prompt.replaceChildren();prompt.hidden=true;return;}
    {lastPrompt=text;const match=text.match(/^(.*?)([EQ]) (.*)$/);if(match){prompt.replaceChildren();if(match[1])prompt.append(make('span',null,match[1]));prompt.append(keyLine(match[2],match[3]));}}
   },
   finish(s){

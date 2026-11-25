@@ -71,22 +71,9 @@ function tube(group, material, points, radius) {
   group.add(o);
 }
 
-export function finishSchoolFurniture(body,drawer,chair,grain){
-  const oak=new T.MeshStandardMaterial({color:grain?'#ffffff':'#dba64f',map:grain,roughness:.50,vertexColors:true});
-  const steel=new T.MeshStandardMaterial({color:'#99a19d',metalness:.30,roughness:.48});
-  const cap=new T.MeshStandardMaterial({color:'#444944',roughness:.86});
-  const tray=new T.MeshStandardMaterial({color:'#afb5af',metalness:.14,roughness:.60});
-  oak.name='School-maple';steel.name='School-tubular-steel';cap.name='School-foot-caps';tray.name='School-drawer-enamel';
-  const table=new T.Group(),seat=new T.Group();
-  table.name=body.name;seat.name=chair.name;
-  table.add(plywood('top',oak));seat.add(plywood('seat',oak),plywood('back',oak));
-  for(const x of [-.532,.532]){
-    tube(table,steel,[[x,.018,-.325],[x,.834,-.275],[x,.834,.278],[x,.018,.325]],.0155);
-    tube(table,steel,[[x,.17,-.311],[x,.17,.311]],.010);
-    for(const z of [-.325,.325])tube(table,cap,[[x,.002,z],[x,.046,z]],.0183);
-  }
-  tube(table,steel,[[-.532,.21,.311],[.532,.21,.311]],.014);
-  tube(table,steel,[[-.532,.821,-.298],[.532,.821,-.298]],.014);
+export function makeSchoolChair(oak,steel,cap){
+  const seat=new T.Group();
+  seat.add(plywood('seat',oak),plywood('back',oak));
   for(const x of [-.225,.225]){
     tube(seat,steel,[[x,.018,-.277],[x,.373,-.19],[x,.384,.177],[x,.018,.224]],.013);
     tube(seat,steel,[[x,.354,.13],[x,.354,-.186],[x,.773,-.292],[x,.921,-.322]],.0115);
@@ -97,6 +84,25 @@ export function finishSchoolFurniture(body,drawer,chair,grain){
     }
   }
   tube(seat,steel,[[-.225,.198,-.24],[.225,.198,-.24]],.009);
+  return seat;
+}
+
+export function finishSchoolFurniture(body,drawer,chair,grain){
+  const oak=new T.MeshStandardMaterial({color:grain?'#ffffff':'#dba64f',map:grain,roughness:.50,vertexColors:true});
+  const steel=new T.MeshStandardMaterial({color:'#99a19d',metalness:.30,roughness:.48});
+  const cap=new T.MeshStandardMaterial({color:'#444944',roughness:.86});
+  const tray=new T.MeshStandardMaterial({color:'#afb5af',metalness:.14,roughness:.60});
+  oak.name='School-maple';steel.name='School-tubular-steel';cap.name='School-foot-caps';tray.name='School-drawer-enamel';
+  const table=new T.Group(),seat=makeSchoolChair(oak,steel,cap);
+  table.name=body.name;seat.name=chair.name;
+  table.add(plywood('top',oak));
+  for(const x of [-.532,.532]){
+    tube(table,steel,[[x,.018,-.325],[x,.834,-.275],[x,.834,.278],[x,.018,.325]],.0155);
+    tube(table,steel,[[x,.17,-.311],[x,.17,.311]],.010);
+    for(const z of [-.325,.325])tube(table,cap,[[x,.002,z],[x,.046,z]],.0183);
+  }
+  tube(table,steel,[[-.532,.21,.311],[.532,.21,.311]],.014);
+  tube(table,steel,[[-.532,.821,-.298],[.532,.821,-.298]],.014);
   drawer.traverse(o=>{if(o.isMesh&&o.material?.name==='TripoFurnitureOriginalPBR')o.material=tray;});
   for(const root of [table,seat,drawer])root.traverse(o=>{if(o.isMesh)o.castShadow=o.receiveShadow=true;});
   return {body:table,drawer,chair:seat,source:'tripo-furniture-v2',drawerFloor:.659};

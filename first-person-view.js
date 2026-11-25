@@ -31,7 +31,29 @@ export function createFirstPersonView(renderer,camera,groups){
  const ambient=new T.HemisphereLight('#edf5ff','#dce3e3',2.5);scene.add(ambient);
  const light=new T.DirectionalLight('#fff8ed',4);light.position.set(-10,6,6);scene.add(light);
  const fill=new T.DirectionalLight('#e5eef4',.85);fill.position.set(5,4,6);scene.add(fill);
+ // Only the student's own book contributes world depth in the hand pass.
+ // Reuse the paper mesh, including the classroom's batched two-leaf version.
+ const bookDepth=new T.MeshBasicMaterial({colorWrite:false}),leaves=[];
+ let activeBook=null;
  return{scene,anchor,
+  occludeWithBook(book){
+   if(book!==activeBook){
+    activeBook=book;
+    const blocks=[];
+    book?.traverse(o=>{if(o.material?.name==='textbook-page-block')blocks.push(o);});
+    for(let i=0;i<Math.max(leaves.length,blocks.length);i++){
+     if(!leaves[i]){
+      const mask=new T.Mesh(blocks[i].geometry,bookDepth);
+      mask.matrixAutoUpdate=false;mask.renderOrder=-10000;scene.add(mask);leaves.push({mask});
+     }
+     const entry=leaves[i];entry.source=blocks[i];entry.mask.visible=Boolean(entry.source);
+     if(entry.source)entry.mask.geometry=entry.source.geometry;
+    }
+   }
+   for(const {mask,source} of leaves)if(source){
+    source.updateWorldMatrix(true,false);mask.matrix.copy(source.matrixWorld);mask.matrixWorldNeedsUpdate=true;
+   }
+  },
   setNight(night){
    ambient.intensity=night?.30:2.5;ambient.color.set(night?'#7890c5':'#edf5ff');ambient.groundColor.set(night?'#9ca5b5':'#dce3e3');
    light.intensity=night?.035:4;light.color.set(night?'#7084ac':'#fff8ed');fill.intensity=night?.055:.85;

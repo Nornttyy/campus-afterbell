@@ -1,7 +1,7 @@
 import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=campus-106';
-import {studyBookPose} from './study-book58.js?v=campus-89';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-107';
+import {studyBookPose} from './study-book58.js?v=campus-107';
 import {createPenFingerContact} from './pen-motion.js?v=campus-93';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const armName=/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/;
@@ -19,9 +19,6 @@ export function createStudentGestures(group,bones,clips,attachments){
  const fingerRig=createFingerRig(group,bones,'Right');
  const typingRigs={Left:createFingerRig(group,bones,'Left'),Right:fingerRig},typingTips={Left:[],Right:[]};
  const readingTips=Object.fromEntries(['Left','Right'].map(side=>[side,createPenFingerContact(group,bones,{side,finger:'Middle'})]));
- const readingPads={Left:{Middle:[],Thumb:[]},Right:{Middle:[],Thumb:[]}};
- group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const {skinIndex,skinWeight}=mesh.geometry.attributes;for(let i=0;i<skinIndex.count;i++){let max=0,name='';for(let k=0;k<4;k++)if(skinWeight.getComponent(i,k)>max){max=skinWeight.getComponent(i,k);name=mesh.skeleton.bones[skinIndex.getComponent(i,k)].name;}for(const side of ['Left','Right'])if(name.includes(side+'Hand')){if(/Thumb3$/.test(name))readingPads[side].Thumb.push({sample:createSkinContact(mesh,i)});else if(/(?:Index|Middle|Ring|Pinky)3$/.test(name))readingPads[side].Middle.push({sample:createSkinContact(mesh,i)});}}});
- function readingPad(side,finger,normal,origin=null,orientation=null){let chosen=null,score=finger==='Thumb'?-Infinity:Infinity;const inverse=orientation?.clone().invert(),sign=side==='Left'?1:-1;for(const {sample}of readingPads[side][finger]){const p=sample(V());if(origin&&inverse){const local=p.clone().sub(origin).applyQuaternion(inverse);if(sign*local.x<0||sign*local.x>.335||local.y<0||local.y>.45)continue;}const value=p.dot(normal);if(finger==='Thumb'?value>score:value<score){score=value;chosen=p;}}return chosen||readingTips[side]();}
  let tipSample=null,best=-Infinity;
  group.updateMatrixWorld(true);const tipBone=bones.RightHandIndex3,tipOrigin=tipBone.getWorldPosition(V()),tipAxis=tipOrigin.clone().sub(tipBone.parent.getWorldPosition(V())).normalize();
  group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const joint=mesh.skeleton.bones.indexOf(tipBone),{skinIndex,skinWeight}=mesh.geometry.attributes;if(joint<0)return;
@@ -80,7 +77,7 @@ export function createStudentGestures(group,bones,clips,attachments){
   for(const sample of typingTips[side]){const p=sample.sample(V()).applyMatrix4(inverse);if(p.y<low){low=p.y;point=p;}}
   return point?group.localToWorld(point):bones[side+'HandIndex3'].getWorldPosition(V());
  }
- function computerLean(weight){
+ function computerLean(weight,neckRetraction=0){
   // Station keyboard: centre(-.08,.88,-.19), key tops .901, desk centre
   // .78 in front of the seat. Near key row is therefore z=.535 in body space.
   // A modest torso lean brings short source arms to the existing hardware;
@@ -89,7 +86,7 @@ export function createStudentGestures(group,bones,clips,attachments){
   for(const [name,angle]of [['Spine',.22],['Spine1',.18]]){const bone=bones[name];if(!bone)continue;saved.set(bone,bone.quaternion.clone());const parent=bone.parent.getWorldQuaternion(Q()),turn=Q().setFromAxisAngle(V(1,0,0).applyQuaternion(character),angle*weight);bone.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));bone.updateWorldMatrix(false,true);}
   // Cancel only this torso lean at the neck/head. The actor's subsequent
   // lookYaw/lookPitch layer remains additive, including a human looking down.
-  for(const [name,angle]of [['Neck',-.16],['Head',-.24]]){const bone=bones[name];if(!bone)continue;saved.set(bone,bone.quaternion.clone());const parent=bone.parent.getWorldQuaternion(Q()),turn=Q().setFromAxisAngle(V(1,0,0).applyQuaternion(character),angle*weight);bone.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));bone.updateWorldMatrix(false,true);}
+  for(const [name,angle]of [['Neck',-.16*weight-neckRetraction],['Head',-.24*weight+neckRetraction]]){const bone=bones[name];if(!bone)continue;saved.set(bone,bone.quaternion.clone());const parent=bone.parent.getWorldQuaternion(Q()),turn=Q().setFromAxisAngle(V(1,0,0).applyQuaternion(character),angle);bone.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));bone.updateWorldMatrix(false,true);}
  }
  function keyboard(time){
   const character=group.getWorldQuaternion(Q());
@@ -120,19 +117,30 @@ export function createStudentGestures(group,bones,clips,attachments){
   const pose=bookPose||studyBookPose(time),character=group.getWorldQuaternion(Q()),bookRotation=pose.quaternion?Q().fromArray(pose.quaternion):Q().setFromEuler(new T.Euler(...pose.rotation));
   for(const side of ['Left','Right']){
    const sign=side==='Left'?1:-1;
+   // Roll the clavicles forward as the hands reach. Leaning the whole head
+   // into the textbook used to put the pupils through the printed pages.
+   const shoulder=bones[side+'Shoulder'],parent=shoulder.parent.getWorldQuaternion(Q());
+   const reach=Q().setFromAxisAngle(V(0,1,0).applyQuaternion(character),-sign*.64);
+   shoulder.quaternion.premultiply(parent.clone().invert().multiply(reach).multiply(parent));
+   shoulder.updateWorldMatrix(false,true);
    // Curved fingers support the outside cover; the thumb opposes them
    // around its lower outer corner. Use real skin pads, not bone tips.
-   for(const d of typingRigs[side].digits){const curl={Thumb:.42,Index:.43,Middle:.50,Ring:.53,Pinky:.59}[d.finger];d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,curl*[.62,.87,.62][d.n-1]));}
-   const page=Q().setFromAxisAngle(V(0,1,0),sign*.14),orientation=character.clone().multiply(bookRotation).multiply(page);
-   orient(side,V(sign*.24,.97,0).applyQuaternion(orientation),V(0,0,1).applyQuaternion(orientation));
-   const normal=V(0,0,1).applyQuaternion(orientation),contact=group.localToWorld(V(sign*.310,.110,.022).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
-   for(let k=0;k<3;k++){group.updateMatrixWorld(true);const tip=readingTips[side](),wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q()),target=wrist.getWorldPosition(V()).add(contact.clone().sub(tip));arm(side,target);wrist.quaternion.copy(wrist.parent.getWorldQuaternion(Q()).invert().multiply(rotation));}
-   const planeOrigin=group.localToWorld(V(...pose.position));
-   for(let k=0;k<2;k++){group.updateMatrixWorld(true);const pad=readingPad(side,'Middle',normal,planeOrigin,orientation),wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q()),offset=.006-pad.clone().sub(planeOrigin).dot(normal);arm(side,wrist.getWorldPosition(V()).addScaledVector(normal,offset));wrist.quaternion.copy(wrist.parent.getWorldQuaternion(Q()).invert().multiply(rotation));}
-   // The thumb goes round the outside lower corner, opposing the curled
-   // fingers behind the cover. Its middle joint stays outside the page edge.
-   const thumbContact=group.localToWorld(V(sign*.34,-.035,-.025).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
-   for(let k=0;k<4;k++){group.updateMatrixWorld(true);const base=bones[side+'HandThumb1'],middle=bones[side+'HandThumb2'],root=base.getWorldPosition(V()),mid=middle.getWorldPosition(V()),tip=readingPad(side,'Thumb',normal),upper=root.distanceTo(mid),lower=mid.distanceTo(tip),direction=thumbContact.clone().sub(root),distance=T.MathUtils.clamp(direction.length(),Math.abs(upper-lower)+.002,upper+lower-.001);direction.normalize();const pole=V(sign,0,0).applyQuaternion(orientation).addScaledVector(direction,-V(sign,0,0).applyQuaternion(orientation).dot(direction)).normalize(),along=(upper*upper+distance*distance-lower*lower)/(2*distance),height=Math.sqrt(Math.max(0,upper*upper-along*along));aim(base,middle,root.clone().addScaledVector(direction,along).addScaledVector(pole,height));group.updateMatrixWorld(true);const at=middle.getWorldPosition(V()),from=readingPad(side,'Thumb',normal).sub(at).normalize(),to=thumbContact.clone().sub(at).normalize(),parent=middle.parent.getWorldQuaternion(Q());middle.quaternion.premultiply(parent.clone().invert().multiply(Q().setFromUnitVectors(from,to)).multiply(parent));}
+   const page=Q().setFromAxisAngle(V(0,1,0),sign*.14);
+   const orientation=character.clone().multiply(bookRotation).multiply(page);
+   for(const d of typingRigs[side].digits){
+    const flex={Thumb:.24,Index:.35,Middle:.43,Ring:.49,Pinky:.54}[d.finger];
+    d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,flex*[.60,.87,.50][d.n-1]));
+   }
+   orient(side,V(-sign*.40,.49,.78).applyQuaternion(orientation),V(sign*.90,0,.24).applyQuaternion(orientation));
+   const edge=group.localToWorld(V(sign*.314,.145,.014).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
+   // Move the wrist and elbow together. Leave the thumb on its authored joint
+   // axes instead of winding the thumb around an unreachable point on the page.
+   for(let k=0;k<3;k++){
+    group.updateMatrixWorld(true);
+    const wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q());
+    arm(side,wrist.getWorldPosition(V()).add(edge.clone().sub(readingTips[side]())));
+    wrist.quaternion.copy(wrist.parent.getWorldQuaternion(Q()).invert().multiply(rotation));
+   }
 
   }
  }
@@ -146,7 +154,10 @@ export function createStudentGestures(group,bones,clips,attachments){
    blend=reset?(active?1:0):T.MathUtils.damp(blend,active?1:0,15,dt);
    // Let the torso come back from the keyboard gradually while the hands
    // slide to the desk edge; dropping the parent pose first jerks both arms.
-   typingBlend=reset?(typing?1:reading?.3*(bookPose?.contact??1):0):T.MathUtils.damp(typingBlend,typing?1:reading?.3*(bookPose?.contact??1):0,computerIdle?4:15,dt);if(typingBlend>.0001)computerLean(typingBlend);
+   const readingReach=reading?(bookPose?.contact??1):0;
+   const lean=typing?1:.64*readingReach;
+   typingBlend=reset?lean:T.MathUtils.damp(typingBlend,lean,computerIdle?4:15,dt);
+   if(typingBlend>.0001)computerLean(typingBlend,.66*readingReach);
    for(const side of ['Left','Right']){const owned=active&&(typing||computerIdle||reading||thinking||side==='Left'||!seated||mood==='phone');sideBlend[side]=reset?(owned?1:0):T.MathUtils.damp(sideBlend[side],owned?1:0,15,dt);}
    if(!active&&blend<.0001){for(const b of managed)previous.set(b,b.quaternion.clone());return;}
    for(const b of managed)saved.set(b,b.quaternion.clone());
