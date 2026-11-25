@@ -1,15 +1,16 @@
-import {writingPageY} from './study-book58.js?v=campus-107';
+import {writingPageY} from './study-book58.js?v=campus-108';
 import {snackWrapper} from './snack-wrapper94.js?v=campus-94';
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import {requireModelBudget} from './model-budget64.js';
 import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-83';
+import {writingStroke} from './study-motion64.js?v=campus-108';
 import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-93';
 import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-107';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-107';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-108';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-108';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -573,7 +574,7 @@ export function createDeskHands({createHand}={}){
     standing=smooth(standing,seated?0:1,dt,9);
     alertValue=smooth(alertValue,clamp(Number(alert)||0,0,1),dt,12);
     extension=clamp(extension+dt*(engaged?1/.70:-(caught?1/.20:1/.46)),0,1);
-    bookBlend=smooth(bookBlend,seated&&!caught&&!computer&&!carrying?clamp(Number(bookAmount)||0,0,1):0,dt,11);
+    bookBlend=seated&&!caught&&!computer&&!carrying?clamp(Number(bookAmount)||0,0,1):0;
     const drawerAmountNow=clamp(Number(drawerContact?.amount??drawerAmount)||0,0,1);
     drawerBlend=smooth(drawerBlend,seated&&!caught&&!computer&&!bookAmount&&action!=='pen'?drawerAmountNow:0,dt,10);
     const idleWeight=1-ease(extension,0,.32);
@@ -769,7 +770,7 @@ export function createDeskHands({createHand}={}){
       // finger roll, then settles onto the unchanged page-writing contact.
       const weight=ease(extension,.20,1),hand=arms[1].hand,pen=props.pen;
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
-      const line=Math.sin(useTime*1.9),x=.135+.055*Math.sin(useTime*7.1),z=-.725+.035*line+.012*Math.sin(useTime*14.2);
+      const stroke=writingStroke(useTime),line=Math.sin(useTime*1.9),x=.135+2.14*stroke.x,z=-.725-2*stroke.z;
       const tip=examPen?v(examPen.x+.016*Math.sin(useTime*11),.887-1.43+(writing?.004:.026),examPen.z+.006*line):v(x,writingPageY(x)-1.43,z);
       const spin=penAge*Math.PI*2/1.6,twirl=1-penWriteBlend;
       const writeQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.24+.025*Math.sin(useTime*7.1),-.10,-.32));
@@ -835,11 +836,11 @@ export function createDeskHands({createHand}={}){
       for(let i=0;i<2;i++){
         const side=i?1:-1,hand=arms[i].hand,contact=firstPersonBookContacts(side,bookAmount),weight=bookBlend;
         const wrap=ease(bookBlend,0,1);
-        hand.setCurl(.19+.17*wrap);
-        hand.setFingerCurl?.('Thumb',.19+.01*wrap);
-        hand.setFingerCurl?.('Index',.20+.09*ease(bookBlend,0,.73));
-        hand.setFingerCurl?.('Middle',.18+.17*ease(bookBlend,.06,.92));
-        hand.setFingerCurl?.('Pinky',.17+.27*ease(bookBlend,.15,1));
+        hand.setCurl(.19+.53*wrap);
+        hand.setFingerCurl?.('Thumb',.19);
+        hand.setFingerCurl?.('Index',.20+.52*ease(bookBlend,0,.73));
+        hand.setFingerCurl?.('Middle',.18+.66*ease(bookBlend,.06,.92));
+        hand.setFingerCurl?.('Pinky',.17+.73*ease(bookBlend,.15,1));
         const wrist=contact.index.clone().sub(hand.indexTip().multiplyScalar(hand.group.scale.x).applyQuaternion(contact.quaternion));
         hand.group.position.lerp(wrist.applyMatrix4(inv),weight);hand.group.quaternion.slerp(invQ.clone().multiply(contact.quaternion),weight);
       }

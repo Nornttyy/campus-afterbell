@@ -1,7 +1,7 @@
 import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=campus-107';
-import {studyBookPose} from './study-book58.js?v=campus-107';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-108';
+import {TEXTBOOK,studyBookPose} from './study-book58.js?v=campus-108';
 import {createPenFingerContact} from './pen-motion.js?v=campus-93';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const armName=/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/;
@@ -125,14 +125,15 @@ export function createStudentGestures(group,bones,clips,attachments){
    shoulder.updateWorldMatrix(false,true);
    // Curved fingers support the outside cover; the thumb opposes them
    // around its lower outer corner. Use real skin pads, not bone tips.
-   const page=Q().setFromAxisAngle(V(0,1,0),sign*.14);
+   const page=Q().setFromAxisAngle(V(0,1,0),sign*TEXTBOOK.leafYaw);
    const orientation=character.clone().multiply(bookRotation).multiply(page);
    for(const d of typingRigs[side].digits){
-    const flex={Thumb:.24,Index:.35,Middle:.43,Ring:.49,Pinky:.54}[d.finger];
+    const flex={Thumb:.24,Index:.44,Middle:.53,Ring:.59,Pinky:.67}[d.finger];
     d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,flex*[.60,.87,.50][d.n-1]));
    }
-   orient(side,V(-sign*.40,.49,.78).applyQuaternion(orientation),V(sign*.90,0,.24).applyQuaternion(orientation));
-   const edge=group.localToWorld(V(sign*.314,.145,.014).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
+   orient(side,V(-sign*.50,.22,.84).applyQuaternion(orientation),V(sign*.88,-.14,.32).applyQuaternion(orientation));
+   const gripHeight=.076;
+   const edge=group.localToWorld(V(sign*(TEXTBOOK.leafWidth-.018),gripHeight,.013).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
    // Move the wrist and elbow together. Leave the thumb on its authored joint
    // axes instead of winding the thumb around an unreachable point on the page.
    for(let k=0;k<3;k++){
@@ -155,7 +156,8 @@ export function createStudentGestures(group,bones,clips,attachments){
    // Let the torso come back from the keyboard gradually while the hands
    // slide to the desk edge; dropping the parent pose first jerks both arms.
    const readingReach=reading?(bookPose?.contact??1):0;
-   const lean=typing?1:.64*readingReach;
+   // Bring the shoulders forward to meet the book standing on the desk.
+   const lean=typing?1:.84*readingReach;
    typingBlend=reset?lean:T.MathUtils.damp(typingBlend,lean,computerIdle?4:15,dt);
    if(typingBlend>.0001)computerLean(typingBlend,.66*readingReach);
    for(const side of ['Left','Right']){const owned=active&&(typing||computerIdle||reading||thinking||side==='Left'||!seated||mood==='phone');sideBlend[side]=reset?(owned?1:0):T.MathUtils.damp(sideBlend[side],owned?1:0,15,dt);}
@@ -164,7 +166,7 @@ export function createStudentGestures(group,bones,clips,attachments){
    if(active){
     if(typing)keyboard(time);
     else if(computerIdle)computerRest();
-    else if(reading){readBook(time,bookPose);if(bookPose&&bookPose.contact<1){const weight=bookPose.contact*bookPose.contact*(3-2*bookPose.contact);for(const b of managed)b.quaternion.slerp(saved.get(b),1-weight);}}
+    else if(reading)readBook(time,bookPose);
     else if(thinking){freeHand('Left',true,0,0);freeHand('Right',true,0,0);}
     else {hold('Left',{seated,mood,time,nearCenter:mood==='phone'&&seated});
      if(mood==='phone'&&seated)phoneTap(time);else if(!seated)freeHand('Right',false,moving,walkTime);

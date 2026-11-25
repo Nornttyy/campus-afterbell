@@ -1,4 +1,4 @@
-import {bookSpineHeight,BOOK_PAPER_FACE} from './study-book58.js?v=campus-107';
+import {TEXTBOOK,bookAngle,bookSpineHeight,BOOK_PAPER_FACE} from './study-book58.js?v=campus-108';
 import * as T from './vendor/three.module.js';
 import {FIRST_PERSON_PEN_FITS} from './first-person-pen-fit58.js?v=campus-83';
 import {createPenFingerContact} from './pen-motion.js?v=campus-93';
@@ -124,17 +124,15 @@ export function createFirstPersonHandMotion(hand,side){
  };
 }
 
-// Actual uprightBook geometry: two .335 × .45m leaves, each yawed .14rad,
-// hinged .50m ahead of the seated eye at desk height .88m. Contacts follow
-// that existing fold; there is no duplicate viewmodel book or scaled page.
+// The grip follows the physical hinge and both faces of each leaf.
 export function firstPersonBookContacts(side,amount,eyeHeight=1.43){
- const tilt=(1-T.MathUtils.clamp(amount,0,1))*Math.PI/2;
- const leafSide=-side,leaf=new T.Quaternion().setFromAxisAngle(V(0,1,0),leafSide*.14),fold=new T.Quaternion().setFromAxisAngle(V(1,0,0),tilt);
- const point=(z,edge=.325,height=.19)=>{const p=V(leafSide*edge,height,z).applyQuaternion(leaf).applyQuaternion(fold);return V(-p.x,bookSpineHeight(tilt)-eyeHeight+p.y,-.50-p.z);};
+ const tilt=bookAngle(amount);
+ const leafSide=-side,leaf=new T.Quaternion().setFromAxisAngle(V(0,1,0),leafSide*TEXTBOOK.leafYaw),fold=new T.Quaternion().setFromAxisAngle(V(1,0,0),tilt);
+ const point=(z,edge=.325,height=.19)=>{const p=V(leafSide*edge,height,z).applyQuaternion(leaf).applyQuaternion(fold);return V(-p.x,bookSpineHeight(tilt)-eyeHeight+p.y,-TEXTBOOK.seatDistance-p.z);};
  // The index fingertip sits behind the cover; its pad bears on the binding.
  // The thumb rests on the printed side. Rotate the relaxed hand with its
  // leaf so lowering the book never twists the thumb relative to the palm.
- const wrist=Q().setFromEuler(new T.Euler(-.9565,side*1.1603,side*.5006));
+ const wrist=Q().setFromEuler(new T.Euler(-2.37172,side*2.11173,side*.875385));
  const turn=Q().setFromAxisAngle(V(1,0,0),-tilt).multiply(leaf).multiply(wrist);
- return{index:point(.028,.326,.18),thumb:point(-BOOK_PAPER_FACE,.301,.058),quaternion:turn};
+ return{index:point(.052,TEXTBOOK.leafWidth-.008,.14),thumb:point(-BOOK_PAPER_FACE,TEXTBOOK.leafWidth-.071,.158),quaternion:turn};
 }

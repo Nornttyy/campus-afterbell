@@ -1,4 +1,4 @@
-import {START_BELL_POSITION} from './classroom-layout.js?v=campus-101';
+import {START_BELL_POSITION} from './classroom-layout.js?v=campus-108';
 import * as T from './vendor/three.module.js';
 
 // Locally modelled from the user's classroom door/front-wall screenshots.

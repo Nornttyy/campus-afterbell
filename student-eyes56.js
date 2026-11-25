@@ -58,9 +58,11 @@ function repairPupilCaps(geometry,restFromLocal,variant){
  position.needsUpdate=true;if(normal)normal.needsUpdate=true;
  geometry.computeBoundingBox();geometry.computeBoundingSphere();
 }
-// Lower the height of the visible bulb slightly without moving its interior.
+// Seat the existing bulb into the cheek, retaining a round, white profile.
 function shapeSclera(geometry,points,restFromLocal,variant,weights){
  const positions=geometry.attributes.position,inverse=restFromLocal.clone().invert(),local=new T.Vector3();
+ const normal=geometry.attributes.normal,n=new T.Vector3();
+ const toRest=new T.Matrix3().getNormalMatrix(restFromLocal),toLocal=new T.Matrix3().getNormalMatrix(inverse);
  for(let i=0;i<points.length;i++){
   const p=points[i];
   for(const [side,r] of STUDENT_EYE_REGIONS[variant].entries()){
@@ -70,10 +72,19 @@ function shapeSclera(geometry,points,restFromLocal,variant,weights){
    if(weight<=0)continue;
    weights[2*i+side]=Math.max(weight,weights[2*i+side]);
    local.copy(p);local.y-=.12*(p.y-cy)*weight;
+   const depth=Math.max(0,p.z-r.center[2]);
+   local.z-=.16*depth*weight;
+   if(normal){
+    n.fromBufferAttribute(normal,i).applyMatrix3(toRest);
+    n.y/=1-.12*weight;
+    if(depth>0)n.z/=1-.16*weight;
+    n.applyMatrix3(toLocal).normalize();normal.setXYZ(i,n.x,n.y,n.z);
+   }
    local.applyMatrix4(inverse);positions.setXYZ(i,local.x,local.y,local.z);break;
   }
  }
- positions.needsUpdate=true;
+ positions.needsUpdate=true;if(normal)normal.needsUpdate=true;
+ geometry.computeBoundingBox();geometry.computeBoundingSphere();
 }
 // Reuse the authored eye surface for the corneal optics.
 // The rest of the head stays in the normal opaque pass. Shared positions,
@@ -151,8 +162,8 @@ function eyeShellMaterial(source,regions,rest,optics){
    float cool=smoothstep(.53,.77,diffuseColor.b/max(diffuseColor.r,.001));
    float flank=(1.-smoothstep(1.29,1.42,eyeRadius))*smoothstep(edgeDepth-.085,edgeDepth-.059,eyeRest.z);
    float sclera=max(max(wall,neutral*rim),cool*flank);
-   float white=1.-.088*smoothstep(.64,1.10,eyeRadius);
-   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(white),sclera);
+   float white=.989-.111*smoothstep(.62,1.16,eyeRadius);
+   diffuseColor.rgb=mix(diffuseColor.rgb,white*vec3(1.,.983,.968),sclera);
    vec3 origin=(eyeBindFromView*vec4(eyeView,1.)).xyz;
    vec3 ray=normalize(mat3(eyeBindFromView)*(isOrthographic?vec3(0.,0.,-1.):normalize(eyeView)));
    vec4 pupil=abs(eyeRest.x-eyeArea0.x)<abs(eyeRest.x-eyeArea1.x)?eyeBall0:eyeBall1;
@@ -176,7 +187,7 @@ function createInteriors(head,variant){
  const transform=new T.Matrix4(),regions=STUDENT_EYE_REGIONS[variant];
  for(const [i,region] of regions.entries()){
   const [cx,cy,profile]=SCLERA_PATCHES[variant][i];
-  const radius=variant==='boy'?.0125:variant==='ponytail'?.016:.014,z=region.center[2]-.33*(profile[0]-region.center[2]);
+  const radius=variant==='boy'?.017:variant==='ponytail'?.018:.0175,z=region.center[2]-.40*(profile[0]-region.center[2]);
   transform.makeScale(radius,radius,radius).setPosition(cx,cy,z);
   eyes.setMatrixAt(i,transform);optics['eyeBall'+i].value.set(cx,cy,z,radius);
  }

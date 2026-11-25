@@ -1,4 +1,4 @@
-import {isCampusMap,mapKind} from './classroom-layout.js?v=campus-101';
+import {isCampusMap,mapKind} from './classroom-layout.js?v=campus-108';
 
 // Keep the authored floor numbers so reopening a destination does not move any other map.
 export const OPEN_CAMPUS_MAPS=Object.freeze(['bus','playground','classroom','night','tiered','computer','hotpot']);

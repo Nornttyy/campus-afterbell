@@ -40,14 +40,14 @@ export function createStudentSize(group,model,bones,variant){
  }
  return {
   restore(){for(const [b,q] of saved)b.quaternion.copy(q);saved.clear();bones.Spine.position.copy(spinePosition);model.scale.copy(sourceScale);model.position.copy(sourcePosition);armRoots.forEach((b,i)=>b.scale.copy(armScales[i]));},
-  apply({seated,crawling,restraint,dt,reset,tableSupport=true,pairedHands=false,deskArms=false,schoolChair=false,studyPose}){
+  apply({cutStudy=false,seated,crawling,restraint,dt,reset,tableSupport=true,pairedHands=false,deskArms=false,schoolChair=false,studyPose}){
    seatedBlend=reset?(seated?1:0):T.MathUtils.damp(seatedBlend,seated?1:0,10,dt);
    group.updateMatrixWorld(true);
    const atChair=seated&&schoolChair&&!crawling&&restraint==='free';
    pairedBlend=reset?Number(pairedHands):T.MathUtils.damp(pairedBlend,Number(pairedHands),10,dt);
-   const study=studyPose==='writing'||studyPose==='reading'||studyPose==='pen';
+   const lean=atChair?(studyPose==='writing'?1.35:studyPose==='reading'?.42:studyPose==='pen'?.65:0):0;
    chairBlend=reset?Number(atChair):T.MathUtils.damp(chairBlend,Number(atChair),12,dt);
-   writingLean=reset?Number(atChair&&study):T.MathUtils.damp(writingLean,Number(atChair&&study),7,dt);
+   writingLean=reset||cutStudy?lean:T.MathUtils.damp(writingLean,lean,7,dt);
    const support={};for(const side of ['Left','Right'])for(const part of ['Hand','Foot']){const b=bones[side+part];if(b)support[side+part]={position:group.worldToLocal(b.getWorldPosition(V())),rotation:b.getWorldQuaternion(Q())};}
    const pivot=group.worldToLocal(bones[restraint==='carried'?'Neck':'Hips'].getWorldPosition(V()));
    const anchorY=restraint==='carried'?pivot.y:pivot.y*seatedBlend;

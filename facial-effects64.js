@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-106';
+import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-108';
 
 // Masks use the original model's metre-space rest pose, before skinning. They
 // therefore follow the head through sitting, struggling and floor stuns without
@@ -88,7 +88,10 @@ vec2 lidMask(vec4 eye){
  ${variant==='girl'?`float violet=smoothstep(.018,.065,c.r-c.g)*smoothstep(.007,.05,c.b-c.g);
  hairMask=violet*smoothstep(.96,1.04,faceRestPosition.y);`:''}
  hairMask*=1.-smoothstep(.055,.18,c.b-1.6*c.r);
+ ${variant==='girl'?`float nape=smoothstep(1.21,1.27,p.y)*(1.-smoothstep(.00,.07,p.z));
+ hairMask=max(hairMask,nape*(1.-smoothstep(.12,.26,c.g))*skinReject);`:''}
  hairMask*=1.-cloth;
+ ${variant==='glasses'?'hairMask=max(hairMask,smoothstep(1.565,1.590,p.y)*(1.-cloth));':''}
  float value=dot(c,vec3(.30,.59,.11));
  float crownLight=smoothstep(1.37,1.68,faceRestPosition.y+.20*faceRestPosition.z-.17*faceRestPosition.x);
  float shade=.56+.37*crownLight+.17*smoothstep(.001,.052,value);
@@ -96,17 +99,18 @@ vec2 lidMask(vec4 eye){
  float notch=min(abs(faceRestPosition.x+.063-.023*t),abs(faceRestPosition.x-.070+.018*t));
  float width=.015*(1.-t);
  float crease=(1.-smoothstep(width*.5,width+.0025,notch))*smoothstep(.17,.205,faceRestPosition.z)*smoothstep(1.435,1.448,faceRestPosition.y)*(1.-smoothstep(.88,1.,t));
- shade*=1.-.79*crease;`:''}
+ shade*=1.-.53*crease;`:''}
  vec3 hairColor=hairTone*shade;
  vec3 n=normalize(hairNormal);
  ${variant==='boy'?`// The raised forelock shades its underside; the swept crown shares a
  // continuous warm plane with the temples in the classroom reference.
- float upper=smoothstep(-.42,.85,dot(n,normalize(vec3(.46,.84,-.29))));
- float crest=faceRestPosition.z+.12*faceRestPosition.x;
- float forelock=smoothstep(.145,.197,crest)*smoothstep(1.50,1.61,faceRestPosition.y);
- hairColor=mix(vec3(.013,.012,.009),vec3(.34,.289,.212),upper);
- float upperEdge=smoothstep(.06,.58,n.y);
- hairColor=mix(hairColor,mix(vec3(.0023,.0027,.0019),vec3(.070,.060,.041),upperEdge),forelock);`:''}
+ vec3 dome=normalize((p-vec3(0.,1.50,-.020))/vec3(.25,.23,.28));
+ vec3 flow=normalize(mix(n,dome,.36));
+ float upper=smoothstep(-.56,.90,dot(flow,normalize(vec3(.40,.82,-.27))));
+ float crest=smoothstep(.105,.252,p.z+.12*p.x)*smoothstep(1.48,1.62,p.y);
+ float underside=1.-smoothstep(-.58,.65,n.y);
+ hairColor=mix(vec3(.021,.017,.014),vec3(.157,.132,.102),upper);
+ hairColor*=1.-crest*(.25+.44*underside);`:''}
  ${variant==='girl'||variant==='ponytail'?`float plane=smoothstep(-.45,.85,dot(n,normalize(vec3(.36,.83,.25))));
  hairColor*=.71+.32*plane;`:''}
  ${variant==='girl'?`float t=clamp((faceRestPosition.y-1.50)/.145,0.,1.);
@@ -119,8 +123,26 @@ vec2 lidMask(vec4 eye){
  float complexion=smoothstep(.105,.28,c.r-c.g)*smoothstep(.045,.13,c.g-c.b)*smoothstep(.33,.65,c.r);
  diffuseColor.rgb*=mix(vec3(1.),vec3(.839,.938,1.024),complexion);
  ${variant==='girl'?`// The little light-coloured bar belongs to this side of the bob.
- float clip=smoothstep(.12,.20,faceRestPosition.x)*smoothstep(1.49,1.55,faceRestPosition.y)*smoothstep(.40,.70,min(c.r,c.g))*(1.-smoothstep(.13,.29,c.r-c.g));
- diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.99,.83,.87),clip);`:''}`:''}
+ float temple=smoothstep(.185,.220,p.x)*smoothstep(1.526,1.548,p.y)*(1.-smoothstep(1.636,1.655,p.y))*
+              smoothstep(-.012,.008,p.z)*(1.-smoothstep(.116,.135,p.z));
+ diffuseColor.rgb=mix(diffuseColor.rgb,hairColor,temple);
+ // The pale arrow follows the curvature of the original barrette.
+ float z=p.z-.061, y=p.y-(1.603-.42*z);
+ float stem=max(abs(y)-.0058,abs(z)-.033);
+ float tip=max(abs(abs(y)-(.035-z)*.72)-.0038,abs(z-.026)-.012);
+ float dist=min(stem,tip),aa=max(fwidth(dist),.00045);
+ float pin=1.-smoothstep(-aa,aa,dist);
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.98,.79,.84),temple*pin);`:''}`:''}
+ ${variant==='teacher'?`float axis=1.680+.73*p.x*p.x;
+ float band=(1.-smoothstep(.017,.024,abs(p.y-axis)))*(1.-smoothstep(.163,.188,abs(p.x)))*smoothstep(.142,.162,p.z);
+ float stain=1.-smoothstep(.35,.82,c.r);
+ vec3 skin=mix(vec3(.965,.63,.15),vec3(.89,.56,.13),smoothstep(.03,.19,abs(p.x)));
+ diffuseColor.rgb=mix(diffuseColor.rgb,skin,band*stain);
+ float tri=1.-4.*abs(fract((p.x+.006)/.022)-.5);
+ float taper=1.-smoothstep(.105,.177,abs(p.x));
+ float d=abs(p.y-axis-tri*(.002+.0054*taper))-(.0015+.0019*taper);
+ float aa=max(fwidth(d)*.63,.0005);
+ diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.035,.023,.013),(1.-smoothstep(-aa,aa,d))*band);`:''}
  vec2 lids=max(lidMask(faceEyeL),lidMask(faceEyeR));
  float front=smoothstep(.07,.16,faceRestPosition.z);
  diffuseColor.rgb=mix(diffuseColor.rgb,mix(faceSkin,vec3(.035,.022,.014),lids.y),lids.x*front*faceClosed);

@@ -66,12 +66,11 @@ export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
  const kind=mapKind(map);
  const add=(x,z,yaw=0)=>raw.push({deskX:mapKind(map)==='tiered'?(x< -3?x+.15:x):x< -3?x+.45:x,deskZ:z,yaw});
  if(pattern==='facing-aisle'){
-  // The November classroom footage shows two banks looking across the aisle,
-  // with the last row facing the lectern. The chair and drawer rotate together.
-  // Each inward-facing bank has two joined desktops, then a cross aisle.
-  // Their long edges run along Z in this arrangement (the imported top is 1.20 m).
-  for(const z of [-5.90,-4.66,-2.12,-.88,1.66,2.90])for(const x of [-5.04,-1.20,1.20,4.69])add(x,z,x<0?Math.PI/2:-Math.PI/2);
-  for(const x of [-4.65,-1.55,1.55,4.65])add(x,-7.44);
+  // The desks meet in islands; the two inner chairs face away from the aisle.
+  for(const z of [-5.90,-4.66,-2.12,-.88,1.66,2.90]){
+   for(const [x,yaw] of [[-3.65,Math.PI/2],[-2.34,-Math.PI/2],[2.34,Math.PI/2],[3.20,-Math.PI/2]])add(x,z,yaw);
+  }
+  for(const [i,x] of [-4.65,-1.55,1.55,4.65].entries())add(x,-7.52,i%2?Math.PI:0);
  }else if(pattern==='rows-wide'||pattern==='rows-long'){
   const wide=pattern==='rows-wide',xs=wide?[-5,-2.5,0,2.5,5]:[-4.8,-1.6,1.6,4.8];
   // Four rows of five or five rows of four. On terraces the front two rows
@@ -168,8 +167,10 @@ export function ceilingVolumes(map='classroom'){const kind=mapKind(map);return k
 // The teacher laptop is only present on computer floors. Separate base and
 // lid bounds avoid treating the air above its keyboard as a solid monitor.
 const laptopVolumes=Object.freeze([V(-1.175,-.515,7.395,7.825,1.1475,1.1975),V(-1.175,-.515,7.354,7.429,1.1835,1.570)]);
+export const REAR_CLASS_CABINET=Object.freeze({...V(-6.16,-4.98,-9.94,-9.46,0,1.47),id:'rear-class-cabinet'});
+const ordinaryFurniture=Object.freeze([REAR_CLASS_CABINET]);
 export function specialFurnitureVolumes(map='classroom',seats){
- const kind=mapKind(map);return kind==='cafeteria'?SERVING_SOLIDS:kind==='hotpot'?diningPlanForSeats(seats).solids:kind==='toilet'?TOILET_SOLIDS:kind==='dorm'?DORM_SOLIDS:kind==='playground'?PLAYGROUND_SOLIDS.filter(s=>!s.id.includes('-wall')):[];
+ const kind=mapKind(map);return kind==='classroom'?ordinaryFurniture:kind==='cafeteria'?SERVING_SOLIDS:kind==='hotpot'?diningPlanForSeats(seats).solids:kind==='toilet'?TOILET_SOLIDS:kind==='dorm'?DORM_SOLIDS:kind==='playground'?PLAYGROUND_SOLIDS.filter(s=>!s.id.includes('-wall')):[];
 }
 function specialWalkSolids(map,seats){const kind=mapKind(map);return kind==='dorm'?DORM_WALK_SOLIDS:kind==='hotpot'?diningPlanForSeats(seats).walk:kind==='toilet'?TOILET_WALK_SOLIDS:specialFurnitureVolumes(map).filter(s=>!s.walkable);}
 // Keep the office, lift and right corridor enclosed. The replaced classroom
