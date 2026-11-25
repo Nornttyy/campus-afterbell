@@ -129,6 +129,7 @@ export function createFirstPersonHandMotion(hand,side){
 export function firstPersonBookContacts(side,amount,eyeHeight=1.43){
  const leafSide=-side,leaf=new T.Quaternion().setFromAxisAngle(V(0,1,0),leafSide*.14),fold=new T.Quaternion().setFromAxisAngle(V(1,0,0),(1-T.MathUtils.clamp(amount,0,1))*Math.PI/2);
  const point=(z,edge=.325,height=.19)=>{const p=V(leafSide*edge,height,z).applyQuaternion(leaf).applyQuaternion(fold);return V(-p.x,.88-eyeHeight+p.y,-.50-p.z);};
- const turn=new T.Quaternion().setFromEuler(new T.Euler(-.20,side*.45,-side*1.18));
+ const raised=Q().setFromEuler(new T.Euler(-.20,side*.45,-side*1.18));
+ const turn=Q().setFromEuler(new T.Euler(-.82,side*.21,-side*.63)).slerp(raised,ease(amount,0,1));
  return{index:point(.009),thumb:point(-.009,.275,.16),quaternion:turn};
 }

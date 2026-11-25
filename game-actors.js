@@ -7,8 +7,8 @@ import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-93';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-104';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-105';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-105';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -795,7 +795,11 @@ export function createDeskHands({createHand}={}){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
       for(let i=0;i<2;i++){
         const side=i?1:-1,hand=arms[i].hand,contact=firstPersonBookContacts(side,bookAmount),weight=bookBlend;
-        hand.setCurl(.52);hand.setFingerCurl?.('Index',.46);hand.setFingerCurl?.('Middle',.57);hand.setFingerCurl?.('Pinky',.62);
+        const wrap=ease(bookBlend,0,1);
+        hand.setCurl(.19+.33*wrap);
+        hand.setFingerCurl?.('Index',.22+.24*ease(bookBlend,0,.73));
+        hand.setFingerCurl?.('Middle',.18+.39*ease(bookBlend,.06,.92));
+        hand.setFingerCurl?.('Pinky',.17+.45*ease(bookBlend,.15,1));
         const wrist=contact.index.clone().sub(hand.indexTip().multiplyScalar(hand.group.scale.x).applyQuaternion(contact.quaternion));
         hand.group.position.lerp(wrist.applyMatrix4(inv),weight);hand.group.quaternion.slerp(invQ.clone().multiply(contact.quaternion),weight);
         group.updateMatrixWorld(true);const target=contact.thumb.clone().applyMatrix4(group.parent?.matrixWorld||new THREE.Matrix4());

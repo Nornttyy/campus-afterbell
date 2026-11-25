@@ -1,6 +1,6 @@
 import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=campus-104';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-105';
 import {studyBookPose} from './study-book58.js?v=campus-89';
 import {createPenFingerContact} from './pen-motion.js?v=campus-93';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
@@ -122,9 +122,9 @@ export function createStudentGestures(group,bones,clips,attachments){
    const sign=side==='Left'?1:-1;
    // Curved fingers support the outside cover; the thumb opposes them
    // around its lower outer corner. Use real skin pads, not bone tips.
-   for(const d of typingRigs[side].digits){const curl=d.finger==='Thumb'?.42:.55;d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,curl*[.62,.87,.62][d.n-1]));}
+   for(const d of typingRigs[side].digits){const curl={Thumb:.42,Index:.43,Middle:.50,Ring:.53,Pinky:.59}[d.finger];d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,curl*[.62,.87,.62][d.n-1]));}
    const page=Q().setFromAxisAngle(V(0,1,0),sign*.14),orientation=character.clone().multiply(bookRotation).multiply(page);
-   orient(side,V(0,1,0).applyQuaternion(orientation),V(0,0,1).applyQuaternion(orientation));
+   orient(side,V(sign*.24,.97,0).applyQuaternion(orientation),V(0,0,1).applyQuaternion(orientation));
    const normal=V(0,0,1).applyQuaternion(orientation),contact=group.localToWorld(V(sign*.310,.110,.022).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
    for(let k=0;k<3;k++){group.updateMatrixWorld(true);const tip=readingTips[side](),wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q()),target=wrist.getWorldPosition(V()).add(contact.clone().sub(tip));arm(side,target);wrist.quaternion.copy(wrist.parent.getWorldQuaternion(Q()).invert().multiply(rotation));}
    const planeOrigin=group.localToWorld(V(...pose.position));

@@ -34,19 +34,32 @@ export function createFingerRig(group,bones,side){
  }
  return {digits,frame};
 }
-export function createStudentHandMotion(group,bones,{seed=0,authoredNeutral=false,authoredTableContact=false}={}){
+// Additional finger flexion measured on the relaxed, skinned hands above
+// the school desk. Angles match each imported rig, in index-to-pinky order.
+const deskFlex={
+ boy:[[.48,.48,.48,.48],[.48,.48,.48,.44]],
+ girl:[[.23,.31,.48,.22],[.26,.28,.48,.32]],
+ glasses:[[.22,.26,.48,.48],[.21,.28,.48,.48]],
+ ponytail:[[.14,.18,.48,.27],[.08,.10,.48,.11]]
+};
+export function createStudentHandMotion(group,bones,{seed=0,authoredNeutral=false,authoredTableContact=false,variant}={}){
  group.updateMatrixWorld(true);const hands=[],saved=new Map();let restraintBlend=0;
  for(const [side,sign]of [['Left',1],['Right',-1]]){
   const wrist=bones[side+'Hand'];if(!wrist)continue;
   const rig=createFingerRig(group,bones,side);if(!rig.frame)continue;
   const {along,across,normal}=rig.frame,inv=wrist.getWorldQuaternion(Q()).invert();
   const h={wrist,sign,side,across:across.clone().applyQuaternion(inv),along:along.clone().applyQuaternion(inv),normal:normal.clone().applyQuaternion(inv),digits:rig.digits,previous:null,idleWeight:0,contactWeight:0,gripWeight:authoredNeutral?0:1,values:{curl:authoredNeutral?.08:.15,rx:0,ry:0,rz:0,thumb:0}};
+  for(const d of h.digits){
+   const digit=['Index','Middle','Ring','Pinky'].indexOf(d.finger);
+   d.deskCurl=(deskFlex[variant]?.[side==='Left'?0:1]?.[digit]||0)*[.88,.38,.16][d.n-1];
+  }
+  h.supportBlend=0;
   h.localBasis=basis(h.along,h.normal).invert();
   hands.push(h);
  }
  return{
   restore(){for(const[b,q]of saved)b.quaternion.copy(q);saved.clear();},
-  apply({time=0,dt=0,reset=false,seated=true,mood='resting',restraint='free',moving=0,carrying=false,capture=null}={}){
+  apply({time=0,dt=0,reset=false,seated=true,mood='resting',restraint='free',moving=0,carrying=false,capture=null,sitWeight=1,writeWeight=0}={}){
    const a=reset?1:1-Math.exp(-13*dt),phase=time+seed*.73;
    const freeMood=!seated&&!carrying&&['writing','computer','phone','snack','thinking','chat','hero'].includes(mood)?'resting':mood;
    const kind=capture&&capture.kind!=='free'?capture.kind:restraint==='free'?freeMood:restraint;
@@ -69,6 +82,9 @@ export function createStudentHandMotion(group,bones,{seed=0,authoredNeutral=fals
     const tableContact=authoredTableContact&&seated&&!posed&&restraint==='free'&&(['resting','writing'].includes(kind)||(right&&kind==='snack'));
     h.contactWeight=reset?(tableContact?1:0):T.MathUtils.damp(h.contactWeight,tableContact?1:0,13,dt);
     if(tableContact){activeGrip=false;rx=0;}
+    const restingPad=authoredTableContact&&seated&&!carrying&&!posed&&restraint==='free'&&
+      (kind==='resting'||kind==='listening'||kind==='writing'&&!right);
+    h.supportBlend=reset?Number(restingPad):T.MathUtils.damp(h.supportBlend,Number(restingPad),12,dt);
     for(const[k,v]of Object.entries({curl,rx,ry,rz,thumb}))values[k]=T.MathUtils.lerp(values[k],v,a);
     h.gripWeight=authoredNeutral?(reset?(activeGrip?1:0):T.MathUtils.damp(h.gripWeight,activeGrip?1:0,13,dt)):1;
     saved.set(h.wrist,h.wrist.quaternion.clone());
@@ -120,6 +136,7 @@ export function createStudentHandMotion(group,bones,{seed=0,authoredNeutral=fals
      // hook inward. Only blend toward an explicit grip while it is requested.
      const grip=d.rest.clone().multiply(Q().setFromAxisAngle(d.axis,amount*[.62,.87,.62][d.n-1]));
      d.bone.quaternion.slerp(grip,h.gripWeight);
+     if(h.supportBlend>.001&&d.deskCurl)d.bone.quaternion.multiply(Q().setFromAxisAngle(d.axis,h.supportBlend*d.deskCurl*.90*T.MathUtils.smoothstep(!right&&kind==='writing'?writeWeight:sitWeight,.86,.997)));
     }
     // Rotate the thumb toward the index/middle grip, in the imported joint basis.
     group.updateMatrixWorld(true);

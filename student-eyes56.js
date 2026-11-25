@@ -142,9 +142,11 @@ function eyeShellMaterial(source,regions,rest,optics){
    float low=min(min(diffuseColor.r,diffuseColor.g),diffuseColor.b);
    float high=max(max(diffuseColor.r,diffuseColor.g),diffuseColor.b);
    float neutral=smoothstep(.25,.49,low)*(1.-smoothstep(.06,.16,high-low));
-   float rim=1.-smoothstep(1.18,1.35,min(length((eyeRest.xy-eyeArea0.xy)/eyeArea0.zw),length((eyeRest.xy-eyeArea1.xy)/eyeArea1.zw)));
+   float eyeRadius=min(length((eyeRest.xy-eyeArea0.xy)/eyeArea0.zw),length((eyeRest.xy-eyeArea1.xy)/eyeArea1.zw));
+   float rim=1.-smoothstep(1.18,1.35,eyeRadius);
    float sclera=max(wall,neutral*rim);
-   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(1.),sclera);
+   float white=1.-.088*smoothstep(.64,1.10,eyeRadius);
+   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(white),sclera);
    vec3 origin=(eyeBindFromView*vec4(eyeView,1.)).xyz;
    vec3 ray=normalize(mat3(eyeBindFromView)*(isOrthographic?vec3(0.,0.,-1.):normalize(eyeView)));
    vec4 pupil=abs(eyeRest.x-eyeArea0.x)<abs(eyeRest.x-eyeArea1.x)?eyeBall0:eyeBall1;
@@ -168,7 +170,7 @@ function createInteriors(head,variant){
  const transform=new T.Matrix4(),regions=STUDENT_EYE_REGIONS[variant];
  for(const [i,region] of regions.entries()){
   const [cx,cy,profile]=SCLERA_PATCHES[variant][i];
-  const radius=variant==='ponytail'?.020:.019,z=region.center[2]-.33*(profile[0]-region.center[2]);
+  const radius=variant==='boy'?.0125:variant==='ponytail'?.016:.014,z=region.center[2]-.33*(profile[0]-region.center[2]);
   transform.makeScale(radius,radius,radius).setPosition(cx,cy,z);
   eyes.setMatrixAt(i,transform);optics['eyeBall'+i].value.set(cx,cy,z,radius);
  }
