@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-102';
+import {STUDENT_EYE_REGIONS} from './student-eyes56.js?v=campus-103';
 
 // Masks use the original model's metre-space rest pose, before skinning. They
 // therefore follow the head through sitting, struggling and floor stuns without
@@ -11,12 +11,14 @@ const profiles={
  glasses:{bounds:[1.16,1.65,.32,-.025],skin:'#ffc8a5'},
  teacher:{bounds:[1.48,2.04,.36,-.025],skin:'#ffdc71',eyes:[{center:[-.116,1.827,.219],radius:[.089,.107]},{center:[.114,1.827,.219],radius:[.089,.107]}]}
 };
+const hairPalette={boy:'#403b34',girl:'#8b809e',ponytail:'#997a5c',glasses:'#4b4138'};
 export function createFacialEffects(model,{variant='boy'}={}){
  const profile=profiles[variant]||profiles.boy,rawEyes=profile.eyes||STUDENT_EYE_REGIONS[variant]||[],owned=[];
  // Gaze regions deliberately cover only the pupil/front. A closed eyelid must
  // cover the full sclera, including its bottom rim and curved side surface.
  const eyeRegions=rawEyes.map(eye=>({center:[eye.center[0],eye.center[1]-(variant==='teacher'?.003:.012),eye.center[2]],radius:eye.radius.map(v=>v*(variant==='teacher'?1.12:1.38))}));
- const uniforms={faceClosed:{value:0},faceInk:{value:0},faceBounds:{value:new T.Vector4(...profile.bounds)},faceSkin:{value:new T.Color(profile.skin)},faceEyeL:{value:new T.Vector4(...(eyeRegions[0]?[...eyeRegions[0].center.slice(0,2),...eyeRegions[0].radius]:[0,0,0,0]))},faceEyeR:{value:new T.Vector4(...(eyeRegions[1]?[...eyeRegions[1].center.slice(0,2),...eyeRegions[1].radius]:[0,0,0,0]))}};
+ const hair=hairPalette[variant];
+ const uniforms={...(hair?{hairTone:{value:new T.Color(hair)}}:{}),faceClosed:{value:0},faceInk:{value:0},faceBounds:{value:new T.Vector4(...profile.bounds)},faceSkin:{value:new T.Color(profile.skin)},faceEyeL:{value:new T.Vector4(...(eyeRegions[0]?[...eyeRegions[0].center.slice(0,2),...eyeRegions[0].radius]:[0,0,0,0]))},faceEyeR:{value:new T.Vector4(...(eyeRegions[1]?[...eyeRegions[1].center.slice(0,2),...eyeRegions[1].radius]:[0,0,0,0]))}};
  model.updateWorldMatrix(true,true);
  model.traverse(mesh=>{
   if(!mesh.isSkinnedMesh)return;
@@ -28,6 +30,7 @@ export function createFacialEffects(model,{variant='boy'}={}){
     shader.vertexShader='varying vec3 faceRestPosition;\nuniform mat4 faceRestFromLocal;\n'+shader.vertexShader;
     shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nfaceRestPosition=(faceRestFromLocal*vec4(position,1.)).xyz;');
     shader.fragmentShader=`varying vec3 faceRestPosition;
+${hair?'uniform vec3 hairTone;':''}
 uniform float faceClosed;uniform float faceInk;uniform vec4 faceBounds;
 uniform vec4 faceEyeL;uniform vec4 faceEyeR;uniform vec3 faceSkin;
 vec2 lidMask(vec4 eye){
@@ -39,6 +42,27 @@ vec2 lidMask(vec4 eye){
 }
 `+shader.fragmentShader;
     shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+ ${hair?`vec3 c=diffuseColor.rgb;
+ // The dark hair in the existing atlas shares a material with brows, lenses,
+ // pupils and skin. Restrict the change to the cranium and side/back locks.
+ float crown=smoothstep(${variant==='ponytail'?'1.428,1.455':'1.485,1.52'},faceRestPosition.y);
+ float backHair=1.-smoothstep(.035,.105,faceRestPosition.z);
+ float lock=smoothstep(.18,.23,abs(faceRestPosition.x))*step(faceRestPosition.z,.15);
+ float head=smoothstep(${variant==='girl'?'1.01,1.09':'1.17,1.24'},faceRestPosition.y)*max(crown,max(backHair,lock));
+ float skinReject=1.-smoothstep(.10,.29,c.r-c.b);
+ float hairMask=head*skinReject*(1.-smoothstep(.18,.33,c.g));
+ ${variant==='girl'?`float violet=smoothstep(.018,.065,c.r-c.g)*smoothstep(.007,.05,c.b-c.g);
+ hairMask=violet*smoothstep(.96,1.04,faceRestPosition.y);`:''}
+ hairMask*=1.-smoothstep(.055,.18,c.b-1.6*c.r);
+ float value=dot(c,vec3(.30,.59,.11));
+ float crownLight=smoothstep(1.37,1.68,faceRestPosition.y+.20*faceRestPosition.z-.17*faceRestPosition.x);
+ float shade=.56+.37*crownLight+.17*smoothstep(.001,.052,value);
+ ${variant==='ponytail'?`float t=clamp((faceRestPosition.y-1.442)/.154,0.,1.);
+ float notch=min(abs(faceRestPosition.x+.063-.023*t),abs(faceRestPosition.x-.070+.018*t));
+ float width=.015*(1.-t);
+ float crease=(1.-smoothstep(width*.5,width+.0025,notch))*smoothstep(.17,.205,faceRestPosition.z)*smoothstep(1.435,1.448,faceRestPosition.y)*(1.-smoothstep(.88,1.,t));
+ shade*=1.-.79*crease;`:''}
+ diffuseColor.rgb=mix(c,hairTone*shade,hairMask);`:''}
  vec2 lids=max(lidMask(faceEyeL),lidMask(faceEyeR));
  float front=smoothstep(.07,.16,faceRestPosition.z);
  diffuseColor.rgb=mix(diffuseColor.rgb,mix(faceSkin,vec3(.035,.022,.014),lids.y),lids.x*front*faceClosed);
@@ -46,7 +70,6 @@ vec2 lidMask(vec4 eye){
  face*=1.-smoothstep(faceBounds.z-.025,faceBounds.z,abs(faceRestPosition.x));
  face*=smoothstep(faceBounds.w,faceBounds.w+.025,faceRestPosition.z);
  diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.002,.0025,.003),face*faceInk);
-${source.userData.opticalShell ? "diffuseColor.a=mix(diffuseColor.a,1.,max(lids.x*front*faceClosed,face*faceInk));" : ""}
 `);
    };
    material.customProgramCacheKey=()=>cache()+'-face64-'+variant;owned.push(material);return material;

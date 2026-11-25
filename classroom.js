@@ -1,9 +1,9 @@
 import {setDish} from './hotpot-food94.js?v=campus-94';
-import {CampusModelLoader} from './model-delivery93.js?v=campus-93';
+import {CampusModelLoader} from './model-delivery93.js?v=campus-103';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
 import {reachesRadio} from './campus-radio93.js?v=campus-97';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {paperQuestion} from './upper-floor-view85.js?v=campus-102';
+import {paperQuestion} from './upper-floor-view85.js?v=campus-103';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-94';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-92';
 import {FURNITURE_SOURCES67,loadFurniture67} from './furniture-assets67.js?v=campus-99';
@@ -26,23 +26,23 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-83';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-83';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork} from './campus-artwork.js?v=campus-93';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-102';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-103';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-101';
-import {createRoomVariants} from './room-variants.js?v=campus-102';
+import {createRoomVariants} from './room-variants.js?v=campus-103';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
 import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96';
 import * as THREE from './vendor/three.module.js';
-import {CAMPUS_SURFACE_SOURCES,loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-99';
+import {CAMPUS_SURFACE_SOURCES,loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-103';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-102';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-103';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-102';
-import {loadStudentAssets} from './student-assets.js?v=campus-102';
+import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-103';
+import {loadStudentAssets} from './student-assets.js?v=campus-103';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-102';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-103';
 import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-101';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
@@ -194,7 +194,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   });}
   // Rounded edges catch narrow highlights, as on everyday laminated school furniture.
   const roundedCache=new Map();
-  function roundedGeometry(w,h,d,r=.015){const key=[w,h,d,r].join(',');if(roundedCache.has(key))return roundedCache.get(key);r=Math.min(r,h*.24,w*.24,d*.24);const a=w-2*r,b=h-2*r,q=Math.min(r,b*.35),x=-a/2,y=-b/2,shape=new THREE.Shape();shape.moveTo(x+q,y);shape.lineTo(x+a-q,y);shape.quadraticCurveTo(x+a,y,x+a,y+q);shape.lineTo(x+a,y+b-q);shape.quadraticCurveTo(x+a,y+b,x+a-q,y+b);shape.lineTo(x+q,y+b);shape.quadraticCurveTo(x,y+b,x,y+b-q);shape.lineTo(x,y+q);shape.quadraticCurveTo(x,y,x+q,y);const g=new THREE.ExtrudeGeometry(shape,{depth:d-2*r,bevelEnabled:true,bevelSize:r,bevelThickness:r,bevelSegments:3,steps:1,curveSegments:4});g.translate(0,0,-(d-2*r)/2);assets.add(g);roundedCache.set(key,g);return g;}
+  function roundedGeometry(w,h,d,r=.015){const key=[w,h,d,r].join(',');if(roundedCache.has(key))return roundedCache.get(key);r=Math.min(r,h*.24,w*.24,d*.24);const a=w-2*r,b=h-2*r,q=Math.min(r,b*.35),x=-a/2,y=-b/2,shape=new THREE.Shape();shape.moveTo(x+q,y);shape.lineTo(x+a-q,y);shape.quadraticCurveTo(x+a,y,x+a,y+q);shape.lineTo(x+a,y+b-q);shape.quadraticCurveTo(x+a,y+b,x+a-q,y+b);shape.lineTo(x+q,y+b);shape.quadraticCurveTo(x,y+b,x,y+b-q);shape.lineTo(x,y+q);shape.quadraticCurveTo(x,y,x+q,y);const g=new THREE.ExtrudeGeometry(shape,{depth:d-2*r,bevelEnabled:true,bevelSize:r,bevelThickness:r,bevelSegments:1,steps:1,curveSegments:2});g.translate(0,0,-(d-2*r)/2);assets.add(g);roundedCache.set(key,g);return g;}
   function rounded(m,p,s,r=.015,rotation=null,parent=room){return mesh(roundedGeometry(...s,r),m,p,[1,1,1],rotation,parent);}
   const pipeCache=new Map();
   function pipe(m,points,radius=.022,parent=room){const key=radius+'|'+JSON.stringify(points);let g=pipeCache.get(key);if(!g){g=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)),false,'centripetal'),Math.max(10,points.length*4),radius,6,false);pipeCache.set(key,g);assets.add(g);}return mesh(g,m,[0,0,0],[1,1,1],null,parent);}
@@ -233,32 +233,8 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     bookLandscape(c,532,398,492,242);
   });
   const coverMat=mat('#ffffff',{map:coverTexture,roughness:.81});
-  function exercisePrint(right){return texture(512,640,(c,w,h)=>{
-    c.fillStyle='#f2ecd9';c.fillRect(0,0,w,h);c.fillStyle='#292b27';c.textAlign='center';
-    c.font='25px Georgia,serif';c.fillText(right?'6':'5',256,48);
-    c.font='bold 29px "Songti SC","SimSun",serif';c.fillText(right?'《老子》四章':'《论语》十二章',256,98);
-    const lines=right?[
-      '知人者智，自知者明。胜人者有力，自胜者强。',
-      '知足者富，强行者有志。不失其所者久。',
-      '合抱之木，生于毫末。九层之台，起于累土。',
-      '千里之行，始于足下。慎终如始，则无败事。'
-    ]:[
-      '子曰：“学而时习之，不亦说乎？有朋自远方来，',
-      '不亦乐乎？人不知而不愠，不亦君子乎？”',
-      '子曰：“温故而知新，可以为师矣。”',
-      '子曰：“学而不思则罔，思而不学则殆。”'
-    ];
-    c.textAlign='left';c.font='17px "Songti SC","SimSun",serif';
-    lines.forEach((line,i)=>c.fillText(line,47,145+i*35));
-    bookLandscape(c,right?234:33,287,243,164);
-    c.fillStyle='#33362e';c.font='bold 18px "Songti SC",serif';c.fillText('注释',right?40:301,329);
-    c.font='13px "Songti SC",serif';
-    const notes=right?['毫末，细毛的末端。','累土，堆积的泥土。','慎终如始，','同开始时一样慎重。']:['时习，按时温习。','愠，生气、恼怒。','罔，迷惑。','殆，疑惑。'];
-    notes.forEach((line,i)=>c.fillText(line,right?40:301,359+i*23));
-    c.fillRect(35,482,w-70,1);c.font='17px "Songti SC",serif';c.fillText('思考与练习',38,519);
-    c.font='14px "Songti SC",serif';c.fillText('朗读课文，联系上下文，说说你对文中这段话的理解。',38,554);
-  });}
-  const printMat=mat('#ffffff',{map:exercisePrint(false),roughness:.94}),printRightMat=mat('#ffffff',{map:exercisePrint(true),roughness:.94});
+  const printMat=mat('#faf7ef',{map:surfaces?.bookLeft||null,roughness:.94});
+  const printRightMat=mat('#faf7ef',{map:surfaces?.bookRight||null,roughness:.94});
   // Terrazzo is a warm cement field with sparse irregular aggregates, not white confetti.
   const floorTexture=surfaces?.floor||texture(1024,1024,(c,w,h)=>{
     let seed=123;const rand=()=>{seed=seed*16807%2147483647;return seed/2147483647;};
@@ -543,8 +519,15 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     variants.setSeats(seats);canvas.dataset.seatLayout=JSON.stringify({pattern:seats[0]?.pattern||'',seats:seats.map(({id,deskX,deskZ,yaw})=>({id,deskX,deskZ,yaw}))});
   }
   function setOrdinaryDay(active){
-    campus.setDaylight(active);scene.background=active?campus.daylight.sky:baseBackground;
+    campus.daylight.setOrdinary(active);campus.setDaylight(active);scene.background=active?campus.daylight.sky:baseBackground;
     contactMat.opacity=active?.80:.62;
+    if(active){
+      // Cool skylight in the aisles, warm indirect light off the desks.
+      ambient.color.set('#eff6fc');ambient.groundColor.set('#eadfcf');
+      ambient.intensity=4.08;fill.intensity=.85;teachingFill.intensity=.92;
+      sun.color.set('#fff0d8');sun.intensity=4.20;
+      ceilingMaterial.color.set('#e2e8eb');
+    }
     if(grout)grout.value=active?.24:.22;
   }
   function setMap(value){
@@ -667,6 +650,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   function setGameplay(state){
     if(!state){
       if(!gameplay)return;gameplay=null;socialBlend=0;socialShot=null;teachingEnd.visible=false;teacher.group.visible=false;hands.group.visible=false;flash.visible=false;flashMat.opacity=0;feedbackTime=0;teacherWorldSample=null;teacherWorldSpeed=0;drawerItems.visible=false;raisedSlot=null;drawerFocus=0;drawerItemSignature='';
+      if(mapVariant==='classroom')applyRoomLighting(false,{ambient,sun,fill,teachingFill,lampMat,ceilingMaterial,scene});
       setOrdinaryDay(false);staminaVision.reset();chalkPowder.clear();soundCues.update(null,0);surveillanceView.update(null);updateSmoke(null);bubbleEffects.update(null);itemEffects50.update(null);updateTeacherTools(null,0);clearTeacherFeedback();
       setSeats(SEATS,true);restorePupils();camera.fov=menuFov();camera.updateProjectionMatrix();canvas.style.cursor=tourEnabled?'grab':'';canvas.dataset.gameplay='false';canvas.dataset.itemReady='false';return;
     }
