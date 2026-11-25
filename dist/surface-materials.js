@@ -2,7 +2,7 @@ import * as T from './vendor/three.module.js';
 
 const root='./assets/materials/';
 export const CAMPUS_SURFACE_SOURCES=Object.freeze({
- bookLeft:root+'guowen-1926-left.webp',bookRight:root+'guowen-1926-right.webp',
+ bookCover:root+'grade7-cover-107.webp',bookLeft:root+'lunyu-12-107.webp',bookRight:root+'laozi-4-107.webp',
  officeOak:root+'office-oak92.webp',floor:root+'classroom-aggregate91.webp',wall:root+'paint-plaster-34-lossless93.webp',board:root+'chalkboard-34-lossless93.webp',veneer:root+'maple-veneer91.webp',
  turf:root+'field-turf91.webp',track:root+'track-granules91.webp',tile:root+'washroom-tile91.webp',cloth:root+'dorm-flannel91.webp',facade:root+'school-facade91.webp',upholstery:root+'coach-upholstery91.webp',broth:root+'hotpot-broth91.webp'
 });
@@ -11,7 +11,7 @@ export async function loadCampusSurfaces(files=CAMPUS_SURFACE_SOURCES){
  const loader=new T.TextureLoader();
  const entries=await Promise.all(Object.entries(files).map(async([key,file])=>{
   const map=await loader.loadAsync(new URL(file,import.meta.url).href);
-  map.colorSpace=T.SRGBColorSpace;map.wrapS=map.wrapT=key==='bookLeft'||key==='bookRight'?T.ClampToEdgeWrapping:['wall','board'].includes(key)?T.MirroredRepeatWrapping:T.RepeatWrapping;
+  map.colorSpace=T.SRGBColorSpace;map.wrapS=map.wrapT=key.startsWith('book')?T.ClampToEdgeWrapping:['wall','board'].includes(key)?T.MirroredRepeatWrapping:T.RepeatWrapping;
   map.anisotropy=4;return[key,map];
  }));
  return Object.fromEntries(entries);

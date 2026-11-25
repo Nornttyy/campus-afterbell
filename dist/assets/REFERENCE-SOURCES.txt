@@ -29,7 +29,17 @@ Photoshop and Unity screens display the sourced screenshots as static images; th
 
 Campus 79 networking dependency: PeerJS 1.5.5, https://www.npmjs.com/package/peerjs and https://github.com/peers/peerjs . MIT license bundled at ../vendor/peerjs-LICENSE.txt. Browser direct rooms use the public PeerJS signaling service, plus Cloudflare and Google STUN; no TURN relay or availability guarantee. No microphone is enabled automatically.
 
-Classroom textbook interior · 共和国教科书新国文, 莊俞 and 沈頤, 商務印書館, 1926.
+Archived textbook scans · 共和国教科书新国文, 莊俞 and 沈頤, 商務印書館, 1926.
 National Library of China scan NLC416-09jh005094-48138, PDF leaves 8 and 9.
 Public domain scan (PD-China / PD-scan). Full pages converted to lossless WebP.
 https://commons.wikimedia.org/wiki/File:NLC416-09jh005094-48138_共和國教科書新國文.pdf
+
+Classroom textbook interior (campus-107): original typesetting of twelve selections from the Analects and chapters 11, 24, 33 and 64 of the Daodejing. The illustrated Grade 7 Chinese cover is game artwork.
+https://zh.wikisource.org/wiki/論語/全覽
+https://zh.wikisource.org/wiki/道德經_(王弼本)
+
+Textbook plates (public domain artworks, source images at Wikimedia Commons)
+Confucius: https://commons.wikimedia.org/wiki/File:Confucius_Tang_Dynasty.jpg
+Confucius meeting Laozi: https://commons.wikimedia.org/wiki/File:Konfuzius-laozi.jpg
+Grade 7 cover landscape: Fan Kuan, Travelers Among Mountains and Streams (detail).
+https://commons.wikimedia.org/wiki/File:Fan_K%27uan_001.jpg

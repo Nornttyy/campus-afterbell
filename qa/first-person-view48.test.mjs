@@ -24,6 +24,27 @@ test('foreground pass clears scene depth without disabling depth between fingers
  hand.visible=false;view.render();assert.equal(order.length,2,'hidden hands still render on menu');
 });
 
+test('the reading pass hides far fingers behind the actual moving pages on both leaves',()=>{
+ const view=createFirstPersonView({},new T.PerspectiveCamera(),[new T.Group()]);
+ const book=new T.Group(),pages=[];
+ for(const side of [-1,1]){
+  const hinge=new T.Group(),page=new T.Mesh(new T.BoxGeometry(.335,.45,.018));
+  page.material.name='textbook-page-block';page.position.set(side*.1675,.225,0);
+  hinge.rotation.y=side*.14;hinge.add(page);book.add(hinge);pages.push(page);
+ }
+ book.position.set(2,.88,3);
+ for(const angle of [0,.7,Math.PI/2]){
+  book.rotation.x=angle;view.occludeWithBook(book);view.scene.updateMatrixWorld(true);
+  const masks=view.scene.children.filter(o=>o.isMesh);
+  assert.equal(masks.length,2);
+  masks.forEach((mask,i)=>{
+   assert.equal(mask.geometry,pages[i].geometry);assert.deepEqual(mask.matrixWorld.elements,pages[i].matrixWorld.elements);
+   assert.ok(mask.visible&&mask.renderOrder<0&&mask.material.depthWrite&&!mask.material.colorWrite);
+  });
+ }
+ view.occludeWithBook(null);assert.ok(view.scene.children.filter(o=>o.isMesh).every(o=>!o.visible));
+});
+
 test('walking phase follows actual distance, freezes while blocked or paused and decays when stopped',()=>{
  let p={x:0,z:0,yaw:0,seated:false,captivity:'free'},s=sampleFirstPersonMotion(null,p,0);
  for(let i=1;i<=60;i++){p.z+=1.8/60;s=sampleFirstPersonMotion(s,p,i/60);}

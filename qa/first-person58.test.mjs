@@ -1,3 +1,4 @@
+import {writingPageY} from '../dist/study-book58.js';
 import {teacherViewHeight} from '../dist/camera-height58.js?v=campus-83';
 import test from 'node:test';import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';import {createDeskHands} from '../dist/game-actors.js?v=campus-84';import {createRiggedPalm} from '../dist/student-assets.js';import {firstPersonBookContacts} from '../dist/first-person-hand-motion.js?v=campus-83';import {loadGeometry} from './gltf-geometry.mjs';import {handSamplingRig,propSurface} from './whole-palm-geometry54.mjs';
@@ -14,9 +15,18 @@ test('book hands meet both original leaves while the source bone lengths remain 
  const h=make(),hands=parts(h),bones=[];h.group.traverse(o=>{if(o.isBone)bones.push([o,o.position.clone()]);});for(let f=0;f<180;f++)h.update(f*DT,{seated:true,freeLook:true,bookAmount:1});h.group.updateMatrixWorld(true);
  hands.forEach(({hand,rig},i)=>{const side=i?1:-1,c=firstPersonBookContacts(side,1),index=hand.indexTip().applyMatrix4(hand.group.matrixWorld);assert.ok(index.distanceTo(c.index)<.0001);assert.ok(Math.sign(index.x)===side);let thumbGap=Infinity;for(const p of rig.points('Thumb'))thumbGap=Math.min(thumbGap,p.applyMatrix4(hand.group.matrixWorld).distanceTo(c.thumb));assert.ok(thumbGap<.006,'real thumb does not oppose the book edge');});for(const[b,p]of bones)assert.ok(b.position.distanceTo(p)<1e-10);
 });
+test('raising or lowering a book leaves both thumbs in a relaxed joint range',()=>{
+ const view=make(),hands=parts(view),rest=[];
+ for(const {rig} of hands)for(const digit of rig.chains.Thumb.digits)rest.push([digit.bone,digit.bone.quaternion.clone()]);
+ let time=0;
+ for(const amount of [0,.25,.60,1,.60,.25,0]){
+  for(let frame=0;frame<35;frame++)view.update(time+=DT,{seated:true,freeLook:true,bookAmount:amount});
+  if(amount>0)for(const [bone,start] of rest)assert.ok(bone.quaternion.angleTo(start)<.58,amount+' over-rotated thumb joint '+bone.name+' '+bone.quaternion.angleTo(start));
+ }
+});
 test('gel pen stays horizontally twirling, full fingers stay outside the shaft, and writing reaches the real page with larger strokes',()=>{
  const h=make(),hand=h.getHand('right'),rig=handSamplingRig(hand,{side:'Right',samples:100000}),pen=h.group.getObjectByName('red-school-pen'),surface=propSurface(pen);let time=0;for(let f=0;f<150;f++)h.update(time+=DT,{action:'pen',carrying:true,freeLook:true});const boneLengths=new Map();hand.group.traverse(o=>{if(o.isBone)boneLengths.set(o,o.position.clone());});const writeTips=[];let maxPenetration=0,maxIndexGap=0,maxThumbGap=0;
- for(let f=0;f<360;f++){const writing=f>=120;h.update(time+=DT,{action:'pen',carrying:true,penWriting:writing,freeLook:true});h.group.updateMatrixWorld(true);if(f<120)assert.ok(Math.abs(V(0,1,0).applyQuaternion(pen.getWorldQuaternion(new T.Quaternion())).y)<.00001,'twirl forms a vertical wheel');if(f>=220){const tip=V(0,-.0875,0).applyMatrix4(pen.matrixWorld),page=.88+Math.abs(tip.x)*Math.tan(.14)+.005-1.43;assert.ok(Math.abs(tip.y-page)<.001);writeTips.push(tip);}
+ for(let f=0;f<360;f++){const writing=f>=120;h.update(time+=DT,{action:'pen',carrying:true,penWriting:writing,freeLook:true});h.group.updateMatrixWorld(true);if(f<120)assert.ok(Math.abs(V(0,1,0).applyQuaternion(pen.getWorldQuaternion(new T.Quaternion())).y)<.00001,'twirl forms a vertical wheel');if(f>=220){const tip=V(0,-.0875,0).applyMatrix4(pen.matrixWorld),page=writingPageY(tip.x)-1.43;assert.ok(Math.abs(tip.y-page)<.001);writeTips.push(tip);}
   if(f%8||f>=120&&f<220)continue;const inverse=pen.matrixWorld.clone().invert();for(const finger of ['Index','Middle','Pinky','Thumb','Palm','Ring']){let gap=Infinity,depth=0;for(const p of rig.points(finger)){p.applyMatrix4(hand.group.matrixWorld).applyMatrix4(inverse);const r=surface.query(p);gap=Math.min(gap,r.distance);if(r.signed<0)depth=Math.max(depth,r.distance);}maxPenetration=Math.max(maxPenetration,depth);if(finger==='Index')maxIndexGap=Math.max(maxIndexGap,gap);if(finger==='Thumb'&&writing)maxThumbGap=Math.max(maxThumbGap,gap);}
  }
  assert.ok(maxPenetration<.0025,`pen enters real finger skin ${(maxPenetration*1000).toFixed(2)}mm`);assert.ok(maxIndexGap<.005,`index gap ${maxIndexGap}`);assert.ok(maxThumbGap<.005,`writing thumb gap ${maxThumbGap}`);assert.ok(Math.max(...writeTips.map(p=>p.x))-Math.min(...writeTips.map(p=>p.x))>.10);assert.deepEqual(pen.scale.toArray(),[1,1,1]);for(const[b,p]of boneLengths)assert.ok(b.position.distanceTo(p)<1e-10);

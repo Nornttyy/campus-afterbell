@@ -35,7 +35,16 @@ test('delivery models retain every mesh, skin, animation, accessor and its compl
   }
   for(const [i,image] of (web.doc.images||[]).entries()){
    const old=source.doc.images[i],raw=view(source,old.bufferView);
-   if(image.uri){const data=await readFile(new URL('stream93/'+image.uri,assets));assert.ok(data.equals(raw));shared.add(image.uri);}
+   if(i===0&&/^(student-(boy-v4|girl-v4|glasses-v2|ponytail-v1)|teacher-v2)$/.test(name)){
+    assert.equal(image.uri,'../materials/'+name+'-cloth107.webp');
+    assert.deepEqual(web.doc.textures[0].extensions.EXT_texture_webp,{source:0});
+    const atlas=await readFile(new URL('stream93/'+image.uri,assets));
+    assert.equal(atlas.toString('ascii',8,12),'WEBP');
+    assert.equal(atlas.toString('ascii',12,16),'VP8 ');
+    assert.equal(atlas.readUInt16LE(26)&0x3fff,4096);
+    assert.equal(atlas.readUInt16LE(28)&0x3fff,4096);
+    shared.add(image.uri);
+   }else if(image.uri){const data=await readFile(new URL('stream93/'+image.uri,assets));assert.ok(data.equals(raw));shared.add(image.uri);}
    else if(image.mimeType===old.mimeType)assert.ok(view(web,image.bufferView).equals(raw));
    else {assert.equal(image.mimeType,'image/webp');assert.ok(web.doc.extensionsRequired.includes('EXT_texture_webp'));}
   }

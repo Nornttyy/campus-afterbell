@@ -1,7 +1,7 @@
 import {BufferAttribute} from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 
-const manifestUrl=new URL('./assets/stream93/models.json?v=campus-93',import.meta.url);
+const manifestUrl=new URL('./assets/stream93/models.json?v=campus-107',import.meta.url);
 const cacheName='campus-afterbell-models-93';
 let manifest,storage;
 
@@ -87,6 +87,20 @@ export class CampusModelLoader extends GLTFLoader{
      }
     }catch(error){console.warn('Using original model',name,error);}
    }
+  }
+  const source=new URL(url,import.meta.url),file=source.pathname.split('/').pop();
+  if(typeof window!=='undefined'&&source.origin===manifestUrl.origin&&
+     /^(student-(boy-v4|girl-v4|glasses-v2|ponytail-v1)|teacher-v2)\.glb$/.test(file)){
+   const atlas=new URL('./assets/materials/'+file.slice(0,-4)+'-cloth107.webp',import.meta.url);
+   // A separate parser keeps simultaneous raw GLB loads and hand models isolated.
+   const loader=new GLTFLoader(this.manager);
+   loader.register(parser=>({name:'CampusUniformAtlas',beforeRoot(){
+    const material=parser.json.materials[0].pbrMetallicRoughness;
+    const image=parser.json.images[parser.json.textures[material.baseColorTexture.index].source];
+    delete image.bufferView;image.uri=atlas.href;image.mimeType='image/webp';
+   }}));
+   try{return await loader.loadAsync(url,onProgress);}
+   catch(error){console.warn('Using embedded character atlas',file,error);}
   }
   return super.loadAsync(url,onProgress);
  }

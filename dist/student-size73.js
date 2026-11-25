@@ -4,9 +4,19 @@ const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
 // Retarget the accepted pose to a shorter body. Keep the furniture and held
 // objects in physical units, and preserve the calibrated arm and palm/finger size.
 // Source meshes/clips are not rewritten; first-person user clips are separate.
+const schoolSeatFits={
+ boy:     {lift:.039,forward:.140,ankleLift:.100,ankleForward:.180},
+ girl:    {lift:.022,forward:.140,ankleLift:.160,ankleForward:.200},
+ glasses: {lift:.054,forward:.120,ankleLift:.120,ankleForward:.200},
+ ponytail:{lift:.018,forward:.140,ankleLift:.120,ankleForward:.180}
+};
 export function createStudentSize(group,model,bones,variant){
  const factor=STUDENT_PROPORTIONS.height/STUDENT_PROPORTIONS.sourceHeight;
  const sourceScale=model.scale.clone(),sourcePosition=model.position.clone(),saved=new Map();let seatedBlend=0,chairBlend=0,writingLean=0,pairedBlend=0;
+ // Board-relative offsets in metres, calibrated on the four skinned silhouettes.
+ // Shoes have different thicknesses, and the broad trouser knees need to clear
+ // the rounded front edge before the shins can hang in front of the chair.
+ const seatFit=schoolSeatFits[variant]??schoolSeatFits.boy;
  const spinePosition=bones.Spine.position.clone();
  const armRoots=['LeftArm','RightArm'].map(n=>bones[n]),armScales=armRoots.map(b=>b.scale.clone());
  function save(b){if(!saved.has(b))saved.set(b,b.quaternion.clone());}
@@ -44,15 +54,15 @@ export function createStudentSize(group,model,bones,variant){
    model.scale.copy(sourceScale).multiplyScalar(factor);model.position.copy(sourcePosition);model.position.y+=anchorY*(1-factor);
    // The original seated clips were fitted to a lower chair. Settle onto
    // this seat board, then solve the shoes and working hands independently.
-   model.position.y+=.063*chairBlend;
-   const seatForward=.105*chairBlend;
+   model.position.y+=(.063+seatFit.lift)*chairBlend;
+   const seatForward=seatFit.forward*chairBlend;
    model.position.z+=seatForward;
    armRoots.forEach((b,i)=>b.scale.copy(armScales[i]).multiplyScalar(1/factor));group.updateMatrixWorld(true);
    // Sit further onto the front of the seat without pulling the shoulders
    // into the book. Keep the upper body's established desk reach in world space.
    if(chairBlend>.001){
     const spine=bones.Spine;
-    const back=V().set(0,0,-.077*chairBlend).applyQuaternion(group.getWorldQuaternion(Q()));
+    const back=V().set(0,-seatFit.lift*chairBlend,(.028-seatFit.forward)*chairBlend).applyQuaternion(group.getWorldQuaternion(Q()));
     spine.position.copy(spine.parent.worldToLocal(spine.getWorldPosition(V()).add(back)));
     spine.updateWorldMatrix(false,true);
    }
@@ -72,10 +82,11 @@ export function createStudentSize(group,model,bones,variant){
      const foot=support[side+'Foot'],target=foot.position.clone();target.x*=factor;target.z*=factor;
      if(chairBlend>.001){
       const sideSign=side==='Left'?1:-1;
-      const soleDrop={boy:.044,girl:.036,glasses:.045,ponytail:.036}[variant]??.04;
-      target.y-=soleDrop*chairBlend;
-      target.z+=(sideSign*.023+.065)*chairBlend;
+      target.y+=seatFit.ankleLift*chairBlend;
+      target.z+=(sideSign*.009+seatFit.ankleForward)*chairBlend;
       target.x+=sideSign*.009*chairBlend;
+      const across=V().set(1,0,0).applyQuaternion(group.getWorldQuaternion(Q()));
+      foot.rotation.premultiply(Q().setFromAxisAngle(across,(.18+sideSign*.025)*chairBlend));
      }
      limb(bones[side+'UpLeg'],bones[side+'Leg'],bones[side+'Foot'],group.localToWorld(target),foot.rotation);
     }

@@ -62,6 +62,15 @@ def fields(obj, key):
                 yield from fields(value, key)
 
 
+def use_webp(doc,index):
+    for texture in doc.get("textures",[]):
+        if texture.get("source")==index:
+            texture.setdefault("extensions",{})["EXT_texture_webp"] = {"source":texture.pop("source")}
+    for field in ("extensionsUsed","extensionsRequired"):
+        if "EXT_texture_webp" not in doc.setdefault(field,[]):
+            doc[field].append("EXT_texture_webp")
+
+
 def encode_model(name, shared):
     doc, binary = load(name)
     if name == "student-glasses-v2":
@@ -78,7 +87,14 @@ def encode_model(name, shared):
         vi = image["bufferView"]
         raw = view_bytes(doc, binary, vi)
         key = digest(raw)
-        if key in shared:
+        if index == 0 and name in MODELS[:5]:
+            filename = name + "-cloth107.webp"
+            if not (DIST / "assets/materials" / filename).is_file():
+                raise FileNotFoundError("Bake uniforms first: " + filename)
+            image.pop("bufferView")
+            image.update(uri="../materials/" + filename, mimeType="image/webp")
+            use_webp(doc,index)
+        elif key in shared:
             image.pop("bufferView")
             image["uri"] = shared[key]
         elif image["mimeType"] == "image/png":
@@ -86,12 +102,7 @@ def encode_model(name, shared):
             if converted is not None:
                 image_views[vi] = converted
                 image["mimeType"] = "image/webp"
-                for texture in doc.get("textures", []):
-                    if texture.get("source") == index:
-                        texture.setdefault("extensions", {})["EXT_texture_webp"] = {"source": texture.pop("source")}
-                for field in ("extensionsUsed", "extensionsRequired"):
-                    if "EXT_texture_webp" not in doc.setdefault(field, []):
-                        doc[field].append("EXT_texture_webp")
+                use_webp(doc,index)
     # Preserve all mesh/skin/clip accessor bytes, layout and ordering. Old hand
     # exports contain a second, unreferenced copy of the body's colour atlas.
     refs = list(fields(doc, "bufferView"))

@@ -1,3 +1,4 @@
+import {writingPageY} from '../dist/study-book58.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
@@ -19,7 +20,7 @@ for(const [role,{file}]of Object.entries(STUDENT_ASSETS))test(`${role}: seated s
    for(const[n,b]of Object.entries(actor.bones))if(n.startsWith('LeftHand')||n.startsWith('RightHand'))assert.ok(Math.abs(b.position.length()-boneLengths[n])<.00002,`${role} ${n}: contact stretched a finger segment`);
    if(mood==='resting')for(const side of ['Left','Right']){const frame=handFrame(actor.bones,side),wrist=actor.bones[side+'Hand'].getWorldPosition(V());assert.ok(frame.normal.y>.98&&Math.abs(frame.along.y)<.12,`${role} ${side}: resting palm is raised sideways instead of lying relaxed`);assert.ok(wrist.y<.96,`${role} ${side}: wrist was lifted toward the face to avoid the desk`);assert.ok(samples[side].every(s=>point(s).y<wrist.y+.075),`${role} ${side}: resting fingers/thumb form an upright claw`);}
    const pencil=actor.group.getObjectByName('held-writing-pencil');assert.equal(pencil.visible,mood==='writing');if(mood!=='writing')continue;
-   const nib=pencil.localToWorld(V(0,-.129,0)),pageHeight=.88+.005/Math.cos(.14)+Math.abs(nib.x)*Math.tan(.14);
+   const nib=pencil.localToWorld(V(0,-.129,0)),pageHeight=writingPageY(nib.x);
    assert.ok(nib.z>.44&&nib.z<.89&&Math.abs(nib.x)<.31,`${role}: pencil misses the actual folded-book footprint ${nib.toArray()}`);
    assert.ok(Math.abs(nib.y-pageHeight)<.003,`${role}: pencil tip floats above or penetrates the page by ${nib.y-pageHeight} m`);
    for(const finger of ['Index','Thumb']){const gap=fingerPadSurfaceDistance(actor.group.getObjectByName('school-writing-pen'),actor,finger,'Right');assert.ok(gap<.003,`${role}: actual ${finger} skin does not contact the shared pen surface (${gap} m)`);}

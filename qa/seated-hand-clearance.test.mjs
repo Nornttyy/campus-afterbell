@@ -1,3 +1,4 @@
+import {writingPageY} from '../dist/study-book58.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
@@ -18,7 +19,7 @@ for(const [variant,{file}] of Object.entries(STUDENT_ASSETS)){
   const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant,seated:true});actor.setMood('pen');actor.setMotion({seated:true,carrying:true,heldAction:'pen',using:false,penWriting:true});const samples=skinSamples(actor);let time=0;
   for(let f=0;f<180;f++)actor.update(time+=1/60);
   const pencil=actor.group.getObjectByName('held-writing-pencil'),nibs=[];assert.equal(pencil.parent,actor.getHand('right'));assert.equal(actor.group.getObjectByName('red-school-pen'),undefined,'a second left-hand food-style pen was spawned');
-  for(let f=0;f<120;f++){actor.update(time+=1/60);if(f%4)continue;assertClear(actor,samples,`${variant} pen`);assert.equal(pencil.visible,true);const weights=actor.diagnostics().weights;assert.ok(weights.Write>.999&&weights.Snack<.001);const nib=pencil.localToWorld(new T.Vector3(0,-.129,0));nibs.push(nib.clone());const page=.88+.005/Math.cos(.14)+Math.abs(nib.x)*Math.tan(.14);assert.ok(Math.abs(nib.y-page)<.003,`${variant}: nib leaves page: ${nib.y-page}`);assert.ok(nib.z>.44&&nib.z<.89&&Math.abs(nib.x)<.31);}
+  for(let f=0;f<120;f++){actor.update(time+=1/60);if(f%4)continue;assertClear(actor,samples,`${variant} pen`);assert.equal(pencil.visible,true);const weights=actor.diagnostics().weights;assert.ok(weights.Write>.999&&weights.Snack<.001);const nib=pencil.localToWorld(new T.Vector3(0,-.129,0));nibs.push(nib.clone());const page=writingPageY(nib.x);assert.ok(Math.abs(nib.y-page)<.003,`${variant}: nib leaves page: ${nib.y-page}`);assert.ok(nib.z>.44&&nib.z<.89&&Math.abs(nib.x)<.31);}
   assert.ok(nibs.some(p=>p.distanceTo(nibs[0])>.001),'Write loop never moves the actual pencil');actor.setMotion({seated:false,carrying:false,penWriting:false,restraint:'bound'});actor.update(time+=1/60);assert.equal(pencil.visible,false,'writing pen remains visible under restraint');actor.dispose();
  });
 }

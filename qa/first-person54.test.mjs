@@ -1,3 +1,4 @@
+import {writingPageY} from '../dist/study-book58.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
@@ -53,7 +54,7 @@ test('first-person pen rolls at the real right index, then continuously settles 
   const contact=V(0,pen.userData.pen.gripY,-pen.userData.pen.gripRadius).applyMatrix4(pen.matrixWorld),index=hand.indexTip().applyMatrix4(hand.group.matrixWorld),p=pen.getWorldPosition(V()),q=pen.getWorldQuaternion(Q());
   assert.ok(p.distanceTo(index)<.10,'pen leaves the finger region'); // Full pad/shaft surface contacts are checked in first-person58.assert.deepEqual(pen.scale.toArray(),[1,1,1]);
   if(previous){assert.ok(p.distanceTo(previous.p)<.045,'mode change throws pen out of hand');assert.ok(q.angleTo(previous.q)<.50,'pen mode change snaps');}previous={p,q};
-  if(f<120)angles.push(q);if(f>=240&&f<300){const tip=V(0,-.0875,0).applyMatrix4(pen.matrixWorld),page=.88+Math.abs(tip.x)*Math.tan(.14)+.005-1.43;assert.ok(Math.abs(tip.y-page)<.001);tips.push(tip);}
+  if(f<120)angles.push(q);if(f>=240&&f<300){const tip=V(0,-.0875,0).applyMatrix4(pen.matrixWorld),page=writingPageY(tip.x)-1.43;assert.ok(Math.abs(tip.y-page)<.001);tips.push(tip);}
  }
  assert.ok(angles.some(q=>q.angleTo(angles[0])>2.8),'pen never completes a turn');assert.ok(tips.some(p=>p.distanceTo(tips[0])>.02),'writing is static');
 });
@@ -66,7 +67,7 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: th
   const p=pencil.getWorldPosition(V()),q=pencil.getWorldQuaternion(Q());if(previous&&f>15){assert.ok(p.distanceTo(previous.p)<.05,'twirl/write transition jumps');assert.ok(q.angleTo(previous.q)<.5,'twirl/write snaps its pencil');}previous={p,q};
   assert.deepEqual(pencil.scale.toArray(),[1,1,1]);assert.equal(a.group.getObjectByName('red-school-pen'),undefined,'duplicate food pen');
   if(f>90&&f<235){rotations.push(q);for(const y of [-.129,.115]){const end=V(0,y,0).applyMatrix4(pencil.matrixWorld);assert.ok(end.y>.89,`rotating pen enters desk: ${end.y}`);}}
-  if(f>400){const nib=V(0,-.129,0).applyMatrix4(pencil.matrixWorld),page=.88+.005/Math.cos(.14)+Math.abs(nib.x)*Math.tan(.14);assert.ok(Math.abs(nib.y-page)<.003,'writing no longer reaches page');}
+  if(f>400){const nib=V(0,-.129,0).applyMatrix4(pencil.matrixWorld),page=writingPageY(nib.x);assert.ok(Math.abs(nib.y-page)<.003,'writing no longer reaches page');}
  }
  assert.ok(rotations.some(q=>q.angleTo(rotations[0])>2.8),'remote pen does not turn');for(const [b,p]of lengths)assert.ok(b.position.distanceTo(p)<.00002);a.dispose();
 });

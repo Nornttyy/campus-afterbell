@@ -1,3 +1,4 @@
+import {writingPageY} from './study-book58.js?v=campus-107';
 import {snackWrapper} from './snack-wrapper94.js?v=campus-94';
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import {requireModelBudget} from './model-budget64.js';
@@ -7,8 +8,8 @@ import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-105';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-106';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-107';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-107';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -769,7 +770,7 @@ export function createDeskHands({createHand}={}){
       const weight=ease(extension,.20,1),hand=arms[1].hand,pen=props.pen;
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
       const line=Math.sin(useTime*1.9),x=.135+.055*Math.sin(useTime*7.1),z=-.725+.035*line+.012*Math.sin(useTime*14.2);
-      const tip=examPen?v(examPen.x+.016*Math.sin(useTime*11),.887-1.43+(writing?.004:.026),examPen.z+.006*line):v(x,.88+Math.abs(x)*Math.tan(.14)+.005-1.43,z);
+      const tip=examPen?v(examPen.x+.016*Math.sin(useTime*11),.887-1.43+(writing?.004:.026),examPen.z+.006*line):v(x,writingPageY(x)-1.43,z);
       const spin=penAge*Math.PI*2/1.6,twirl=1-penWriteBlend;
       const writeQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.24+.025*Math.sin(useTime*7.1),-.10,-.32));
       const penQ=penTwirlQuaternion(penAge).slerp(writeQ,penWriteBlend);
@@ -790,21 +791,6 @@ export function createDeskHands({createHand}={}){
       // The other hand rests beside the page instead of gripping invisible food.
       const left=arms[0].hand;left.group.position.lerp(v(-.24,-.46,-.66).applyMatrix4(inv),weight);left.group.quaternion.slerp(invQ.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-1.15,0,-.10))),weight);left.setCurl(.14);
       pen.visible=extension>.62&&!caught;
-    }
-    if(bookBlend>.001&&seated&&!caught){
-      group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
-      for(let i=0;i<2;i++){
-        const side=i?1:-1,hand=arms[i].hand,contact=firstPersonBookContacts(side,bookAmount),weight=bookBlend;
-        const wrap=ease(bookBlend,0,1);
-        hand.setCurl(.19+.33*wrap);
-        hand.setFingerCurl?.('Index',.22+.24*ease(bookBlend,0,.73));
-        hand.setFingerCurl?.('Middle',.18+.39*ease(bookBlend,.06,.92));
-        hand.setFingerCurl?.('Pinky',.17+.45*ease(bookBlend,.15,1));
-        const wrist=contact.index.clone().sub(hand.indexTip().multiplyScalar(hand.group.scale.x).applyQuaternion(contact.quaternion));
-        hand.group.position.lerp(wrist.applyMatrix4(inv),weight);hand.group.quaternion.slerp(invQ.clone().multiply(contact.quaternion),weight);
-        group.updateMatrixWorld(true);const target=contact.thumb.clone().applyMatrix4(group.parent?.matrixWorld||new THREE.Matrix4());
-        articulation[i].pinchThumb(hand.group.worldToLocal(target),weight);
-      }
     }
     // Desk/keyboard contacts are solved after all viewmodel offsets. Each
     // fingertip bends at its own phalanges; the cached skin support cannot
@@ -842,6 +828,20 @@ export function createDeskHands({createHand}={}){
         group.updateMatrixWorld(true);const min=supports[i].minimum(group.parent),plane=level+.0016;
         if(Number.isFinite(min)){const shift=v(0,(plane-min)*weight,0).applyQuaternion(group.quaternion.clone().invert());hand.group.position.add(shift);}
         if(keyboard&&weight>.995){supports[i].pressPads(group.parent,level,time+i*.24,typing);const padMin=supports[i].minimum(group.parent);if(padMin<level-.0014)hand.group.position.add(v(0,level-.0014-padMin,0).applyQuaternion(group.quaternion.clone().invert()));}
+      }
+    }
+    if(bookBlend>.001&&seated&&!caught){
+      group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
+      for(let i=0;i<2;i++){
+        const side=i?1:-1,hand=arms[i].hand,contact=firstPersonBookContacts(side,bookAmount),weight=bookBlend;
+        const wrap=ease(bookBlend,0,1);
+        hand.setCurl(.19+.17*wrap);
+        hand.setFingerCurl?.('Thumb',.19+.01*wrap);
+        hand.setFingerCurl?.('Index',.20+.09*ease(bookBlend,0,.73));
+        hand.setFingerCurl?.('Middle',.18+.17*ease(bookBlend,.06,.92));
+        hand.setFingerCurl?.('Pinky',.17+.27*ease(bookBlend,.15,1));
+        const wrist=contact.index.clone().sub(hand.indexTip().multiplyScalar(hand.group.scale.x).applyQuaternion(contact.quaternion));
+        hand.group.position.lerp(wrist.applyMatrix4(inv),weight);hand.group.quaternion.slerp(invQ.clone().multiply(contact.quaternion),weight);
       }
     }
     if(seated&&!caught&&drawerBlend>.001){
