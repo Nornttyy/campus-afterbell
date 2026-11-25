@@ -1,7 +1,8 @@
 import * as T from './vendor/three.module.js';
 // One half of the opened book is a page block plus its bound outer cover.
 export const BOOK_PAPER_FACE=.0092,BOOK_COVER_FACE=.0113;
-export const TEXTBOOK=Object.freeze({leafWidth:.296,leafHeight:.395,seatDistance:.558,flatSeatDistance:.405,deskInset:.222,leafYaw:.14,readingTilt:-.08});
+const readingDistance=.698;
+export const TEXTBOOK=Object.freeze({leafWidth:.296,leafHeight:.395,seatDistance:readingDistance,flatSeatDistance:.405,deskInset:.78-readingDistance,leafYaw:.14,readingTilt:.025});
 export const bookAngle=raised=>T.MathUtils.lerp(Math.PI/2,TEXTBOOK.readingTilt,T.MathUtils.clamp(raised,0,1));
 // A reader props the book farther across the desk than a writer lays it flat.
 export function setDeskBookReach(book,raised){

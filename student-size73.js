@@ -40,7 +40,7 @@ export function createStudentSize(group,model,bones,variant){
  }
  return {
   restore(){for(const [b,q] of saved)b.quaternion.copy(q);saved.clear();bones.Spine.position.copy(spinePosition);model.scale.copy(sourceScale);model.position.copy(sourcePosition);armRoots.forEach((b,i)=>b.scale.copy(armScales[i]));},
-  apply({cutStudy=false,seated,crawling,restraint,dt,reset,tableSupport=true,pairedHands=false,deskArms=false,schoolChair=false,studyPose}){
+  apply({cutStudy=false,seated,crawling,restraint,dt,reset,tableSupport=true,pairedHands=false,deskArms=false,schoolChair=false,studyPose,lookYaw=0}){
    seatedBlend=reset?(seated?1:0):T.MathUtils.damp(seatedBlend,seated?1:0,10,dt);
    group.updateMatrixWorld(true);
    const atChair=seated&&schoolChair&&!crawling&&restraint==='free';
@@ -74,6 +74,12 @@ export function createStudentSize(group,model,bones,variant){
     const lift=new T.Vector3(0,(.05-.037*chairBlend)*seatedBlend,0).applyQuaternion(group.getWorldQuaternion(Q()));
     spine.position.copy(spine.parent.worldToLocal(spine.getWorldPosition(V()).add(lift)));spine.updateWorldMatrix(false,true);
     const headRotation=bones.Head.getWorldQuaternion(Q()),world=group.getWorldQuaternion(Q()),parent=spine.parent.getWorldQuaternion(Q()),turn=Q().setFromAxisAngle(new T.Vector3(1,0,0).applyQuaternion(world),.11*seatedBlend-.073*chairBlend+.115*writingLean);
+    if(atChair&&studyPose==='listening'){
+     // Let the shoulders follow a glance at the teacher while the pelvis
+     // stays on the seat and the hands keep their recorded desk contacts.
+     const twist=T.MathUtils.clamp(lookYaw,-.72,.72)*.31;
+     turn.premultiply(Q().setFromAxisAngle(new T.Vector3(0,1,0).applyQuaternion(world),twist));
+    }
     save(spine);spine.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent));spine.updateWorldMatrix(false,true);
     save(bones.Head);bones.Head.quaternion.copy(bones.Head.parent.getWorldQuaternion(Q()).invert().multiply(headRotation));bones.Head.updateWorldMatrix(false,true);
    }
