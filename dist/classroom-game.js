@@ -10,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-102';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-114';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-115';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -70,7 +70,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     const p=state.player,pc=p.computer;
     const isLab=state.map==='computer'||state.map==='computer7';
     if(!isLab&&computerStation==null&&!framedApp&&!pc?.active)return;
-    const enabled=active&&!finished&&state.status==='playing'&&state.stage==='class'&&isLab&&state.role==='student'&&!p.caught&&!state.drawer?.open&&(!p.captivity||p.captivity==='free')&&state.drawer?.drawnSlot==null&&!state.paused&&!session.modal&&!document.hidden;
+    const enabled=active&&!finished&&state.status==='playing'&&state.stage==='class'&&isLab&&state.role==='student'&&!p.caught&&!state.drawer?.open&&!scene.isDeskSliding?.()&&(!p.captivity||p.captivity==='free')&&state.drawer?.drawnSlot==null&&!state.paused&&!session.modal&&!document.hidden;
     const hit=enabled?(scene.getAimedComputer?scene.getAimedComputer():scene.getInteraction?.()):null;
     const id=hit?.kind==='computer'?(hit.id??p.seatId):null;
     const changed=id!==computerStation;

@@ -1,5 +1,16 @@
 import {mapKind,OFFICE_DESKS} from './classroom-layout.js?v=campus-108';
 
+// Both directions retrace the same rail. The hand arrives before the tray
+// travels and lets go after it stops, including when a slide is reversed.
+export function advanceDeskDrawer(drawer,open,dt){
+ const old=drawer.slide??0;
+ const slide=Math.max(0,Math.min(1,old+(open?1:-1)*dt/.50));
+ if(old===slide&&drawer.slide!==undefined)return;
+ drawer.slide=slide;
+ const rail=Math.max(0,Math.min(1,(slide-.19)/.62));
+ drawer.open=rail*rail*(3-2*rail);
+}
+
 // All lengths are metres. Heights are relative to the actor's floor; the view
 // anchor already follows the floor, including the raised lecture-room rows.
 export function drawerHandTarget({player,drawer,seats,map,amount=0,geometry=null}){

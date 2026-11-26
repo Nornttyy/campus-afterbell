@@ -80,3 +80,23 @@ test('pink head-attached gum keeps a fixed radius while mouth inflation still gr
  state.player.bubble.progress=.9;fx.update(state);assert.ok(own.scale.x>small);
  for(const charge of [.1,.5,1]){state.bubbles=[{id:1,x:0,y:1.7,z:0,charge,age:0,lifetime:10,attachedId:1}];fx.update(state);const bubble=scene.getObjectByName('released-gum-bubbles').children[0];assert.deepEqual(bubble.scale.toArray(),[ATTACHED_GUM_RADIUS,ATTACHED_GUM_RADIUS*.88,ATTACHED_GUM_RADIUS*.72]);}fx.dispose();
 });
+
+test('pickup and return exchange food at its slot even at opposite ends of a rotated desk',()=>{
+ for(const x of [-.28,.28]){
+  const root=new T.Group(),seat=new T.Group(),slot=new T.Group(),h=make();
+  root.add(seat,slot);seat.position.set(2,1.43,-1);seat.rotation.y=.8;seat.add(h.group);
+  slot.position.copy(seat.localToWorld(V(x,-.72,-.42)));slot.rotation.set(-1.2,.8,.13);
+  slot.userData.deskAction='burger';
+  let time=0,wasVisible=false,swaps=0;
+  const prop=h.group.getObjectByName(names.burger),drawer={centerX:0,centerZ:-.46,floor:.659,lip:.811,width:.93,depth:.60,amount:1};
+  for(let i=0;i<165;i++){
+   h.update(time+=DT,{action:'burger',carrying:i>=30&&i<110,seated:true,freeLook:true,drawer,trayFood:slot});
+   if(prop.visible!==wasVisible){
+    assert.ok(prop.getWorldPosition(V()).distanceTo(slot.getWorldPosition(V()))<.001);
+    assert.ok(prop.getWorldQuaternion(Q()).angleTo(slot.getWorldQuaternion(Q()))<.001);
+    wasVisible=prop.visible;swaps++;
+   }
+  }
+  assert.equal(swaps,2);
+ }
+});

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {drawerHandTarget} from '../dist/drawer-hand-target58.js';
+import {advanceDeskDrawer,drawerHandTarget} from '../dist/drawer-hand-target58.js';
 import {createSeatLayout,LAYOUT_PATTERNS,OFFICE_DESKS,OFFICE_CHAIRS} from '../dist/classroom-layout.js';
 
 test('all classroom layouts keep the open tray in front of seated hands without double applying floor height',()=>{
@@ -27,4 +27,16 @@ test('drawer target travels with the physical tray, and drops when standing or c
  assert.ok(Math.abs(half.centerZ-(shut.centerZ+open.centerZ)/2)<1e-9);
  assert.ok(Math.abs(open.centerZ-shut.centerZ-.24)<1e-9);
  assert.equal(get(1,{...player,seated:false}),null);assert.equal(get(1,{...player,caught:true}),null);
+});
+
+test('drawer rails wait for finger contact and retrace their path on a reversed pull',()=>{
+ const drawer={open:0};
+ advanceDeskDrawer(drawer,true,.09);assert.equal(drawer.open,0);
+ advanceDeskDrawer(drawer,true,.16);const halfway=drawer.open;
+ assert.ok(Math.abs(halfway-.5)<1e-8);
+ advanceDeskDrawer(drawer,false,.10);assert.ok(drawer.open>0&&drawer.open<halfway);
+ advanceDeskDrawer(drawer,true,.10);assert.ok(Math.abs(drawer.open-halfway)<1e-8);
+ advanceDeskDrawer(drawer,true,.16);assert.equal(drawer.open,1);
+ advanceDeskDrawer(drawer,true,.09);advanceDeskDrawer(drawer,false,.09);assert.equal(drawer.open,1);
+ advanceDeskDrawer(drawer,false,.41);assert.equal(drawer.open,0);
 });
