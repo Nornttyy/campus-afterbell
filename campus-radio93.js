@@ -1,8 +1,7 @@
 import {BUS,onBus} from './bus-layout86.js?v=campus-94';
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-116';
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117';
 
 export const RADIO_SONGS=Object.freeze([
- {id:'track-relay',title:'最后一棒',bpm:132,bars:32},
  {id:'track-window',title:'雨停的车窗',bpm:96,bars:32},
  {id:'track-weekend',title:'周五放学后',bpm:116,bars:32}
 ].map(Object.freeze));
@@ -21,7 +20,7 @@ export function broadcastLift(state){
 }
 export function radioAnchor(map){
  if(map==='bus')return {x:11.023,y:BUS.low+1.36,z:-14.49,yaw:-Math.PI/2};
- if(map==='playground'){const b=PLAYGROUND_LAYOUT.board;return {x:b.x+2.64,y:1.18,z:b.z-.71,yaw:Math.PI};}
+ if(map==='playground')return PLAYGROUND_LAYOUT.speaker;
  return null;
 }
 export function reachesRadio(map,p){

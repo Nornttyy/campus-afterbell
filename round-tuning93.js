@@ -7,7 +7,7 @@ export const RULE_FIELDS=Object.freeze([
  ['deskRefill','课桌刷新','秒',1,15,3],['labRefill','机房抽屉刷新','秒',1,15,3],
  ['foodPoints','普通食物得分','点',1,8,1],['lunchPoints','教师便当得分','点',1,15,3],
  ['smokeSeconds','烟雾持续','秒',2,20,7],['smokeDelayMs','烟雾落地等待','毫秒',0,2000,500],
- ['garlicSeconds','大蒜打嗝时限','秒',1,15,5],['peelSeconds','香蕉皮眩晕','秒',1,12,4]
+ ['inkSeconds','墨水遮挡时间','秒',1,15,7],['peelSeconds','香蕉皮眩晕','秒',1,12,4]
 ].map(([key,label,unit,min,max,initial])=>Object.freeze({key,label,unit,min,max,initial})));
 export const TUNING_DEFAULTS=Object.freeze(Object.fromEntries(RULE_FIELDS.map(f=>[f.key,f.initial])));
 export function validTuning(value){

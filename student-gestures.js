@@ -1,8 +1,8 @@
 import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=campus-116';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-117';
 import {TEXTBOOK,studyBookPose} from './study-book58.js?v=campus-110';
-import {createPenFingerContact} from './pen-motion.js?v=campus-93';
+import {createPenFingerContact} from './pen-motion.js?v=campus-117';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const armName=/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/;
 

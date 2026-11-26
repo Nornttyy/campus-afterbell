@@ -1,9 +1,10 @@
+import {LAB_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-99';
 import * as T from './vendor/three.module.js';
 
 // A single compartment fits beside the existing tower without changing the
 // workstation footprint. Contents keep their original GLB size and transforms.
-export const COMPUTER_DRAWER55=Object.freeze({floor:.62,itemZ:-.25,travel:.24});
+export const COMPUTER_DRAWER55=Object.freeze({floor:.62,itemZ:-.25,travel:LAB_DRAWER_TRAVEL});
 export function buildComputerDrawer55({parent,box,rounded,mat,id='computer-drawer',bakeStatic=()=>{}}){
  const group=new T.Group();group.name=id;parent.add(group);
  const tray=mat('#a8b6b3',{metalness:.12,roughness:.55}),front=mat('#d1d5cb',{roughness:.68}),handle=mat('#3e5055',{roughness:.55});

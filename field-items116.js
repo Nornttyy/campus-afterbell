@@ -1,8 +1,8 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-116';
-import {actorEyePosition} from './classroom-layout.js?v=campus-116';
-import {PLAYGROUND_LAYOUT,vendingPoint} from './playground-layout70.js?v=campus-116';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117';
+import {actorEyePosition} from './classroom-layout.js?v=campus-117';
+import {PLAYGROUND_LAYOUT,vendingPoint} from './playground-layout70.js?v=campus-117';
 
-const foods=['snack','drink','burger','noodles','chips','gum','garlic'];
+const foods=['snack','drink','burger','noodles','chips','gum'];
 const machine=PLAYGROUND_LAYOUT.vending[0];
 export const COOLER=Object.freeze({x:machine.x+.29,z:machine.z-2.8,yaw:machine.yaw});
 export function coolerPoint(i){
