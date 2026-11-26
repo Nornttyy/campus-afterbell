@@ -49,8 +49,8 @@ test('monitor focus is independent of E, Q and touch return; looking away keeps 
   assert.equal(f.round.player._computerActive,false);assert.equal(f.round.player._drawerOpen,false);assert.equal(f.round.player.seated,true);
  }finally{f.close();}
 });
-test('Q cancels a charged throwable without throwing, consuming, closing or standing',()=>{
- const f=fixture();try{f.take('smoke');f.mouse(true);f.advance(.7);f.commands.return();assert.equal(f.round.projectiles.length,0);assert.equal(f.round.player._slots[0].action,'smoke');assert.equal(f.round.player._drawnSlot,null);assert.equal(f.round.player._drawerOpen,true);assert.equal(f.round.player.seated,true);f.mouse(false);assert.equal(f.round.projectiles.length,0);}finally{f.close();}
+test('Q returns an unused throwable without throwing, consuming, closing or standing',()=>{
+ const f=fixture();try{f.take('smoke');f.advance(.7);f.commands.return();assert.equal(f.round.projectiles.length,0);assert.equal(f.round.player._slots[0].action,'smoke');assert.equal(f.round.player._drawnSlot,null);assert.equal(f.round.player._drawerOpen,true);assert.equal(f.round.player.seated,true);f.mouse(false);assert.equal(f.round.projectiles.length,0);}finally{f.close();}
 });
 test('E opens a closed classroom door after two seconds and Q cannot reverse it',()=>{
  const r=new ClassroomRound();r.start();updateLayoutDoors(r.layout,{rearDoorClosed:true});
@@ -73,7 +73,7 @@ test('two clients share explicit drawer/book/pen states and simultaneous open co
 test('food rewards, bubble stages and ranking all use the awarded amount, with a 10-minute default',()=>{
  const r=new ClassroomRound({target:1000});r.start();r.player.pitch=.55;r._advanceTeacher=()=>{};for(const p of r.students)p._decisionAt=Infinity;assert.equal(r.duration,600);
  for(const [kind,points]of[['snack',1],['drink',1],['burger',1],['banana',1],['garlic',1],['lunch',3]]){assert.equal(CLASSROOM_ACTIONS[kind].points,points);const before=r.score;r.player._burpUntil=0;r.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};r.player._selectedSlot=r.player._drawnSlot=0;r.selected=r.player.action=kind;r.hold(true);r.step(2);assert.equal(r.score-before,points);}
- r.player._slots[0]={id:0,action:'gum',progress:0,readyAt:0};r.player._selectedSlot=r.player._drawnSlot=0;r.selected=r.player.action='gum';r.player._burpUntil=0;r.hold(true);const prior=r.score;for(const points of[1,2,3,0]){const before=r.score;r.step(1.5);assert.equal(r.score-before,points);}assert.equal(r.score-prior,6);assert.equal(r.player._drawnSlot,null);
+ r.player._slots[0]={id:0,action:'gum',progress:0,readyAt:0};r.player._selectedSlot=r.player._drawnSlot=0;r.selected=r.player.action='gum';r.player._burpUntil=0;r.hold(true);const prior=r.score;for(let i=0;i<5;i++){r.step(1.5);assert.equal(r.score,prior);}r.releaseUse();assert.equal(r.score-prior,5);assert.equal(r.player._drawnSlot,null);
  const model=hud54Model(r.snapshot());assert.equal(model.rows.find(p=>p.id===r.player.id).points,r.score);assert.equal(model.rows.reduce((n,p)=>n+p.points,0),r.score);assert.equal(model.rows[0].isSelf,true);assert.ok(model.rows.slice(1).every(p=>p.points===0));
 });
 test('touch has a dedicated Q return command and pause controls describe the new semantics',()=>{
@@ -83,7 +83,7 @@ test('touch has a dedicated Q return command and pause controls describe the new
 test('pink mouth bubbles never travel, never attach to self or through a wall; charge changes duration not attached size',()=>{
  const r=new ClassroomRound({target:1000});r.start();r._advanceTeacher=()=>{};const p=r.player;for(const other of r.students)if(other!==p)Object.assign(other,{x:-100,z:-100,seated:false});r.teacher.x=r.teacher.z=40;
  Object.assign(p,{x:6.9,z:0,yaw:Math.PI/2,seated:false,_bubbleElapsed:4});const other=r.students.find(s=>s!==p);Object.assign(other,{x:8,z:0});assert.equal(r._touchMouthBubble(p),false,'solid classroom wall must prevent adhesion');assert.equal(r.bubbles.length,0);
- Object.assign(p,{x:10,z:0,yaw:0,_bubbleElapsed:3});Object.assign(other,{x:10,z:.8});assert.equal(r._touchMouthBubble(p),true);assert.equal(r.bubbles[0].attachedId,other.id);assert.equal(r.bubbles[0].charge,1);assert.equal(r.bubbles[0].lifetime,6);r.bubbles=[];other._bubbleUntil=0;p._bubbleElapsed=6;other.z=1.27;assert.equal(r._touchMouthBubble(p),true);assert.equal(r.bubbles[0].charge,1);assert.equal(r.bubbles[0].lifetime,10);
+ Object.assign(p,{x:10,z:0,yaw:0,_bubbleElapsed:3.75});Object.assign(other,{x:10,z:.8});assert.equal(r._touchMouthBubble(p),true);assert.equal(r.bubbles[0].attachedId,other.id);assert.equal(r.bubbles[0].charge,1);assert.equal(r.bubbles[0].lifetime,6);r.bubbles=[];other._bubbleUntil=0;p._bubbleElapsed=7.5;other.z=1.27;assert.equal(r._touchMouthBubble(p),true);assert.equal(r.bubbles[0].charge,1);assert.equal(r.bubbles[0].lifetime,10);
  other.x=30;other.z=30;r.bubbles=[];p._bubbleElapsed=4;assert.equal(r._releaseBubble(p),true);assert.equal(r.bubbles.length,0);r._advanceBubbles(2);assert.equal(r.bubbles.length,0);
 });
 

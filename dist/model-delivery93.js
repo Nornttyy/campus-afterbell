@@ -63,7 +63,7 @@ export function applyCharacterOcclusion(model,parts,values){
 let shapePack;
 function loadClassShapes(){
  if(!shapePack){
-  shapePack=fetch(new URL('./assets/models/class-shapes103.bin?v=campus-106',import.meta.url)).then(async response=>{
+  shapePack=fetch(new URL('./assets/models/class-shapes103.bin?v=campus-111',import.meta.url)).then(async response=>{
    if(!response.ok)throw Error('Classroom geometry '+response.status);
    const bytes=await response.arrayBuffer(),offset=new DataView(bytes).getUint32(0,true);
    const table=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,4,offset-4)));

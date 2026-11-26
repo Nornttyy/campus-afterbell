@@ -14,10 +14,10 @@ await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry
 const make=()=>createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});
 const names={snack:'snack-packet',drink:'red-drink-can',burger:'layered-burger',banana:'curved-banana',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox'};
 
-for(const [action,name]of Object.entries(names))test(`${action}: complete 3-second real-skin eating turns palm to eye, centres, bobs and returns with a rigid wrist grip`,()=>{
+for(const [action,name]of Object.entries(names))test(`${action}: complete 3-second real-skin eating holds its pickup orientation, centres, bobs and returns with a rigid wrist grip`,()=>{
  const h=make(),prop=h.group.getObjectByName(name),hand=h.getHand('left'),wrist=hand.group.getObjectByName('mixamorigLeftHand'),middle=hand.group.getObjectByName('mixamorigLeftHandMiddle2');
  let time=0;for(let i=0;i<120;i++)h.update(time+=DT,{action,carrying:true,freeLook:true});h.group.updateMatrixWorld(true);
- const original=prop.getWorldPosition(V()),scale=hand.group.scale.clone(),bones=[];hand.group.traverse(o=>{if(o.isBone)bones.push([o,o.position.clone()]);});
+ const gripHeading=wrist.getWorldQuaternion(Q()),original=prop.getWorldPosition(V()),scale=hand.group.scale.clone(),bones=[];hand.group.traverse(o=>{if(o.isBone)bones.push([o,o.position.clone()]);});
  let grip=null,previous=null,maxStep=0,maxTurn=0;const bob=[],digits=[];
  for(let frame=0;frame<=180;frame++){
   h.update(time+=DT,{action,carrying:true,holding:true,progress:frame/180,freeLook:true});h.group.updateMatrixWorld(true);
@@ -25,7 +25,7 @@ for(const [action,name]of Object.entries(names))test(`${action}: complete 3-seco
   if(grip)assert.ok(fit.elements.every((x,i)=>Math.abs(x-grip.elements[i])<.00001),'prop detached from the actual wrist');else grip=fit;
   if(previous){maxStep=Math.max(maxStep,p.distanceTo(previous.p));maxTurn=Math.max(maxTurn,q.angleTo(previous.q));}previous={p,q};
   assert.deepEqual(prop.scale.toArray(),[1,1,1]);assert.ok(hand.group.scale.distanceTo(scale)<1e-10);
-  if(frame>=60&&frame<=132){const d=h.getDebug().articulation[0];assert.ok(d.rigged&&d.wristAngle>.35&&d.elbowAngle>.5,'gesture only moved the outer group');assert.ok(V(...d.palm).dot(p.clone().negate().normalize())>.85,'palm faces away from player');assert.ok(Math.abs(p.x)<.025);bob.push(p.y);digits.push(middle.quaternion.clone());}
+  if(frame>=60&&frame<=132){const d=h.getDebug().articulation[0];assert.ok(d.rigged&&d.wristAngle>.07&&d.elbowAngle>.09,'elbow and wrist must articulate');assert.ok(q.angleTo(gripHeading)<.10,'wrist turns over while lifting the food');assert.ok(Math.abs(p.x)<.025);bob.push(p.y);digits.push(middle.quaternion.clone());}
   // Full finger/palm surfaces and winding parity are checked in hand-motion55;
   // a wrapped finger need not contact at its single most distal vertex.
  }

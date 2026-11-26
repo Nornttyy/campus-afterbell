@@ -137,7 +137,7 @@ test('smoke must be thrown from a consumed drawer slot before impact creates a g
   const r=quietFixture();Object.assign(r.player._slots[0],{action:'smoke',progress:0,readyAt:0});
   assert.equal(r.hold(true),false);r.step(1);assert.equal(r.snapshot().projectiles.length,0);
   r.toggleDrawer();r.takeSlot(0);r.step(1);assert.equal(r.snapshot().projectiles.length,0);
-  r.hold(true);r.step(.6);assert.equal(r.snapshot().projectiles.length,0);r.releaseUse();
+  r.hold(true);assert.equal(r.snapshot().projectiles.length,1);r.releaseUse();
   let s=r.snapshot();assert.equal(s.completed.smoke,1);assert.equal(s.score,0);assert.equal(s.drawer.slots[0].action,null);
   assert.equal(s.drawer.slots[0].readyIn,3);assert.equal(s.projectiles.length,1);assert.equal(s.smokes.length,0);assert.equal(r.hold(true),false);
   const launch=s.projectiles[0];r.step(.15);s=r.snapshot();assert.ok(Math.hypot(s.projectiles[0].x-launch.x,s.projectiles[0].z-launch.z)>.5);assert.equal(s.smokes.length,0);
@@ -332,33 +332,23 @@ test('classmates use drinks and burgers through the same stock, scoring and refi
 });
 
 function heldSmoke(){const r=quietFixture();Object.assign(r.player._slots[0],{action:'smoke',progress:0,readyAt:0});r.toggleDrawer();r.takeSlot(0);return r;}
-test('a smoke tap throws immediately on release, consumes exactly one item and cannot repeat',()=>{
- const r=heldSmoke();r.hold(true);assert.equal(r.releaseUse(),true);const s=r.snapshot();
- assert.equal(s.elapsed,0);assert.equal(s.projectiles.length,1);assert.equal(s.projectiles[0].charge,0);
- assert.equal(s.completed.smoke,1);assert.equal(s.drawer.slots[0].readyIn,3);assert.equal(s.drawer.drawnSlot,null);
- assert.equal(r.releaseUse(),false);assert.equal(r.snapshot().projectiles.length,1);
+test('press launches exactly once with a low arc and 40 percent more open-ground reach',async()=>{
+ const {createSmokeProjectile}=await import('../dist/smoke-physics.js');
+ const r=heldSmoke();r.setLook(0,0);const old=createSmokeProjectile(r.player,0,1,r.map,r.layout);
+ assert.ok(r.hold(true));const p=r.projectiles[0];assert.equal(p.charge,1);assert.ok(p.vy<old.vy);
+ const range=q=>Math.hypot(q.vx,q.vz)*(q.vy+Math.sqrt(q.vy*q.vy+19.6*(q.y-.075)))/9.8;
+ assert.ok(Math.abs(range(p)/range(old)-1.4)<.0001);
+ assert.equal(r.releaseUse(),false);assert.equal(r.hold(true),false);assert.equal(r.completed.smoke,1);
+ assert.equal(r.snapshot().drawer.slots[0].readyIn,3);
 });
-test('smoke charge increases throw distance, saturates and waits indefinitely for release',()=>{
- const speeds=[];
- for(const seconds of [0,1,2,6]){
-  const r=heldSmoke();r.hold(true);r.step(seconds);const s=r.snapshot();
-  assert.equal(s.projectiles.length,0);assert.equal(s.completed.smoke,0);assert.equal(s.drawer.drawnSlot,0);
-  assert.equal(s.actionProgress,Math.min(seconds/2,1));
-  r.releaseUse();const p=r.snapshot().projectiles[0];speeds.push(Math.hypot(p.vx,p.vy,p.vz));
- }
- assert.ok(speeds[0]<speeds[1]&&speeds[1]<speeds[2]);assert.ok(Math.abs(speeds[2]-speeds[3])<1e-9);
-});
-test('put back, pause and input cancellation cancel charge without throwing or losing the grenade',()=>{
- for(const cancel of [r=>r.hold(false),r=>r.returnItem(),r=>r.pause(true)]){
-  const r=heldSmoke();r.hold(true);r.step(.8);cancel(r);r.releaseUse();const s=r.snapshot();
-  assert.equal(s.projectiles.length,0);assert.equal(s.completed.smoke,0);assert.equal(s.drawer.slots[0].action,'smoke');assert.equal(s.actionProgress,0);
- }
- const r=heldSmoke();r.interact();r.hold(true);r.setLook(Math.PI/2,0);r.releaseUse();assert.ok(r.snapshot().projectiles[0].vx>4);
+test('a throwable returned before pressing leaves the desk stock intact',()=>{
+ const r=heldSmoke();assert.equal(r.returnItem(),true);assert.equal(r.projectiles.length,0);
+ assert.equal(r.hold(true),false);assert.equal(r.player._slots[0].action,'smoke');
 });
 
 test('smoke waits half a second after settling; wall hits and airborne bounces never start it',()=>{
  for(const aim of [{yaw:0,pitch:0,charge:0},{yaw:Math.PI/2,pitch:-.6,charge:1},{yaw:Math.PI,pitch:.6,charge:.5}]){
-  const r=heldSmoke();r.setLook(aim.yaw,aim.pitch);r.hold(true);r.step(aim.charge*2);r.releaseUse();
+  const r=heldSmoke();r.setLook(aim.yaw,aim.pitch);r.hold(true);r.releaseUse();
   let p,previousRest=0,hadImpactInAir=false;
   for(let i=0;i<600;i++){
    r.step(DT);p=r.projectiles[0];

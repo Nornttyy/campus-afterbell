@@ -111,17 +111,23 @@ test('teacher: actual imported skin is unlit while the chalk retains lighting',a
  assertLit(actor.group.getObjectByName('teacher-writing-chalk'),'teacher chalk');actor.dispose();
 });
 
-for(const side of [-1,1])test(`${side<0?'left':'right'}: real first-person palm and wrist cap retain their original colours`,async()=>{
+function checkBarePalm(group){
+ let count=0;group.traverse(mesh=>{if(!mesh.isMesh)return;count++;
+  assert.equal(mesh.material.map,null);assert.equal(mesh.material.color.getHex(),0xffceaf);
+  assert.equal(mesh.material.vertexColors,false);assert.ok(mesh.isSkinnedMesh);
+ });assert.ok(count>=2,'palm and closed wrist must both be bare');
+}
+for(const side of [-1,1])test(`${side<0?'left':'right'}: first-person student palm and closed wrist share the bare skin colour`,async()=>{
  const source=await loadCharacter(side<0?'hand-left-v3':'hand-right-v3'),before=originals(source.scene);
  const hand=createRiggedPalm(source,side);hand.setCurl(.55);hand.opposeThumb(.6);
- const result=verifySurfaces(hand.group,before);assert.equal(result.caps,1,'wrist closure material was not covered');
+ checkBarePalm(hand.group);
 });
 
 test('first-person view keeps both imported hands unlit and attached food lit after posing',async()=>{
  const sources=await Promise.all(['hand-left-v3','hand-right-v3'].map(loadCharacter)),originalsBySide=sources.map(s=>originals(s.scene));
  const hands=createDeskHands({createHand:(side,scale)=>createRiggedPalm(sources[side<0?0:1],side,scale)});
  for(let i=0;i<60;i++)hands.update(i/60,{action:'burger',holding:true,carrying:true,seated:true});
- for(const [index,side]of ['left','right'].entries())verifySurfaces(hands.group.getObjectByName(side+'-desk-hand'),originalsBySide[index]);
+ for(const [index,side]of ['left','right'].entries())checkBarePalm(hands.group.getObjectByName(side+'-desk-hand'));
  // Primitive fallback material names are optional; the factory-level food
  // assertions above cover them. Here ensure there are non-character lit props.
  assert.ok(hands.group.children.some(child=>{let lit=false;child.traverse(mesh=>{if(mesh.isMesh&&!mesh.userData.characterSurface&&mesh.material?.isMeshStandardMaterial)lit=true;});return lit;}));

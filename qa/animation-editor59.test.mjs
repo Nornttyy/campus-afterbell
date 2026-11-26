@@ -17,3 +17,25 @@ test("sub-millisecond edits retain the zero key and the frame limit fails withou
 test('new and missing editor actions stay stationary throughout playback',()=>{const {document}=prepareAnimationEditorDocument();assert.equal(Object.keys(document.clips).length,6);for(const clip of Object.values(document.clips)){assert.equal(clip.keyframes.length,1);assert.deepEqual(sampleHandAnimationClip(clip,0),sampleHandAnimationClip(clip,clip.duration*.83));}const partial={...createHandAnimationDocument(),clips:{'student-walk':make()}};assert.equal(prepareAnimationEditorDocument(partial).document.clips['teacher-idle'].keyframes.length,1);});
 test('legacy migration removes untouched motion while retaining duration and preserving every edited clip',()=>{const old={format:'campus-first-person-hands',version:1,clips:structuredClone(HAND_ANIMATION_BASELINE)};retimeAnimationClip(old.clips['student-walk'],3);old.clips['student-walk'].easing='linear';old.clips['student-crawl'].keyframes[2].left.position[1]+=.02;const before=structuredClone(old),{document,cleared}=prepareAnimationEditorDocument(old,{legacy:true});assert.deepEqual(cleared,['student-walk','teacher-walk']);assert.equal(document.clips['student-walk'].duration,3);assert.equal(document.clips['student-walk'].easing,'linear');assert.equal(document.clips['student-walk'].keyframes.length,1);assert.deepEqual(document.clips['student-crawl'],before.clips['student-crawl']);assert.deepEqual(old,before);});
 test('migration never clears authored finger or key timing changes, nor new-format saved drafts',()=>{for(const change of [c=>c.keyframes[2].left.fingers={Index:.4},c=>c.keyframes[2].time+=.02]){const old={format:'campus-first-person-hands',version:1,clips:{'student-walk':structuredClone(HAND_ANIMATION_BASELINE['student-walk'])}};change(old.clips['student-walk']);assert.deepEqual(prepareAnimationEditorDocument(old,{legacy:true}).document.clips['student-walk'],old.clips['student-walk']);}const old={format:'campus-first-person-hands',version:1,clips:structuredClone(HAND_ANIMATION_BASELINE)};assert.deepEqual(prepareAnimationEditorDocument(old).document.clips['teacher-walk'],old.clips['teacher-walk']);});
+
+test('applying one food clip keeps old saved poses and the published walking clip',async()=>{
+ const {newItemHandClip,validateHandAnimationDocument}=await import('../dist/hand-animation-data59.js');
+ const {createHandAnimationRuntime,saveCurrentHandAnimation,saveHandAnimations}=await import('../dist/hand-animation-runtime59.js');
+ const {PUBLISHED_HAND_ANIMATIONS:base}=await import('../dist/published-hand-animations61.js');
+ let text=null;const store={getItem:()=>text,setItem:(_,v)=>{text=v;}};
+ const id='student-eat-food',food=newItemHandClip(id);
+ food.keyframes[0].left.position[0]=-.31;
+ const saved=await saveCurrentHandAnimation(id,food,store);
+ assert.ok(validateHandAnimationDocument(saved).ok);
+ assert.deepEqual(saved.clips['student-walk'],base.clips['student-walk']);
+ assert.deepEqual(saved.clips[id],food);
+ const runtime=createHandAnimationRuntime({storage:store,eventTarget:null,fallbackDocument:base});
+ const s={role:'student',carrying:true,foodItem:true,seated:true,drawerOpen:true};
+ assert.equal(runtime.sample(s,0),null);
+ assert.equal(runtime.sample({...s,eating:true},.2).clipId,id);
+ assert.equal(runtime.sample({...s,eating:true,caught:true},.3),null);
+ runtime.dispose();
+ const partial={...base,clips:{'student-walk':base.clips['student-walk']}};
+ saveHandAnimations(partial,store);const pair=await saveCurrentHandAnimation(id,food,store);
+ assert.deepEqual(Object.keys(pair.clips).sort(),[id,'student-walk']);
+});

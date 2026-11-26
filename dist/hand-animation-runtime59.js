@@ -1,4 +1,4 @@
-import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-83';
+import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-111';
 export const HAND_ANIMATION_STORAGE_KEY='campus.handAnimations.v1';
 export const HAND_ANIMATION_CHANGE_EVENT='campus:hand-animations-changed';
 function defaultStorage(){try{return globalThis.localStorage||null;}catch{return null;}}
@@ -11,9 +11,18 @@ export function saveHandAnimations(value,storage=defaultStorage()){
  const result=validateHandAnimationDocument(value);if(!result.ok)throw new Error(result.errors[0]);const text=JSON.stringify(result.value);if(text.length>HAND_ANIMATION_MAX_BYTES)throw new Error('动画文件过大');if(!storage?.setItem)throw new Error('浏览器无法保存，请先导出动画文件');
  try{storage.setItem(HAND_ANIMATION_STORAGE_KEY,text);}catch{throw new Error('浏览器存储空间不足，请先导出动画文件');}signal();return result.value;
 }
+export async function saveCurrentHandAnimation(id,clip,storage=defaultStorage()){
+ // Load the published base only for a first single-clip save. Keep a prior
+ // explicit partial import authoritative and read the latest edits after await.
+ const initial=loadHandAnimations(storage);
+ const base=initial||(await import('./published-hand-animations61.js?v=campus-83')).PUBLISHED_HAND_ANIMATIONS;
+ const latest=loadHandAnimations(storage)||base;
+ return saveHandAnimations({...latest,clips:{...latest.clips,[id]:clip}},storage);
+}
 export function clearHandAnimations(storage=defaultStorage()){try{storage?.removeItem(HAND_ANIMATION_STORAGE_KEY);}catch{throw new Error('无法清除已保存动画');}signal();}
 function blocked(s){return Boolean(s.freeLook===false||s.seated||s.carrying||s.holding||s.eating||s.penWriting||s.penTwirling||s.caught||s.computer||s.computerActive||s.bookAmount>0||s.bookRaised||s.drawerOpen||s.surveillance||s.writing||s.carryingStudent||s.throwing||s.teacherPhase&& !['patrolling','watching','idle','moving','chasing'].includes(s.teacherPhase)||s.captivity&&s.captivity!=='free');}
 export function selectHandAnimationClip(state={}){
+ if(state.foodItem&&state.role==='student'&&state.carrying&&!state.caught&&(!state.captivity||state.captivity==='free')&&!state.computer&&!state.bookAmount)return state.eating?'student-eat-food':'student-carry-food';
  if(blocked(state))return null;
  const teacher=state.role==='teacher',moving=state.movement>.01,crawling=state.crawlBlend>.5||state.crouched||state.crawling;
  if(crawling)return teacher?null:moving?'student-crawl':'student-crawl-idle';
@@ -35,8 +44,8 @@ export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget
  const onStorage=e=>{if(!e||e.key==null||e.key===HAND_ANIMATION_STORAGE_KEY)reload();};eventTarget?.addEventListener?.('storage',onStorage);eventTarget?.addEventListener?.(HAND_ANIMATION_CHANGE_EVENT,reload);
  return{
   reload,getDocument:()=>document?JSON.parse(JSON.stringify(document)):null,
-  sample(state={},time=0){if(disposed)return null;const now=Number.isFinite(time)?time:0,dt=lastTime===null?0:Math.max(0,Math.min(.1,now-lastTime));if(lastTime!==null&&now<lastTime)reset();lastTime=now;if(blocked(state)){reset();lastTime=now;return null;}
-   const requested=selectHandAnimationClip(state),clip=requested&&document?.clips[requested];
+  sample(state={},time=0){if(disposed)return null;const now=Number.isFinite(time)?time:0,dt=lastTime===null?0:Math.max(0,Math.min(.1,now-lastTime));if(lastTime!==null&&now<lastTime)reset();lastTime=now;const requested=selectHandAnimationClip(state),clip=requested&&document?.clips[requested];
+   if(blocked(state)&&!clip){reset();lastTime=now;return null;}
    if(clip){if(activeId!==requested||activeClip!==clip){transitionPose=lastPose;transitionAge=0;activeId=requested;activeClip=clip;clipTime=0;}else clipTime+=dt;weight=Math.min(1,weight+dt/Math.max(.001,fadeDuration));}
    else weight=Math.max(0,weight-dt/Math.max(.001,fadeDuration));
    if(!activeClip||weight<=0){if(!clip)reset();lastTime=now;return null;}

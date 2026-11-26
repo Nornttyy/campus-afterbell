@@ -29,10 +29,10 @@ function fixture({map='classroom',teacher=false}={}){
  };
 }
 
-test('production E and mouse input show one gum circle per 1.5 seconds, grow it and pop at four',()=>{
+test('production E and mouse input show one gum circle per 1.5 seconds, grow it for five safe breaths and pay on release',()=>{
  const f=fixture();try{f.take('gum');f.mouse(true);f.advance(.375);let ring=f.element('#use-progress');assert.equal(ring.hidden,false);assert.ok(Math.abs(Number(ring.attrs['aria-valuenow'])-25)<=1);assert.equal(ring.style.width,'54px');
-  f.advance(1.5);assert.ok(Math.abs(Number(ring.attrs['aria-valuenow'])-25)<=1);assert.equal(ring.style.width,'67px');assert.equal(f.round.score,1);
-  f.advance(4.125);assert.equal(f.round.score,6);assert.equal(f.round.player._slots[0].action,null);assert.equal(ring.hidden,true);assert.equal(f.rendered.player.bubble.progress,0);f.mouse(false);
+  f.advance(1.5);assert.ok(Math.abs(Number(ring.attrs['aria-valuenow'])-25)<=1);assert.equal(ring.style.width,'67px');assert.equal(f.round.score,0);
+  f.advance(5.625);assert.equal(f.round.score,0);f.mouse(false);assert.equal(f.round.score,5);assert.equal(f.round.player._slots[0].action,null);assert.equal(ring.hidden,true);assert.equal(f.rendered.player.bubble.progress,0);f.mouse(false);
  }finally{f.close();}
 });
 test('bound mouse hold stays at four circles, and release without contact launches orange bubble',()=>{

@@ -9,11 +9,15 @@ function quiet(map='classroom',Round=ClassroomRound){const r=new Round({map,targ
 function stock(r,kind){r.player.pitch=.55;r.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};r.player._selectedSlot=0;r.player._drawnSlot=null;r.selected=r.player.action=kind;if(!r.player._drawerOpen)r.toggleDrawer();assert.equal(r.takeSlot(0),true);}
 function bind(r,p){r.teacher.x=p.x;r.teacher.z=p.z-.9;r._stun(p);assert.ok(r._grab(p));r.teacher.x=DETENTION[0].x;r.teacher.z=DETENTION[0].z-1.1;assert.ok(r._bind(0));r.teacher.x=r.teacher.z=40;}
 
-test('gum grows one cycle every 1.5 seconds, awards increasing points, and pops at four',()=>{
- const r=quiet();stock(r,'gum');r.hold(true);let expected=0;
- for(let n=1;n<=3;n++){r.step(1.5);expected+=n;assert.equal(r.score,expected);assert.equal(r.snapshot().player.bubble.cycles,n);assert.equal(r.snapshot().player.bubble.blowing,true);}
- r.step(1.5);assert.equal(r.score,6);assert.equal(r.player._slots[0].action,null);assert.equal(r.snapshot().player.bubble.progress,0);assert.equal(r.bubbles.length,0);assert.equal(r.drainEvents().filter(e=>e.type==='gum-pop').length,1);
+test('five safe breaths bank points, each later breath has a one-in-five pop risk, and only a pop pays',()=>{
+ const r=quiet();stock(r,'gum');r.hold(true);r._random=()=>0;
+ for(let n=1;n<=5;n++){r.step(1.5);assert.equal(r.score,0);assert.equal(r.snapshot().player.bubble.cycles,n);assert.equal(r.player._drawnSlot,0);}
+ assert.equal(r.snapshot().player.bubble.progress,1);r._random=()=>.20;
+ r.step(3);assert.equal(r.score,0);assert.equal(r.player._bubbleAwarded,5.4);
+ r._random=()=>.19999;r.step(1.5);assert.equal(r.score,5.4);assert.equal(r.player._drawnSlot,null);
+ assert.equal(r.releaseUse(),false);assert.equal(r.drainEvents().filter(e=>e.type==='gum-pop').length,1);
 });
+
 test('bound bubble caps at four cycles and attaches only when another head touches it',()=>{
  const r=quiet();bind(r,r.player);r.hold(true);r.step(7);assert.equal(r.snapshot().player.bubble.cycles,4);assert.equal(r.bubbles.length,0);assert.equal(r.score,0);
  const p=r.player,victim=r.students.find(s=>s.id!==p.id&&!s.isTeammate),forward=.28+.915*1.08;Object.assign(victim,{x:p.x+Math.sin(p.yaw)*forward,z:p.z+Math.cos(p.yaw)*forward,seated:false,seatId:null});r.step(DT);

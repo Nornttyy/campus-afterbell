@@ -37,7 +37,7 @@ function neutralPalmFaces(source){
   return{geometry,palmar:points.map((point,i)=>normals[i].normalize().dot(dorsal)<-.25&&point.clone().sub(wrist).dot(dorsal)<0)};
  });
 }
-const neutralFaces=neutralPalmFaces(left);
+const neutralFaces=neutralPalmFaces({scene:createRiggedPalm(left,-1,1).group});
 
 // Classify every original vertex independently of the shared sampling helper.
 // In particular, a Ring-weighted vertex must never stand in for palm contact.
@@ -102,7 +102,7 @@ for(const open of [true,false])test(`seed73 held burger: true palm and four fing
  const round=createSoloRound({role:'student',seed:73,target:120});round.start();round._advanceTeacher=()=>{};
  for(const student of round.students)student._decisionAt=Infinity;
  round.setLook(round.player.seatYaw||0,.90);round.setBookRaised(false);
- assert.equal(round.toggleDrawer(),true);assert.equal(round.takeSlot(0),true);
+ round.player._slots[0].action='burger';assert.equal(round.toggleDrawer(),true);assert.equal(round.takeSlot(0),true);
  assert.equal(round.snapshot().selected,'burger');
  if(!open){
   // A held item cannot close its drawer directly. Use the production stand/

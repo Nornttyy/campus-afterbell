@@ -4,7 +4,7 @@ import * as T from './vendor/three.module.js';
 // No new particle is allocated each frame and pause cannot keep effects moving.
 export function createItemEffects50(scene,{floorAt=()=>0,getActor=()=>null,camera=null}={}){
  const root=new T.Group();root.name='classroom-item-effects50';scene.add(root);
- const pools={peels:new Map(),burps:new Map(),stars:new Map(),ink:new Map()},geometries=new Set(),materials=new Set();
+ const pools={peels:new Map(),burps:new Map(),stars:new Map(),ink:new Map(),flash:new Map()},geometries=new Set(),materials=new Set();
  const geometry=g=>(geometries.add(g),g),material=m=>(materials.add(m),m);
  const peelOuter=material(new T.MeshStandardMaterial({color:'#f4cf43',roughness:.72,side:T.DoubleSide})),peelInner=material(new T.MeshStandardMaterial({color:'#fff2b6',roughness:.88,side:T.DoubleSide}));
  const stemMaterial=material(new T.MeshStandardMaterial({color:'#76542b',roughness:1}));
@@ -34,6 +34,13 @@ export function createItemEffects50(scene,{floorAt=()=>0,getActor=()=>null,camer
  const stainVertices=[0,0,.06],stainIndices=[],segments=48;
  for(let i=0;i<=segments;i++){const a=i/segments*Math.PI*2,r=.86+.07*Math.sin(a*5)+.045*Math.sin(a*11);stainVertices.push(Math.cos(a)*r,Math.sin(a)*r,.005);if(i<segments)stainIndices.push(0,i+1,i+2);}
  const inkGeometry=geometry(new T.BufferGeometry());inkGeometry.setAttribute('position',new T.Float32BufferAttribute(stainVertices,3));inkGeometry.setIndex(stainIndices);inkGeometry.computeVertexNormals();
+ const glareGeometry=geometry(new T.PlaneGeometry(1,1));
+ const glareMaterial=material(new T.ShaderMaterial({
+   transparent:true,depthWrite:false,side:T.DoubleSide,
+   vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+   fragmentShader:'varying vec2 v;void main(){float r=length(v-.5)*2.;float ring=1.-smoothstep(.05,.25,abs(r-.68));float glow=(1.-smoothstep(.30,1.,r))*.35;gl_FragColor=vec4(1.,.995,.96,ring*.89+glow);}'
+ }));
+ function makeGlare(){const m=new T.Mesh(glareGeometry,glareMaterial);m.name='flash-head-halo';return m;}
  function makeInk(){return new T.Mesh(inkGeometry,material(new T.MeshBasicMaterial({color:'#111419',transparent:true,opacity:.97,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,depthWrite:false})));}
  function acquire(pool,id,create){let item=pool.get(id);if(!item){item=create();root.add(item);pool.set(id,item);}item.visible=true;return item;}
  const headPosition=new T.Vector3(),worldQuaternion=new T.Quaternion(),up=new T.Vector3(0,1,0);
@@ -45,6 +52,11 @@ export function createItemEffects50(scene,{floorAt=()=>0,getActor=()=>null,camer
   for(const b of state.burps||[]){const group=acquire(pools.burps,b.id,makeBurp);group.position.set(b.x,b.y,b.z);group.rotation.y=b.yaw||0;const fade=Math.min(1,b.age/.12,Math.max(0,(b.lifetime-b.age)/.45));group.userData.material.uniforms.opacity.value=fade;group.children.forEach((p,i)=>{const growth=.10+.11*Math.min(1,b.age/.4),phase=b.age*2+i*2.1;p.scale.set(growth*(1+i*.12),growth*.72,growth*1.25);p.position.set(Math.sin(phase)*.035,Math.cos(phase)*.025,-i*.13);});}
   const actors=[...(state.students||[]),{...state.teacher,id:-1}];
   for(const s of actors){if(s.visible===false||!Number.isFinite(s.x)||!Number.isFinite(s.z))continue;const local=s.id===state.player?.id;
+   if(s.flashLeft>0&&!local){
+     const ring=acquire(pools.flash,s.id,makeGlare);ring.position.copy(actorHead(s,state));ring.position.y+=s.id===-1?.26:.22;
+     if(camera){const dir=camera.getWorldPosition(headPosition).sub(ring.position).normalize();ring.position.addScaledVector(dir,.21);ring.quaternion.copy(camera.getWorldQuaternion(worldQuaternion));}
+     const radius=(s.id===-1?.94:.86)*(.9+.1*Math.min(1,s.flashLeft/.20));ring.scale.setScalar(radius);
+   }
    if(s.stunLeft>0&&!local){const stars=acquire(pools.stars,s.id,makeStars),at=actorHead(s,state);stars.position.copy(at).add(new T.Vector3(0,s.id===-1?.65:.48,0));stars.userData.stars.forEach((star,i)=>{const a=time*2.25+i*Math.PI*2/3;star.position.set(Math.cos(a)*.39,Math.sin(a)*.39*Math.sin(.30)+Math.sin(a*2)*.012,Math.sin(a)*.39*Math.cos(.30));if(camera){star.quaternion.copy(camera.getWorldQuaternion(worldQuaternion));star.rotateZ(Math.sin(a)*.22);}else star.rotation.set(.15,a+Math.PI/2,Math.sin(a)*.2);});stars.userData.trail.rotation.z=time*2.25-Math.PI*1.48;}
    if(s.inkLeft>0&&!local&&!getActor(s.id??-1)){const stain=acquire(pools.ink,s.id,makeInk),at=actorHead(s,state),yaw=s.yaw||0,forward=s.id===-1?.31:.28;stain.position.copy(at).add(new T.Vector3(Math.sin(yaw)*forward,-.055,Math.cos(yaw)*forward));stain.rotation.set(0,yaw,0);stain.scale.set(s.id===-1?.38:.31,s.id===-1?.35:.30,1);stain.material.opacity=.97*Math.min(1,s.inkLeft/1.5);}
   }

@@ -16,9 +16,9 @@ test('ink keeps its full mask until the final two seconds, including nondefault 
   assert.equal(sample(2,10).inkAlpha,1);assert.equal(sample(1,10).inkAlpha,.5);assert.equal(sample(.5,1).inkAlpha,.5);assert.equal(sample(3).inkAge,4);
 });
 test('empty, expired and malformed snapshots cannot produce invalid opacity or a permanent mask',()=>{
-  assert.deepEqual(visionEffectState(null),{flashAlpha:0,inkAlpha:0,inkAge:0,gumAlpha:0,gumKind:'pink',gumSize:0});
+  assert.deepEqual(visionEffectState(null),{flashAlpha:0,flashBack:false,inkAlpha:0,inkAge:0,gumAlpha:0,gumKind:'pink',gumSize:0});
   for(const player of [{},{flashLeft:NaN,inkLeft:Infinity},{flashLeft:-1,inkLeft:-2},{flashLeft:100,flashDuration:0,flashStrength:2,inkLeft:100,inkDuration:-2},{bubbleLeft:5,bubbleSize:'broken',bubbleKind:'broken'},{bubbleLeft:Infinity,bubbleSize:NaN}]){
-    const s=visionEffectState({player});assert.ok(['pink','orange'].includes(s.gumKind));for(const [key,n] of Object.entries(s))if(key!=='gumKind')assert.ok(Number.isFinite(n));assert.ok(s.flashAlpha>=0&&s.flashAlpha<=1&&s.inkAlpha>=0&&s.inkAlpha<=1&&s.gumAlpha>=0&&s.gumAlpha<=1);
+    const s=visionEffectState({player});assert.ok(['pink','orange'].includes(s.gumKind));for(const [key,n] of Object.entries(s))if(key!=='gumKind'&&key!=='flashBack')assert.ok(Number.isFinite(n));assert.ok(s.flashAlpha>=0&&s.flashAlpha<=1&&s.inkAlpha>=0&&s.inkAlpha<=1&&s.gumAlpha>=0&&s.gumAlpha<=1);
   }
 });
 

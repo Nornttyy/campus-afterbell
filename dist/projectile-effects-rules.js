@@ -1,5 +1,5 @@
 import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-108';
-import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,actorEyePosition as effectEye,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-108';
+import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,floorHeight,actorEyePosition as effectEye,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-108';
 
 // Local reconstruction parameters, not measured single-projectile durations.
 export const PROJECTILE_EFFECT_TUNING=Object.freeze({flashFuse:1.2,flashRange:8,flashWhite:4.5,flashFade:2.5,inkRange:2.2,inkDuration:7});
@@ -26,7 +26,17 @@ export function inkExposure(origin,actor,map='classroom',layout=null){
  const eye=effectEye(actor,map);return Math.hypot(eye.x-origin.x,eye.y-origin.y,eye.z-origin.z)<=PROJECTILE_EFFECT_TUNING.inkRange&&clearEffectSight(origin,eye,map,layout);
 }
 export function createThrowableProjectile(actor,id,kind,charge=0,map='classroom',layout=null){
- return{...createSmokeProjectile(actor,id,charge,map,layout),kind,retired:false};
+ const instant=['smoke','ink','flash'].includes(kind);
+ const p={...createSmokeProjectile(actor,id,instant?1:charge,map,layout),kind,retired:false};
+ if(instant){
+  // Compare the two unobstructed arcs at the same launch height and aim.
+  const height=Math.max(.01,p.y-floorHeight(p.x,p.z,map)-.075);
+  const flight=vy=>(vy+Math.sqrt(vy*vy+19.6*height))/9.8;
+  const oldFlight=flight(p.vy),pitch=actor.pitch||0;
+  p.vy=8*Math.sin(Math.max(-.8,Math.min(.44,.26-pitch*.65)));
+  const stretch=1.4*oldFlight/flight(p.vy);p.vx*=stretch;p.vz*=stretch;
+ }
+ return p;
 }
 function actorImpact(a,b,actors,ownerId,map){
  let nearest=null;

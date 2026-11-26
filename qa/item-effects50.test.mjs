@@ -8,9 +8,9 @@ import {createRiggedStudent} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 
 test('item effect meshes track authoritative states, disappear on expiration and reset without leaks',()=>{
- const scene=new T.Scene(),effects=createItemEffects50(scene),state={elapsed:3,map:'classroom',player:{id:9},students:[{id:1,x:0,z:0,stunLeft:3,inkLeft:5}],teacher:{x:2,z:2,inkLeft:4},peels:[{id:1,x:1,y:.075,z:1,armed:true}],burps:[{id:2,x:2,y:1.5,z:2,yaw:1,age:.3,lifetime:2.5}]};effects.update(state);
- assert.deepEqual(effects.diagnostics(),{peels:1,burps:1,stars:1,ink:2});scene.updateMatrixWorld(true);scene.traverse(o=>assert.ok(o.matrixWorld.elements.every(Number.isFinite)));
- effects.update({...state,peels:[],burps:[],students:[],teacher:{}});assert.deepEqual(effects.diagnostics(),{peels:0,burps:0,stars:0,ink:0});effects.dispose();assert.equal(scene.children.length,0);
+ const scene=new T.Scene(),effects=createItemEffects50(scene),state={elapsed:3,map:'classroom',player:{id:9},students:[{id:1,x:0,z:0,stunLeft:3,inkLeft:5,flashLeft:2}],teacher:{x:2,z:2,inkLeft:4},peels:[{id:1,x:1,y:.075,z:1,armed:true}],burps:[{id:2,x:2,y:1.5,z:2,yaw:1,age:.3,lifetime:2.5}]};effects.update(state);
+ assert.deepEqual(effects.diagnostics(),{peels:1,burps:1,stars:1,ink:2,flash:1});scene.updateMatrixWorld(true);scene.traverse(o=>assert.ok(o.matrixWorld.elements.every(Number.isFinite)));
+ effects.update({...state,peels:[],burps:[],students:[],teacher:{}});assert.deepEqual(effects.diagnostics(),{peels:0,burps:0,stars:0,ink:0,flash:0});effects.dispose();assert.equal(scene.children.length,0);
 });
 test('gum grows for ordinary use as well as bound pupils, and an own head attachment does not render through the camera',()=>{
  const scene=new T.Scene(),camera=new T.PerspectiveCamera(),fx=createBubbleEffects(scene,camera),p={id:9,captivity:'free',bubble:{progress:.5}},state={player:p,students:[{id:1,x:1,z:1,yaw:0,seated:true,captivity:'free',bubble:{progress:.4}}],bubbles:[]};fx.update(state);assert.equal(camera.getObjectByName('first-person-gum-bubble').children[0].visible,true);assert.equal(scene.getObjectByName('released-gum-bubbles').children.length,1);

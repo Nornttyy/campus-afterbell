@@ -19,9 +19,9 @@ test('all foods reset use and private sounds on release; throws and pen are unaf
  for(const kind of FOOD_ACTIONS){const r=quiet();take(r,kind);r.hold(true);tick(r,.9);assert.ok(r.player._useElapsed>.8);r.hold(false);assert.equal(r.snapshot().actionProgress,0);assert.equal(r.player._useElapsed,0);r.drainEvents();r.setLook(0,0);r.hold(true);tick(r,1);assert.equal(r.drainEvents().filter(e=>e.type.startsWith('use-')).length,0);assert.equal(r.score,0);}
  const r=quiet();take(r,'smoke');r.player.pitch=0;r.hold(true);tick(r,.3);r.releaseUse();assert.equal(r.projectiles.length,1);
 });
-test('pink gum uses 1.5-second circles, pops on release or circle four, and never launches',()=>{
+test('pink gum uses 1.5-second circles, banks five circles and pops on release, and never launches',()=>{
  const r=quiet();take(r,'gum');for(const a of r.students)if(a!==r.player)Object.assign(a,{x:-100,z:-100});r.hold(true);
- for(const [i,points]of[1,2,3,0].entries()){const prior=r.score;tick(r,1.5);assert.equal(r.score-prior,points);if(i<3)assert.equal(r.snapshot().player.bubble.cycles,i+1);}assert.equal(r.score,6);assert.equal(r.bubbles.length,0);assert.equal(r.drainEvents().filter(e=>e.type==='gum-pop').length,1);
+ for(let i=1;i<=5;i++){tick(r,1.5);assert.equal(r.score,0);assert.equal(r.snapshot().player.bubble.cycles,i);}r.releaseUse();assert.equal(r.score,5);assert.equal(r.bubbles.length,0);assert.equal(r.drainEvents().filter(e=>e.type==='gum-pop').length,1);
  take(r,'gum');r.hold(true);tick(r,.5);r.releaseUse();assert.equal(r.bubbles.length,0);assert.equal(r.player._drawnSlot,null);assert.equal(r.drainEvents().filter(e=>e.type==='gum-pop').length,1);
 });
 test('orange bound bubble holds full size, launches on release, and attaches with fixed head size',()=>{
@@ -66,7 +66,7 @@ test('disconnect cancels a partial meal and reconnect cannot resume stale progre
  const {r,host,student}=room();r.begin(host);for(let i=0;i<301;i++)r.tick(.1);const actor=student.context.player;Object.assign(actor,{seated:true,pitch:.55,_selectedSlot:0,_drawnSlot:0,action:'burger'});actor._slots[0]={id:0,action:'burger',progress:0,readyAt:0};student.context.selected='burger';r.command(student,'hold',[true]);for(let i=0;i<10;i++)r.tick(.1);assert.ok(actor._slots[0].progress>0);r.disconnect(student);assert.equal(actor._slots[0].progress,0);assert.equal(actor.holding,false);r.reconnect(student);assert.equal(r.snapshot(student).actionProgress,0);
 });
 test('private inflation cues fire once per 1.5-second circle and public item cues include a world position',()=>{
- const r=quiet();take(r,'gum');r.hold(true);tick(r,6);const events=r.drainEvents(),inflate=events.filter(e=>e.type==='gum-inflate');assert.deepEqual(inflate.map(e=>e.cycle),[1,2,3,4]);assert.ok(inflate.every(e=>e.recipientId===r.player.id));const pop=events.find(e=>e.type==='gum-pop');assert.ok([pop.x,pop.y,pop.z].every(Number.isFinite));
+ const r=quiet();take(r,'gum');r.hold(true);tick(r,6);r.releaseUse();const events=r.drainEvents(),inflate=events.filter(e=>e.type==='gum-inflate');assert.deepEqual(inflate.map(e=>e.cycle),[1,2,3,4]);assert.ok(inflate.every(e=>e.recipientId===r.player.id));const pop=events.find(e=>e.type==='gum-pop');assert.ok([pop.x,pop.y,pop.z].every(Number.isFinite));
  take(r,'garlic');r.hold(true);tick(r,3);r.burp();const finish=r.drainEvents();for(const kind of['food-complete','burp']){const event=finish.find(e=>e.type===kind);assert.ok(event);assert.ok([event.x,event.y,event.z].every(Number.isFinite));assert.equal(event.recipientId,undefined);}
 });
 

@@ -2,16 +2,16 @@ import {createDeskHandShadows} from './desk-hand-shadows108.js?v=campus-108';
 import {makeSchoolChair} from './school-furniture91.js?v=campus-108';
 import {TEXTBOOK,bookAngle,bookSpineHeight,setDeskBookReach,BOOK_PAPER_FACE,BOOK_COVER_FACE} from './study-book58.js?v=campus-110';
 import {setDish} from './hotpot-food94.js?v=campus-94';
-import {CampusModelLoader} from './model-delivery93.js?v=campus-108';
+import {CampusModelLoader} from './model-delivery93.js?v=campus-111';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
 import {reachesRadio} from './campus-radio93.js?v=campus-97';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {paperQuestion} from './upper-floor-view85.js?v=campus-110';
+import {paperQuestion} from './upper-floor-view85.js?v=campus-111';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-94';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-92';
 import {FURNITURE_SOURCES67,loadFurniture67} from './furniture-assets67.js?v=campus-99';
 import {assetsForOpenMaps} from './campus-destinations.js?v=campus-108';
-import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-83';
+import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-111';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
 import {drawerHandTarget} from './drawer-hand-target58.js?v=campus-108';
 import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-92';
@@ -26,26 +26,26 @@ import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=campus-109';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
 import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-83';
-import {createItemEffects50} from './item-effects50.js?v=campus-83';
-import {createBubbleEffects} from './bubble-effects.js?v=campus-83';
+import {createItemEffects50} from './item-effects50.js?v=campus-111';
+import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork} from './campus-artwork.js?v=campus-93';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-110';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-111';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-108';
-import {createRoomVariants} from './room-variants.js?v=campus-110';
+import {createRoomVariants} from './room-variants.js?v=campus-111';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
 import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96';
 import * as THREE from './vendor/three.module.js';
 import {CAMPUS_SURFACE_SOURCES,loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-108';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-110';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-111';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
-import {createDeskHands,createDeskItem,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-110';
-import {loadStudentAssets} from './student-assets.js?v=campus-110';
+import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-111';
+import {loadStudentAssets} from './student-assets.js?v=campus-111';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-110';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-111';
 import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-108';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
@@ -450,7 +450,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   const drawerSlotProps=Array.from({length:3},(_,index)=>{
     const slot=new THREE.Group();slot.name='drawer-slot-'+index;slot.position.set((index-1)*.28,.680,-.16);drawerItems.add(slot);
     const props=new Map(DESK_ITEM_KINDS.map(action=>{
-      const prop=createDeskItem(action);prop.rotation.set(['burger','lunch','hotpotPlate','hotpotBite'].includes(action)?0:-Math.PI/2,0,(index===1?.04:index===0?-.07:.08)+(prop.userData.propAsset&&!['burger','lunch','hotpotPlate','hotpotBite'].includes(action)?Math.PI:0));restDeskItem(prop,(importedDesk?.drawerFloor??.65)-slot.position.y);prop.visible=false;slot.add(prop);
+      const prop=createDeskItem(action);prop.rotation.set(['burger','lunch','hotpotPlate','hotpotBite'].includes(action)?0:-Math.PI/2,0,(index===1?.04:index===0?-.07:.08)+(prop.userData.propAsset&&!['burger','lunch','hotpotPlate','hotpotBite'].includes(action)?Math.PI:0));if(['gum','chips','noodles'].includes(action))prop.rotation.x=Math.PI/2;restDeskItem(prop,(importedDesk?.drawerFloor??.65)-slot.position.y);prop.visible=false;slot.add(prop);
       prop.traverse(o=>{if(o.geometry)assets.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m));});
       return[action,prop];
     }));return{group:slot,props,pickTargets:[...props.values()].map(prop=>createDrawerPickTarget(prop,index))};
@@ -692,7 +692,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     let pose=socialPoses.get(actor);if(!pose){if(!emote)return;pose=createSocialPose(actor);socialPoses.set(actor,pose);}
     pose.pose(emote,clock,dt);
   }
-  const moodMap={wrapper:'wrapper',hotpotPlate:'hotpotPlate',hotpotBite:'hotpotBite',riding:'riding',sitting:'resting','pen-twirling':'pen',standing:'resting',walking:'resting',carried:'resting',bound:'resting',stunned:'thinking',rescuing:'rescuing',listening:'listening','computer-idle':'computer-idle',reading:'reading',writing:'writing',thinking:'thinking',snack:'snack',drink:'drink',burger:'burger',phone:'phone',computer:'computer',smoke:'smoke',flash:'flash',ink:'ink',banana:'banana',bananaPeel:'bananaPeel',garlic:'garlic',gum:'gum',lunch:'lunch',pen:'pen',caught:'resting',resting:'resting',alert:'thinking'};
+  const moodMap={wrapper:'wrapper',hotpotPlate:'hotpotPlate',hotpotBite:'hotpotBite',riding:'riding',sitting:'resting','pen-twirling':'pen',standing:'resting',walking:'resting',carried:'resting',bound:'resting',stunned:'thinking',rescuing:'rescuing',listening:'listening','computer-idle':'computer-idle',reading:'reading',writing:'writing',thinking:'thinking',chips:'snack',noodles:'snack',snack:'snack',drink:'drink',burger:'burger',phone:'phone',computer:'computer',smoke:'smoke',flash:'flash',ink:'ink',banana:'banana',bananaPeel:'bananaPeel',garlic:'garlic',gum:'gum',lunch:'lunch',pen:'pen',caught:'resting',resting:'resting',alert:'thinking'};
   const pupilFrustum=new THREE.Frustum(),pupilView=new THREE.Matrix4(),pupilBounds=new THREE.Sphere(new THREE.Vector3(),1.15);
   function updatePupils(state,animationTime,dt){
     handShadows.begin();
@@ -733,7 +733,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
       if(near){
         const actor=actorFor(record,standing),headLook=captureHeadLook(student,record.group.rotation.y);
         const support=student&&!student.officeChair&&Number.isInteger(student.seatId)?currentSeats.find(seat=>seat.id===student.seatId):null;
-        record.actor=actor;actor.setStudyBook?.(support?.hideBook||['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))?null:deskBooks.get(student?.seatId??record.seat.id));actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||'resting');actor.setMotion?.({dish:student?.heldDish,jumpHeight:student?.jumpHeight||0,seatSurface:support?.surface,drawerOpen:student?.drawerOpen??student?.drawer?.open,onBed:Boolean(student?.onBed),lying:Boolean(student?.onBed),sleeping:Boolean(student?.sleeping),mapActivity:student?.mapActivity,inkLeft:student?.inkLeft||0,crawling:Boolean(student?.crouched&&standing),seated:!standing,speed:record.worldMotion.speed,carrying:student?.carrying??(student?.drawer?.drawnSlot!=null),heldAction:student?.heldAction,using:Boolean(Object.hasOwn(student||{},'eating')&&['snack','drink','burger','banana','garlic','lunch'].includes(student?.heldAction||student?.action)?student.eating:student?.holding),penWriting:Boolean(student?.penWriting),penTwirling:Boolean(student?.penTwirling),lookYaw:headLook.yaw,lookPitch:headLook.pitch,restraint:record.motionKind,restraintStartedAt:record.motionAt,throwProgress:student?.progress||0,throwAge:student?.itemThrowAge??Infinity});
+        record.actor=actor;actor.setStudyBook?.(support?.hideBook||['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))?null:deskBooks.get(student?.seatId??record.seat.id));actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||'resting');actor.setMotion?.({dish:student?.heldDish,jumpHeight:student?.jumpHeight||0,seatSurface:support?.surface,drawerOpen:student?.drawerOpen??student?.drawer?.open,onBed:Boolean(student?.onBed),lying:Boolean(student?.onBed),sleeping:Boolean(student?.sleeping),mapActivity:student?.mapActivity,inkLeft:student?.inkLeft||0,crawling:Boolean(student?.crouched&&standing),seated:!standing,speed:record.worldMotion.speed,carrying:student?.carrying??(student?.drawer?.drawnSlot!=null),heldAction:student?.heldAction,using:Boolean(Object.hasOwn(student||{},'eating')&&['chips','noodles','snack','drink','burger','banana','garlic','lunch'].includes(student?.heldAction||student?.action)?student.eating:student?.holding),penWriting:Boolean(student?.penWriting),penTwirling:Boolean(student?.penTwirling),lookYaw:headLook.yaw,lookPitch:headLook.pitch,restraint:record.motionKind,restraintStartedAt:record.motionAt,throwProgress:student?.progress||0,throwAge:student?.itemThrowAge??Infinity});
         const articulating=['carried','bound','stunned','rescuing'].includes(student?.captivity)||student?.mood==='rescuing';
         // Every visible pupil animates continuously; off-camera actors are culled above.
         const interval=quality==='low'&&!articulating&&record.distance>7?1/30:0;
@@ -766,7 +766,8 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     const otherOpen=new Set((state?.students||[]).filter(s=>s.seated&&!s.caught&&(s.drawerOpen??s.drawer?.open)).map(s=>s.seatId));
     for(const [id,drawer] of drawerRecords){
       const target=id===seat&&state.drawer?.open||otherOpen.has(id)?1:0;
-      drawer.open=THREE.MathUtils.damp(drawer.open,target,target>drawer.open?12:18,dt);
+      drawer.slide=THREE.MathUtils.clamp((drawer.slide??drawer.open)+(target?1:-1)*dt/.36,0,1);
+      drawer.open=THREE.MathUtils.smootherstep(drawer.slide,0,1);
       drawer.group.position.x=drawer.x-Math.sin(drawer.yaw||0)*drawer.open*.24;drawer.group.position.z=drawer.z-Math.cos(drawer.yaw||0)*drawer.open*.24;
     }
     // Track the model that is actually in the hand through its retraction, even
@@ -959,7 +960,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
       const playerSeat=seated&&!player.officeChair?currentSeats[player.seatId]:null;
       const bookAmount=gameplay.books?.find(b=>b.id===player.seatId)?.amount||0;
       const lapSeat=playerSeat?.surface==='bus-seat'||playerSeat?.surface==='bus-table'&&!player.penTaken&&bookAmount<.01;
-      hands.update(gameTime,{animationPose:viewRole()==='teacher'?null:customHandAnimation.sample({role:'student',freeLook:true,seated,crouched,carrying:gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper',holding:Boolean(gameplay.holding),eating:Boolean(player.eating),penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),drawerOpen:Boolean(gameplay.drawer?.open),captivity:player.captivity,caught,computer:player.computerActive,bookAmount,movement:firstPersonMotion.amount,crawlBlend:firstPersonMotion.crawlBlend},gameTime),drawer:firstPersonDrawer,eyeHeight:firstPersonEyeHeight(player,'student'),coachSeat:lapSeat?playerSeat.surface:null,deskSurface:!player.onBed&&mapKind(mapVariant)!=='toilet'&&!lapSeat,mealDish:gameplay.drawer?.source?.dish,examPen:variants.upper.penContact(gameplay),action:gameplay.exam?.mode==='paper'?'pen':gameplay.selected,penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),holding:Boolean(gameplay.holding&&!caught),eating:Boolean(player.eating&&!caught),carrying:(gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper')&&!caught,progress:gameplay.actionProgress,alert:feedbackKind==='caught'?feedbackTime/.55:(gameplay.suspicion||0)/150,seated,crouched,caught,freeLook:true,viewPitch:basePitch+drawerPitch,computer:gameplay.player.computerActive,typing:Boolean(player.computerActive),bookAmount:gameplay.exam?.mode==='card'?.60:!player.officeChair&&!playerSeat?.hideBook&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))?bookAmount:0,office:Boolean(player.officeChair),throwAge:player.itemThrowAge??Infinity,movement:firstPersonMotion.amount,walkPhase:firstPersonMotion.phase,crawlBlend:firstPersonMotion.crawlBlend});
+      hands.update(gameTime,{animationPose:viewRole()==='teacher'?null:customHandAnimation.sample({role:'student',foodItem:FOOD_ITEM_KINDS.includes(gameplay.selected),freeLook:true,seated,crouched,carrying:gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper',holding:Boolean(gameplay.holding),eating:Boolean(player.eating||gameplay.selected==='gum'&&player.bubble?.blowing),penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),drawerOpen:Boolean(gameplay.drawer?.open),captivity:player.captivity,caught,computer:player.computerActive,bookAmount,movement:firstPersonMotion.amount,crawlBlend:firstPersonMotion.crawlBlend},gameTime),drawer:firstPersonDrawer,eyeHeight:firstPersonEyeHeight(player,'student'),coachSeat:lapSeat?playerSeat.surface:null,deskSurface:!player.onBed&&mapKind(mapVariant)!=='toilet'&&!lapSeat,mealDish:gameplay.drawer?.source?.dish,examPen:variants.upper.penContact(gameplay),action:gameplay.exam?.mode==='paper'?'pen':gameplay.selected,penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),holding:Boolean(gameplay.holding&&!caught),eating:Boolean(player.eating&&!caught),carrying:(gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper')&&!caught,progress:gameplay.actionProgress,alert:feedbackKind==='caught'?feedbackTime/.55:(gameplay.suspicion||0)/150,seated,crouched,caught,freeLook:true,viewPitch:basePitch+drawerPitch,computer:gameplay.player.computerActive,typing:Boolean(player.computerActive),bookAmount:gameplay.exam?.mode==='card'?.60:!player.officeChair&&!playerSeat?.hideBook&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))?bookAmount:0,office:Boolean(player.officeChair),throwAge:player.itemThrowAge??Infinity,movement:firstPersonMotion.amount,walkPhase:firstPersonMotion.phase,crawlBlend:firstPersonMotion.crawlBlend});
       markStage('hands');const focus=THREE.MathUtils.clamp(hands.getFocus?.()||0,0,1),handState=hands.getDebug?.();canvas.dataset.itemReady=String(focus>.92&&gameplay.holding&&(handState?.extension??1)>=.99&&entryTime>=.7);
       const viewFocus=0,extraDrop=0;
       const yaw=Number.isFinite(player.yaw)?player.yaw:0,pitch=THREE.MathUtils.clamp(basePitch,-1.40,1.40);

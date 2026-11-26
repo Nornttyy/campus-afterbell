@@ -102,7 +102,7 @@ test('smoke charge turns the wrist back, release swings it forward and opens the
   assert.ok(maxStep<.10,`Throw jumps palm ${maxStep} m in one frame`);
 });
 
-for(const seated of [true,false])test(`food use turns inward, reaches centre, bobs and returns while the other hand rests (${seated?'seated':'standing'})`,()=>{
+for(const seated of [true,false])test(`food use reaches centre, bobs and returns while the other hand rests (${seated?'seated':'standing'})`,()=>{
   const actor=makeHands(),food=actor.group.getObjectByName('snack-packet'),other=actor.getHand('right');
   let time=tick(actor,0,120,{action:'snack',carrying:true,holding:false,seated});
   const positions=[],empty=pose(other);

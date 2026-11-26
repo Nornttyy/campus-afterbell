@@ -76,7 +76,7 @@ test('using a real phone or popping gum emits one located global cue and a dista
  for(const [action,seconds,eventType]of[['phone',3.05,'phone-notification'],['gum',6.05,'gum-pop']]){
   const r=createSoloRound({seed:73,target:160});r.start();r._advanceTeacher=()=>{};r._perceive=()=>{};r.teacher.x=r.teacher.z=100;
   for(const s of r.students)if(s!==r.player)Object.assign(s,{_decisionAt:Infinity,x:-100,z:-100});
-  Object.assign(r.player,{action,_selectedSlot:0,_drawnSlot:0,seated:true,pitch:.55});r.player._slots[0]={id:0,action,progress:0,readyAt:0};r.selected=action;r.drainEvents();r.hold(true);tick(r,seconds);
+  Object.assign(r.player,{action,_selectedSlot:0,_drawnSlot:0,seated:true,pitch:.55});r.player._slots[0]={id:0,action,progress:0,readyAt:0};r.selected=action;r.drainEvents();r.hold(true);tick(r,seconds);if(action==='gum')r.releaseUse();
   const events=r.drainEvents().filter(e=>e.type===eventType);assert.equal(events.length,1,action);assert.equal(events[0].recipientId,undefined);assert.ok([events[0].x,events[0].y,events[0].z].every(Number.isFinite));
   assert.equal(soundForEvent(events[0],{id:-1,x:100,z:100}).gain,.8);assert.equal(audibleCue(events[0],{id:-1,x:100,z:100}),true);
   tick(r,2);assert.equal(r.drainEvents().filter(e=>e.type===eventType).length,0);

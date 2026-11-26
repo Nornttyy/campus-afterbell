@@ -46,7 +46,7 @@ test('computer storage draws one food at creation and every refill, while ordina
 
 for(const kind of COMPUTER_DRAWER_FOODS)for(const yaw of[0,Math.PI])test(`${kind}: real GLB fits the single drawer, becomes visible/selectable only when open, yaw ${yaw}`,()=>{
  const f=fixture(yaw,kind);try{
-  assert.ok(f.object.userData.propAsset?.includes(`${kind}-v1.glb`));assert.deepEqual(f.object.scale.toArray(),[1,1,1]);
+  if(['chips','noodles'].includes(kind))assert.equal(f.object.userData.printedAsset,kind);else assert.ok(f.object.userData.propAsset?.includes(`${kind}-v1.glb`));assert.deepEqual(f.object.scale.toArray(),[1,1,1]);
   const local=new T.Box3();f.slot.updateWorldMatrix(true,true);const inverse=f.drawer.group.matrixWorld.clone().invert(),vertex=V(),matrix=new T.Matrix4();f.object.traverse(mesh=>{if(mesh.isMesh){matrix.multiplyMatrices(inverse,mesh.matrixWorld);const position=mesh.geometry.attributes.position;for(let i=0;i<position.count;i++)local.expandByPoint(vertex.fromBufferAttribute(position,i).applyMatrix4(matrix));}});
   assert.ok(local.min.y>=f.drawer.floor&&local.min.y<f.drawer.floor+.004,`${kind} floor contact ${local.min.y}`);
   assert.ok(local.max.y<.7765,'food must fit below the real desktop trim');assert.ok(local.min.x>-.258&&local.max.x<.258,'food must clear tray sides');assert.ok(local.min.z>-.393&&local.max.z<.233,'food must clear front and back walls');

@@ -14,7 +14,7 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
  const details=pause.querySelector('.controls-guide');if(details){details.querySelector('summary').textContent='操作说明';pause.append(details);}
  $('#resume-game').textContent='继续游戏';$('#leave-game').textContent='退出游戏';
  const settings=make('button','paper-button','设置');settings.id='pause-settings';settings.addEventListener('click',()=>{$('#settings-dialog')?.showModal();});pause.insertBefore(settings,$('#leave-game'));if(details)pause.insertBefore(details,$('#leave-game'));
- $('#student-controls').textContent='WASD 移动 · 鼠标转向\nE 拿取 / 打开 / 坐下\nQ 放回 / 关闭 / 起身\n拿笔后 E 切换转笔和写字\n长按左键使用 · 投掷物松开抛出\n对准教室门按住 E 开门\n按住 E 解救 · Shift 爬行\n机房方向键 / WASD 操作，E 确认，Q 返回\nB 做动作\nM 麦克风 · ESC 暂停';
+ $('#student-controls').textContent='WASD 移动 · 鼠标转向\nE 拿取 / 打开 / 坐下\nQ 放回 / 关闭 / 起身\n拿笔后 E 切换转笔和写字\n长按左键使用 · 点击投掷\n对准教室门按住 E 开门\n按住 E 解救 · Shift 爬行\n机房方向键 / WASD 操作，E 确认，Q 返回\nB 做动作\nM 麦克风 · ESC 暂停';
  $('#teacher-controls').textContent='WASD 移动 · 按住 Shift 奔跑 · 鼠标转向\n左键投粉笔 · E 抓住眩晕同学\n木桩前 E 绑住 · Q 放下\n黑板前按住 E 写字\n按住 E 打开教室门\nM 麦克风 · ESC 暂停';
  const summary=make('div','result-summary'),scoreBox=result.querySelector('.result-number'),caughtBox=make('div','result-number');
  const caught=make('strong'),caughtLabel=make('span',null,'被捕人数');caught.id='result-caught';caughtBox.append(caught,caughtLabel);summary.append(scoreBox,caughtBox);result.insertBefore(summary,$('#result-detail'));
@@ -25,13 +25,13 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
  return{
   update(s){
    const mobile=touchMode(),key=bindings().keys,move=[key.forward,key.left,key.back,key.right].map(keyLabel).join(' / '),use=keyLabel(key.use),e=keyLabel(key.interact),q=keyLabel(key.return);
-   $('#student-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n交互拿取或坐下，返回放回或起身\n长按使用 · 点爬行切换姿势':`${move} 移动 · 鼠标转向\n${e} 拿取 / 打开 / 坐下\n${q} 放回 / 关闭 / 起身\n拿笔后 ${e} 切换转笔和写字\n长按 ${use} 使用 · 投掷物松开抛出\n按住 ${e} 解救 · ${keyLabel(key.crawl)} 爬行 · ${keyLabel(key.jump)} 跳跃\n机房方向键控制电脑\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
+   $('#student-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n交互拿取或坐下，返回放回或起身\n长按使用 · 点爬行切换姿势':`${move} 移动 · 鼠标转向\n${e} 拿取 / 打开 / 坐下\n${q} 放回 / 关闭 / 起身\n拿笔后 ${e} 切换转笔和写字\n长按 ${use} 使用 · 点击投掷\n按住 ${e} 解救 · ${keyLabel(key.crawl)} 爬行 · ${keyLabel(key.jump)} 跳跃\n机房方向键控制电脑\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
    $('#teacher-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n点奔跑切换速度 · 使用投粉笔\n交互抓住或绑住同学，返回放下':`${move} 移动 · 按住 ${keyLabel(key.crawl)} 奔跑 · 鼠标转向 · ${keyLabel(key.jump)} 跳跃\n${use} 投粉笔 · ${e} 抓住眩晕同学\n木桩前 ${e} 绑住 · ${q} 放下\n黑板前按住 ${e} 写字\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
    const model=hud54Model(s),signature=JSON.stringify(model.rows);ranking.hidden=s.stage!=='class';
    if(signature!==lastRank){lastRank=signature;rankList.replaceChildren(...model.rows.map((p,i)=>{const li=make('li');li.dataset.self=String(p.isSelf);li.append(make('span','rank-place',i+1),make('span','rank-name',p.name),make('strong','rank-points',p.points));return li;}));}
    const p=s.player,carrying=s.drawer.drawnSlot!=null,pen=carrying&&s.selected==='pen',reading=p.seated&&p.bookRaised&&!carrying;
    const heldKey=JSON.stringify([carrying,reading,s.selected,p.penWriting,p.caught,p.seated,s.paused,mobile,bindings().keys]);
-   if(heldKey!==lastHeld){lastHeld=heldKey;held.replaceChildren();held.hidden=!(carrying||reading)||p.caught||s.paused;if(!held.hidden){if(pen)held.append(keyLine('E',p.penWriting?'转笔':'写字'));else if(!reading)held.append(keyLine('鼠标',['smoke','flash','ink','bananaPeel'].includes(s.selected)?'松开投掷':'使用'));held.append(keyLine('Q','放回'));}}
+   if(heldKey!==lastHeld){lastHeld=heldKey;held.replaceChildren();held.hidden=!(carrying||reading)||p.caught||s.paused;if(!held.hidden){if(pen)held.append(keyLine('E',p.penWriting?'转笔':'写字'));else if(!reading)held.append(keyLine('鼠标',s.selected==='bananaPeel'?'松开投掷':['smoke','flash','ink'].includes(s.selected)?'投掷':'使用'));held.append(keyLine('Q','放回'));}}
    const prompt=$('#interaction-prompt'),text=prompt.textContent;
    if(reading&&text.includes('放下书本')){prompt.replaceChildren();prompt.hidden=true;return;}
    {lastPrompt=text;const match=text.match(/^(.*?)([EQ]) (.*)$/);if(match){prompt.replaceChildren();if(match[1])prompt.append(make('span',null,match[1]));prompt.append(keyLine(match[2],match[3]));}}

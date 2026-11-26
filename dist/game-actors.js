@@ -1,16 +1,17 @@
 import {writingPageY} from './study-book58.js?v=campus-110';
+import {printedPacket} from './snack-pack111.js?v=campus-111';
 import {snackWrapper} from './snack-wrapper94.js?v=campus-94';
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import {requireModelBudget} from './model-budget64.js';
-import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-83';
+import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-111';
 import {writingStroke} from './study-motion64.js?v=campus-108';
 import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-93';
 import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-110';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-110';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-111';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-111';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -457,11 +458,11 @@ function lunchProp(){
 function penProp(){return createSchoolPen();}
 
 export const THROWABLE_ITEM_KINDS=Object.freeze(['smoke','flash','ink','bananaPeel']);
-export const FOOD_ITEM_KINDS=Object.freeze(['snack','drink','burger','banana','garlic','gum','lunch','hotpotPlate','hotpotBite','wrapper']);
+export const FOOD_ITEM_KINDS=Object.freeze(['snack','chips','noodles','drink','burger','banana','garlic','gum','lunch','hotpotPlate','hotpotBite','wrapper']);
 export const DESK_ITEM_KINDS=Object.freeze([...FOOD_ITEM_KINDS,'pen','phone',...THROWABLE_ITEM_KINDS]);
 
 const deskItemFactories=Object.freeze({
- wrapper:snackWrapper,hotpotPlate:()=>hotpotFood('plate'),hotpotBite:()=>hotpotFood('cooked'),snack:snackProp,phone:phoneProp,smoke:smokeProp,flash:flashProp,ink:inkProp,
+ wrapper:snackWrapper,hotpotPlate:()=>hotpotFood('plate'),hotpotBite:()=>hotpotFood('cooked'),chips:()=>printedPacket('chips'),noodles:()=>printedPacket('noodles'),snack:snackProp,phone:phoneProp,smoke:smokeProp,flash:flashProp,ink:inkProp,
  drink:drinkProp,burger:burgerProp,banana:bananaProp,bananaPeel:()=>bananaProp(true),
  garlic:garlicProp,gum:gumProp,lunch:lunchProp,pen:penProp
 });
@@ -496,7 +497,7 @@ export function createDeskItem(action){
   if(!Object.hasOwn(deskItemFactories,action))throw new RangeError(`Unknown desk item: ${action}`);
   const factory=deskItemFactories[action];
   // The same gate applies to normal GLBs and every offline/error fallback.
-  return requireModelBudget(action==='pen'?factory():clonePropAsset(action)||factory(),`道具 ${action}`);
+  return requireModelBudget(action==='gum'||action==='snack'?printedPacket(action,clonePropAsset(action)||(action==='snack'?factory():null)):action==='pen'?factory():clonePropAsset(action)||factory(),`道具 ${action}`);
 }
 
 export function createDeskHands({createHand}={}){
@@ -515,6 +516,14 @@ export function createDeskHands({createHand}={}){
   const supports=arms.map(arm=>createHandSupport(arm.hand));
   const wholeGrips=arms.map((arm,i)=>createWholePalmGrip(arm.hand,i?1:-1));
   const props=Object.fromEntries(DESK_ITEM_KINDS.map(kind=>[kind,createDeskItem(kind)]));Object.values(props).forEach(p=>group.add(p));
+  // The printed fronts of the new wrappers use local -Z. Present the same
+  // side of the grip as the Tripo spicy bag, whose printed front uses +Z.
+  for(const kind of ['chips','noodles'])props[kind].children[0].rotateY(Math.PI);
+  const packetCarry=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.56,.76,-1.06));
+  const gumCarry=new THREE.Quaternion().setFromEuler(new THREE.Euler(.20,-.90,2.16));
+  const packetStanding=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.52,1.15,-.55));
+  const gumStanding=new THREE.Quaternion().setFromEuler(new THREE.Euler(1.74,-1.21,2.94));
+  const packetGrip=new THREE.Quaternion(),packetAngle=new THREE.Quaternion();
   const burgerModel=props.burger.children.slice(),servingModels=new Map();let servingLook=null;
   // Fixed object-to-palm transforms preserve contact during wrist rotation.
   const grips={
@@ -524,18 +533,44 @@ export function createDeskHands({createHand}={}){
   for(const kind of THROWABLE_ITEM_KINDS)grips[kind]={position:grips.snack.position.clone(),rotation:grips.snack.rotation.clone()};
   grips.drink={position:v(0,0,0),rotation:new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,.90,.08))};
   grips.burger={position:v(0,0,0),rotation:new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,.90,.08))};
-  for(const kind of ['banana','garlic','gum','lunch','pen','wrapper'])grips[kind]={position:v(0,0,0),rotation:grips.snack.rotation.clone()};
+  for(const kind of ['chips','noodles','banana','garlic','gum','lunch','pen','wrapper'])grips[kind]={position:v(0,0,0),rotation:grips.snack.rotation.clone()};
   for(const kind of ['hotpotPlate','hotpotBite'])grips[kind]={position:v(0,0,0),rotation:grips.burger.rotation.clone()};
-  const gripBack={wrapper:v(-.043,.004,-.008),hotpotPlate:v(-.097,.007,-.015),hotpotBite:v(-.022,.005,.006),banana:v(-.013,-.030,-.022),bananaPeel:v(-.012,.016,-.012),garlic:v(-.023,-.016,-.020),gum:v(-.030,0,-.010),lunch:v(-.085,-.016,-.045),pen:v(-.003,.018,-.004),flash:v(-.029,-.018,-.026),ink:v(-.032,-.020,-.028),smoke:v(-.028,-.018,-.025),snack:v(-.028,-.018,-.025),drink:v(-.028,-.025,-.032),burger:v(-.096,-.032,-.035),phone:v(-.018,-.015,-.014)};
+  const gripBack={chips:v(-.035,-.015,-.017),noodles:v(-.035,-.015,-.017),wrapper:v(-.043,.004,-.008),hotpotPlate:v(-.097,.007,-.015),hotpotBite:v(-.022,.005,.006),banana:v(-.013,-.030,-.022),bananaPeel:v(-.012,.016,-.012),garlic:v(-.023,-.016,-.020),gum:v(-.030,0,-.010),lunch:v(-.085,-.016,-.045),pen:v(-.003,.018,-.004),flash:v(-.029,-.018,-.026),ink:v(-.032,-.020,-.028),smoke:v(-.028,-.018,-.025),snack:v(-.028,-.018,-.025),drink:v(-.028,-.025,-.032),burger:v(-.096,-.032,-.035),phone:v(-.018,-.015,-.014)};
   for(const action of DESK_ITEM_KINDS){const hand=arms[0].hand;hand.setCurl([...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(action)?.80:action==='phone'?.78:.72);let contact=propContact(props[action],gripBack[action]);if(action==='banana'&&props[action].userData.propAsset)contact=fitFirstPersonSurface(props[action],contact);grips[action].position.copy(hand.indexTip()).sub(contact.multiplyScalar(1/hand.group.scale.x).applyQuaternion(grips[action].rotation));}
   function attachToGrip(prop,hand,anchor){hand.updateMatrix();prop.position.copy(anchor.position).applyMatrix4(hand.matrix);prop.quaternion.copy(hand.quaternion).multiply(anchor.rotation);}
   for(const kind of DESK_ITEM_KINDS){const fit=wholeGrips[0].fit(kind);if(fit){grips[kind].position.fromArray(fit.position);grips[kind].rotation.setFromEuler(new THREE.Euler(...fit.rotation));}}
   let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0,using=0,throwCharge=0,releaseCharge=0,wasReleasing=false,foodAge=0,foodAmount=0,foodWasUsing=false,foodPhase=0;
-  const foodPose={turn:0,reach:0,bob:0,chewing:0};
+  const foodPose={reach:0,bob:0,chewing:0};
   let penWriteBlend=0,penAge=0,bookBlend=0,drawerBlend=0,lapBlend=0,lowCarry=0,previousHandPositions=null,previousFood=null;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
   function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,examPen=null,mealDish=null,bookAmount=0,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,coachSeat=null,animationPose=null}={}){
+    // User-authored item clips use the preview camera as their coordinate frame.
+    // The fitted finger and prop anchors are the same as in ordinary gameplay.
+    if((animationPose?.clipId==='student-carry-food'||animationPose?.clipId==='student-eat-food')&&isHandAnimationPose(animationPose)&&FOOD_ITEM_KINDS.includes(action)&&!caught){
+      active=action;extension=1;lastTime=time;previousHandPositions=null;previousFood=null;
+      const camera=group.userData.viewCamera;
+      group.position.set(0,0,0);group.quaternion.identity();
+      if(camera&&group.parent){
+        group.parent.updateWorldMatrix(true,false);camera.updateWorldMatrix(true,false);
+        group.position.copy(group.parent.worldToLocal(camera.getWorldPosition(v())));
+        group.quaternion.copy(group.parent.getWorldQuaternion(new THREE.Quaternion()).invert()).multiply(camera.getWorldQuaternion(new THREE.Quaternion()));
+      }
+      const anchor=grips[action],printed=Boolean(props[action].userData.printedAsset);
+      for(const [i,arm] of arms.entries()){
+        const h=animationPose[i?'right':'left'],hand=arm.hand.group;
+        hand.position.fromArray(h.position);
+        const natural=i?new THREE.Quaternion().setFromEuler(new THREE.Euler(-.8,0,.11)):
+          printed?new THREE.Quaternion().setFromEuler(new THREE.Euler(-.10,action==='gum'?Math.PI-.10:.10,-.08)).multiply(anchor.rotation.clone().invert()):
+          new THREE.Quaternion().setFromEuler(new THREE.Euler(-.75,-1.02,-.08));
+        hand.quaternion.setFromEuler(new THREE.Euler(...h.rotation)).multiply(natural);
+        arm.hand.setCurl(h.curl);
+        if(!i)wholeGrips[0].apply(action,clamp(h.curl/.82,0,1));
+        if(h.fingers)for(const [finger,value] of Object.entries(h.fingers))arm.hand.setFingerCurl?.(finger,value);
+      }
+      for(const [kind,prop] of Object.entries(props))prop.visible=kind===action;
+      attachToGrip(props[action],arms[0].hand.group,anchor);group.updateMatrixWorld(true);return;
+    }
     const authored=isHandAnimationPose(animationPose)&&!seated&&!carrying&&!holding&&!caught&&!computer&&!typing&&!bookAmount;
     function applyAuthored(weight){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
@@ -587,8 +622,8 @@ export function createDeskHands({createHand}={}){
     if(active==='pen'&&engaged&&seated&&!penWriting&&!examPen&&penWriteBlend<.01)penAge+=dt;
     if(engaged&&(holding||writing)&&use>.94)useTime+=dt;else if(extension<.05)useTime=0;
     using=smooth(using,engaged&&(holding||writing)?1:0,dt,14);
-    const eating=active!=='hotpotPlate'&&active!=='wrapper'&&FOOD_ITEM_KINDS.includes(active)&&engaged&&holding&&(effectiveEating===null||effectiveEating);
-    if(eating){if(!foodWasUsing&&(!holding||p===0))foodAge=0;foodAge+=dt;foodPhase=effectiveEating===null?(p>0?p*3:foodAge%3):p*3;}else if(!holding){foodAge=0;foodPhase=0;}
+    const eating=active!=='hotpotPlate'&&active!=='wrapper'&&FOOD_ITEM_KINDS.includes(active)&&engaged&&holding&&(effectiveEating===null||effectiveEating||active==='gum');
+    if(eating){if(!foodWasUsing&&(!holding||p===0))foodAge=0;foodAge+=dt;foodPhase=active==='gum'&&effectiveEating===false?Math.min(foodAge,.95):effectiveEating===null?(p>0?p*3:foodAge%3):p*3;}else if(!holding){foodAge=0;foodPhase=0;}
     foodWasUsing=eating;foodAmount=smooth(foodAmount,eating?1:0,dt,14);
     const desiredFood=sampleFoodGesture(foodPhase),foodWeight=FOOD_ITEM_KINDS.includes(active)?foodAmount*use*(1-computerBlend):0;
     for(const key of Object.keys(foodPose)){const speed=key==='bob'?.5:key==='chewing'?8:key==='reach'?1.8:2.2;foodPose[key]+=clamp(desiredFood[key]*foodWeight-foodPose[key],-dt*speed,dt*speed);}
@@ -598,7 +633,7 @@ export function createDeskHands({createHand}={}){
     const tapCycle=(useTime%1.72)/1.72,tapPress=ease(tapCycle,.28,.43)*(1-ease(tapCycle,.48,.65))*using;
     const tapIndex=Math.floor(useTime/1.72),tapTravel=ease(tapCycle,0,.23),tapX=THREE.MathUtils.lerp(.012+.022*Math.sin((tapIndex-1)*2.4),.012+.022*Math.sin(tapIndex*2.4),tapTravel),tapY=THREE.MathUtils.lerp(-.018+.025*Math.cos((tapIndex-1)*1.7),-.018+.025*Math.cos(tapIndex*1.7),tapTravel);
     const tapContact=v(tapX,tapY,.017+.018*(1-tapPress));
-    const throwable=THROWABLE_ITEM_KINDS.includes(active),motionAction=throwable?'smoke':['lunch','hotpotPlate'].includes(active)?'burger':['banana','garlic','gum','pen','hotpotBite','wrapper'].includes(active)?'snack':active;
+    const throwable=THROWABLE_ITEM_KINDS.includes(active),motionAction=throwable?'smoke':['lunch','hotpotPlate'].includes(active)?'burger':['chips','noodles','banana','garlic','gum','pen','hotpotBite','wrapper'].includes(active)?'snack':active;
     const releasing=throwable&&throwAge>=0&&throwAge<.34;
     if(releasing&&!wasReleasing)releaseCharge=throwCharge;
     if(!releasing)throwCharge=smooth(throwCharge,throwable&&engaged?ease(p):0,dt,14);
@@ -671,6 +706,13 @@ export function createDeskHands({createHand}={}){
       if(i===0&&active==='phone'&&wholeGrips[0].fit(active))pose.ry=Math.PI*blend;
       arm.pose(w,pose);
       const wholeFit=i===0?wholeGrips[0].fit(active):null;
+      // Pinch a broad packet at its lower corner with the printed face up.
+      // This is the carry grip and stays fixed throughout each bite.
+      if(i===0&&props[active].userData.printedAsset){
+        const gum=active==='gum';
+        packetAngle.copy(gum?gumCarry:packetCarry).slerp(gum?gumStanding:packetStanding,standing);
+        arm.hand.group.quaternion.premultiply(packetGrip.identity().slerp(packetAngle,grip));
+      }
       if(wholeFit?.palmRoll)arm.hand.group.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(v(0,0,1),wholeFit.palmRoll*grip));
       if(arm.hand.setFingerCurl){
         const squeeze=i===0&&FOOD_ITEM_KINDS.includes(active)?.025*foodPose.chewing*Math.sin(foodPhase*Math.PI*2/.72):0;
@@ -683,7 +725,7 @@ export function createDeskHands({createHand}={}){
     for(const kind of THROWABLE_ITEM_KINDS){props[kind].visible=visible&&active===kind&&carrying;attachToGrip(props[kind],arms[0].hand.group,grips[kind]);}
     props.snack.visible=visible&&active==='snack';
     attachToGrip(props.snack,arms[0].hand.group,grips.snack);
-    for(const kind of ['drink','burger','banana','garlic','gum','lunch','pen','hotpotPlate','hotpotBite','wrapper']){props[kind].visible=visible&&active===kind;attachToGrip(props[kind],arms[0].hand.group,grips[kind]);}
+    for(const kind of ['chips','noodles','drink','burger','banana','garlic','gum','lunch','pen','hotpotPlate','hotpotBite','wrapper']){props[kind].visible=visible&&active===kind;attachToGrip(props[kind],arms[0].hand.group,grips[kind]);}
     props.phone.visible=visible&&active==='phone';attachToGrip(props.phone,arms[0].hand.group,grips.phone);
     function contactPoint(prop,p){prop.updateMatrix();return p.clone().applyMatrix4(prop.matrix);}
     function fitSecondaryHand(i,prop,p,amount){
@@ -696,7 +738,7 @@ export function createDeskHands({createHand}={}){
     if(active==='snack')thumbAt(0,props.snack,v(-.052,-.020,.025),grip);
     if(active==='drink')thumbAt(0,props.drink,v(-.030,-.025,.032),grip);
     if(active==='burger')thumbAt(0,props.burger,v(-.096,-.025,.035),grip);
-    if(['banana','garlic','gum','lunch','pen','hotpotPlate','hotpotBite','wrapper'].includes(active))thumbAt(0,props[active],gripBack[active].clone().setZ(-gripBack[active].z),grip);
+    if(['chips','noodles','banana','garlic','gum','lunch','pen','hotpotPlate','hotpotBite','wrapper'].includes(active))thumbAt(0,props[active],gripBack[active].clone().setZ(-gripBack[active].z),grip);
     if(active==='phone'){thumbAt(0,props.phone,v(-.030,-.010,.017),grip);arms[1].hand.opposeThumb(grip,'phone');}
     wholeGrips[0].apply(active,grip*(releasing?1-ease(throwAge,.035,.12):1));
     // Pose the held palms inside the viewmodel anchor. The outer view layer
@@ -764,7 +806,7 @@ export function createDeskHands({createHand}={}){
       }
     }
     const foodGesture=FOOD_ITEM_KINDS.includes(active)&&foodAmount>.0001?foodPose:null;
-    articulation.forEach((rig,i)=>rig.apply({parent:group,prop:i===0&&foodGesture?props[active]:null,food:i===0?foodGesture:null,amount:1,movement:!seated&&!caught?clamp(movement,0,1)*(1-clamp(crawlBlend,0,1)):0,phase:walkPhase,palmRoll:i===0?wholeGrips[0].fit(active)?.palmRoll||0:0,empty:extension<.001||i===1&&FOOD_ITEM_KINDS.includes(active)}));
+    articulation.forEach((rig,i)=>rig.apply({parent:group,prop:i===0&&foodGesture?props[active]:null,food:i===0?foodGesture:null,amount:1,movement:!seated&&!caught?clamp(movement,0,1)*(1-clamp(crawlBlend,0,1)):0,phase:walkPhase,empty:extension<.001||i===1&&FOOD_ITEM_KINDS.includes(active)}));
     if(active==='pen'&&seated&&extension>.001){
       // A pen stays between the right index and thumb through a compact
       // finger roll, then settles onto the unchanged page-writing contact.
