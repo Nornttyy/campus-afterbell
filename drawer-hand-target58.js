@@ -1,4 +1,4 @@
-import {mapKind,OFFICE_DESKS} from './classroom-layout.js?v=campus-108';
+import {mapKind,OFFICE_DESKS} from './classroom-layout.js?v=campus-116';
 
 // Both directions retrace the same rail. The hand arrives before the tray
 // travels and lets go after it stops, including when a slide is reversed.

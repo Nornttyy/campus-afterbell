@@ -1,6 +1,6 @@
 import {FIRST_PERSON_FOOD_FITS} from './first-person-packet-grips112.js?v=campus-114';
 import * as T from './vendor/three.module.js';
-import {createFingerRig,handFrame} from './hand-motion.js?v=campus-115';
+import {createFingerRig,handFrame} from './hand-motion.js?v=campus-116';
 import {WHOLE_PALM_PROFILES} from './whole-palm-profiles54.js?v=campus-112';
 const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
 
