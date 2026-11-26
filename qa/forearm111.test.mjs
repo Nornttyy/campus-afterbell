@@ -17,13 +17,14 @@ for(const side of [-1,1])test('bare forearm has one closed tapered section and p
   const rim=[];rings.push(rim);
   for(let i=0;i<p.count;i++){
    const a=new Vector3().fromBufferAttribute(p,i),b=new Vector3().fromBufferAttribute(q,i);
-   assert.equal(a.y,b.y);
-   if(a.y>=.025){assert.ok(a.equals(b));fingers++;}
+   if(a.y<-.06)assert.ok(b.y-a.y>.017,'short forearm still has its old length');
+   if(a.y>=.040){assert.ok(a.equals(b));fingers++;}
    if(Math.abs(a.y+.1)<.000001){
-    const ellipse=Math.hypot((b.x-side*.003)/.05,(b.z-.004)/.04);
-    assert.ok(Math.abs(ellipse-1)<.0001,'wrist section has a bulge or dent');rim.push({p:b,n:new Vector3().fromBufferAttribute(n,i)});
+    const u=(b.x-side*.002)/.048,v=(b.z-.002)/.037,theta=Math.atan2(v,u);
+    const sector=Math.PI/4,expected=Math.cos(sector/2)/Math.cos(theta-sector*Math.round(theta/sector));
+    assert.ok(Math.abs(b.y+.061)<.00001&&Math.abs(Math.hypot(u,v)-expected)<.0001,'short faceted rim');rim.push({p:b,n:new Vector3().fromBufferAttribute(n,i)});
    }
-   if(a.y<=-.11499){assert.ok(Math.hypot(b.x-side*.003,b.z-.004)<.0001,'forearm cap has a hole');capTips++;}
+   if(a.y<=-.11499){assert.ok(Math.abs(b.y+.0645)<.00001&&Math.hypot(b.x-side*.002,b.z-.002)<.0001,'forearm cap has a hole');capTips++;}
   }
  });
  assert.ok(fingers>1500&&capTips>0);
@@ -41,5 +42,34 @@ for(const side of [-1,1])test('resting fingertips extend in the desk plane, side
   const segment=point(finger,n+1).sub(point(finger,n)).normalize();
   assert.ok(Math.abs(segment.z)<(finger==='Thumb'?.25:.06),'finger points into or away from the desk');
   assert.ok(finger==='Thumb'?-side*segment.x>.63:segment.y>.98,'finger folded under palm');
+ }
+});
+
+for(const side of [-1,1])test('the wrist shading and skin stay joined when the palm bends, side '+side,async()=>{
+ const prefix=side<0?'Left':'Right',source=await loadGeometry('hand-'+prefix.toLowerCase()+'-v3.glb'),hand=createRiggedPalm(source,side);
+ const sourceMeshes=[],meshes=[];
+ source.scene.traverse(o=>{if(o.isSkinnedMesh)sourceMeshes.push(o);});
+ hand.group.traverse(o=>{if(o.isSkinnedMesh)meshes.push(o);});
+ const pairs=[],seen=new Map();
+ sourceMeshes.forEach((mesh,k)=>{
+  const attr=mesh.geometry.attributes.position;
+  for(let i=0;i<attr.count;i++){
+   const p=new Vector3().fromBufferAttribute(attr,i);
+   if(p.y>.04)continue;
+   const key=p.toArray().map(v=>Math.round(v*1e6)).join(',');
+   const vertex=[meshes[k],i];
+   if(seen.has(key))pairs.push([seen.get(key),vertex]);else seen.set(key,vertex);
+  }
+ });
+ assert.ok(pairs.length>200);
+ const wrist=hand.group.getObjectByName('mixamorig'+prefix+'Hand');
+ for(const bend of [0,.6,-.9]){
+  wrist.rotateX(bend);hand.setCurl(.68);hand.group.updateMatrixWorld(true);
+  for(const mesh of meshes)mesh.skeleton.update();
+  for(const [[a,i],[b,j]] of pairs){
+   assert.ok(a.getVertexPosition(i,new Vector3()).distanceTo(b.getVertexPosition(j,new Vector3()))<1e-5);
+   const n1=new Vector3().fromBufferAttribute(a.geometry.attributes.normal,i),n2=new Vector3().fromBufferAttribute(b.geometry.attributes.normal,j);
+   assert.ok(n1.dot(n2)>.9998,'hard shading line at stitched vertex');
+  }
  }
 });

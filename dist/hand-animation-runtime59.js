@@ -37,10 +37,20 @@ export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget
  const checkedFallback=validateHandAnimationDocument(fallbackDocument),fallback=checkedFallback.ok?checkedFallback.value:null;
  const readDocument=()=>loadHandAnimations(storage)||fallback;
  let document=readDocument(),activeId=null,activeClip=null,clipTime=0,lastTime=null,weight=0,disposed=false,lastPose=null,transitionPose=null,transitionAge=0;
+ // Apply the anatomical idle correction only to the original submitted poses.
+ // Saving another action may have copied those same clips into local storage.
+ const originalUpright=new WeakSet();
+ function identifyUpright(){
+  for(const id of ['student-idle','student-walk']){
+   const clip=document?.clips[id],base=fallback?.clips[id];
+   if(clip&&base&&(clip===base||JSON.stringify(clip)===JSON.stringify(base)))originalUpright.add(clip);
+  }
+ }
+ identifyUpright();
  const reset=()=>{activeId=activeClip=null;clipTime=weight=0;lastTime=null;lastPose=transitionPose=null;transitionAge=0;};
  // A saved edit transitions from the pose actually on screen. Clearing or
  // rejecting a corrupt file restores the published default, if present.
- const reload=()=>{document=readDocument();return document;};
+ const reload=()=>{document=readDocument();identifyUpright();return document;};
  const onStorage=e=>{if(!e||e.key==null||e.key===HAND_ANIMATION_STORAGE_KEY)reload();};eventTarget?.addEventListener?.('storage',onStorage);eventTarget?.addEventListener?.(HAND_ANIMATION_CHANGE_EVENT,reload);
  return{
   reload,getDocument:()=>document?JSON.parse(JSON.stringify(document)):null,
@@ -51,7 +61,7 @@ export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget
    if(!activeClip||weight<=0){if(!clip)reset();lastTime=now;return null;}
    let sampled=sampleHandAnimationClip(activeClip,activeClip.loop?clipTime%activeClip.duration:Math.min(clipTime,activeClip.duration));
    if(transitionPose){const duration=Math.max(.001,fadeDuration);sampled=sampleHandAnimationClip({duration,easing:'smoothstep',keyframes:[{time:0,...transitionPose},{time:duration,...sampled}]},transitionAge);transitionAge+=dt;if(transitionAge>=duration)transitionPose=null;}
-   lastPose=sampled;return{...sampled,weight,source:'runtime',clipId:activeId};
+   lastPose=sampled;return{...sampled,weight,source:'runtime',clipId:activeId,originalUpright:originalUpright.has(activeClip)};
   },
   dispose(){disposed=true;eventTarget?.removeEventListener?.('storage',onStorage);eventTarget?.removeEventListener?.(HAND_ANIMATION_CHANGE_EVENT,reload);reset();}
  };

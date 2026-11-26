@@ -45,7 +45,9 @@ test('first person uses source skinned palms and short capped forearms without g
   const source=i?right:left,meta=source.parser.json.asset.extras.characters40;
   const actual=new T.Box3().setFromObject(factory(i?1:-1,1).group,true);
   assert.equal(meta.shortForearm,true);assert.equal(meta.forearmLength,.1);
-  assert.ok(Math.abs(actual.min.y-(meta.proximalCutY-meta.capDepth))<1e-4,'short forearm/cap missing or cropped back to the wrist');
+  const sourceBounds=new T.Box3().setFromObject(source.scene,true);
+  assert.ok(Math.abs(sourceBounds.min.y-(meta.proximalCutY-meta.capDepth))<1e-4,'source cap missing');
+  assert.ok(Math.abs(actual.min.y+.0645)<1e-4,'wrong length of visible bare forearm');
   assert.ok(actual.max.y>.18&&actual.max.y<.26&&actual.getSize(new T.Vector3()).y<.38,'asset includes more than the source hand and short forearm');
  }
  assert.equal(h.getDebug().palmsOnly,false);

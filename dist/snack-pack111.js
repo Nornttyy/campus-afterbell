@@ -72,3 +72,22 @@ export function printedPacket(kind,source=null){
   }
   return packet;
 }
+
+// The hand picks up the pouch from its reverse side. Moving the printed
+// panels on the held copy keeps its front readable after the inward turn.
+const heldPanels=new WeakMap();
+export function reverseHeldPanels(packet){
+ packet.traverse(mesh=>{
+  if(!mesh.isMesh)return;
+  const original=mesh.geometry;
+  if(!heldPanels.has(original)){
+   const geometry=original.clone(),uv=geometry.attributes.uv;
+   for(let i=0;i<uv.count;i++){
+    const u=uv.getX(i);
+    uv.setX(i,u<.5?u+.5:u-.5);
+   }
+   heldPanels.set(original,geometry);
+  }
+  mesh.geometry=heldPanels.get(original);
+ });
+}

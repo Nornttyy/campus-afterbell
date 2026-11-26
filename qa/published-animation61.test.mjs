@@ -110,3 +110,16 @@ test('published defaults are wired into the production scene, not into editor dr
  const r=createHandAnimationRuntime({storage:memory(),fallbackDocument:{invalid:true}});
  assert.equal(settle(r,{movement:0}),null);r.dispose();
 });
+
+test('upright finger relaxation follows only the original student standing and walking clips',()=>{
+ const store=memory(),hands=runtime(store);
+ assert.ok(settle(hands,{role:'student',movement:0}).originalUpright);
+ assert.ok(settle(hands,{role:'student',movement:1}).originalUpright);
+ assert.equal(settle(hands,{role:'student',crouched:true,crawlBlend:1}).originalUpright,false);
+ assert.equal(settle(hands,{role:'teacher',movement:0}).originalUpright,false);
+ const custom=structuredClone(published);custom.clips['student-idle'].keyframes[0].left.rotation[1]+=.08;
+ saveHandAnimations(custom,store);hands.reload();
+ assert.equal(settle(hands,{role:'student',movement:0},3).originalUpright,false);
+ assert.ok(settle(hands,{role:'student',movement:1},4).originalUpright);
+ hands.dispose();
+});

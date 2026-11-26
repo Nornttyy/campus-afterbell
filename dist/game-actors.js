@@ -1,5 +1,5 @@
 import {writingPageY} from './study-book58.js?v=campus-110';
-import {printedPacket} from './snack-pack111.js?v=campus-111';
+import {printedPacket,reverseHeldPanels} from './snack-pack111.js?v=campus-113';
 import {snackWrapper} from './snack-wrapper94.js?v=campus-94';
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import {requireModelBudget} from './model-budget64.js';
@@ -11,7 +11,7 @@ import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
 import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-112';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-112';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-113';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -519,6 +519,7 @@ export function createDeskHands({createHand}={}){
   // The printed fronts of the new wrappers use local -Z. Present the same
   // side of the grip as the Tripo spicy bag, whose printed front uses +Z.
   for(const kind of ['chips','noodles'])props[kind].children[0].rotateY(Math.PI);
+  for(const kind of ['chips','noodles','snack'])reverseHeldPanels(props[kind]);
   const packetCarry=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.56,.76,-1.06));
   const gumCarry=new THREE.Quaternion().setFromEuler(new THREE.Euler(.20,-.90,2.16));
   const packetStanding=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.52,1.15,-.55));
@@ -529,6 +530,11 @@ export function createDeskHands({createHand}={}){
     gum:[gumCarry,gumStanding],drink:[carryView(-.82,.82,-.31),carryView(-1,.83,.26)],
     burger:[carryView(-.58,.98,-.20),carryView(-.86,.89,.52)]
   };
+  // Resting grips are set relative to the item's vertical axis. The burger
+  // is supported from underneath, the drink from its side. On a bite the
+  // wrist comes around the food through a half turn without inverting it.
+  const eatingMount={burger:138,drink:120,lunch:120,banana:115,garlic:115,hotpotBite:115,chips:12,noodles:12,snack:12};
+  const eatingAxes={};
   const packetGrip=new THREE.Quaternion(),packetAngle=new THREE.Quaternion();
   const burgerModel=props.burger.children.slice(),servingModels=new Map();let servingLook=null;
   // Fixed object-to-palm transforms preserve contact during wrist rotation.
@@ -545,6 +551,10 @@ export function createDeskHands({createHand}={}){
   for(const action of DESK_ITEM_KINDS){const hand=arms[0].hand;hand.setCurl([...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(action)?.80:action==='phone'?.78:.72);let contact=propContact(props[action],gripBack[action]);if(action==='banana'&&props[action].userData.propAsset)contact=fitFirstPersonSurface(props[action],contact);grips[action].position.copy(hand.indexTip()).sub(contact.multiplyScalar(1/hand.group.scale.x).applyQuaternion(grips[action].rotation));}
   function attachToGrip(prop,hand,anchor){hand.updateMatrix();prop.position.copy(anchor.position).applyMatrix4(hand.matrix);prop.quaternion.copy(hand.quaternion).multiply(anchor.rotation);}
   for(const kind of DESK_ITEM_KINDS){const fit=wholeGrips[0].fit(kind);if(fit){grips[kind].position.fromArray(fit.position);grips[kind].rotation.setFromEuler(new THREE.Euler(...fit.rotation));}}
+  for(const kind of Object.keys(eatingMount))eatingAxes[kind]=v(0,1,0).applyQuaternion(grips[kind].rotation);
+  function turnFood(hand,kind,grip,reach){
+    if(eatingAxes[kind])hand.rotateOnAxis(eatingAxes[kind],THREE.MathUtils.degToRad(eatingMount[kind])*grip-Math.PI*reach);
+  }
   let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0,using=0,throwCharge=0,releaseCharge=0,wasReleasing=false,foodAge=0,foodAmount=0,foodWasUsing=false,foodPhase=0;
   const foodPose={reach:0,bob:0,chewing:0};
   let penWriteBlend=0,penAge=0,bookBlend=0,drawerBlend=0,lapBlend=0,lowCarry=0,previousHandPositions=null,previousFood=null;
@@ -570,6 +580,10 @@ export function createDeskHands({createHand}={}){
           printed?new THREE.Quaternion().setFromEuler(new THREE.Euler(-.10,action==='gum'?Math.PI-.10:.10,-.08)).multiply(anchor.rotation.clone().invert()):
           new THREE.Quaternion().setFromEuler(new THREE.Euler(-.75,-1.02,-.08));
         hand.quaternion.setFromEuler(new THREE.Euler(...h.rotation)).multiply(natural);
+        if(!i){
+          const bite=animationPose.clipId==='student-eat-food'?sampleFoodGesture(3*progress).reach:0;
+          turnFood(hand,action,1,bite);
+        }
         arm.hand.setCurl(h.curl);
         if(!i)wholeGrips[0].apply(action,clamp(h.curl/.82,0,1));
         if(h.fingers)for(const [finger,value] of Object.entries(h.fingers))arm.hand.setFingerCurl?.(finger,value);
@@ -583,7 +597,12 @@ export function createDeskHands({createHand}={}){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
       for(let i=0;i<2;i++){
         const pose=animationPose[i?'right':'left'],hand=arms[i].hand,target=v(...pose.position).applyMatrix4(inv),rotation=new THREE.Quaternion().setFromEuler(new THREE.Euler(...pose.rotation,'XYZ'));
+        // Tip the backs of the two upright hands slightly toward the light.
+        // Keeping them exactly edge-on hid all three fingers behind the index.
+        const relaxed=animationPose.originalUpright&&!pose.fingers?1-ease(pose.curl,0,.38):0;
+        if(relaxed)rotation.multiply(new THREE.Quaternion().setFromAxisAngle(v(0,1,0),(i?-1:1)*.91*relaxed));
         hand.group.position.lerp(target,weight);hand.group.quaternion.slerp(invQ.clone().multiply(rotation),weight);articulation[i].applyAuthoredFingers(pose,weight);
+        if(relaxed)hand.relaxUpright?.(weight*relaxed);
       }
       group.updateMatrixWorld(true);
     }
@@ -721,6 +740,9 @@ export function createDeskHands({createHand}={}){
         arm.hand.group.quaternion.premultiply(packetGrip.identity().slerp(packetAngle,grip));
       }
       if(wholeFit?.palmRoll)arm.hand.group.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(v(0,0,1),wholeFit.palmRoll*grip));
+      // Turn the left hand from its carrying face to its eating face. Keep
+      // the thumb and all three fingers locked to the gripped surface.
+      if(i===0)turnFood(arm.hand.group,active,grip,foodPose.reach);
       if(arm.hand.setFingerCurl){
         const squeeze=i===0&&FOOD_ITEM_KINDS.includes(active)?.025*foodPose.chewing*Math.sin(foodPhase*Math.PI*2/.72):0;
         arm.hand.setFingerCurl('Middle',pose.curl+squeeze);arm.hand.setFingerCurl('Pinky',pose.curl+grip*.025+squeeze);
