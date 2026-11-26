@@ -90,13 +90,15 @@ test('empty walking hands travel forwards/backwards, rise/fall and rotate contin
  assert.ok(maxJump<.04,'wrist flips discontinuously');
 });
 
-test('the phone and its tapping hand share the carrying sway transform',async()=>{
+test('only the left hand is visible with a phone, the right returns after putting it down',async()=>{
  const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
- const h=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});
- const rightHand=h.getHand('right').group,phone=h.group.getObjectByName('handheld-phone');let previous=null;
- for(let i=0;i<240;i++){h.update(i/60,{action:'phone',carrying:true,seated:false,movement:1,walkPhase:i/60*7.38});h.group.updateMatrixWorld(true);if(i<120)continue;const fit=rightHand.matrixWorld.clone().invert().multiply(phone.matrixWorld);if(previous)for(let k=0;k<16;k++)assert.ok(Math.abs(fit.elements[k]-previous.elements[k])<1e-6);previous=fit;}
+ const hands=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});
+ for(let i=0;i<180;i++)hands.update(i/60,{action:'phone',carrying:true,seated:false,movement:1,walkPhase:i/60*7});
+ assert.equal(hands.group.getObjectByName('right-desk-arm').visible,false);
+ assert.equal(hands.group.getObjectByName('left-desk-arm').visible,true);
+ for(let i=180;i<300;i++)hands.update(i/60,{carrying:false,seated:false});
+ assert.equal(hands.group.getObjectByName('right-desk-arm').visible,true);
 });
-
 
 test('the hands stay aligned with the chosen facing seat, and stun lowers the actual eye height',()=>{
  const player={x:0,z:0,yaw:Math.PI,seated:true,seatYaw:Math.PI,captivity:'free'};

@@ -1,5 +1,5 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-108';
-import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,floorHeight,actorEyePosition as effectEye,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-108';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-116';
+import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,floorHeight,actorEyePosition as effectEye,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-116';
 
 // Local reconstruction parameters, not measured single-projectile durations.
 export const PROJECTILE_EFFECT_TUNING=Object.freeze({flashFuse:1.2,flashRange:8,flashWhite:4.5,flashFade:2.5,inkRange:2.2,inkDuration:7});
@@ -26,16 +26,16 @@ export function inkExposure(origin,actor,map='classroom',layout=null){
  const eye=effectEye(actor,map);return Math.hypot(eye.x-origin.x,eye.y-origin.y,eye.z-origin.z)<=PROJECTILE_EFFECT_TUNING.inkRange&&clearEffectSight(origin,eye,map,layout);
 }
 export function createThrowableProjectile(actor,id,kind,charge=0,map='classroom',layout=null){
- const instant=['smoke','ink','flash'].includes(kind);
- const p={...createSmokeProjectile(actor,id,instant?1:charge,map,layout),kind,retired:false};
- if(instant){
-  // Compare the two unobstructed arcs at the same launch height and aim.
-  const height=Math.max(.01,p.y-floorHeight(p.x,p.z,map)-.075);
-  const flight=vy=>(vy+Math.sqrt(vy*vy+19.6*height))/9.8;
-  const oldFlight=flight(p.vy),pitch=actor.pitch||0;
-  p.vy=8*Math.sin(Math.max(-.8,Math.min(.44,.26-pitch*.65)));
-  const stretch=1.4*oldFlight/flight(p.vy);p.vx*=stretch;p.vz*=stretch;
- }
+ const p={...createSmokeProjectile(actor,id,1,map,layout),kind,retired:false};
+ // Aim along the camera with a small lift at level pitch. Rotation naturally
+ // approaches vertical; only the actual environment interrupts the arc.
+ const pitch=actor.pitch||0,yaw=actor.yaw||0;
+ const height=Math.max(.01,effectEye(actor,map).y-.06-floorHeight(actor.x,actor.z,map,actor.busDeck)-.075);
+ const oldY=8*Math.sin(.66),range=1.4*8*Math.cos(.66)*(oldY+Math.sqrt(oldY*oldY+19.6*height))/9.8;
+ const speed=Math.sqrt(9.8*range*range*1.0625/(2*(height+.25*range)));
+ const horizontal=Math.cos(pitch),up=-Math.sin(pitch)+.25*horizontal;
+ const scale=speed/Math.hypot(horizontal,up);
+ p.vx=Math.sin(yaw)*horizontal*scale;p.vz=Math.cos(yaw)*horizontal*scale;p.vy=up*scale;
  return p;
 }
 function actorImpact(a,b,actors,ownerId,map){

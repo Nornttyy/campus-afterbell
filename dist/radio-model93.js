@@ -1,26 +1,22 @@
 import * as T from './vendor/three.module.js';
-import {radioAnchor} from './campus-radio93.js?v=campus-97';
-
+import {radioAnchor} from './campus-radio93.js?v=campus-116';
 export function mountSchoolRadio(map,parent,{box,rounded,mat,texture,bakeStatic}){
- const anchor=radioAnchor(map),root=new T.Group();
- root.name='campus-radio-'+map;root.position.set(anchor.x,anchor.y,anchor.z);root.rotation.y=anchor.yaw;parent.add(root);
- const casing=mat('#44545a',{roughness:.59}),aluminium=mat('#bfc3b5',{roughness:.51,metalness:.18});
- const panel=texture(512,228,(c,w,h)=>{
-  const base=c.createLinearGradient(0,0,0,h);base.addColorStop(0,'#546369');base.addColorStop(1,'#35454b');c.fillStyle=base;c.fillRect(0,0,w,h);
-  for(const x of [74,w-74]){
-   const g=c.createRadialGradient(x,119,8,x,119,66);g.addColorStop(0,'#39454a');g.addColorStop(.64,'#232d31');g.addColorStop(.86,'#465254');g.addColorStop(.98,'#1e292d');g.addColorStop(1,'#768183');c.fillStyle=g;c.beginPath();c.arc(x,119,64,0,2*Math.PI);c.fill();
-   c.save();c.clip();c.fillStyle='#697476';for(let y=50;y<188;y+=6)for(let j=6;j<141;j+=6)c.fillRect(x-73+j+(y%12?3:0),y,2,2);c.restore();
-  }
-  c.fillStyle='#1e3031';c.fillRect(160,54,192,53);c.fillStyle='#a1b69a';c.fillRect(167,59,178,42);
-  c.fillStyle='#304646';c.font='bold 24px sans-serif';c.textAlign='center';c.fillText('校园广播',256,89);
-  for(let j=0;j<6;j++){c.fillStyle=j===5?'#c57952':'#b8c1b7';c.fillRect(161+j*33,137,25,12);}
-  c.fillStyle='#ced4c0';c.font='12px sans-serif';c.fillText('FM   •   STEREO',256,178);
- });
- const face=mat('#fff',{map:panel,roughness:.78});rounded(casing,[0,0,0],[.70,.335,.18],.034,null,root);
- box(face,[0,0,.095],[.646,.279,.008],null,root);
- for(const x of [-.19,.19])box(aluminium,[x,.199,-.018],[.025,.079,.033],null,root);
- rounded(aluminium,[0,.237,-.018],[.403,.024,.034],.008,null,root);
- // Mount meets the actual wall, both inside the coach and beside the sports board.
- for(const x of [-.245,.245])box(casing,[x,-.159,-.066],[.032,.040,.19],null,root);
- bakeStatic(root);return root;
+ const a=radioAnchor(map),root=new T.Group();root.name='pa-'+map;root.position.set(a.x,a.y,a.z);root.rotation.y=a.yaw;parent.add(root);
+ const enamel=mat('#bfc9bd'),metal=mat('#72847e',{metalness:.28,roughness:.64}),grille=mat('#354342');
+ if(map==='playground'){
+  const pole=new T.Mesh(new T.CylinderGeometry(.054,.079,3.56,12),metal);pole.position.set(0,1.78-a.y,-.105);root.add(pole);
+  box(metal,[0,.15-a.y,-.105],[.28,.29,.29],null,root);
+  const horn=new T.Group();horn.position.set(0,3.32-a.y,-.11);horn.rotation.x=Math.PI*.55;root.add(horn);
+  const profile=[[.049,0],[.07,.12],[.11,.24],[.19,.36],[.29,.45],[.30,.48],[.284,.48],[.174,.36],[.096,.24],[.058,.12],[.04,.07]].map(([r,y])=>new T.Vector2(r,y));
+  horn.add(new T.Mesh(new T.LatheGeometry(profile,24),enamel));
+  const driver=new T.Mesh(new T.CylinderGeometry(.058,.046,.07,12),grille);driver.position.y=.13;horn.add(driver);
+ }else{
+  rounded(enamel,[0,.04,-.012],[.46,.30,.056],.018,null,root);
+  for(let i=0;i<9;i++)box(grille,[-.13+i*.022,.076,.019],[.009,.132,.008],null,root);
+ }
+ const panel=new T.Group();panel.name='pa-button';panel.position.z=.026;root.add(panel);
+ rounded(metal,[0,0,0],map==='bus'?[.21,.13,.033]:[.24,.32,.13],.019,null,panel);
+ const button=new T.Mesh(new T.CylinderGeometry(.061,.067,.042,16),mat('#c34c32'));button.rotation.x=Math.PI/2;button.position.z=map==='bus'?.033:.081;panel.add(button);
+ // Bake the surrounding housing separately so only the switch receives input.
+ root.remove(panel);bakeStatic(root);root.add(panel);return panel;
 }

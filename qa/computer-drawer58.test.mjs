@@ -72,7 +72,7 @@ test('returning food is not consumption, and a banana peel occupies its slot unt
  const r=quiet();r.player._slots[0].action='banana';r.player.action=r.selected='banana';
  assert.equal(key(r,{kind:'desk'},'E'),true);assert.equal(key(r,{kind:'item',slot:0},'E'),true);assert.equal(key(r,null,'Q'),true);r.step(4);assert.equal(r.player._slots[0].action,'banana');assert.equal(r.player._slots[0].readyAt,0);
  assert.equal(key(r,{kind:'item',slot:0},'E'),true);r.hold(true);r.step(3);assert.equal(r.player._slots.length,1);assert.equal(r.player._slots[0].action,'bananaPeel');assert.equal(r.player._drawnSlot,0);
- r.step(4);assert.equal(r.player._slots[0].action,'bananaPeel');r.setLook(r.player.yaw,0);r.hold(true);assert.equal(r.releaseUse(),true);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);
+ r.step(4);assert.equal(r.player._slots[0].action,'bananaPeel');r.setLook(r.player.yaw,0);assert.equal(r.hold(true),true);assert.equal(r.releaseUse(),false);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);
  r.step(179*DT);assert.equal(r.player._slots[0].action,null);r.step(DT);assert.ok(COMPUTER_DRAWER_FOODS.includes(r.player._slots[0].action));
 });
 

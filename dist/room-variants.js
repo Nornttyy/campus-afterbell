@@ -1,15 +1,16 @@
 import {createBusRoom} from './bus-room86.js?v=campus-101';
-import {mountSchoolRadio} from './radio-model93.js?v=campus-97';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-115';
+import {mountCooler} from './field-fixtures116.js?v=campus-116';
+import {mountSchoolRadio} from './radio-model93.js?v=campus-116';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-116';
 import {createToiletRoom} from './toilet-room70.js?v=campus-99';
 import {createDormRoom} from './dorm-room70.js?v=campus-95';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-115';
-import {createHotpotRoom} from './hotpot-room70.js?v=campus-108';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-116';
+import {createHotpotRoom} from './hotpot-room70.js?v=campus-116';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-99';
 import * as T from './vendor/three.module.js';
-import {advanceDeskDrawer} from './drawer-hand-target58.js?v=campus-115';
+import {advanceDeskDrawer} from './drawer-hand-target58.js?v=campus-116';
 import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-99';
-import {SEATS,MAX_CAMPUS_SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-108';
+import {SEATS,MAX_CAMPUS_SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-116';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,batchHardware,liftPanel,roleLocker,schoolBell,hallLamp,boardInk,stationFloor,finishes={},menus=null,drawerRecords=null,screenContent=null,officeScreens=new Map()}){
  const bus=createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPanel,roleLocker,schoolBell,hallLamp,boardInk,stationFloor,finishes});
@@ -32,6 +33,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
   if(!slot.view){slot.view=builders[name](slot.root);slot.view.group.visible=slot.root.visible;}
   return slot.view;
  }
+ let cooler=null;
  const radioTools={box,rounded,mat,texture,bakeStatic},radios={};
  const group=new T.Group(),screens=new Map(),stations=new Map(),drawers=new Map(),hardwareRoots=[];group.name='computer-lab-workstations';scene.add(group);group.visible=false;
  let laptop,teacherScreen,screenGeo,cableGeometry,hardwareBatch;
@@ -99,7 +101,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
  }
  return{group,bus,upper,get hotpot(){return prepareFloor('hotpot');},get toilet(){return prepareFloor('toilet');},get dorm(){return prepareFloor('dorm');},get playground(){return prepareFloor('playground');},
   get vendingTargets(){return prepareFloor('playground').vendingTargets;},
-  radioTarget:map=>radios[map],specialRoots:[bus.group,upper.root,...Object.values(rooms).map(s=>s.root)],
+  coolerTarget:i=>cooler?.slots[i],radioTarget:map=>radios[map],specialRoots:[bus.group,upper.root,...Object.values(rooms).map(s=>s.root)],
   cabinetFor(id){if(currentMap==='bus')return bus.cabinets.get(id);return mapKind(currentMap)==='toilet'?rooms.toilet.view.cabinets.get(id):mapKind(currentMap)==='dorm'?rooms.dorm.view.cabinets.get(id):null;},
   seatTarget(id){if(currentMap==='bus')return bus.chairs.get(id);return mapKind(currentMap)==='toilet'?rooms.toilet.view.seats.get(id)?.target:mapKind(currentMap)==='dorm'?rooms.dorm.view.beds.get(id)?.target:null;},screens,stations,drawers,hardwareRoots,get teacherScreen(){return teacherScreen;},light,setSeats,updateDrawers,
   setMap(map){
@@ -110,6 +112,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
     if(slot.view)slot.view.group.visible=slot.root.visible;
    }
    bus.setActive(map==='bus');
+   if(kind==='playground'&&!cooler)cooler=mountCooler(active.group,radioTools);
    if((map==='bus'||kind==='playground')&&!radios[map])radios[map]=mountSchoolRadio(map,(map==='bus'?bus:active).group,radioTools);
    upper.setMap(map);group.visible=kind==='computer';light.visible=kind==='night'||kind==='dorm';setSeats(seats);hardwareBatch?.sync();
   },
@@ -120,7 +123,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
    if(upper.root.visible)upper.update(state,dt);
    const active=rooms[currentMap]?.view;
    if(active){
-    if(currentMap==='playground')active.update(state?.sceneElapsed??state?.elapsed??0,state?.vendingStock);
+    if(currentMap==='playground'){active.update(state?.sceneElapsed??state?.elapsed??0,state?.vendingStock);cooler?.update(state?.coolerSlots);}
     else if(currentMap==='hotpot')active.update(state?.elapsed||0,state?.hotpots||[]);
     else active.update(state||{},dt);
    }

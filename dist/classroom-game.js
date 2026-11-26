@@ -1,16 +1,16 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
-import {playableCampusMap} from './campus-destinations.js?v=campus-108';
+import {playableCampusMap} from './campus-destinations.js?v=campus-116';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
 import {createReferenceHUD} from './reference-hud54.js?v=campus-111';
-import {interactionIntent} from './interaction-intent54.js?v=campus-97';
-import {createSessionUI} from './session-ui.js?v=campus-102';
+import {interactionIntent} from './interaction-intent54.js?v=campus-116';
+import {createSessionUI} from './session-ui.js?v=campus-116';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-115';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-116';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -23,7 +23,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   window.addEventListener('campus-controls-change',refreshControls);
   const referenceHUD=createReferenceHUD({document,root:ui,bindings:()=>controls,touchMode:()=>session.touch});
   const labels={wrapper:'零食包装',hotpotPlate:'食材盘',hotpotBite:'涮菜',snack:'辣条',chips:'没事薯片',noodles:'小困熊干脆面',drink:'饮料',burger:'汉堡',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡堂',banana:'香蕉',bananaPeel:'香蕉皮',garlic:'大蒜',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set(),physicalKeys=new Map();
-  const throwables=new Set(['bananaPeel']),vision=canvas.parentElement&&document.createElement?createVisionEffects(canvas.parentElement):null;
+  const vision=canvas.parentElement&&document.createElement?createVisionEffects(canvas.parentElement):null;
   let active=false,finished=false,continued=false,raf=0,last=0,lastHud=0,lastEffect=0;
   const teacherFootsteps=createTeacherFootsteps();
   let yaw=0,pitch=0,dragLook=false,dragX=0,dragY=0,feedbackTimer=0,lastFriends='',lastTeacher=null,lastInteractionState=null;
@@ -35,7 +35,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     if(playing!==lastVideoPlaying||playing&&now-lastVideoReport>=250){round.setComputerPlayback?.({playing,visible,mediaTime:Number.isFinite(mediaTime)&&mediaTime>=0?mediaTime:0});lastVideoPlaying=playing;lastVideoReport=now;}
   }
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-  function release(){if(round.player?._examMode||round.map==='exam'&&round.snapshot().exam?.mode)round.setExamUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();stopVideoWatching();inputs.clear();round.hold(false);round.setRescue(null);round.setWriting?.(false);round.setDoorUse?.(false);}
+  function release(){if(round.snapshot().fixtureUse)round.setFixtureUse?.(null);if(round.player?._examMode||round.map==='exam'&&round.snapshot().exam?.mode)round.setExamUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();stopVideoWatching();inputs.clear();round.hold(false);round.setRescue(null);round.setWriting?.(false);round.setDoorUse?.(false);}
   function setPosture(value){return round.player.id===-1?round.setSprint?.(value):round.setCrouch(value);}
   function stopMovement(){keys.clear();physicalKeys.clear();round.setMovement(0,0);setPosture(false);dragLook=false;}
   function unlock(){if(document.pointerLockElement===canvas)document.exitPointerLock();}
@@ -111,7 +111,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
       repeatAfter=time+115;chooseComputerDirection(next);
     }
   }
-  const session=sessionFactory({root:ui,commands:{computerStick,silent:()=>audio.muted===true,bell:settings=>{if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;return round.startBell?.(round.network?settings:undefined);},mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
+  const session=sessionFactory({root:ui,commands:{computerStick,silent:()=>audio.muted===true,bell:settings=>{if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;return round.startBell?.(round.network?settings:undefined);},mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{round.setFixtureUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
   function chooseRole(role){
     if(round.network)return round.setPreference?.(role);
     const next=switchSoloRole(round,role);if(!next)return false;
@@ -129,7 +129,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
       const c=Math.cos(DORM_REST_VIEW.roll),s=Math.sin(DORM_REST_VIEW.roll);
       [dx,dy]=[dx*c+dy*s,dy*c-dx*s];
     }
-    yaw=(p.yaw||0)-dx*.0024;pitch=clamp((p.pitch||0)+dy*.0021,-1.15,1.3);round.setLook(yaw,pitch);
+    yaw=(p.yaw||0)-dx*.0024;pitch=clamp((p.pitch||0)+dy*.0021,-Math.PI/2,Math.PI/2);round.setLook(yaw,pitch);
   }
   function fx(kind){audio.effect?.(kind);scene.playFeedback?.(kind);}
   function feedback(text,kind='good',duration=1900){
@@ -197,6 +197,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     $('#score-fill').style.width=clamp(s.score/s.target*100,0,100)+'%';
     ui.dataset.role=s.role;ui.dataset.map=s.map;
     const drawer=s.drawer,carrying=drawer.drawnSlot!==null,target=scene.getInteraction?.(),hover=target?.kind==='item'?target.slot:null;
+    if(s.fixtureUse&&(s.fixtureUse.id==='radio'?target?.kind!=='radio':target?.kind!=='vending'||target.id!==s.fixtureUse.id))round.setFixtureUse?.(null);
     ui.dataset.drawerOpen=String(drawer.open);ui.dataset.selectedSlot=String(drawer.selectedSlot);ui.dataset.carrying=String(carrying);
     const openIntent=interactionIntent(s,target,'E'),closeIntent=interactionIntent(s,target,'Q');session.setActionLabels?.(openIntent,closeIntent);
     let actionText='';
@@ -212,13 +213,13 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     else if(s.exam?.mode==='card')actionText='按住左键 看答案 · Q 放回';
     else if(s.exam?.mode==='paper')actionText=s.exam.hint!=null?'第 '+(s.exam.hint+1)+' 题灵感 '+s.exam.seconds+'秒 · 按住左键答题':'Q 放下红笔';
     else if(target?.kind==='toilet-bowl'&&target.blocked)actionText=s.toiletClogs[target.id]?'马桶堵塞':'正在冲水';
-    else if(target?.kind==='hotpot'&&s.selected==='hotpotPlate'&&drawer.drawnSlot!=null)actionText='按住左键 下食材';
+    else if(target?.kind==='hotpot'&&s.selected==='hotpotPlate'&&drawer.drawnSlot!=null)actionText='点击 下食材';
     else if(target?.kind==='hotpot'&&target.cooking&&drawer.drawnSlot==null)actionText='正在煮';
     else if(drawer.drawnSlot!=null&&s.selected==='hotpotBite')actionText='低头按住左键 食用';
     else if(openIntent)actionText=(openIntent.hold?'按住 ':'')+'E '+openIntent.label+(target?.kind==='item'?' '+(dishLabels[drawer.slots[target.slot]?.dish]||labels[drawer.slots[target.slot]?.action]||''):'');
     else if(closeIntent)actionText=(closeIntent.hold?'按住 ':'')+'Q '+closeIntent.label;
     else if(s.selected==='wrapper'&&drawer.drawnSlot!=null)actionText='对准马桶';
-    else if(drawer.drawnSlot!=null&&drawer.canReturn===false)actionText=drawer.source?.meal!=null?'低头按住左键食用':'回到原抽屉附近 · Q 放回';
+    else if(drawer.drawnSlot!=null&&drawer.canReturn===false)actionText=drawer.source?.meal!=null?'低头按住左键食用':'Q 放下物品';
     else if(p.burpReadyLeft>0)actionText='左键 打嗝 · '+Math.ceil(p.burpReadyLeft);
     else if(teacher)actionText='左键 扔粉笔';
     if(session.touch)actionText=actionText.replace(/按住 E/g,'按住拿取').replace(/\bE /g,'拿取 · ').replace(/按住 Q/g,'按住返回').replace(/\bQ /g,'返回 · ').replace(/左键/g,'使用');
@@ -232,10 +233,10 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function renderUseProgress(s){
     const ring=$('#use-progress'),rescuing=s.rescue?.id!=null,bubble=s.player.bubble,blowing=Boolean(bubble?.blowing),plunging=s.player.mapActivity?.kind==='plunge',door=s.interaction?.kind==='rear-door',cycles=Number(bubble?.cycles)||0;
     const writing=s.role==='teacher'&&s.teacher.writing;
-    const progress=writing?s.teacher.writeProgress:s.exam?.using?s.exam.progress:plunging?s.player.mapActivity.progress:blowing?(bubble.kind==='orange'&&cycles>=4?1:cycles-Math.floor(cycles)):door?s.interaction.progress:rescuing?s.rescue.progress:s.actionProgress;
-    const visible=!s.paused&&(writing||s.exam?.using||plunging||blowing||door||rescuing||s.selected!=='pen'&&s.drawer.drawnSlot!==null&&!s.player.caught&&(s.holding||s.actionProgress>0));
-    ring.hidden=!visible;ring.dataset.active=String(writing||s.holding);ring.dataset.cycles=String(Math.floor(cycles));ring.setAttribute('aria-valuenow',String(Math.round(clamp(progress,0,1)*100)));
-    ring.setAttribute('aria-label',writing?'写板书进度':plunging?'疏通进度':blowing?'吹泡泡':door?'开关门':rescuing?'解救进度':throwables.has(s.selected)?'投掷蓄力':'物品使用进度');ring.dataset.charged=String(!blowing&&throwables.has(s.selected)&&s.actionProgress>=1);
+    const progress=s.fixtureUse?s.fixtureUse.progress:writing?s.teacher.writeProgress:s.exam?.using?s.exam.progress:plunging?s.player.mapActivity.progress:blowing?(bubble.kind==='orange'&&cycles>=4?1:cycles-Math.floor(cycles)):door?s.interaction.progress:rescuing?s.rescue.progress:s.actionProgress;
+    const visible=!s.paused&&(s.fixtureUse||writing||s.exam?.using||plunging||blowing||door||rescuing||s.selected!=='pen'&&s.drawer.drawnSlot!==null&&!s.player.caught&&(s.holding||s.actionProgress>0));
+    ring.hidden=!visible;ring.dataset.active=String(Boolean(s.fixtureUse)||writing||s.holding);ring.dataset.cycles=String(Math.floor(cycles));ring.setAttribute('aria-valuenow',String(Math.round(clamp(progress,0,1)*100)));
+    ring.setAttribute('aria-label',writing?'写板书进度':plunging?'疏通进度':blowing?'吹泡泡':door?'开关门':rescuing?'解救进度':s.fixtureUse?'按住按钮':'物品使用进度');ring.dataset.charged='false';
     const size=blowing?54+Math.min(bubble?.kind==='orange'?4:5,Math.floor(cycles))*13:54;ring.style.width=size+'px';ring.style.height=size+'px';$('#use-progress-fill').style.strokeDashoffset=String(100-clamp(progress,0,1)*100);
     ui.dataset.useProgress=String(progress);ui.dataset.holding=String(s.holding);ui.dataset.bubbleProgress=String(bubble?.progress||0);ui.dataset.bubbleCooldown=String(bubble?.cooldown||0);
   }
@@ -331,12 +332,10 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     if(computerStation!=null||session.computer){const dirs={forward:'up',back:'down',left:'left',right:'right'},direction=dirs[action]||({ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'})[e.code];if(direction){e.preventDefault();chooseComputerDirection(direction);return;}if(e.code==='Enter'||e.code==='NumpadEnter'||action==='use'){e.preventDefault();if(!e.repeat)computerClick(true);}return;}
     if(action){e.preventDefault();physicalKeys.set(e.code,action);keys.add(action);if(e.repeat)return;if(action==='jump')round.jump();else if(action==='interact')take();else if(action==='return')putBack();else if(action==='use'){lock();hold('keyboard',true);}}
   });
-  document.addEventListener('keyup',e=>{const action=physicalKeys.get(e.code)||actionForCode(e.code,controls);physicalKeys.delete(e.code);if(![...physicalKeys.values()].includes(action))keys.delete(action);if(action==='crawl')setPosture(keys.has('crawl'));if(action==='use')hold('keyboard',false);if(action==='return')round.setDoorUse?.(false);if(action==='interact'){if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setWriting?.(false);round.setDoorUse?.(false);}});
+  document.addEventListener('keyup',e=>{const action=physicalKeys.get(e.code)||actionForCode(e.code,controls);physicalKeys.delete(e.code);if(![...physicalKeys.values()].includes(action))keys.delete(action);if(action==='crawl')setPosture(keys.has('crawl'));if(action==='use')hold('keyboard',false);if(action==='return')round.setDoorUse?.(false);if(action==='interact'){round.setFixtureUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setWriting?.(false);round.setDoorUse?.(false);}});
   window.addEventListener('blur',()=>{
     if(!active||finished)return;
-    if(!document.querySelector('#school-radio-player iframe')){pause();return;}
-    stopMovement();
-    setTimeout(()=>{if(active&&!finished&&!document.activeElement?.closest?.('#school-radio-player')&&!document.hasFocus())pause();},0);
+    pause();
   });document.addEventListener('visibilitychange',()=>{if(document.hidden&&active&&!finished)pause();});
   return{start,exit,setRound(value){externalRound=value;round=value;},get active(){return active;},dispose(){exit();window.removeEventListener('campus-controls-change',refreshControls);heldInput.dispose();vision?.dispose();session.dispose();referenceHUD.dispose();}};
 }

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createDeskHands} from '../dist/game-actors.js?v=campus-84';
 import {createRiggedPalm} from '../dist/student-assets.js';
+import {handSamplingRig} from './whole-palm-geometry54.mjs';
 import {loadGeometry} from './gltf-geometry.mjs';
 
 const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
@@ -51,23 +52,18 @@ test('taking and returning an object turn the palm and flex real finger joints; 
   for(const [bone,position]of baselineLengths)assert.ok(position.distanceTo(bone.position)<.000001,`${bone.name}: finger length changed`);
 });
 
-for(const seated of [true,false])test(`phone presses use real index flexion and reach the screen (${seated?'seated':'standing'})`,()=>{
-  const actor=makeHands(),hand=actor.getHand('right'),rig=bones(hand),phone=actor.group.getObjectByName('handheld-phone');
-  let time=tick(actor,0,120,{action:'phone',carrying:true,holding:true,seated});
-  const initial=rig.RightHandIndex2.quaternion.clone(),firstTip=hand.indexTip();
-  let turn=0,deformation=0,nearest=Infinity,farthest=-Infinity;
-  for(let i=0;i<210;i++){
-    actor.update(time+=dt,{action:'phone',carrying:true,holding:true,seated});actor.group.updateMatrixWorld(true);
-    turn=Math.max(turn,initial.angleTo(rig.RightHandIndex2.quaternion));
-    const tip=hand.indexTip();deformation=Math.max(deformation,tip.distanceTo(firstTip));
-    const contact=phone.worldToLocal(hand.group.localToWorld(tip.clone()));
-    nearest=Math.min(nearest,contact.z);farthest=Math.max(farthest,contact.z);
-    assert.ok(Math.abs(contact.x)<.05&&Math.abs(contact.y)<.07,'Pointing finger leaves the phone screen');
-  }
-  assert.ok(turn>.11,'Phone tapping only moves the whole hand; index joints stay static');
-  assert.ok(deformation>.004,'Real fingertip skin is not bending');
-  assert.ok(nearest>.012&&nearest<.022,`Index does not touch screen (${nearest})`);
-  assert.ok(farthest-nearest>.012&&farthest<.042,`Index does not lift off between presses (${farthest})`);
+for(const seated of [true,false])test(`left thumb pad taps and leaves the lit display (${seated?'seated':'standing'})`,()=>{
+ const actor=makeHands(),hand=actor.getHand('left'),sampling=handSamplingRig(hand,{samples:100000}),phone=actor.group.getObjectByName('handheld-phone');
+ let time=tick(actor,0,140,{action:'phone',carrying:true,holding:true,seated});
+ let nearest=Infinity,farthest=0,hits=0;
+ for(let i=0;i<204;i++){
+  actor.update(time+=dt,{action:'phone',carrying:true,holding:true,seated});if(i%4)continue;actor.group.updateMatrixWorld(true);
+  const inv=phone.matrixWorld.clone().invert();
+  const pads=sampling.points('Thumb').filter(p=>p.pad).map(p=>p.applyMatrix4(hand.group.matrixWorld).applyMatrix4(inv)).filter(p=>Math.abs(p.x)<.0485&&Math.abs(p.y)<.076&&p.z>0);
+  assert.ok(pads.length);const z=Math.min(...pads.map(p=>p.z));nearest=Math.min(nearest,z);farthest=Math.max(farthest,z);if(Math.abs(z-.012)<.004)hits++;
+ }
+ assert.ok(hits>1&&nearest>.007&&nearest<.016,'skin must meet the glass in successive taps');
+ assert.ok(farthest-nearest>.009,'thumb pad must lift back off the glass');
 });
 
 test('imported palms keep rigid object contact while taking, standing and looking around',()=>{

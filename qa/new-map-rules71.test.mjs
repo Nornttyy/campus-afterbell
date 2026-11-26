@@ -91,8 +91,14 @@ test('new room background actors use rest, sitting and standing states without p
  for(const map of ['dorm','toilet','playground']){const r=quiet(map);for(let i=0;i<4;i++){const s=r.step(.2);for(const a of s.students.filter(a=>!a.isPlayer)){assert.equal(a.studyBookHeld,false);assert.equal(a.holding,false);if(map==='playground')assert.ok(['standing','walking','hanging'].includes(a.mood));else assert.equal(a.mood,map==='dorm'?'resting':'sitting');if(map==='playground')assert.equal(a.seated,false);if(map==='dorm')assert.equal(a.lying,true);}}const state=ordinaryStudyState({id:1,seatYaw:0},{x:3,z:2},20,73,map);assert.equal(state.studyBookHeld,false);assert.equal(state.action,null);}
 });
 
-test('playground has standing spawns and nearby vending pickup; only eating earns points, stock never auto-refills',()=>{
- const r=quiet('playground'),p=r.player;assert.equal(p.seated,false);assert.equal(r.interact(p.id),false);assert.equal(r.toggleDrawer(),false);assert.equal(r.takePlaygroundFood(),false);const v=PLAYGROUND_LAYOUT.vending[0];Object.assign(p,{x:v.x+Math.sin(v.yaw)*.8,z:v.z+Math.cos(v.yaw)*.8});assert.equal(blocked(p.x,p.z,.18,r.layout),false);assert.equal(r.takePlaygroundFood('unknown'),false);assert.equal(r.takePlaygroundFood('burger'),true);assert.equal(r.takePlaygroundFood('snack'),false);assert.equal(r.score,0);r.setLook(-Math.PI/2,.55);r.hold(true);r.step(3);assert.equal(r.score,1);assert.equal(p._slots[0].action,null);r.step(4);assert.equal(p._slots[0].action,null);assert.equal(r.takePlaygroundFood('snack'),true);assert.equal(ROOM_INTERACTION_TUNING.vendingCooldown,3);
+test('vending cancels on early release, keeps every drop and scores on eating',()=>{
+ const r=quiet('playground'),p=r.player,v=PLAYGROUND_LAYOUT.vending[0];
+ assert.equal(p.seated,false);assert.equal(r.toggleDrawer(),false);assert.equal(r.setFixtureUse(v.id),false);
+ Object.assign(p,{x:v.x+1.16,z:v.z});r._random=()=>.51;
+ assert.ok(r.setFixtureUse(v.id));r.step(1.9);r.setFixtureUse(null);r.step(.3);assert.equal(r.groundItems.size,0);
+ for(let i=0;i<4;i++){assert.ok(r.setFixtureUse(v.id));r.step(2);}
+ assert.equal(r.snapshot().groundItems.length,4);assert.equal(r.score,0);
+ const item=r.snapshot().groundItems[0];Object.assign(p,{x:item.x,z:item.z});assert.ok(r.takeGroundItem(item.id));assert.ok(r.hold(true));r.setLook(0,.7);r.step(2.1);assert.equal(r.score,1);
 });
 
 test('hotpot chalk hits all four rotated books and the actual full pot, with no phantom outdoor desktop',()=>{
@@ -110,32 +116,20 @@ test('two authenticated dorm peers keep bed pose and cabinet food ownership priv
  const room=new CampusRoom({code:'710071',seed:71,map:'dorm'}),host=room.join({rolePreference:'teacher'}),guest=room.join({rolePreference:'student'});room.begin(host);room.sim.stage='class';room.sim._seatingRoutes.clear();const p=guest.context.player,bed=room.sim.seats[p.id];for(const a of room.sim.students)if(a!==p&&a.seatId===bed.id){a.seated=false;a.seatId=null;}Object.assign(p,{x:bed.exitX,z:bed.exitZ,seated:false,seatId:null});const call=(method,...args)=>room.withMember(guest,sim=>ClassroomRound.prototype[method].apply(sim,args));assert.equal(call('interact',bed.id),'seated');assert.equal(call('toggleBedLie'),'sleeping');assert.equal(call('setDrawerOpen',true),true);assert.equal(call('takeSlot',0),true);room.tick(.2);const own=room.snapshot(guest),other=room.snapshot(host);assert.equal(own.player.lying,true);assert.equal(own.player.sleeping,false);assert.equal(own.player.bedId,bed.id);assert.equal(own.drawer.drawnSlot,0);assert.ok(own.dormCabinets[bed.id]>0);assert.equal(other.dormCabinets[bed.id],own.dormCabinets[bed.id]);assert.ok(other.students.every(s=>!s.drawer));assert.equal(call('returnItem'),true);assert.equal(p._drawnSlot,null);assert.equal(call('interact'),'stood');
 });
 
-test('two pupils see one physical vending drop and can hand it back to the same outlet',()=>{
+test('two pupils can dispense together and each physical item has one owner',()=>{
  const room=new CampusRoom({code:'840071',map:'playground'}),a=room.join(),b=room.join();
  const [v,other]=PLAYGROUND_LAYOUT.vending;
  const approach=(member,machine)=>Object.assign(member.context.player,{x:machine.x+.96,z:machine.z,seated:false});
  approach(a,v);approach(b,v);
  assert.equal(room.command(a,'pressVendingButton',[other.id]),false);
  assert.equal(room.command(a,'pressVendingButton',[v.id]),true);
- const stock=room.snapshot(b).vendingStock[v.id];
- assert.ok(['snack','drink','burger'].includes(stock.action));
- assert.equal(room.command(b,'pressVendingButton',[v.id]),false);
- assert.equal(room.command(b,'collectVendingFood',[v.id]),false);
- for(let tick=0;tick<6;tick++)room.tick(.1);
- assert.equal(room.command(b,'collectVendingFood',[v.id]),true);
- assert.equal(room.command(a,'collectVendingFood',[v.id]),false);
- assert.equal(room.snapshot(a).vendingStock[v.id].action,null);
- assert.equal(room.snapshot(b).drawer.source.machineId,v.id);
- approach(b,other);assert.equal(room.command(b,'returnItem',[]),false);
- approach(b,v);assert.equal(room.command(b,'returnItem',[]),true);
- assert.equal(room.snapshot(a).vendingStock[v.id].action,stock.action);
- assert.equal(room.snapshot(b).drawer.drawnSlot,null);
- assert.equal(room.command(a,'collectVendingFood',[v.id]),true);
- assert.equal(room.snapshot(a).score,0);assert.equal(room.snapshot(b).score,0);
- assert.equal(room.command(b,'pressVendingButton',[v.id]),false);
- for(let tick=0;tick<31;tick++)room.tick(.1);
- assert.equal(room.command(b,'pressVendingButton',[v.id]),true);
- assert.equal(room.command(a,'returnItem',[]),false,'a waiting drop cannot be overwritten');
+ assert.equal(room.snapshot(b).groundItems.length,0);assert.ok(room.command(b,'setFixtureUse',[v.id]));
+ for(let i=0;i<21;i++)room.tick(.1);
+ const items=room.snapshot(b).groundItems;assert.equal(items.length,2);
+ assert.ok(room.command(b,'takeGroundItem',[items[0].id]));assert.equal(room.command(a,'takeGroundItem',[items[0].id]),false);
+ assert.ok(room.command(a,'takeGroundItem',[items[1].id]));assert.equal(room.snapshot(b).groundItems.length,0);
+ approach(b,other);assert.ok(room.command(b,'dropItem'));assert.equal(room.snapshot(a).groundItems.length,1);
+ assert.equal(room.snapshot(b).drawer.drawnSlot,null);assert.equal(room.snapshot(a).score,0);
  assert.throws(()=>room.command(a,'pressVendingButton',['not-a-machine']));
 });
 

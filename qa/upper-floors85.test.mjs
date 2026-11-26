@@ -9,20 +9,20 @@ import {paperQuestion} from '../dist/upper-floor-view85.js';
 import {interactionIntent} from '../dist/interaction-intent54.js';
 
 const enterLift=(p,i=0)=>Object.assign(p,{seated:false,x:LIFT.x+i*.25,z:LIFT.z});
-for(const [index,map] of ['cafeteria','exam'].entries())test('the archived '+map+' retains its geometry and floor number; both room modes decline travel',()=>{
+for(const [index,map] of ['cafeteria','exam'].entries())test('the reopened '+map+' retains its floor number in solo and multiplayer',()=>{
  const floor=9+index;
  assert.equal(CAMPUS_MAPS[floor-1],map);assert.equal(campusFloor(map),floor);
  assert.equal(elevatorDuration('classroom',map),floor);assert.equal(elevatorDuration('cafeteria','exam'),3);
  for(const role of ['teacher','student']){
   const r=createSoloRound({role});r.start({gathering:true});enterLift(r.player);
-  assert.equal(r.travelFloor(map),false);r.step(floor);
-  assert.equal(r.snapshot().floor,2);assert.equal(r.seats[0].map,'classroom');assert.equal(r.snapshot().elevator.canTravel,true);
+  assert.equal(r.travelFloor(map),true);r.step(floor);
+  assert.equal(r.snapshot().floor,floor);assert.equal(r.seats[0].map,map);assert.equal(r.snapshot().elevator.canTravel,false);
  }
  const room=new CampusRoom({code:'100009'}),host=room.join({name:'甲'}),guest=room.join({name:'乙'});
  enterLift(host.context.player);
  enterLift(guest.context.player,1);assert.throws(()=>room.command(guest,'travelFloor',[map]),/房主/);
- assert.throws(()=>room.command(host,'travelFloor',[map]),/暂未开放/);room.tick(floor+1);
- for(const m of [host,guest]){const s=room.snapshot(m);assert.equal(s.floor,2);assert.equal(s.map,'classroom');assert.equal(s.elevator.used,false);}
+ assert.ok(room.command(host,'travelFloor',[map]));room.tick(floor+1);
+ for(const m of [host,guest]){const s=room.snapshot(m);assert.equal(s.floor,floor);assert.equal(s.map,map);assert.equal(s.elevator.used,true);}
  assert.equal(MAX_ROOM_PLAYERS,8);assert.throws(()=>new CampusRoom({code:'x',maxPlayers:9}),/2–8/);
 });
 

@@ -52,9 +52,9 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS)){
   }
   actor.dispose();
  });
- test(`${variant}: phone use moves the real index skin to the screen and lifts between taps`,async()=>{
+ test(`${variant}: phone use moves the real left thumb skin to the screen and lifts between taps`,async()=>{
   const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant});actor.setMood('phone');let time=tick(actor,0),z=[],rotations=[];
-  for(let i=0;i<180;i++){actor.update(time+=DT);actor.group.updateMatrixWorld(true);const tip=V(...actor.diagnostics().gestures.indexTip).applyMatrix4(phoneMatrix(actor).invert());assert.ok(Math.abs(tip.x)<.04&&Math.abs(tip.y)<.07,'finger misses screen rectangle');z.push(tip.z);rotations.push(actor.bones.RightHandIndex2.quaternion.clone());}
+  for(let i=0;i<180;i++){actor.update(time+=DT);actor.group.updateMatrixWorld(true);const tip=V(...actor.diagnostics().gestures.thumbTip).applyMatrix4(phoneMatrix(actor).invert());assert.ok(Math.abs(tip.x)<.04&&Math.abs(tip.y)<.07,'finger misses screen rectangle');z.push(tip.z);rotations.push(actor.bones.LeftHandThumb2.quaternion.clone());}
   assert.ok(Math.min(...z)>.013&&Math.min(...z)<.019,`finger does not contact screen: ${Math.min(...z)}`);assert.ok(Math.max(...z)-Math.min(...z)>.010,'finger never lifts');assert.ok(Math.max(...rotations.map(q=>q.angleTo(rotations[0])))>.035,'real finger joint never flexes');actor.dispose();
  });
 

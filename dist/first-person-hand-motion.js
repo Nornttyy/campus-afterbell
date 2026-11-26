@@ -76,7 +76,7 @@ export function createFirstPersonHandMotion(hand,side){
    thumb.quaternion.premultiply(parentQ.clone().invert().multiply(Q().slerp(change,amount)).multiply(parentQ));
   },
   pinchThumb(target,amount=1){
-   if(!thumbTip)return;
+   if(!thumbTip){hand.aimThumb(target,amount);return;}
    root.updateWorldMatrix(true,true);const goal=root.localToWorld(target.clone());
    // Solve the real thumb surface around the barrel/page with its own three
    // joints. Rotating only the thumb root aims at it but leaves a visible gap.

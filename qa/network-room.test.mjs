@@ -15,7 +15,7 @@ test('two independent HTTP peers share authoritative room, roles, movement, reco
  try{
   assert.equal((await fetch(base+'/')).status,200);
   assert.equal((await api(base,'/api/rooms',{name:'reject'},null,{origin:'https://attacker.example'})).status,403);
-  const a=(await api(base,'/api/rooms',{name:'房主',rolePreference:'teacher',map:'exam',floor:10})).data,b=(await api(base,`/api/rooms/${a.room.code}/join`,{name:'同学乙'})).data;
+  const a=(await api(base,'/api/rooms',{name:'房主',rolePreference:'teacher',map:'classroom',floor:2})).data,b=(await api(base,`/api/rooms/${a.room.code}/join`,{name:'同学乙'})).data;
   for(const joined of [a,b]){assert.equal(joined.room.map,'classroom');assert.equal(joined.state.map,'classroom');assert.equal(joined.state.floor,2);}
   assert.equal(a.room.code.length,6);assert.notEqual(a.token,b.token);assert.equal(b.room.members.length,2);assert.equal(JSON.stringify(b.room).includes(a.token),false);
   assert.equal((await api(base,`/api/command?room=${a.room.code}`,{name:'setMovement',args:[1,0]},'wrong')).status,401);
@@ -101,12 +101,12 @@ test('two HTTP clients share the published playground availability and its vendi
   for(const member of room.members.values())Object.assign(member.context.player,{x:v.x+1.2,z:v.z,seated:false});
   await wait(()=>host.snapshot().connection==='connected'&&guest.snapshot().connection==='connected'&&Math.abs(guest._state.player.x-v.x-1.2)<.01);
   host.pressVendingButton(v.id);
-  await wait(()=>{const s=guest.snapshot(),drop=s.vendingStock?.[v.id];return drop?.action&&s.sceneElapsed-drop.droppedAt>.42;});
-  const action=guest.snapshot().vendingStock[v.id].action;
-  guest.collectVendingFood(v.id);await wait(()=>guest.snapshot().drawer.drawnSlot===0&&host.snapshot().vendingStock[v.id].action===null);
+  await wait(()=>guest.snapshot().groundItems?.length===1);
+  const item=guest.snapshot().groundItems[0],action=item.action;
+  guest.takeGroundItem(item.id);await wait(()=>guest.snapshot().drawer.drawnSlot===0&&!host.snapshot().groundItems.length);
   assert.equal(guest.snapshot().selected,action);
-  guest.returnItem();await wait(()=>guest.snapshot().drawer.drawnSlot===null&&host.snapshot().vendingStock[v.id].action===action);
-  host.collectVendingFood(v.id);await wait(()=>host.snapshot().drawer.drawnSlot===0&&guest.snapshot().vendingStock[v.id].action===null);
+  guest.dropItem();await wait(()=>guest.snapshot().drawer.drawnSlot===null&&host.snapshot().groundItems.length===1);
+  host.takeGroundItem(host.snapshot().groundItems[0].id);await wait(()=>host.snapshot().drawer.drawnSlot===0&&!guest.snapshot().groundItems.length);
   assert.equal(host.snapshot().selected,action);assert.equal(host.snapshot().score,0);assert.deepEqual(errors,[]);
  }finally{await guest?.leave();await host?.leave();await runtime.close();}
 });

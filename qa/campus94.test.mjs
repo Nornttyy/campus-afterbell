@@ -26,14 +26,14 @@ test('the visible post shafts block players and chalk in each classroom, includi
   }
  }
 });
-test('drawing, interrupting a pour, cooking and eating are separate physical actions in both plans',()=>{
+test('drawing, clicking to add ingredients, cooking and eating are separate physical actions in both plans',()=>{
  for(const seed of [6,73]){
   const r=createSoloRound({map:'hotpot',seed});r.start();r._perceive=()=>{};
   const p=r.player,pot=r.hotpots[r.seats[p.seatId].tableId];
-  r.setDrawerOpen(true);assert.equal(r.takeSlot(0),true);const dish=r.snapshot().drawer.source.dish;assert.ok(HOTPOT_RECIPES[dish]);lookAtPot(r,p,pot);r.hold(true);r.step(1);r.hold(false);
+  r.setDrawerOpen(true);assert.equal(r.takeSlot(0),true);const dish=r.snapshot().drawer.source.dish;assert.ok(HOTPOT_RECIPES[dish]);lookAtPot(r,p,pot);p.yaw+=Math.PI;assert.equal(r.hold(true),false);r.step(1);r.hold(false);
   assert.equal(pot.pieces.length,0);assert.equal(r.snapshot().actionProgress,0);
-  p.yaw+=Math.PI;r.hold(true);r.step(3);assert.equal(pot.pieces.length,0);r.hold(false);
-  lookAtPot(r,p,pot);r.hold(true);r.step(2.02);assert.equal(pot.pieces.length,HOTPOT_RECIPES[dish]);assert.equal(r.score,0);
+  r.hold(true);r.step(3);assert.equal(pot.pieces.length,0);r.hold(false);
+  lookAtPot(r,p,pot);assert.equal(r.hold(true),true);assert.equal(r.hold(true),false);assert.equal(pot.pieces.length,HOTPOT_RECIPES[dish]);assert.equal(r.score,0);
   const id=pot.pieces[0].id;assert.equal(r.takeCookedPiece(pot.id,id),false);r.step(9.8);assert.equal(r.takeCookedPiece(pot.id,id),false);r.step(.25);
   assert.equal(r.takeCookedPiece(pot.id,id),true);assert.equal(r.returnItem(),true);assert.equal(r.takeCookedPiece(pot.id,id),true);
   p.pitch=0;r.hold(true);r.step(2.1);assert.equal(r.score,0);p.pitch=.55;r.step(2.1);assert.equal(r.score,1);assert.equal(r.takeCookedPiece(pot.id,id),false);

@@ -10,8 +10,8 @@ import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-114';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-115';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-116';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-116';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -301,6 +301,35 @@ function snackProp(){
   curve(group,gold,[[.054,-.074,.028],[.046,-.044,.030],[.055,-.015,.027]],.0015);
   batch(group);return group;
 }
+// The imported handset has an unlit screen baked into its casing. Two small
+// pixel frames let the thumb visibly advance the game without per-frame uploads.
+let mobileFrames;
+function mobileDisplay(){
+ if(!mobileFrames){
+  const w=48,h=80;
+  mobileFrames=[0,1].map(frame=>{
+   const pixels=new Uint8Array(w*h*4);
+   const rect=(x,y,width,height,r,g,b)=>{
+    for(let j=y;j<y+height;j++)for(let i=x;i<x+width;i++){
+     const k=4*((h-1-j)*w+i);pixels[k]=r;pixels[k+1]=g;pixels[k+2]=b;pixels[k+3]=255;
+    }
+   };
+   rect(0,0,w,h,34,56,75);rect(2,8,44,60,138,206,210);
+   rect(3,3,2,2,240,241,219);rect(6,2,2,3,240,241,219);rect(9,1,2,4,240,241,219);
+   rect(38,2,6,3,174,227,166);rect(44,3,1,1,174,227,166);
+   for(const [x,y] of [[5,19],[21,29],[34,15]]){rect(x,y,8,2,226,242,223);rect(x+2,y-2,4,2,226,242,223);}
+   rect(2,55,44,13,94,157,138);rect(2,54,44,2,80,128,105);
+   rect(24-frame*3,51,7,3,204,150,81);rect(37-frame*3,45,6,9,83,131,117);
+   const y=frame?38:47;rect(11,y+2,6,5,237,123,71);rect(13,y,5,4,251,190,111);
+   rect(16,y+1,1,1,42,57,72);rect(10,y+6,3,2,48,66,86);rect(15,y+6,3,2,48,66,86);
+   rect(17,74,14,2,161,190,190);
+   const t=new THREE.DataTexture(pixels,w,h);t.colorSpace=THREE.SRGBColorSpace;t.magFilter=THREE.NearestFilter;t.needsUpdate=true;return t;
+  });
+ }
+ const screen=new THREE.Mesh(new THREE.PlaneGeometry(.086,.137),new THREE.MeshBasicMaterial({map:mobileFrames[0],toneMapped:false}));
+ screen.position.set(0,-.003,.0145);screen.name='phone-active-display';screen.visible=false;
+ return screen;
+}
 function phoneProp(){
   const group=new THREE.Group();group.name='handheld-phone';
   mesh(group,rounded(.115,.208,.013,.014),mat('phoneCase','#eef0eb',.54));
@@ -520,6 +549,7 @@ export function createDeskHands({createHand}={}){
   // side of the grip as the Tripo spicy bag, whose printed front uses +Z.
   for(const kind of ['chips','noodles'])props[kind].children[0].rotateY(Math.PI);
   reverseHeldPanels(props.gum);
+  const phoneDisplay=mobileDisplay();props.phone.add(phoneDisplay);
   const packetCarry=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.56,.76,-1.06));
   const gumCarry=new THREE.Quaternion().setFromEuler(new THREE.Euler(.20,-.90,2.16));
   const packetStanding=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.52,1.15,-.55));
@@ -550,6 +580,10 @@ export function createDeskHands({createHand}={}){
   for(const action of DESK_ITEM_KINDS){const hand=arms[0].hand;hand.setCurl([...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(action)?.80:action==='phone'?.78:.72);let contact=propContact(props[action],gripBack[action]);if(action==='banana'&&props[action].userData.propAsset)contact=fitFirstPersonSurface(props[action],contact);grips[action].position.copy(hand.indexTip()).sub(contact.multiplyScalar(1/hand.group.scale.x).applyQuaternion(grips[action].rotation));}
   function attachToGrip(prop,hand,anchor){hand.updateMatrix();prop.position.copy(anchor.position).applyMatrix4(hand.matrix);prop.quaternion.copy(hand.quaternion).multiply(anchor.rotation);}
   for(const kind of DESK_ITEM_KINDS){const fit=wholeGrips[0].fit(kind);if(fit){grips[kind].position.fromArray(fit.position);grips[kind].rotation.setFromEuler(new THREE.Euler(...fit.rotation));}}
+  // The wrist enters from the bottom-left corner, leaving the thumb free to
+  // reach across the glass while the long fingers support the back.
+  grips.phone.rotation.multiply(new THREE.Quaternion().setFromAxisAngle(v(0,0,1),Math.PI-.60));
+  grips.phone.position.add(v(-.002,.005,0).applyQuaternion(grips.phone.rotation).divideScalar(arms[0].hand.group.scale.x));
   const fingerAxis=v(0,1,0);
   for(const kind of Object.keys(eatingMount)){
     const fit=wholeGrips[0].fit(kind);
@@ -576,7 +610,7 @@ export function createDeskHands({createHand}={}){
     // User-authored item clips use the preview camera as their coordinate frame.
     // The fitted finger and prop anchors are the same as in ordinary gameplay.
     if((animationPose?.clipId==='student-carry-food'||animationPose?.clipId==='student-eat-food')&&isHandAnimationPose(animationPose)&&FOOD_ITEM_KINDS.includes(action)&&!caught){
-      active=action;extension=1;lastTime=time;previousHandPositions=null;previousFood=null;
+      arms[1].group.visible=true;active=action;extension=1;lastTime=time;previousHandPositions=null;previousFood=null;
       const camera=group.userData.viewCamera;
       group.position.set(0,0,0);group.quaternion.identity();
       if(camera&&group.parent){
@@ -607,6 +641,7 @@ export function createDeskHands({createHand}={}){
       for(const [kind,prop] of Object.entries(props))prop.visible=kind===action;
       attachToGrip(props[action],arms[0].hand.group,anchor);group.updateMatrixWorld(true);return;
     }
+    arms[1].group.visible=true;
     const authored=isHandAnimationPose(animationPose)&&!seated&&!carrying&&!holding&&!caught&&!computer&&!typing&&!bookAmount;
     function applyAuthored(weight){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
@@ -673,7 +708,7 @@ export function createDeskHands({createHand}={}){
     const foodBob=0;
     const tapCycle=(useTime%1.72)/1.72,tapPress=ease(tapCycle,.28,.43)*(1-ease(tapCycle,.48,.65))*using;
     const tapIndex=Math.floor(useTime/1.72),tapTravel=ease(tapCycle,0,.23),tapX=THREE.MathUtils.lerp(.012+.022*Math.sin((tapIndex-1)*2.4),.012+.022*Math.sin(tapIndex*2.4),tapTravel),tapY=THREE.MathUtils.lerp(-.018+.025*Math.cos((tapIndex-1)*1.7),-.018+.025*Math.cos(tapIndex*1.7),tapTravel);
-    const tapContact=v(tapX,tapY,.017+.018*(1-tapPress));
+    
     const throwable=THROWABLE_ITEM_KINDS.includes(active),motionAction=throwable?'smoke':['lunch','hotpotPlate'].includes(active)?'burger':['chips','noodles','banana','garlic','gum','pen','hotpotBite','wrapper'].includes(active)?'snack':active;
     const releasing=throwable&&throwAge>=0&&throwAge<.34;
     if(releasing&&!wasReleasing)releaseCharge=throwCharge;
@@ -727,11 +762,6 @@ export function createDeskHands({createHand}={}){
     };
     // A press extends the index; between presses its real phalanges flex back.
     // Apply it before the contact solve and do not reset it while moving the wrist.
-    const tapCurl=.25-.19*tapPress;
-    function posePhoneIndex(hand,curl){
-      if(hand.setFingerCurl)hand.setFingerCurl('Index',THREE.MathUtils.lerp(curl,tapCurl,use));
-      else hand.pointIndex(use*(1-tapCurl/Math.max(.001,curl)));
-    }
     arms.forEach((arm,i)=>{
       const side=i?1:-1,w=wrists[i];
       const target=poses[motionAction][i],standingTarget=standingPoses[motionAction][i],blend=ease(extension,.38,.86),restRX=-Math.PI/2+reach*.16;
@@ -762,7 +792,7 @@ export function createDeskHands({createHand}={}){
         const squeeze=i===0&&FOOD_ITEM_KINDS.includes(active)?.025*foodPose.chewing*Math.sin(foodPhase*Math.PI*2/.72):0;
         arm.hand.setFingerCurl('Middle',pose.curl+squeeze);arm.hand.setFingerCurl('Pinky',pose.curl+grip*.025+squeeze);
       }
-      if(active==='phone'&&i===1)posePhoneIndex(arm.hand,pose.curl);
+  
       arm.hand.opposeThumb(grip*(releasing&&i===0?1-ease(throwAge,.035,.12):1)*([...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(active)&&i===1?0:1),active);
     });
     const visible=extension>.62&&!caught;
@@ -770,20 +800,16 @@ export function createDeskHands({createHand}={}){
     props.snack.visible=visible&&active==='snack';
     attachToGrip(props.snack,arms[0].hand.group,grips.snack);
     for(const kind of ['chips','noodles','drink','burger','banana','garlic','gum','lunch','pen','hotpotPlate','hotpotBite','wrapper']){props[kind].visible=visible&&active===kind;attachToGrip(props[kind],arms[0].hand.group,grips[kind]);}
+    phoneDisplay.visible=active==='phone'&&engaged;
+    phoneDisplay.material.map=mobileFrames[Math.floor(useTime/1.72+.57)%2];
     props.phone.visible=visible&&active==='phone';attachToGrip(props.phone,arms[0].hand.group,grips.phone);
     function contactPoint(prop,p){prop.updateMatrix();return p.clone().applyMatrix4(prop.matrix);}
-    function fitSecondaryHand(i,prop,p,amount){
-      const arm=arms[i],hand=arm.hand.group,target=contactPoint(prop,p),tip=arm.hand.indexTip().multiplyScalar(hand.scale.x).applyQuaternion(hand.quaternion);
-      hand.position.copy(wrists[i]).lerp(target.sub(tip),amount);hand.updateMatrix();
-    }
-    if(active==='phone')fitSecondaryHand(1,props.phone,tapContact,use);
     function thumbAt(i,prop,p,amount){if(i===0&&wholeGrips[0].fit(active))return;const hand=arms[i].hand.group;hand.updateMatrix();const target=contactPoint(prop,propContact(prop,p)).applyMatrix4(hand.matrix.clone().invert());arms[i].hand.aimThumb(target,amount);}
     if(throwable)thumbAt(0,props[active],v(-.032,-.020,.025),grip*(releasing?1-ease(throwAge,.035,.12):1));
     if(active==='snack')thumbAt(0,props.snack,v(-.052,-.020,.025),grip);
     if(active==='drink')thumbAt(0,props.drink,v(-.030,-.025,.032),grip);
     if(active==='burger')thumbAt(0,props.burger,v(-.096,-.025,.035),grip);
     if(['chips','noodles','banana','garlic','gum','lunch','pen','hotpotPlate','hotpotBite','wrapper'].includes(active))thumbAt(0,props[active],gripBack[active].clone().setZ(-gripBack[active].z),grip);
-    if(active==='phone'){thumbAt(0,props.phone,v(-.030,-.010,.017),grip);arms[1].hand.opposeThumb(grip,'phone');}
     wholeGrips[0].apply(active,grip*(releasing?1-ease(throwAge,.035,.12):1));
     // Pose the held palms inside the viewmodel anchor. The outer view layer
     // decides whether that anchor follows the view or the seated body.
@@ -977,6 +1003,26 @@ export function createDeskHands({createHand}={}){
       const contact=v(drawerContact.centerX+.035,handle.y-eyeHeight,handle.z);
       palm.position.lerp(contact.sub(tip).applyMatrix4(inverse),hold);
       palm.quaternion.slerp(inverseRotation.multiply(q),hold);
+    }
+    if(active==='phone'&&extension>.62&&!caught){
+      arms[1].group.visible=false;
+      const left=arms[0].hand;
+      const phone=props.phone,amount=ease(extension,.62,1),down=THREE.MathUtils.lerp(.77,.24,standing);
+      // Pose handset and holding fingers as one assembly, then touch the glass
+      // with the thumb alone. Coordinates below are relative to the seated eye.
+      group.updateMatrix();
+      const basis=new THREE.Quaternion().setFromEuler(new THREE.Euler(-down,.17,-.07,'XYZ'));
+      const sway=standing*movement*Math.sin(walkPhase);
+      const dest=v(-.115,-.060+.012*sway,-.46+.028*sway).applyAxisAngle(v(1,0,0),-down).applyMatrix4(group.matrix.clone().invert());
+      const orientation=group.quaternion.clone().invert().multiply(basis);
+      const turn=new THREE.Quaternion().slerp(orientation.multiply(phone.quaternion.clone().invert()),amount);
+      const origin=phone.position.clone();phone.position.lerp(dest,amount);
+      left.group.position.sub(origin).applyQuaternion(turn).add(phone.position);
+      left.group.quaternion.premultiply(turn);phone.quaternion.premultiply(turn);group.updateMatrixWorld(true);
+      const screen=contactPoint(phone,v(-.015+tapX*.28,.006+tapY*.24,.079+.039*(1-tapPress)));
+      left.group.updateMatrix();
+      articulation[0].pinchThumb(screen.applyMatrix4(left.group.matrix.clone().invert()),use);
+
     }
     // A lower carry has a longer route back to rest. Limit the actual wrist
     // travel, moving its object by the same delta; interruption never teleports

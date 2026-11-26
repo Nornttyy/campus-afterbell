@@ -1,6 +1,6 @@
 import {createSkinContact} from './skin-contact68.js';
 import * as T from './vendor/three.module.js';
-import {handFrame,createFingerRig} from './hand-motion.js?v=campus-115';
+import {handFrame,createFingerRig} from './hand-motion.js?v=campus-116';
 import {TEXTBOOK,studyBookPose} from './study-book58.js?v=campus-110';
 import {createPenFingerContact} from './pen-motion.js?v=campus-93';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
@@ -19,10 +19,9 @@ export function createStudentGestures(group,bones,clips,attachments){
  const fingerRig=createFingerRig(group,bones,'Right');
  const typingRigs={Left:createFingerRig(group,bones,'Left'),Right:fingerRig},typingTips={Left:[],Right:[]};
  const readingTips=Object.fromEntries(['Left','Right'].map(side=>[side,createPenFingerContact(group,bones,{side,finger:'Middle'})]));
- let tipSample=null,best=-Infinity;
- group.updateMatrixWorld(true);const tipBone=bones.RightHandIndex3,tipOrigin=tipBone.getWorldPosition(V()),tipAxis=tipOrigin.clone().sub(tipBone.parent.getWorldPosition(V())).normalize();
- group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const joint=mesh.skeleton.bones.indexOf(tipBone),{skinIndex,skinWeight}=mesh.geometry.attributes;if(joint<0)return;
-  for(let i=0;i<skinIndex.count;i++){let w=0;for(let k=0;k<4;k++)if(skinIndex.getComponent(i,k)===joint)w+=skinWeight.getComponent(i,k);if(w<.55)continue;const p=mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld),distance=p.clone().sub(tipOrigin).dot(tipAxis);if(distance>best){best=distance;tipSample={mesh,index:i,sample:createSkinContact(mesh,i)};}}
+ const thumbTip=createPenFingerContact(group,bones,{side:'Left',finger:'Thumb'});
+ let phoneFitted=false;
+ group.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;const {skinIndex,skinWeight}=mesh.geometry.attributes;
   for(const side of ['Left','Right']){
    const tip=bones[side+'HandIndex3'],joint=mesh.skeleton.bones.indexOf(tip),origin=tip.getWorldPosition(V()),axis=origin.clone().sub(tip.parent.getWorldPosition(V())).normalize(),candidates=[];let furthest=-Infinity;
    for(let i=0;i<skinIndex.count;i++){let weight=0;for(let k=0;k<4;k++)if(skinIndex.getComponent(i,k)===joint)weight+=skinWeight.getComponent(i,k);if(weight<.35)continue;const d=mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld).sub(origin).dot(axis);furthest=Math.max(furthest,d);candidates.push({mesh,index:i,d,sample:createSkinContact(mesh,i)});}
@@ -31,7 +30,6 @@ export function createStudentGestures(group,bones,clips,attachments){
    typingTips[side].push(...candidates.filter(p=>p.d>furthest-.018));
   }
  });
- function point(){group.updateMatrixWorld(true);return tipSample.sample(V());}
  function aim(bone,child,target){const origin=bone.getWorldPosition(V()),from=child.getWorldPosition(V()).sub(origin).normalize(),to=target.clone().sub(origin).normalize(),parent=bone.parent.getWorldQuaternion(Q()),delta=Q().setFromUnitVectors(from,to);bone.quaternion.premultiply(parent.clone().invert().multiply(delta).multiply(parent));bone.updateWorldMatrix(false,true);}
  function arm(side,target,poleHint=null){
   const shoulder=bones[side+'Arm'],elbow=bones[side+'ForeArm'],wrist=bones[side+'Hand'],root=shoulder.getWorldPosition(V()),middle=elbow.getWorldPosition(V()),end=wrist.getWorldPosition(V());
@@ -61,16 +59,26 @@ export function createStudentGestures(group,bones,clips,attachments){
   // merely placing the wrist below the neck joint.
   const rotation=group.getWorldQuaternion(Q());orient(side,V(0,phone?.435:.76,phone?.90:.65).normalize().applyQuaternion(rotation),V(0,phone?-.90:-.65,phone?.435:.76).normalize().applyQuaternion(rotation));
  }
- function phoneTap(time){
-  const frame=handFrame(bones,'Left'),wrist=bones.LeftHand.getWorldPosition(V()),matrix=new T.Matrix4().makeBasis(frame.across,frame.along,frame.normal).setPosition(wrist),fit=attachments.left.phone;
-  matrix.multiply(new T.Matrix4().compose(V().fromArray(fit.position),Q().setFromEuler(new T.Euler(...fit.rotation)),V(1,1,1)));
-  const normal=V(0,0,1).transformDirection(matrix),down=V(0,-1,0).transformDirection(matrix),phase=time*Math.PI*1.5,lift=.001+.014*(.5+.5*Math.cos(phase));
-  const contact=V(.012,-.025,.015+lift).applyMatrix4(matrix);
-  for(const d of fingerRig.digits){const curl=d.finger==='Index'?.055+.055*(.5-.5*Math.cos(phase)):d.finger==='Thumb'?.20:.32;d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,curl*[.62,.87,.62][d.n-1]));}
-  // Aim the extended index toward the screen; bend its real phalanges, then
-  // solve the arm from the actual weighted fingertip, not a floating bone tip.
-  const along=contact.clone().sub(bones.RightArm.getWorldPosition(V())).normalize().add(V(.20,1.20,0).applyQuaternion(group.getWorldQuaternion(Q()))).normalize();orient('Right',along,normal);
-  for(let i=0;i<3;i++){const tip=point(),origin=bones.RightHand.getWorldPosition(V()),target=origin.add(contact.clone().sub(tip)),rotation=bones.RightHand.getWorldQuaternion(Q());arm('Right',target,V(-1,-.2,0));bones.RightHand.quaternion.copy(bones.RightHand.parent.getWorldQuaternion(Q()).invert().multiply(rotation));group.updateMatrixWorld(true);}
+ function phoneTap(anchor,time){
+  anchor.updateWorldMatrix(true,false);
+  const fit=attachments.left.phone,rotation=Q().setFromEuler(new T.Euler(...fit.rotation)),key=V(-.024,-.016,.016);
+  if(!phoneFitted){
+   // Fit each rig once. Leave some bend in the thumb to allow its return stroke.
+   const base=anchor.worldToLocal(bones.LeftHandThumb1.getWorldPosition(V()));
+   const last=anchor.worldToLocal(bones.LeftHandThumb3.getWorldPosition(V()));
+   const rest=anchor.worldToLocal(thumbTip()),prior=key.clone().applyQuaternion(rotation).add(V().fromArray(fit.position));
+   const reach=base.distanceTo(last)+last.distanceTo(rest);
+   const contact=prior.sub(base).setLength(reach*.73).add(base);
+   fit.position=contact.sub(key.clone().applyQuaternion(rotation)).toArray();phoneFitted=true;
+  }
+  const wave=.5+.5*Math.cos(time*Math.PI*1.65);
+  const target=anchor.localToWorld(V(key.x+.003*wave,key.y,key.z+.019*wave).applyQuaternion(rotation).add(V().fromArray(fit.position)));
+  for(let pass=0;pass<8;pass++)for(const n of [3,2,1]){
+   const joint=bones['LeftHandThumb'+n],base=joint.getWorldPosition(V()),pad=thumbTip(),from=pad.sub(base),to=target.clone().sub(base);
+   if(from.lengthSq()<1e-8||to.lengthSq()<1e-8)continue;
+   const turn=Q().setFromUnitVectors(from.normalize(),to.normalize()),parent=joint.parent.getWorldQuaternion(Q());
+   joint.quaternion.premultiply(parent.clone().invert().multiply(Q().slerp(turn,.8)).multiply(parent));joint.updateWorldMatrix(false,true);
+  }
  }
  function typingPoint(side,worldReady=false){
   if(!worldReady)group.updateMatrixWorld(true);let low=Infinity,point=null;const inverse=group.matrixWorld.clone().invert();
@@ -197,7 +205,7 @@ export function createStudentGestures(group,bones,clips,attachments){
     else if(reading)readBook(time,bookPose);
     else if(thinking){freeHand('Left',true,0,0);freeHand('Right',true,0,0);}
     else {hold('Left',{seated,mood,time,nearCenter:mood==='phone'&&seated});
-     if(mood==='phone'&&seated)phoneTap(time);else if(!seated)freeHand('Right',false,moving,walkTime);
+     if(mood==='phone'||!seated)freeHand('Right',seated,moving,walkTime);
     }
    }
    // Follow continuously on entry, interruption and return. Never reset the
@@ -206,6 +214,6 @@ export function createStudentGestures(group,bones,clips,attachments){
    for(const b of managed){const side=b.name.includes('Left')?'Left':'Right',desired=b.quaternion.clone();if(sideBlend[side]<.0001){previous.set(b,desired);continue;}if(!previous.has(b))previous.set(b,saved.get(b).clone());b.quaternion.copy(previous.get(b).slerp(desired,alpha));previous.set(b,b.quaternion.clone());}
    group.updateMatrixWorld(true);
   },
-  diagnostics(){return {blend,indexTip:tipSample?point().toArray():null,readingTips:lastMood==='reading'?Object.fromEntries(['Left','Right'].map(side=>[side,group.worldToLocal(readingTips[side]()).toArray()])):null,restingTips:lastMood==='computer-idle'?Object.fromEntries(['Left','Right'].map(side=>[side,group.worldToLocal(typingPoint(side)).toArray()])):null,typingTips:lastMood==='computer'?Object.fromEntries(['Left','Right'].map(side=>[side,group.worldToLocal(typingPoint(side)).toArray()])):null};}
+  phoneTap,diagnostics(){return {blend,thumbTip:lastMood==='phone'?thumbTip().toArray():null,readingTips:lastMood==='reading'?Object.fromEntries(['Left','Right'].map(side=>[side,group.worldToLocal(readingTips[side]()).toArray()])):null,restingTips:lastMood==='computer-idle'?Object.fromEntries(['Left','Right'].map(side=>[side,group.worldToLocal(typingPoint(side)).toArray()])):null,typingTips:lastMood==='computer'?Object.fromEntries(['Left','Right'].map(side=>[side,group.worldToLocal(typingPoint(side)).toArray()])):null};}
  };
 }

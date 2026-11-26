@@ -39,6 +39,7 @@ export function createPlaygroundLayout(options={}){
   ...posts.map(p=>volume('playground-post-'+p.id,p.x-p.radius,p.x+p.radius,p.z-p.radius,p.z+p.radius,p.y,p.y+p.height,{kind:'post'})),
   ...bars.flatMap(bar=>[-1,1].map((side,i)=>volume(bar.id+'-post-'+i,bar.x-bar.radius,bar.x+bar.radius,bar.z+side*bar.width/2-bar.radius,bar.z+side*bar.width/2+bar.radius,0,bar.height,{kind:'sports-bar'}))),
   ...vending.map(v=>volume(v.id,v.x-v.depth/2,v.x+v.depth/2,v.z-v.width/2,v.z+v.width/2,0,v.height,{kind:'vending'})),
+  volume('ice-cream-cart',vending[0].x-.075,vending[0].x+.655,vending[0].z-3.55,vending[0].z-2.05,.22,.91),
   ...notices.map(n=>volume(n.id,n.x-.22,n.x+.22,n.z-n.width/2,n.z+n.width/2,0,2.65,{kind:'notice'}))
  ];
  return Object.freeze({bounds:Object.freeze({minX,maxX,minZ,maxZ,width,length}),track,steps:Object.freeze(steps),posts:Object.freeze(posts),board,bars:Object.freeze(bars),vending:Object.freeze(vending),notices:Object.freeze(notices),colliders:Object.freeze(colliders),entrance:Object.freeze({x:maxX,z:entranceZ,minZ:entranceMin,maxZ:entranceMax,width:entranceWidth,yaw:-Math.PI/2}),connector:Object.freeze({minX:maxX,maxX:maxX+.20,minZ:entranceMin,maxZ:entranceMax}),evidence:'reference-ratio reconstruction from 0300/0310/0340 and sports bars from second video 0001; exact dimensions unmeasured'});

@@ -1,5 +1,5 @@
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-97';
+import {radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-116';
 // A key resolves to ONE explicit action. In particular, returning a pen must
 // never fall through to opening the drawer underneath the crosshair.
 const intent=(method,args,label,hold=false)=>({method,args,label,hold});
@@ -9,7 +9,7 @@ export function interactionIntent(s,target,key){
  if(s.paused||s.status!=='playing'||s.elevator?.phase==='travel')return null;
  if(target?.kind==='radio'&&s.stage==='class'&&reachesRadio(s.map,p)){
   const power=radioPowerFor(s.role,s.radio);
-  if(power===true&&key==='E')return intent('changeRadio',[true],'开启播音器');
+  if(power===true&&key==='E')return intent('setFixtureUse',['radio'],'换歌',true);
   if(power===false&&(key==='E'||key==='Q'&&s.teacher?.carriedId==null))return intent('changeRadio',[false],'关闭播音器');
   if(key==='E')return null;
  }
@@ -20,7 +20,7 @@ export function interactionIntent(s,target,key){
   if(p.computerActive||target?.kind==='computer')return null;
   if(p.caught||['stunned','carried','bound'].includes(p.captivity))return null;
   if(teacher&&s.teacher.carriedId!=null)return intent('dropStudent',[],'放下同学');
-  if(carrying)return d.canReturn===false?null:intent('returnItem',[],s.selected==='pen'?'放回笔':'放回物品');
+  if(carrying)return d.canReturn===false||!p.seated?intent('dropItem',[],'放下物品'):intent('returnItem',[],s.selected==='pen'?'放回笔':'放回物品');
   if(teacher&&s.teacher.writing)return intent('setWriting',[false],'停止写字');
   if(target?.kind==='dorm-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&target.open?intent('toggleDormDoor',[target.id],'关门'):null;
   if(target?.kind==='toilet-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&target.open?intent('toggleToiletDoor',[target.id],'关门'):null;
@@ -50,8 +50,10 @@ export function interactionIntent(s,target,key){
  if(target?.kind==='toilet-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&!target.open?intent('toggleToiletDoor',[target.id],'开门'):null;
  if(target?.kind==='bed'&&!teacher)return p.onBed?intent('toggleBedLie',[],p.sleeping?'睁眼':'闭眼'):!p.seated?intent('interact',[target.id],'上床'):null;
  if(target?.kind==='vending'&&!teacher&&!carrying&&target.ready){
-  return s.vendingStock?intent('pressVendingButton',[target.id],'按下'):intent('takePlaygroundFood',['snack'],'拿取');
+  return intent('setFixtureUse',[target.id],'出货',true);
  }
+ if(target?.kind==='ground-item'&&!teacher&&!carrying)return intent('takeGroundItem',[target.id],'拿取');
+ if(target?.kind==='cooler-item'&&!teacher&&!carrying)return intent('takeCoolerItem',[target.id],'拿取');
  if(target?.kind==='vending-food'&&!teacher&&!carrying&&target.ready)return intent('collectVendingFood',[target.id],'拿取');
  if(target?.kind==='surveillance'&&teacher)return target.installed?intent('viewSurveillance',[target.id],'查看监控'):target.ready?intent('deploySurveillance',[target.id],'安装监控'):null;
  if(carrying&&p.seated&&target?.kind==='chair'&&target.id===p.seatId)return intent('interact',[],'拿着起身');

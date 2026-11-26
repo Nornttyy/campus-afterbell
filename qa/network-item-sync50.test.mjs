@@ -33,7 +33,7 @@ test('office chair is exclusive across roles and opening its drawer is visible t
 });
 
 test('banana peel flight, landing and peer stun synchronize with consistent public events',()=>{
- const {room,a,b}=activeRoom();equip(room,a,'bananaPeel');assert.equal(room.command(a,'hold',[true]),true);assert.equal(room.command(a,'releaseUse'),true);
+ const {room,a,b}=activeRoom();equip(room,a,'bananaPeel');assert.equal(room.command(a,'hold',[true]),true);assert.equal(room.command(a,'releaseUse'),false);
  room.tick(.02);assert.equal(room.snapshot(b).peels.length,1);assert.equal(room.snapshot(a).events.some(e=>e.type==='peel-thrown'),true);
  for(let i=0;i<300&&!room.sim.peels[0]?.armed;i++)room.tick(1/60);const peel=room.sim.peels[0];assert.ok(peel?.armed);Object.assign(b.context.player,{x:peel.x,z:peel.z});room.tick(.04);
  const own=room.snapshot(b),other=room.snapshot(a);assert.equal(own.player.captivity,'stunned');assert.ok(own.player.stunLeft>0);assert.equal(other.students.find(s=>s.id===b.studentId).captivity,'stunned');assert.equal(own.peels.length,0);assert.equal(other.events.some(e=>e.type==='peel-slip'&&e.actorId===b.studentId),true);

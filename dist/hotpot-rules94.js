@@ -1,4 +1,4 @@
-import {actorEyeHeight} from './classroom-layout.js?v=campus-108';
+import {actorEyeHeight} from './classroom-layout.js?v=campus-116';
 import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
 export const HOTPOT_RECIPES=Object.freeze({beef:3,cabbage:3,meatball:2,lotus:3,luncheon:1,shiitake:3});
 export const COOK_SECONDS=10;

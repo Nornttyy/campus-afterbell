@@ -28,7 +28,7 @@ for(const map of ['classroom','computer7'])test(`${map}: carrying exits with E, 
 test('changing seats while carrying cannot move stock, take a second item or remotely return the first',()=>{
  const r=quiet(),p=r.player,origin=p.seatId,original=p._slots,item=take(r,'drink');r.interact();const destination=0;sit(r,destination);
  assert.equal(p._slots,original);assert.deepEqual(r.snapshot().drawer.source,{office:false,seatId:origin,deskId:null});assert.equal(r.takeSlot(1),false);assert.equal(r.setDrawerOpen(true),false);assert.equal(r.returnItem(),false);assert.equal(item.heldBy,p.id);
- assert.equal(r.snapshot().drawer.canReturn,false);assert.equal(interactionIntent(r.snapshot(),null,'Q'),null);
+ assert.equal(r.snapshot().drawer.canReturn,false);assert.equal(interactionIntent(r.snapshot(),null,'Q').method,'dropItem');
  r.interact();Object.assign(p,{x:r.seats[origin].x,z:r.seats[origin].z});assert.equal(r.returnItem(),true);assert.equal(p.seated,false);assert.equal(item.action,'drink');assert.equal(item.heldBy,undefined);assert.equal(p._drawnSlot,null);
  sit(r,destination);assert.notEqual(p._slots,original);assert.equal(r.classSlotsBySeat.get(origin),original);
 });
