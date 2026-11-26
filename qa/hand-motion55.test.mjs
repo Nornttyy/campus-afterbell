@@ -93,3 +93,26 @@ test('bed idle hands stay below the low pillow camera instead of resting on an i
  for(let i=0;i<120;i++)h.update(time+=DT,{seated:true,deskSurface:false,eyeHeight:.23,freeLook:true,action:'burger',carrying:true,holding:true,eating:true,progress:.5});
  anchor.updateMatrixWorld(true);const prop=h.group.getObjectByName('layered-burger');assert.ok(prop.visible);const p=prop.getWorldPosition(V());assert.ok(Number.isFinite(p.y)&&p.y<0&&p.z<0,'food leaves the low forward view while eating');
 });
+
+for(const [kind,propName] of Object.entries({chips:'potato-chip-bag',noodles:'crunchy-noodle-bag',snack:'snack-packet',drink:'red-drink-can'})){
+ test(kind+': all four finger pads stay in contact through carrying and eating',()=>{
+  const hands=make(),hand=hands.getHand('left'),rig=handSamplingRig(hand,{samples:2000});
+  const prop=hands.group.getObjectByName(propName),surface=propSurface(prop);
+  let time=0;
+  for(const progress of [0,.5,.90]){
+   for(let frame=0;frame<120;frame++)hands.update(time+=DT,{action:kind,holding:progress>0,carrying:true,eating:progress>0,progress,seated:true,freeLook:true});
+   hands.group.updateMatrixWorld(true);
+   const toProp=prop.matrixWorld.clone().invert().multiply(hand.group.matrixWorld);
+   for(const finger of ['Thumb','Index','Middle','Pinky']){
+    let gap=Infinity;
+    for(const p of rig.points(finger)){
+     const pad=p.pad,distance=surface.query(p.applyMatrix4(toProp)).signed;
+     assert.ok(distance>-.0022,'finger passes through '+kind);
+     const onGrippingFace=kind==='drink'||(finger==='Thumb'?p.z<0:p.z>0);
+     if(pad&&onGrippingFace)gap=Math.min(gap,Math.abs(distance));
+    }
+    assert.ok(gap<.003,finger+' is more than 3 mm from '+kind);
+   }
+  }
+ });
+}

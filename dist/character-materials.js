@@ -1,3 +1,4 @@
+import {handSkinShading} from './first-person-skin112.js?v=campus-112';
 import * as T from './vendor/three.module.js';
 
 // Keep the authored colour texture, including palm-cap vertex colours.
@@ -65,8 +66,8 @@ function baseColorMaterial(source){
    toneMapped:false,fog:false
   });
   material.name=source.name;material.defaultAttributeValues={campusOcclusion:[0]};
-  material.onBeforeCompile=classroomShading;
-  material.customProgramCacheKey=()=>'campus-character-window-cloth109';
+  material.onBeforeCompile=source.userData.handSkin?shader=>{classroomShading(shader);handSkinShading(shader);}:classroomShading;
+  material.customProgramCacheKey=()=>source.userData.handSkin?'campus-bare-skin112':'campus-character-window-cloth109';
   material.userData={...source.userData,characterBaseColor:true};
   baseMaterials.set(source,material);
  }

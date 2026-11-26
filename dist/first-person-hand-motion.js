@@ -49,6 +49,14 @@ export function createFirstPersonHandMotion(hand,side){
     const bone=bones[name];if(!bone)continue;const a=Q().fromArray(previous.bones[name]||[0,0,0,1]),b=Q().fromArray(next.bones[name]||[0,0,0,1]),fit=a.slerp(b,t).slerp(Q().fromArray(delta),writing);bone.quaternion.multiply(Q().slerp(fit,weight));
    }
   },
+  flattenOpenFingers(pose,weight=1){
+   if(!hand.layFlat)return;
+   for(const finger of ['Thumb','Index','Middle','Ring','Pinky']){
+    let curl=pose.fingers?.[finger]??pose.curl;
+    if(finger==='Ring')curl=((pose.fingers?.Middle??pose.curl)+(pose.fingers?.Pinky??pose.curl))/2;
+    if(curl<.15)hand.layFlat(weight*(1-ease(curl,0,.15)),finger);
+   }
+  },
   restore(){for(const j of joints)j.bone.quaternion.copy(j.rest);},
   applyAuthoredFingers(pose,weight=1){
    // Scrubbing starts from the source joint frames, never from the preceding
@@ -59,6 +67,7 @@ export function createFirstPersonHandMotion(hand,side){
    if(pose.fingers&&hand.setFingerCurl){for(const finger of ['Thumb','Index','Middle','Pinky']){const value=pose.fingers[finger]??pose.curl;hand.setFingerCurl(finger,oldCurl+(value-oldCurl)*weight);}
     const middle=pose.fingers.Middle??pose.curl,pinky=pose.fingers.Pinky??pose.curl;hand.setFingerCurl('Ring',oldCurl+((middle+pinky)/2-oldCurl)*weight);
    }
+   this.flattenOpenFingers(pose,weight);
   },
   aimThumb(target,amount=1){
    if(!thumbTip){hand.aimThumb(target,amount);return;}
@@ -107,7 +116,7 @@ export function createFirstPersonHandMotion(hand,side){
      // its open sleeve below the lower frame while the food reaches centre;
      // moving the same crop upwards at carry depth made a floating cut wrist.
      const camera=parent.userData.viewCamera,anchor=camera||parent.parent;
-     const goal=camera?V(-.027,-.105+bob*.8,-.285):V(-.015,-.145+bob,-.42);
+     const goal=camera?V(-.050,-.078+bob*.65,-.365):V(-.015,-.145+bob,-.42);
      if(anchor)anchor.localToWorld(goal);
      const wanted=baseProp.lerp(goal,reach);prop.updateWorldMatrix(true,false);
      const travel=wanted.sub(prop.getWorldPosition(V()));

@@ -111,25 +111,32 @@ test('teacher: actual imported skin is unlit while the chalk retains lighting',a
  assertLit(actor.group.getObjectByName('teacher-writing-chalk'),'teacher chalk');actor.dispose();
 });
 
-function checkBarePalm(group){
- let count=0;group.traverse(mesh=>{if(!mesh.isMesh)return;count++;
-  assert.equal(mesh.material.map,null);assert.equal(mesh.material.color.getHex(),0xffceaf);
-  assert.equal(mesh.material.vertexColors,false);assert.ok(mesh.isSkinnedMesh);
- });assert.ok(count>=2,'palm and closed wrist must both be bare');
+function checkBarePalm(group,source){
+ const maps=new Set();source.traverse(o=>{if(o.isSkinnedMesh&&o.material.map)maps.add(o.material.map);});
+ assert.ok(maps.size>0,'expected an embedded hand texture');
+ let skin=0,cap=0;
+ group.traverse(mesh=>{
+  if(!mesh.isSkinnedMesh)return;
+  assert.ok(mesh.material.userData.handSkin&&mesh.material.vertexColors);
+  const g=mesh.geometry,levels=g.attributes.color,ink=g.attributes.skinTextureWeight;
+  assert.ok(Math.max(...levels.array)-Math.min(...levels.array)>.05,'missing anatomical shading');
+  if(mesh.material.map){assert.ok(maps.has(mesh.material.map));assert.equal(Math.max(...ink.array),1);skin++;}
+  else{assert.equal(Math.max(...ink.array),0);cap++;}
+  const shader={uniforms:{},vertexShader:T.ShaderLib.basic.vertexShader,fragmentShader:T.ShaderLib.basic.fragmentShader};
+  mesh.material.onBeforeCompile(shader);assert.match(shader.fragmentShader,/sourceInk/);assert.match(shader.vertexShader,/skinTextureWeight/);
+ });
+ assert.ok(skin&&cap,'mapped palm and the bare wrist cap must both be present');
 }
-for(const side of [-1,1])test(`${side<0?'left':'right'}: first-person student palm and closed wrist share the bare skin colour`,async()=>{
- const source=await loadCharacter(side<0?'hand-left-v3':'hand-right-v3'),before=originals(source.scene);
- const hand=createRiggedPalm(source,side);hand.setCurl(.55);hand.opposeThumb(.6);
- checkBarePalm(hand.group);
+for(const side of [-1,1])test(`${side<0?'left':'right'}: visible hand retains skin texture and shades the bare forearm`,async()=>{
+ const source=await loadCharacter(side<0?'hand-left-v3':'hand-right-v3'),hand=createRiggedPalm(source,side);
+ hand.setCurl(.55);hand.opposeThumb(.6);checkBarePalm(hand.group,source.scene);
 });
 
-test('first-person view keeps both imported hands unlit and attached food lit after posing',async()=>{
- const sources=await Promise.all(['hand-left-v3','hand-right-v3'].map(loadCharacter)),originalsBySide=sources.map(s=>originals(s.scene));
+test('first-person view retains source hand pigment with lit held food after posing',async()=>{
+ const sources=await Promise.all(['hand-left-v3','hand-right-v3'].map(loadCharacter));
  const hands=createDeskHands({createHand:(side,scale)=>createRiggedPalm(sources[side<0?0:1],side,scale)});
  for(let i=0;i<60;i++)hands.update(i/60,{action:'burger',holding:true,carrying:true,seated:true});
- for(const [index,side]of ['left','right'].entries())checkBarePalm(hands.group.getObjectByName(side+'-desk-hand'));
- // Primitive fallback material names are optional; the factory-level food
- // assertions above cover them. Here ensure there are non-character lit props.
+ for(const [index,side]of ['left','right'].entries())checkBarePalm(hands.group.getObjectByName(side+'-desk-hand'),sources[index].scene);
  assert.ok(hands.group.children.some(child=>{let lit=false;child.traverse(mesh=>{if(mesh.isMesh&&!mesh.userData.characterSurface&&mesh.material?.isMeshStandardMaterial)lit=true;});return lit;}));
 });
 
