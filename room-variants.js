@@ -1,12 +1,13 @@
 import {createBusRoom} from './bus-room86.js?v=campus-101';
 import {mountSchoolRadio} from './radio-model93.js?v=campus-97';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-114';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-115';
 import {createToiletRoom} from './toilet-room70.js?v=campus-99';
 import {createDormRoom} from './dorm-room70.js?v=campus-95';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-114';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-115';
 import {createHotpotRoom} from './hotpot-room70.js?v=campus-108';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-99';
 import * as T from './vendor/three.module.js';
+import {advanceDeskDrawer} from './drawer-hand-target58.js?v=campus-115';
 import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-99';
 import {SEATS,MAX_CAMPUS_SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-108';
 
@@ -92,7 +93,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
   if(localSeat!=null&&state?.drawer?.open)openSeats.add(localSeat);
   for(const[id,drawer]of drawers){
    const target=group.visible&&stations.get(id)?.visible&&openSeats.has(id)?1:0;
-   drawer.open=T.MathUtils.damp(drawer.open,target,target>drawer.open?12:18,Math.max(0,dt));
+   advanceDeskDrawer(drawer,target,Math.max(0,dt));
    drawer.group.position.z=-drawer.travel*drawer.open;
   }
  }
