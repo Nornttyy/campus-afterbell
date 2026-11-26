@@ -10,8 +10,8 @@ import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-111';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-111';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-112';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-112';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -523,6 +523,12 @@ export function createDeskHands({createHand}={}){
   const gumCarry=new THREE.Quaternion().setFromEuler(new THREE.Euler(.20,-.90,2.16));
   const packetStanding=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.52,1.15,-.55));
   const gumStanding=new THREE.Quaternion().setFromEuler(new THREE.Euler(1.74,-1.21,2.94));
+  const carryView=(x,y,z)=>new THREE.Quaternion().setFromEuler(new THREE.Euler(x,y,z));
+  const heldAngles={
+    chips:[packetCarry,packetStanding],noodles:[packetCarry,packetStanding],snack:[packetCarry,packetStanding],
+    gum:[gumCarry,gumStanding],drink:[carryView(-.82,.82,-.31),carryView(-1,.83,.26)],
+    burger:[carryView(-.58,.98,-.20),carryView(-.86,.89,.52)]
+  };
   const packetGrip=new THREE.Quaternion(),packetAngle=new THREE.Quaternion();
   const burgerModel=props.burger.children.slice(),servingModels=new Map();let servingLook=null;
   // Fixed object-to-palm transforms preserve contact during wrist rotation.
@@ -567,6 +573,7 @@ export function createDeskHands({createHand}={}){
         arm.hand.setCurl(h.curl);
         if(!i)wholeGrips[0].apply(action,clamp(h.curl/.82,0,1));
         if(h.fingers)for(const [finger,value] of Object.entries(h.fingers))arm.hand.setFingerCurl?.(finger,value);
+        articulation[i].flattenOpenFingers(h);
       }
       for(const [kind,prop] of Object.entries(props))prop.visible=kind===action;
       attachToGrip(props[action],arms[0].hand.group,anchor);group.updateMatrixWorld(true);return;
@@ -708,9 +715,9 @@ export function createDeskHands({createHand}={}){
       const wholeFit=i===0?wholeGrips[0].fit(active):null;
       // Pinch a broad packet at its lower corner with the printed face up.
       // This is the carry grip and stays fixed throughout each bite.
-      if(i===0&&props[active].userData.printedAsset){
-        const gum=active==='gum';
-        packetAngle.copy(gum?gumCarry:packetCarry).slerp(gum?gumStanding:packetStanding,standing);
+      if(i===0&&heldAngles[active]){
+        const [sitting,walking]=heldAngles[active];
+        packetAngle.copy(sitting).slerp(walking,standing);
         arm.hand.group.quaternion.premultiply(packetGrip.identity().slerp(packetAngle,grip));
       }
       if(wholeFit?.palmRoll)arm.hand.group.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(v(0,0,1),wholeFit.palmRoll*grip));
@@ -862,9 +869,10 @@ export function createDeskHands({createHand}={}){
         if(!keyboard&&supportWeight<.001)continue;
         const weight=(keyboard?computerBlend:supportWeight)*(1-standing),hand=arms[i].hand,beat=typing?time*10+i*2.4:0;
         if(keyboard){hand.setCurl(.28);for(const [j,finger]of ['Index','Middle','Pinky'].entries())hand.setFingerCurl?.(finger,.28+(finger==='Middle'?.12:finger==='Pinky'?.08:0)+(typing?.16*(.5+.5*Math.sin(beat-j*1.9)):0));}
+        else if(hand.layFlat){hand.setCurl(.035);hand.layFlat(weight);}
         else hand.setCurl(.18);
-        hand.aimThumb(v(i?-.14:.14,.07,-.015),1);
-        group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert(),palmQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2,0,i?.08:-.08));
+        if(keyboard||!hand.layFlat)hand.aimThumb(v(i?-.14:.14,.07,-.015),1);
+        group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert(),palmQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2,0,keyboard?(i?.08:-.08):0));
         const x=keyboard?(i?.18:-.065)+(office?.335:0):(i?.34:-.34),z=keyboard?(office?-.92:-.59):(office?-.78:-.60),level=(keyboard?(office?1.036:.903):(office?.988:.878))-eyeHeight;
         const target=v(x,level,z),tip=hand.indexTip().multiplyScalar(hand.group.scale.x).applyQuaternion(palmQ);
         hand.group.position.lerp(target.sub(tip).applyMatrix4(inv),weight);hand.group.quaternion.slerp(invQ.multiply(palmQ),weight);
@@ -893,7 +901,7 @@ export function createDeskHands({createHand}={}){
       for(let i=0;i<2;i++){
         if(carrying&&(i===0||active==='phone'))continue;
         const hand=arms[i].hand,side=i?1:-1,q=new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2,0,side*.04));
-        hand.setCurl(.20);hand.opposeThumb(.10);
+        hand.setCurl(.10);if(hand.layFlat)hand.layFlat(drawerBlend);else hand.opposeThumb(.10);
         const target=v(cx+side*Math.min(.145,width*.21),floor+.015,cz+depth*.10),tip=hand.indexTip().multiplyScalar(hand.group.scale.x).applyQuaternion(q),wrist=target.sub(tip);
         // Drop in front of the drawer lip, then slide inside below the desktop.
         const start=hand.group.position.clone().applyMatrix4(group.matrix),front=cz+depth/2+.18;

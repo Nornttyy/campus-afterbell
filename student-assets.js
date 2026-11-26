@@ -1,3 +1,4 @@
+import {useStudentHandSkin} from './first-person-skin112.js?v=campus-112';
 import {fitUniform} from './uniform-detail102.js?v=campus-109';
 import {setDish} from './hotpot-food94.js?v=campus-94';
 import {createStudentSize} from './student-size73.js?v=campus-110';
@@ -6,19 +7,19 @@ import {requireModelBudget} from './model-budget64.js';
 import {WRITING_PROPS} from './writing-props58.js?v=campus-83';
 import {WRITING_GRIPS} from './writing-grips58.js?v=campus-83';
 import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-111';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-112';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
-import {createToiletSeatPose} from './toilet-seat78.js?v=campus-111';
-import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-111';
-import {createBedPose} from './bed-pose78.js?v=campus-111';
-import {createMapActivityPose} from './map-activity-pose77.js?v=campus-111';
+import {createToiletSeatPose} from './toilet-seat78.js?v=campus-112';
+import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-112';
+import {createBedPose} from './bed-pose78.js?v=campus-112';
+import {createMapActivityPose} from './map-activity-pose77.js?v=campus-112';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-111';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-112';
 import {propContact} from './prop-assets.js?v=campus-83';
 import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-109';
-import {createCrawlPose} from './crawl-pose.js?v=campus-111';
-import {createStudentGestures} from './student-gestures.js?v=campus-111';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-112';
+import {createCrawlPose} from './crawl-pose.js?v=campus-112';
+import {createStudentGestures} from './student-gestures.js?v=campus-112';
 import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-83';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-105';
 import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-93';
@@ -411,8 +412,6 @@ export function createRiggedStudent(gltf,{seated=true,seed=0,passengerSeed=seed,
  }
  update(0);return{group,head,bones,update,seated,setStudyBook:source=>studyBook.setSource(source),studyBookVisible:()=>studyBook.visible(),setMood:m=>{mood=m;if(THROWABLE_ITEM_KINDS.includes(m))lastThrowable=m;},setMotion:({dish=null,jumpHeight:lift=0,seatSurface:surface=null,drawerOpen:open=false,onBed:bed=false,lying:reclined=false,sleeping:sleep=false,mapActivity:activity=null,inkLeft=0,crawling:prone=false,seated=isSeated,speed=moving,carrying=held,heldAction:heldKind=null,using:isUsing=null,penWriting:writing=false,penTwirling:twirling=false,lookYaw:headYaw=null,lookPitch:headPitch=0,restraint='free',restraintStartedAt:startedAt=null,throwProgress:progress=0,throwAge:age=Infinity}={})=>{heldDish=dish;jumpHeight=lift;seatSurface=surface;seatDrawerOpen=Boolean(open);onBed=Boolean(bed);lying=onBed;sleeping=Boolean(bed&&sleep);mapActivity=activity;faceInkLeft=inkLeft;crawling=Boolean(prone);captivity=restraint;restraintStartedAt=Number.isFinite(startedAt)?startedAt:null;isSeated=seated;moving=Math.max(0,speed);held=carrying;heldAction=heldKind;using=isUsing;penWriting=Boolean(writing);penTwirling=Boolean(twirling);headTarget.yaw=Number.isFinite(headYaw)?headYaw:null;headTarget.pitch=Number(headPitch)||0;if(THROWABLE_ITEM_KINDS.includes(heldAction))lastThrowable=heldAction;throwProgress=T.MathUtils.clamp(Number(progress)||0,0,1);throwAge=Number.isFinite(age)?age:Infinity;},getHand:s=>grips[s],dispose(){studyBook.dispose();faceEffects.dispose();eyes.dispose();faceShape.dispose();mixer.stopAllAction();mixer.uncacheRoot(model);},diagnostics:()=>({coach:coachPose?.diagnostics()??null,bed:bedPose.diagnostics(),faceShape:faceShape.diagnostics(),proportions:bodySize?.diagnostics(),clips:Object.keys(actions),weights:{...weights},asset:group.userData.asset,glasses,heldAction,using,headLook:{...headLook},eyes:eyes.diagnostics(),face:faceEffects.diagnostics(),pen:{writing:penWriting,twirling:penTwirling,blend:penTwirlBlend,time:penTwirlAge},studyBook:studyBook.diagnostics(),animation:{time:mixer.time,walkRate,nominalWalkSpeed},hands:handMotion.diagnostics(),crawl:crawlPose.state(),gestures:gestureMotion?.diagnostics(),clearance:seatedClearance?.diagnostics(),capture:capturePose.state(),throwing:{kind:lastThrowable,blend:throwBlend,progress:throwProgress,age:throwAge}})};
 }
-const bareHandShapes=new WeakMap();
-const barePalm=new T.MeshStandardMaterial({color:0xffceaf,roughness:1});
 export function createRiggedPalm(gltf,side,scale=1,role='student'){
  const group=new T.Group();group.name=side<0?'left-desk-hand':'right-desk-hand';group.userData.asset='tripo-palm-only';group.userData.fingersPerHand=4;
  group.userData.shortForearm=Boolean(gltf.parser?.json?.asset?.extras?.characters40?.shortForearm);
@@ -422,29 +421,7 @@ export function createRiggedPalm(gltf,side,scale=1,role='student'){
  const bones={};let mesh;
  model.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig[:_]?/,'')]=o;if(o.isMesh){if(!mesh||o.geometry.attributes.position.count>mesh.geometry.attributes.position.count)mesh=o;o.castShadow=false;o.frustumCulled=false;}});
  for(const bone of Object.values(bones))bone.quaternion.normalize();
- if(role==='student')model.traverse(o=>{
-  if(!o.isMesh)return;
-  const original=o.geometry;
-  if(!bareHandShapes.has(original)){
-   // Only the exposed forearm changes. The thumb reaches y=-.038 in
-   // this bind pose, so end the taper before any part of the hand begins.
-   const geometry=original.clone(),p=geometry.attributes.position,n=geometry.attributes.normal;
-   const cx=side<0?-.00709:.00426,cz=side<0?.01147:.01911,normal=new T.Vector3();
-   for(let i=0;i<p.count;i++){
-    const y=p.getY(i);if(y>=-.041)continue;
-    const t=T.MathUtils.clamp((-.041-y)/.059,0,1);
-    const taper=1-.34*t*t*(3-2*t),slope=.34*6*t*(1-t)/.059;
-    const x=p.getX(i)-cx,z=p.getZ(i)-cz;
-    p.setXYZ(i,cx+x*taper,y,cz+z*taper);
-    normal.fromBufferAttribute(n,i);
-    normal.y-=slope*(x*normal.x+z*normal.z)/taper;
-    normal.x/=taper;normal.z/=taper;normal.normalize();
-    n.setXYZ(i,normal.x,normal.y,normal.z);
-   }
-   geometry.computeBoundingBox();geometry.computeBoundingSphere();bareHandShapes.set(original,geometry);
-  }
-  o.geometry=bareHandShapes.get(original);o.material=barePalm;
- });
+ if(role==='student')model.traverse(o=>{if(o.isMesh)useStudentHandSkin(o,side);});
  useCharacterBaseColor(model);
  group.updateMatrixWorld(true);const prefix=side<0?'Left':'Right',rig=createFingerRig(group,bones,prefix),rest=new Map();
  for(const b of Object.values(bones))rest.set(b,b.quaternion.clone());
@@ -462,6 +439,29 @@ export function createRiggedPalm(gltf,side,scale=1,role='student'){
   // their own flexion, otherwise the whole visible thumb acts like one stick.
   for(const d of rig.digits)if(d.finger==='Thumb')d.bone.quaternion.copy(rest.get(d.bone)).multiply(new T.Quaternion().setFromAxisAngle(d.axis,curl*[0,.36,.28][d.n-1]));
  }
+ // Zero curl in the downloaded bind pose is still a claw, especially the
+ // thumb. Fit a separate desk pose to the actual two segments of each digit.
+ const flatJoints=[];
+ if(role==='student'){
+  const outward=-side;
+  for(const finger of ['Index','Middle','Ring','Pinky','Thumb']){
+   const chain=rig.digits.filter(d=>d.finger===finger);
+   for(let j=0;j<chain.length-1;j++){
+    const bone=chain[j].bone,next=chain[j+1].bone;
+    const lateral=finger==='Index'?.08:finger==='Pinky'?-.14:finger==='Ring'?-.06:0;
+    const target=finger==='Thumb'?V(outward*(j?.68:.84),j?.74:.50,j?.13:.23):V(outward*lateral,1,j?-.05:.015);
+    const from=next.getWorldPosition(V()).sub(bone.getWorldPosition(V())).normalize();
+    const delta=new T.Quaternion().setFromUnitVectors(from,target.normalize().applyQuaternion(group.getWorldQuaternion(new T.Quaternion())));
+    const parentQ=bone.parent.getWorldQuaternion(new T.Quaternion());
+    bone.quaternion.premultiply(parentQ.clone().invert().multiply(delta).multiply(parentQ));
+    flatJoints.push({finger,bone,target:bone.quaternion.clone()});
+   }
+  }
+  for(const d of rig.digits)d.bone.quaternion.copy(d.rest);
+ }
+ function layFlat(weight=1,finger=null){
+  for(const joint of flatJoints)if(!finger||joint.finger===finger)joint.bone.quaternion.slerp(joint.target,weight);
+ }
  function setFingerCurl(finger,a){if(['Index','Middle','Ring','Pinky','Thumb'].includes(finger))bend(finger,T.MathUtils.clamp(a,0,1));}
  function pointIndex(a=1){bend('Index',curl*(1-T.MathUtils.clamp(a,0,1)));}
  function indexTip(){group.updateMatrixWorld(true);mesh.skeleton.update();const p=V().fromBufferAttribute(positions,tipVertex);mesh.applyBoneTransform(tipVertex,p);mesh.localToWorld(p);return group.worldToLocal(p);}
@@ -475,5 +475,5 @@ export function createRiggedPalm(gltf,side,scale=1,role='student'){
   root.quaternion.premultiply(parentQ.clone().invert().multiply(worldDelta).multiply(parentQ));
  }
  function opposeThumb(amount=1){aimThumb(indexTip().add(V(side*.01,-.008,.012)),amount);}
- setCurl(.1);return{group,setCurl,setFingerCurl,pointIndex,indexTip,aimThumb,opposeThumb,diagnostics:()=>({fingerChains:[...new Set(rig.digits.map(d=>d.finger))],curl,dorsal:handFrame(bones,prefix)?.normal.toArray()})};
+ setCurl(.1);return{group,setCurl,layFlat:flatJoints.length?layFlat:null,setFingerCurl,pointIndex,indexTip,aimThumb,opposeThumb,diagnostics:()=>({fingerChains:[...new Set(rig.digits.map(d=>d.finger))],curl,dorsal:handFrame(bones,prefix)?.normal.toArray()})};
 }
