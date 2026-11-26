@@ -67,7 +67,7 @@ test('twenty real host settings validate units, survive a floor change and reach
  r._rebuild('computer');assert.equal(r.sim.tuning.forwardDrainMs,TUNING_DEFAULTS.forwardDrainMs);assert.equal(r.snapshot(g).settings.tuning.foodPoints,4);
  r.preference(h,{rolePreference:'teacher'});r.begin(h);for(let i=0;i<303;i++)r.tick(.1);
  assert.throws(()=>r.configureRound(h,settings),/开局/);r.sim.teacher.stamina=72;r.command(h,'throwChalk',[]);assert.equal(r.sim.teacher.stamina,60);
- const s=g.context.player;r.sim._completeAction(s,{action:'garlic',progress:2});assert.equal(r.sim.score,4);
+ const s=g.context.player;r.sim._completeAction(s,{action:'burger',progress:2});assert.equal(r.sim.score,4);
  const slot={action:'snack',progress:2};r.sim._completeAction(s,slot);assert.ok(Math.abs(slot.readyAt-r.sim.elapsed-8)<.001);
 });
 
@@ -89,9 +89,9 @@ const atRadio=(actor,map)=>{
  const a=radioAnchor(map);Object.assign(actor,{x:a.x+Math.sin(a.yaw)*.82,z:a.z+Math.cos(a.yaw)*.82,seated:false,seatId:null,busDeck:0,caught:false,captivity:'free'});
 };
 
-test('the radio uses the three complete recordings; the host draws once per accepted activation on either map',()=>{
- assert.equal(RADIO_SONGS.length,3);
- for(const map of ['bus','playground'])for(const [i,roll] of [[0,0],[1,.50],[2,.999999]]){
+test('the radio uses the two complete recordings; the host draws once per accepted activation on either map',()=>{
+ assert.equal(RADIO_SONGS.length,2);
+ for(const map of ['bus','playground'])for(const [i,roll] of [[0,0],[1,.50],[1,.999999]]){
   const r=createSoloRound({map,seed:7});r.start();atRadio(r.player,map);
   const realRandom=r._random.bind(r);let draws=0;r._random=()=>{draws++;return roll;};
   assert.equal(r.changeRadio('unknown'),false);assert.equal(r.changeRadio(false),false);

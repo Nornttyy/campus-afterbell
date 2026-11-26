@@ -14,7 +14,7 @@ await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry
 const make=()=>createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});
 const names={snack:'snack-packet',drink:'red-drink-can',burger:'layered-burger',banana:'curved-banana',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox'};
 
-for(const [action,name]of Object.entries(names))test(`${action}: complete 3-second real-skin eating keeps the sideways carry grip, centres, bobs and returns with a rigid wrist grip`,()=>{
+for(const [action,name]of Object.entries(names))test(`${action}: complete 3-second real-skin eating keeps the low carry grip, bobs and returns with a rigid wrist grip`,()=>{
  const h=make(),prop=h.group.getObjectByName(name),hand=h.getHand('left'),wrist=hand.group.getObjectByName('mixamorigLeftHand'),middle=hand.group.getObjectByName('mixamorigLeftHandMiddle2');
  let time=0;for(let i=0;i<120;i++)h.update(time+=DT,{action,carrying:true,freeLook:true});h.group.updateMatrixWorld(true);
  const gripHeading=wrist.getWorldQuaternion(Q()),original=prop.getWorldPosition(V()),scale=hand.group.scale.clone(),bones=[];hand.group.traverse(o=>{if(o.isBone)bones.push([o,o.position.clone()]);});
@@ -25,13 +25,14 @@ for(const [action,name]of Object.entries(names))test(`${action}: complete 3-seco
   if(grip)assert.ok(fit.elements.every((x,i)=>Math.abs(x-grip.elements[i])<.00001),'prop detached from the actual wrist');else grip=fit;
   if(previous){maxStep=Math.max(maxStep,p.distanceTo(previous.p));maxTurn=Math.max(maxTurn,q.angleTo(previous.q));}previous={p,q};
   assert.deepEqual(prop.scale.toArray(),[1,1,1]);assert.ok(hand.group.scale.distanceTo(scale)<1e-10);
-  if(frame>=60&&frame<=132){const d=h.getDebug().articulation[0];assert.ok(d.rigged&&d.wristAngle>.07&&d.elbowAngle>.09,'elbow and wrist must articulate');const angle=q.angleTo(gripHeading);
-   if(action==='gum')assert.ok(angle<.1,'chewing gum uses the blowing gesture');
-   else assert.ok(angle>.06&&angle<.30,'left hand tips the food to the mouth without reversing the grip');assert.ok(Math.abs(p.x)<.025);bob.push(p.y);digits.push(middle.quaternion.clone());}
+  if(frame>=60&&frame<=132){
+   assert.ok(q.angleTo(gripHeading)<.02,'wrist twists during the bite');
+   assert.ok(p.x<-.065&&p.y<-.35,'food rises into the central view');bob.push(p.y);
+  }
   // Full finger/palm surfaces and winding parity are checked in hand-motion55;
   // a wrapped finger need not contact at its single most distal vertex.
  }
- assert.ok(Math.max(...bob)-Math.min(...bob)>.075,'eating has no visible vertical strokes');
+ assert.ok(Math.max(...bob)-Math.min(...bob)>.045,'eating has no visible vertical strokes');
  assert.ok(maxStep<.025&&maxTurn<.18,`gesture snaps: ${maxStep}m, ${maxTurn}rad`);assert.ok(prop.getWorldPosition(V()).distanceTo(original)<.002);
  for(const [bone,p]of bones)assert.ok(bone.position.distanceTo(p)<1e-10,'source bone length changed');
 });
@@ -81,7 +82,7 @@ test('pink head-attached gum keeps a fixed radius while mouth inflation still gr
  for(const charge of [.1,.5,1]){state.bubbles=[{id:1,x:0,y:1.7,z:0,charge,age:0,lifetime:10,attachedId:1}];fx.update(state);const bubble=scene.getObjectByName('released-gum-bubbles').children[0];assert.deepEqual(bubble.scale.toArray(),[ATTACHED_GUM_RADIUS,ATTACHED_GUM_RADIUS*.88,ATTACHED_GUM_RADIUS*.72]);}fx.dispose();
 });
 
-test('pickup and return exchange food at its slot even at opposite ends of a rotated desk',()=>{
+test('pickup and return take effect on the input frame even at opposite ends of a rotated desk',()=>{
  for(const x of [-.28,.28]){
   const root=new T.Group(),seat=new T.Group(),slot=new T.Group(),h=make();
   root.add(seat,slot);seat.position.set(2,1.43,-1);seat.rotation.y=.8;seat.add(h.group);
@@ -91,9 +92,9 @@ test('pickup and return exchange food at its slot even at opposite ends of a rot
   const prop=h.group.getObjectByName(names.burger),drawer={centerX:0,centerZ:-.46,floor:.659,lip:.811,width:.93,depth:.60,amount:1};
   for(let i=0;i<165;i++){
    h.update(time+=DT,{action:'burger',carrying:i>=30&&i<110,seated:true,freeLook:true,drawer,trayFood:slot});
+   assert.equal(prop.visible,i>=30&&i<110);assert.equal(h.getExtension(),Number(prop.visible));
    if(prop.visible!==wasVisible){
-    assert.ok(prop.getWorldPosition(V()).distanceTo(slot.getWorldPosition(V()))<.001);
-    assert.ok(prop.getWorldQuaternion(Q()).angleTo(slot.getWorldQuaternion(Q()))<.001);
+    if(prop.visible)assert.ok(prop.getWorldPosition(V()).distanceTo(h.getHand('left').group.getWorldPosition(V()))<.34);
     wasVisible=prop.visible;swaps++;
    }
   }

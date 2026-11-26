@@ -1,5 +1,5 @@
 import {teacherViewHeight} from './camera-height58.js?v=campus-83';
-import {clearWallSegment,floorHeight,CLASSROOM} from './classroom-layout.js?v=campus-116';
+import {clearWallSegment,floorHeight,CLASSROOM} from './classroom-layout.js?v=campus-117';
 
 export const SURVEILLANCE_RULES=Object.freeze({unlockElapsed:180,cooldown:180,limit:2});
 export const SURVEILLANCE_MOUNTS=Object.freeze([

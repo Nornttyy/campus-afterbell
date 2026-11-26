@@ -2,18 +2,18 @@ import {actorEmote} from './social-actions93.js?v=campus-93';
 import {nextStudentAppearance} from './class-dismissal92.js?v=campus-102';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-92';
-import {reachesSchoolDoor} from './door-interaction54.js?v=campus-116';
-import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-116';
+import {reachesSchoolDoor} from './door-interaction54.js?v=campus-117';
+import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {validComputerPlayback} from './computer-rules55.js?v=campus-96';
-import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-102';
-import {movementScale} from './movement55.js?v=campus-93';
+import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-117';
+import {movementScale,normalWalkSpeed} from './movement55.js?v=campus-117';
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
 const newMemberId=()=>globalThis.crypto.randomUUID?.()??randomToken();
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-116';
-import {TeacherRound} from './teacher-rules.js?v=campus-116';
-import * as Layout from './classroom-layout.js?v=campus-116';
-import {playableCampusMap} from './campus-destinations.js?v=campus-116';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-116';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117';
+import {TeacherRound} from './teacher-rules.js?v=campus-117';
+import * as Layout from './classroom-layout.js?v=campus-117';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
@@ -40,7 +40,7 @@ class SharedRound extends TeacherRound{
    this.room.withMember(member,()=>{
     const p=this.player;if(p.mapActivity?.kind==='plunge'&&Date.now()-member.lastInput>1000)this.releaseMapActivity();if(p.seated||p.mapActivity||this._restrained(p))return;
     if(Date.now()-member.lastInput>500)this._movement={x:0,z:0};
-    const speed=(p.crouched?DEVELOPMENT_TUNING.crouchSpeed:DEVELOPMENT_TUNING.walkSpeed)*movementScale(p,this._movement);
+    const speed=(p.crouched?DEVELOPMENT_TUNING.crouchSpeed:normalWalkSpeed(p,this.map))*movementScale(p,this._movement);
     const next=Layout.moveInRoom(p,this._movement.x*speed*dt,this._movement.z*speed*dt,.18,this.layout);
     Object.assign(p,next);
    });

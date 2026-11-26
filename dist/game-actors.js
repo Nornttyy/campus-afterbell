@@ -5,13 +5,13 @@ import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import {requireModelBudget} from './model-budget64.js';
 import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-111';
 import {writingStroke} from './study-motion64.js?v=campus-108';
-import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-93';
+import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-117';
 import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-116';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-116';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-117';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -602,6 +602,7 @@ export function createDeskHands({createHand}={}){
     if(kind!=='gum')hand.rotateX(.12*reach);
   }
   let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0,using=0,throwCharge=0,releaseCharge=0,wasReleasing=false,foodAge=0,foodAmount=0,foodWasUsing=false,foodPhase=0;
+  let lastThrowGrip=null;
   const foodPose={reach:0,bob:0,chewing:0};
   let penWriteBlend=0,penAge=0,bookBlend=0,drawerBlend=0,lapBlend=0,lowCarry=0,previousHandPositions=null,previousFood=null;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
@@ -609,7 +610,7 @@ export function createDeskHands({createHand}={}){
   function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,examPen=null,mealDish=null,bookAmount=0,trayFood=null,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,coachSeat=null,animationPose=null}={}){
     // User-authored item clips use the preview camera as their coordinate frame.
     // The fitted finger and prop anchors are the same as in ordinary gameplay.
-    if((animationPose?.clipId==='student-carry-food'||animationPose?.clipId==='student-eat-food')&&isHandAnimationPose(animationPose)&&FOOD_ITEM_KINDS.includes(action)&&!caught){
+    if(animationPose&&animationPose.source!=='runtime'&&(animationPose?.clipId==='student-carry-food'||animationPose?.clipId==='student-eat-food')&&isHandAnimationPose(animationPose)&&FOOD_ITEM_KINDS.includes(action)&&!caught){
       arms[1].group.visible=true;active=action;extension=1;lastTime=time;previousHandPositions=null;previousFood=null;
       const camera=group.userData.viewCamera;
       group.position.set(0,0,0);group.quaternion.identity();
@@ -642,7 +643,7 @@ export function createDeskHands({createHand}={}){
       attachToGrip(props[action],arms[0].hand.group,anchor);group.updateMatrixWorld(true);return;
     }
     arms[1].group.visible=true;
-    const authored=isHandAnimationPose(animationPose)&&!seated&&!carrying&&!holding&&!caught&&!computer&&!typing&&!bookAmount;
+    const authored=isHandAnimationPose(animationPose)&&(!carrying||animationPose.source==='runtime'&&/^(student-(walk|idle|crawl))/.test(animationPose.clipId))&&!seated&&!holding&&!caught&&!computer&&!typing&&!bookAmount;
     function applyAuthored(weight){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
       for(let i=0;i<2;i++){
@@ -656,7 +657,7 @@ export function createDeskHands({createHand}={}){
       }
       group.updateMatrixWorld(true);
     }
-    if(authored&&animationPose.source!=='runtime'){
+    if(authored&&!carrying&&animationPose.source!=='runtime'){
       // The editor takes the exact production path but does not run gameplay
       // clocks or damping. Seeking 0→end→middle is identical to a fresh seek.
       group.position.set(0,0,0);group.quaternion.identity();for(const prop of Object.values(props))prop.visible=false;
@@ -665,7 +666,7 @@ export function createDeskHands({createHand}={}){
     }
     group.userData.authoredAnimation=false;
     articulation.forEach(rig=>rig.restore());
-    if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=using=throwCharge=releaseCharge=foodAge=foodAmount=foodPhase=penWriteBlend=penAge=bookBlend=drawerBlend=lapBlend=lowCarry=0,previousHandPositions=null,previousFood=null;wasReleasing=foodWasUsing=false;for(const key of Object.keys(foodPose))foodPose[key]=0;}
+    if(lastTime!==null&&time<lastTime){lastTime=null;focus=extension=alertValue=standing=useTime=using=throwCharge=releaseCharge=foodAge=foodAmount=foodPhase=penWriteBlend=penAge=bookBlend=drawerBlend=lapBlend=lowCarry=0,previousHandPositions=null,previousFood=null;lastThrowGrip=null;wasReleasing=foodWasUsing=false;for(const key of Object.keys(foodPose))foodPose[key]=0;}
     const dt=lastTime===null?1/60:clamp(time-lastTime,0,.08);lastTime=time;
     const requested=DESK_ITEM_KINDS.includes(action)?action:'snack';
     if(requested==='hotpotPlate'||requested==='hotpotBite')setDish(props[requested],mealDish);
@@ -679,12 +680,12 @@ export function createDeskHands({createHand}={}){
       }
       servingLook=dish;
     }
-    if(extension<.001){if(active!==requested){active=requested;useTime=0;}}
+    if(carrying&&(!extension||active!==requested)){active=requested;useTime=0;previousHandPositions=null;previousFood=null;}
     const engaged=carrying&&!caught&&active===requested;
     focus=smooth(focus,engaged&&seated?1:0,dt,7);
     standing=smooth(standing,seated?0:1,dt,9);
     alertValue=smooth(alertValue,clamp(Number(alert)||0,0,1),dt,12);
-    extension=clamp(extension+dt*(engaged?1/.70:-(caught?1/.20:trayFood?1/.70:1/.46)),0,1);
+    extension=engaged?1:0;
     bookBlend=seated&&!caught&&!computer&&!carrying?clamp(Number(bookAmount)||0,0,1):0;
     const drawerAmountNow=clamp(Number(drawerContact?.amount??drawerAmount)||0,0,1);
     drawerBlend=smooth(drawerBlend,seated&&!caught&&!computer&&!bookAmount&&action!=='pen'?drawerAmountNow:0,dt,10);
@@ -712,7 +713,7 @@ export function createDeskHands({createHand}={}){
     const throwable=THROWABLE_ITEM_KINDS.includes(active),motionAction=throwable?'smoke':['lunch','hotpotPlate'].includes(active)?'burger':['chips','noodles','banana','garlic','gum','pen','hotpotBite','wrapper'].includes(active)?'snack':active;
     const releasing=throwable&&throwAge>=0&&throwAge<.34;
     if(releasing&&!wasReleasing)releaseCharge=throwCharge;
-    if(!releasing)throwCharge=smooth(throwCharge,throwable&&engaged?ease(p):0,dt,14);
+    if(!releasing)throwCharge=0;
     wasReleasing=releasing;
     const throwStroke=releasing?Math.sin(Math.PI*ease(throwAge,0,.34)):0;
     const windup=releasing?releaseCharge*(1-ease(throwAge,0,.16)):throwCharge;
@@ -793,7 +794,7 @@ export function createDeskHands({createHand}={}){
         arm.hand.setFingerCurl('Middle',pose.curl+squeeze);arm.hand.setFingerCurl('Pinky',pose.curl+grip*.025+squeeze);
       }
   
-      arm.hand.opposeThumb(grip*(releasing&&i===0?1-ease(throwAge,.035,.12):1)*([...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(active)&&i===1?0:1),active);
+      if(!wholeFit)arm.hand.opposeThumb(grip*(releasing&&i===0?1-ease(throwAge,.035,.12):1)*([...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(active)&&i===1?0:1),active);
     });
     const visible=extension>.62&&!caught;
     for(const kind of THROWABLE_ITEM_KINDS){props[kind].visible=visible&&active===kind&&carrying;attachToGrip(props[kind],arms[0].hand.group,grips[kind]);}
@@ -1060,7 +1061,43 @@ export function createDeskHands({createHand}={}){
       hand.position.sub(prop.position).applyQuaternion(wristTurn).add(translation);
       hand.quaternion.premultiply(wristTurn);prop.quaternion.premultiply(wristTurn);prop.position.copy(translation);
     }
-    if(authored&&extension<.001){applyAuthored(clamp(Number(animationPose.weight)||0,0,1));group.userData.authoredAnimation=true;}
+    if(authored){
+      applyAuthored(carrying?1:clamp(Number(animationPose.weight)||0,0,1));
+      group.userData.authoredAnimation=true;
+      if(engaged){
+        const left=arms[0].hand;
+        left.setCurl(.76);
+        if(!wholeGrips[0].apply(active))left.opposeThumb(.52,active);
+        attachToGrip(props[active],left.group,grips[active]);
+        arms[1].group.visible=true;
+      }
+    }else if(engaged&&active!=='pen'&&active!=='phone'&&active!=='hotpotPlate'){
+      // One camera-facing palm for pocket items. Finger contacts and prop mounts
+      // remain specific to the shape, and the food stays below the desktop.
+      const left=arms[0].hand,prop=props[active];
+      articulation[0].restore();
+      group.updateMatrix();
+      const inv=group.matrix.clone().invert();
+      left.group.quaternion.copy(group.quaternion).invert().multiply(wholeGrips[0].palmUp||carryView(-2.25,.10,-.72));
+      const bob=eating?.029*Math.sin(progress*Math.PI*6):0;
+      const pos=seated&&deskSurface?v(-.275,(drawerContact?.floor??.659)-eyeHeight+.058+bob,-.205):v(-.22,-.57+bob,-.47);
+      left.group.position.copy(pos.applyMatrix4(inv));
+      left.setCurl(.76);
+      if(!wholeGrips[0].apply(active))left.opposeThumb(.52,active);
+      attachToGrip(prop,left.group,grips[active]);
+    }
+    if(engaged&&throwable){
+      group.updateMatrix();
+      const hand=arms[0].hand.group;
+      lastThrowGrip={position:hand.position.clone().applyMatrix4(group.matrix),rotation:group.quaternion.clone().multiply(hand.quaternion)};
+    }else if(releasing&&lastThrowGrip){
+      group.updateMatrix();
+      const hand=arms[0].hand.group,t=ease(throwAge,0,.34),stroke=Math.sin(t*Math.PI);
+      const target=hand.position.clone().applyMatrix4(group.matrix);
+      const rotation=group.quaternion.clone().multiply(hand.quaternion);
+      hand.position.copy(lastThrowGrip.position).lerp(target,t).addScaledVector(v(.055,.08,-.145),stroke).applyMatrix4(group.matrix.clone().invert());
+      hand.quaternion.copy(group.quaternion).invert().multiply(lastThrowGrip.rotation.clone().slerp(rotation,t)).multiply(packetAngle.setFromAxisAngle(v(1,0,0),-.64*stroke));
+    }else lastThrowGrip=null;
   }
   update(0);return{group,update,getExtension:()=>extension,getHand:side=>arms[side==='left'?0:1].hand,getFocus(){return focus;},getDebug(){
     const camera=group.userData.viewCamera||(group.parent?.isCamera?group.parent:null),prop=props[active];

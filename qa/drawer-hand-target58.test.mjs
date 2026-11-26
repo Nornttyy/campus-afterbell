@@ -8,7 +8,7 @@ test('all classroom layouts keep the open tray in front of seated hands without 
   const seats=createSeatLayout(19,pattern,map);
   for(const seat of seats){const player={...seat,seatId:seat.id,seatYaw:seat.yaw,seated:true};
    const target=drawerHandTarget({player,drawer:{open:true},seats,map,amount:1});
-   assert.ok(Math.abs(target.centerX)<1e-9);assert.ok(Math.abs(target.centerZ+.46)<1e-9);
+   assert.ok(Math.abs(target.centerX)<1e-9);assert.ok(Math.abs(target.centerZ+(map==='computer'?.34:.30))<1e-9);
    assert.equal(target.floor,map==='computer'?.620:.659);assert.equal(target.width,map==='computer'?.51:.93);
   }
  }
@@ -25,7 +25,7 @@ test('drawer target travels with the physical tray, and drops when standing or c
  const get=(amount,p=player)=>drawerHandTarget({player:p,drawer:{open:true},seats,map:'classroom',amount});
  const shut=get(0),half=get(.5),open=get(1);
  assert.ok(Math.abs(half.centerZ-(shut.centerZ+open.centerZ)/2)<1e-9);
- assert.ok(Math.abs(open.centerZ-shut.centerZ-.24)<1e-9);
+ assert.ok(Math.abs(open.centerZ-shut.centerZ-.40)<1e-9);
  assert.equal(get(1,{...player,seated:false}),null);assert.equal(get(1,{...player,caught:true}),null);
 });
 

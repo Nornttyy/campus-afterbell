@@ -18,3 +18,6 @@ qa/recordings/
 scripts/models/__pycache__/
 __pycache__/
 qa/.tmp-*
+
+# Private broadcast recordings for loopback play.
+dist/assets/audio/local/

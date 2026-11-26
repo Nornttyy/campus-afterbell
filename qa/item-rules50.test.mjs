@@ -5,8 +5,8 @@ import {TeacherRound} from '../dist/teacher-rules.js';
 import {createSnake,turnSnake,stepSnake,ITEM50_TUNING} from '../dist/item-rules50.js';
 import {OFFICE_CHAIR,TEACHER_SPAWN,BOARD,DETENTION,blocked,createSeatLayout,updateLayoutDoors} from '../dist/classroom-layout.js';
 const DT=1/60;
-function quiet(map='classroom',Round=ClassroomRound){const r=new Round({map,target:1000});r.start();r.player.pitch=.55;r._thinkAt=r._plan.until=Infinity;for(const s of r.students)s._decisionAt=Infinity;if(Round===ClassroomRound){r.teacher.x=40;r.teacher.z=40;}return r;}
-function stock(r,kind){r.player.pitch=.55;r.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};r.player._selectedSlot=0;r.player._drawnSlot=null;r.selected=r.player.action=kind;if(!r.player._drawerOpen)r.toggleDrawer();assert.equal(r.takeSlot(0),true);}
+function quiet(map='classroom',Round=ClassroomRound){const r=new Round({map,target:1000});r.start();r.player.pitch=1.20;r._thinkAt=r._plan.until=Infinity;for(const s of r.students)s._decisionAt=Infinity;if(Round===ClassroomRound){r.teacher.x=40;r.teacher.z=40;}return r;}
+function stock(r,kind){r.player.pitch=1.20;r.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};r.player._selectedSlot=0;r.player._drawnSlot=null;r.selected=r.player.action=kind;if(!r.player._drawerOpen)r.toggleDrawer();assert.equal(r.takeSlot(0),true);}
 function bind(r,p){r.teacher.x=p.x;r.teacher.z=p.z-.9;r._stun(p);assert.ok(r._grab(p));r.teacher.x=DETENTION[0].x;r.teacher.z=DETENTION[0].z-1.1;assert.ok(r._bind(0));r.teacher.x=r.teacher.z=40;}
 
 test('five safe breaths bank points, each later breath has a one-in-five pop risk, and only a pop pays',()=>{
@@ -29,10 +29,8 @@ test('banana takes two seconds and returns one peel, whose floor trap stuns once
  assert.equal(r.hold(true),true);assert.equal(r.releaseUse(),false);assert.equal(r.peels.length,1);const peel=r.peels[0];Object.assign(peel,{x:r.player.x,z:r.player.z,y:.075,armed:true,settled:true});r.step(DT);
  assert.equal(r.player.captivity,'stunned');assert.equal(r.player.seated,false);assert.ok(r.snapshot().player.stunLeft>3.9);assert.equal(r.peels.length,0);r.step(4);assert.equal(r.player.captivity,'free');
 });
-test('garlic arms one five-second straight burp, no auto-fire or extra uses',()=>{
- const r=quiet();stock(r,'garlic');r.hold(true);r.step(2);assert.equal(r.snapshot().player.burpReadyLeft,5);assert.equal(r.burps.length,0);r.setLook(0,0);assert.equal(r.hold(true),true);assert.equal(r.burps.length,1);assert.equal(r.burp(),false);
- const start={...r.burps[0]};for(const s of r.students)if(s!==r.player){s.x=30;s.z=30;}r.step(.2);assert.equal(r.burps[0].x,start.x);assert.ok(Math.abs(r.burps[0].z-start.z-.6)<1e-6);assert.equal(r.burps[0].y,start.y);
- const expired=quiet();stock(expired,'garlic');expired.hold(true);expired.step(8+DT);assert.equal(expired.burp(),false);assert.equal(expired.burps.length,0);
+test('garlic is absent from classroom food actions and leaves no ability to activate',()=>{
+ const r=quiet();assert.equal(CLASSROOM_ACTIONS.garlic,undefined);assert.equal(r.burp(),false);assert.equal(r.burps.length,0);
 });
 test('office stock is only lunch, refills after three seconds and survives leaving the chair',()=>{
  const r=quiet();r.interact();Object.assign(r.player,{x:OFFICE_CHAIR.x,z:OFFICE_CHAIR.z});assert.equal(r.openOfficeDrawer(),true);assert.equal(r.snapshot().drawer.office,true);assert.deepEqual(r.snapshot().drawer.slots.map(s=>s.action),['lunch']);assert.equal(r.takeSlot(0),true);r.hold(true);r.step(2);assert.equal(r.score,3);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);r.interact();r.step(3);assert.equal(r.officeSlots[0].action,'lunch');

@@ -101,14 +101,14 @@ for(const open of [true,false])test(`seed73 held burger: true palm and four fing
  // Match firstperson58-review.html?mode=held, including its actual seed stock.
  const round=createSoloRound({role:'student',seed:73,target:120});round.start();round._advanceTeacher=()=>{};
  for(const student of round.students)student._decisionAt=Infinity;
- round.setLook(round.player.seatYaw||0,.90);round.setBookRaised(false);
+ round.setLook(round.player.seatYaw||0,1.20);round.setBookRaised(false);
  round.player._slots[0].action='burger';assert.equal(round.toggleDrawer(),true);assert.equal(round.takeSlot(0),true);
  assert.equal(round.snapshot().selected,'burger');
  if(!open){
   // A held item cannot close its drawer directly. Use the production stand/
   // return-to-seat path, which preserves the burger and closes the drawer.
   const seat=round.player.seatId;assert.equal(round.interact(),'stood');assert.equal(round.interact(seat),'seated');
-  round.setLook(round.player.seatYaw||0,.90);
+  round.setLook(round.player.seatYaw||0,1.20);
  }
  assert.equal(round.snapshot().drawer.open,open);
  const hands=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});

@@ -4,7 +4,7 @@ import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-83';
 import {hotpotLayout,diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
 import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-94';
 import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-95';
-import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-116';
+import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-117';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-92';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 // Elevator operation is enabled; boarding and per-round limits are authoritative.
@@ -349,7 +349,7 @@ export function layoutDoorSnapshot(context){return schoolDoorSnapshot(context.do
 function rebuildDoorCollisions(context){
  const kind=mapKind(context.map),outdoor=kind==='playground';
  const signature=JSON.stringify([kind,context.elevatorClosed,...SCHOOL_DOOR_IDS.map(id=>context.doorMotion[id].amount)]);if(context._doorCollisionSignature===signature)return context;context._doorCollisionSignature=signature;
- const leaves=SCHOOL_DOOR_IDS.filter(id=>(!outdoor||id==='office')&&(kind!=='dorm'||id==='office')).flatMap(id=>schoolDoorSegments(id,context.doorMotion[id].amount,{doors:DOORS,office:OFFICE}));
+ const leaves=SCHOOL_DOOR_IDS.filter(id=>(kind!=='dorm'||id==='office')).flatMap(id=>schoolDoorSegments(id,context.doorMotion[id].amount,{doors:DOORS,office:OFFICE}));
  if(context.elevatorClosed)leaves.push(liftThreshold());
  const walls=outdoor?outdoorWalls:kind==='dorm'?[...dormCommonWalls,...DORM_CORRIDOR_SOLIDS.filter(s=>s.minY===0),...DORM_SHELL_SOLIDS.filter(s=>s.minY===0)]:baseWalls;
  context._buildingWalls=[...walls,...leaves];

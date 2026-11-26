@@ -1,6 +1,7 @@
+import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117';
 import * as T from './vendor/three.module.js';
-import {createServingDish} from './game-actors.js?v=campus-116';
-import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-116';
+import {createServingDish} from './game-actors.js?v=campus-117';
+import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-117';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {SERVING_BELTS,SERVING_MENU,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92';
 
@@ -165,7 +166,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   const extension=place?(drawerRecords?.get(seat.id)?.open??1):0;
   for(const [id,c]of cards.entries()){
    c.visible=!!(place&&exam&&!exam.complete&&state.drawer?.open&&!exam.mode&&extension>.12);
-   if(c.visible){if(c.parent!==place.desk)place.desk.add(c);c.position.set(id?.17:-.17,.668,-.169-.24*extension);c.material=cardMaterial(exam.cards[id]);}
+   if(c.visible){if(c.parent!==place.desk)place.desk.add(c);c.position.set(id?.17:-.17,.668,-.169-DESK_DRAWER_TRAVEL*extension);c.material=cardMaterial(exam.cards[id]);}
   }
   held.visible=!!(place&&exam?.mode==='card');
   if(held.visible){if(held.parent!==place.desk)place.desk.add(held);held.position.set(.085,.952,-.52);held.rotation.set(-.41,Math.PI,0,'YXZ');if(activeCard!==exam.card){held.material=cardMaterial(exam.card);activeCard=exam.card;}}

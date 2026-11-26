@@ -7,26 +7,26 @@ import {requireModelBudget} from './model-budget64.js';
 import {WRITING_PROPS} from './writing-props58.js?v=campus-83';
 import {WRITING_GRIPS} from './writing-grips58.js?v=campus-83';
 import {THIRD_PALM_PROFILES} from './third-palm-profiles55.js?v=campus-83';
-import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-116';
+import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-117';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
-import {createToiletSeatPose} from './toilet-seat78.js?v=campus-116';
-import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-116';
-import {createBedPose} from './bed-pose78.js?v=campus-116';
-import {createMapActivityPose} from './map-activity-pose77.js?v=campus-116';
+import {createToiletSeatPose} from './toilet-seat78.js?v=campus-117';
+import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-117';
+import {createBedPose} from './bed-pose78.js?v=campus-117';
+import {createMapActivityPose} from './map-activity-pose77.js?v=campus-117';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-116';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117';
 import {propContact} from './prop-assets.js?v=campus-83';
 import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-113';
-import {createCrawlPose} from './crawl-pose.js?v=campus-116';
-import {createStudentGestures} from './student-gestures.js?v=campus-116';
+import {createCrawlPose} from './crawl-pose.js?v=campus-117';
+import {createStudentGestures} from './student-gestures.js?v=campus-117';
 import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-83';
 import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-105';
-import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-93';
+import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} from './pen-motion.js?v=campus-117';
 import {createStudentFaceShape} from './student-face-shape75.js?v=campus-83';
 import {createStudentEyes} from './student-eyes56.js?v=campus-109';
 import {createStudyBook,writingPageY} from './study-book58.js?v=campus-110';
-import {normalWalkCycleRate} from './movement55.js?v=campus-93';
+import {normalWalkCycleRate} from './movement55.js?v=campus-117';
 import {writingStroke,thirdPersonPenTime} from './study-motion64.js?v=campus-108';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 export const STUDENT_ASSETS=Object.freeze({
@@ -453,7 +453,7 @@ export function createRiggedPalm(gltf,side,scale=1,role='student'){
     const curl={Index:.27,Middle:.44,Ring:.57,Pinky:.68}[finger];
     let target;
     if(finger==='Thumb'){
-     target=upright?V(outward*(j?.34:.52),j?.82:.76,j?-.34:-.13):V(outward*(j?.68:.84),j?.74:.50,j?.13:.23);
+     target=upright?V(outward*(j?.30:.44),j?.82:.76,j?-.34:-.13):V(outward*(j?.64:.72),j?.75:.66,j?.12:.18);
     }else{
      target=V(outward*lateral,1,upright?-curl*(j?1:.40):j?-.05:.015);
     }

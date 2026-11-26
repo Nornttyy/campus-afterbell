@@ -20,7 +20,7 @@ test('actual imported and computer trays stay clear of chair triangles and neigh
   const seats=createSeatLayout(73,pattern,map),layout=createLayoutContext(seats),models=seats.map(s=>({s,table:placement(s.deskX,floorHeight(s.deskX,s.deskZ,map),s.deskZ,s.yaw),chair:placement(s.x,floorHeight(s.x,s.z,map),s.z,s.yaw)}));
   syncDrawerCollisions(layout,map,seats.map(s=>({id:s.id,seatId:s.id,seated:true,_drawerOpen:true})));
   for(const [i,entry]of models.entries())for(const open of [0,.25,.5,.75,1]){
-   const local=(map==='computer'?labTray:tray).bounds.clone().translate(new T.Vector3(0,0,-open*.24)),actual=local.applyMatrix4(entry.table),label=`${map}/${pattern}/${entry.s.id}/${open}`;
+   const local=(map==='computer'?labTray:tray).bounds.clone().translate(new T.Vector3(0,0,-open*(map==='computer'?.36:.40))),actual=local.applyMatrix4(entry.table),label=`${map}/${pattern}/${entry.s.id}/${open}`;
    if(open===1)contained(actual,layout.dynamicSolids[i],label);
    for(const other of models){assert.equal(intersects(actual,chair,other.chair),false,label+' through chair '+other.s.id);
     // The drawer naturally occupies its own desk housing; only neighbours

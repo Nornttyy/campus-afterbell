@@ -30,7 +30,7 @@ test('a drawer opened beside a standing player permits gradual outward escape, n
 test('two adjacent opened drawers act as one overlap region, allowing escape between the chairs instead of mutually trapping the player',()=>{
  const f=fixture([seat(0),seat(1,1.28)]);for(const a of f.actors)a._drawerOpen=true;f.sync();let p={x:.64,z:-.78};
  assert.equal(blocked(p.x,p.z,.18,f.layout),true);
- for(let i=0;i<6;i++)p=moveInRoom(p,0,-.03,.18,f.layout);
+ for(let i=0;i<12;i++)p=moveInRoom(p,0,-.03,.18,f.layout);
  assert.ok(Math.abs(p.x-.64)<1e-9);assert.ok(p.z<-.913);assert.equal(blocked(p.x,p.z,.18,f.layout),false);
 });
 
@@ -41,7 +41,7 @@ test('dynamic escape still respects static walls, including when the actor alrea
  // exit remains available without walking into that wall.
  f.layout.walkSolids.pop();f.layout.walkSolids.push({...wall,minX:.80,maxX:.85});let p=initial;
  assert.deepEqual(moveInRoom(p,.03,0,.18,f.layout),p);
- for(let i=0;i<6;i++)p=moveInRoom(p,0,-.03,.18,f.layout);
+ for(let i=0;i<12;i++)p=moveInRoom(p,0,-.03,.18,f.layout);
  assert.ok(p.z<-.913);assert.equal(blocked(p.x,p.z,.18,f.layout),false);
 });
 

@@ -83,7 +83,7 @@ test('outdoor sky, stage heights and one gate agree with movement while corridor
  const up=projectile('playground',c,{x:0,z:0,y:4.35,vx:0,vy:10,vz:0});stepSmokeProjectile(up,.05,c);assert.ok(up.y>4.51&&up.vy>0,'outdoor throw crosses former classroom roof');
  near(floorHeight(stage.x,stage.z-.4,'playground'),.54);assert.equal(blocked(stage.x,stage.z-.4,.18,c),false);
  const falling=projectile('playground',c,{x:stage.x,z:stage.z-.4,y:1,vx:0,vy:-5,vz:0});for(let i=0;i<20;i++)stepSmokeProjectile(falling,.008,c);assert.ok(falling.y>=.54+.07499);
- assert.ok(moveInRoom({x:6.7,z:7},2.8,0,.18,c).x>9,'single outdoor gate reaches corridor');assert.ok(moveInRoom({x:6.7,z:-8},2.8,0,.18,c).x<7.2,'former classroom rear door stays enclosed');
+ assert.ok(moveInRoom({x:6.7,z:7},2.8,0,.18,c).x>9,'single outdoor gate reaches corridor');assert.ok(moveInRoom({x:6.7,z:-8},2.8,0,.18,c).x>9,'rear gate reaches corridor');
  assert.equal(clearWallSegment({x:OFFICE.doorX,z:OFFICE.doorZ+.5},{x:OFFICE.doorX,z:OFFICE.doorZ-1},c),true);updateLayoutDoors(c,{officeLocked:true});assert.equal(clearWallSegment({x:OFFICE.doorX,z:OFFICE.doorZ+.5},{x:OFFICE.doorX,z:OFFICE.doorZ-1},c),false);
  assert.deepEqual(boardForMap('playground'),p.board.writePosition);assert.deepEqual(detentionForMap('playground'),p.posts);assert.equal(boardForMap('classroom'),BOARD);assert.equal(detentionForMap('classroom'),DETENTION);
 });

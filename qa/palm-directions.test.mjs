@@ -28,7 +28,7 @@ test('standing keeps separate snack, phone and smoke wrist orientations',()=>{
     orientations[action]=actor.getHand('left').group.quaternion.clone();
   }
   assert.ok(orientations.snack.angleTo(orientations.phone)>.15,'Standing erased the phone grip');
-  assert.ok(orientations.snack.angleTo(orientations.smoke)>.10,'Standing erased the smoke grip');
+  assert.ok(orientations.snack.angleTo(orientations.smoke)<.01,'Normal carry should use the same palm direction');
 });
 
 test('taking and returning an object turn the palm and flex real finger joints; idle hands settle',()=>{
@@ -78,13 +78,13 @@ test('imported palms keep rigid object contact while taking, standing and lookin
   }
 });
 
-test('smoke charge turns the wrist back, release swings it forward and opens the real fingers',()=>{
+test('click throw holds a steady wrist until release, then swings forward and opens real fingers',()=>{
   const actor=makeHands(),hand=actor.getHand('left'),rig=bones(hand);
   let time=tick(actor,0,120,{action:'smoke',carrying:true,holding:true,progress:0,seated:false});
   const ready=pose(hand);
   for(let i=1;i<=90;i++)actor.update(time+=dt,{action:'smoke',carrying:true,holding:true,progress:i/90,seated:false});
   actor.group.updateMatrixWorld(true);const charged=pose(hand),closed=rig.LeftHandIndex2.quaternion.clone();
-  assert.ok(charged.quaternion.angleTo(ready.quaternion)>.35,'Charging does not turn the wrist back');
+  assert.ok(charged.quaternion.angleTo(ready.quaternion)<.01,'Click throw should keep a steady grip');
   let previous=charged,maxTurn=0,maxStep=0,forwardTurn=0,openTurn=0;
   for(let i=0;i<36;i++){
     actor.update(time+=dt,{action:'smoke',carrying:false,holding:false,progress:0,seated:false,throwAge:i*dt});actor.group.updateMatrixWorld(true);
@@ -98,7 +98,7 @@ test('smoke charge turns the wrist back, release swings it forward and opens the
   assert.ok(maxStep<.10,`Throw jumps palm ${maxStep} m in one frame`);
 });
 
-for(const seated of [true,false])test(`food use reaches centre, bobs and returns while the other hand rests (${seated?'seated':'standing'})`,()=>{
+for(const seated of [true,false])test(`food use stays low, bobs and returns while the other hand rests (${seated?'seated':'standing'})`,()=>{
   const actor=makeHands(),food=actor.group.getObjectByName('snack-packet'),other=actor.getHand('right');
   let time=tick(actor,0,120,{action:'snack',carrying:true,holding:false,seated});
   const positions=[],empty=pose(other);
@@ -107,7 +107,7 @@ for(const seated of [true,false])test(`food use reaches centre, bobs and returns
     const current=pose(other);assert.ok(current.position.distanceTo(empty.position)<.00001);assert.ok(current.quaternion.angleTo(empty.quaternion)<.00001);
   }
   const range=axis=>Math.max(...positions.map(p=>p[axis]))-Math.min(...positions.map(p=>p[axis]));
-  assert.ok(Math.abs(positions[90].x)<.025,'Food did not reach screen centre');
-  assert.ok(range('y')>.075,'Food has no visible eating strokes');
+  assert.ok(positions.every(p=>p.x<-.06),'Food must stay beside the player');
+  assert.ok(range('y')>.045,'Food has no visible eating strokes');
   assert.ok(positions.at(-1).distanceTo(positions[0])<.002,'The complete gesture did not return to carry');
 });

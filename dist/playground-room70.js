@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
-import {createDeskItem} from './game-actors.js?v=campus-116';
-import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-116';
-export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-116';
+import {createDeskItem} from './game-actors.js?v=campus-117';
+import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117';
+export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-117';
 
 // The reference has an OPEN sports ground, not desks standing on a green floor.
 // The track, bars and vending machines share their placement with the rules.
@@ -137,7 +137,7 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  const centerCircle=new T.RingGeometry(1.36,1.42,64);add(centerCircle,white,[t.cx,.009,t.cz],[-Math.PI/2,0,0]);centerCircle.dispose();
  // Painted straight start line on the track. All three lanes retain real width.
  box(white,[t.cx+t.innerRadius+(t.outerRadius-t.innerRadius)/2,.009,t.cz-t.straightHalf*.55],[t.outerRadius-t.innerRadius,.004,.075]);
- const c=layout.connector;box(concrete,[(c.minX+c.maxX)/2,-.06,(c.minZ+c.maxZ)/2],[c.maxX-c.minX,.12,c.maxZ-c.minZ]);
+ for(const gate of [layout.entrance,layout.rearEntrance])box(concrete,[b.maxX+.10,-.06,gate.z],[.20,.12,gate.width]);
  const wallSections=layout.colliders.filter(c=>c.id.includes('-wall'));
  for(const w of wallSections){
   box(wall,[(w.minX+w.maxX)/2,1.04,(w.minZ+w.maxZ)/2],[w.maxX-w.minX,2.08,w.maxZ-w.minZ]);
@@ -235,6 +235,8 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
   const pickup=new T.Group();pickup.name=machine.id+'-pickup';pickup.visible=false;pickup.rotation.y=yaw;group.add(pickup);
   vendingTargets.set(machine.id,{machine,button,pickup,front,ground,yaw,models:new Map(),action:null,baseY:0});
   mb(dark,[-.12,.39,d/2+.03],[.63,.19,.025]);mb(frame,[-.12,.29,d/2+.08],[.68,.06,.16]);
+  for(const sx of [-1,1])for(const sz of [-1,1])mb(dark,[sx*(w/2-.09),.04,sz*(d/2-.07)],[.115,.08,.095]);
+  for(const sy of [.23,h-.23])mb(frame,[-w/2-.008,sy,.0],[.016,.065,d*.78]);
   for(let slat=0;slat<6;slat++)mb(dark,[-.34+slat*.13,.17,d/2+.032],[.075,.02,.012]);
  }
  if(includeBackground){
@@ -249,7 +251,7 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
    [b.minX-5,b.maxZ-10,5.6,4.2,13],[b.minX-10,b.maxZ-5,6.1,4.8,17],
    [t.cx-12,b.minZ-9,7.1,4.8,12],[t.cx-6,b.minZ-12,4.2,4.5,9],
    [t.cx+9,b.maxZ+8,5.2,4.6,20],[t.cx+15,b.maxZ+13,6.8,4.2,15],
-   [b.maxX+6,b.maxZ-5,4.6,4.1,8]
+   [b.maxX+16,b.minZ+4,4.6,4.1,8]
   ].map(([x,z,w,d,h],seed)=>({x,z,w,d,h,seed}));
   for(const a of buildings){
    const cm=city[a.seed%city.length];box(cm,[a.x,a.h/2-1,a.z],[a.w,a.h,a.d]);box(cap,[a.x,a.h-.93,a.z],[a.w+.14,.16,a.d+.14]);

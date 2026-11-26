@@ -36,7 +36,7 @@ test('drawing, clicking to add ingredients, cooking and eating are separate phys
   lookAtPot(r,p,pot);assert.equal(r.hold(true),true);assert.equal(r.hold(true),false);assert.equal(pot.pieces.length,HOTPOT_RECIPES[dish]);assert.equal(r.score,0);
   const id=pot.pieces[0].id;assert.equal(r.takeCookedPiece(pot.id,id),false);r.step(9.8);assert.equal(r.takeCookedPiece(pot.id,id),false);r.step(.25);
   assert.equal(r.takeCookedPiece(pot.id,id),true);assert.equal(r.returnItem(),true);assert.equal(r.takeCookedPiece(pot.id,id),true);
-  p.pitch=0;r.hold(true);r.step(2.1);assert.equal(r.score,0);p.pitch=.55;r.step(2.1);assert.equal(r.score,1);assert.equal(r.takeCookedPiece(pot.id,id),false);
+  p.pitch=0;r.hold(true);r.step(2.1);assert.equal(r.score,0);p.pitch=1.20;r.step(2.1);assert.equal(r.score,1);assert.equal(r.takeCookedPiece(pot.id,id),false);
  }
 });
 test('two guests share one pot, cannot take raw food or double-claim the last piece',()=>{
@@ -83,7 +83,7 @@ test('28 restroom stalls seat 20 individual classmates with independent doors an
 test('restroom snacks leave a wrapper; flushing a phone or wrapper rolls for a clog and never scores twice',()=>{
  for(const [item,roll,clogs] of [['snack',.10,true],['phone',.15,false]]){
   const r=createSoloRound({map:'toilet',seed:6});r.start();const p=r.player,id=p.seatId;r._perceive=()=>{};
-  p._slots[0].action=item;r.setDrawerOpen(true);r.takeSlot(0);r.setLook(p.yaw,.80);
+  p._slots[0].action=item;r.setDrawerOpen(true);r.takeSlot(0);r.setLook(p.yaw,1.20);
   if(item==='snack'){r.hold(true);r.step(2.05);assert.equal(r.snapshot().selected,'wrapper');assert.equal(r.hold(true),false);}
   const score=r.score;assert.equal(r.dropIntoToilet((id+1)%r.seats.length),false);
   r._drawerRoll=()=>roll;assert.equal(r.dropIntoToilet(id),true);assert.equal(r.toiletClogs[id],clogs);

@@ -24,7 +24,7 @@ function fixture({map='classroom',teacher=false,drawerPitch=null}={}){
  const send=(type,props={})=>{const e=new Event(type,{cancelable:true});for(const[k,v]of Object.entries(props))Object.defineProperty(e,k,{value:v});doc.dispatchEvent(e);};
  const advance=seconds=>{for(let left=seconds;left>1e-9;){const dt=Math.min(1/60,left);left-=dt;now+=dt*1000;const pending=[...frames.values()];frames.clear();for(const fn of pending)fn(now);}};
  return{round,commands,sounds,worldEffects,setPlayback:value=>playback=value,setAxes:value=>axes={...axes,...value},get rendered(){return rendered;},element:doc.querySelector,advance,send,mouse:pressed=>send(pressed?'mousedown':'mouseup',{button:0}),key:code=>{send('keydown',{code});send('keyup',{code});},target:t=>target=t,
-  take(kind){round.player.pitch=.55;round.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};round.player._selectedSlot=0;round.player._drawnSlot=null;round.selected=round.player.action=kind;target={kind:'desk'};if(!round.player._drawerOpen)this.key('KeyE');target={kind:'item',slot:0};this.key('KeyE');target=null;assert.equal(round.snapshot().drawer.drawnSlot,0);},
+  take(kind){round.player.pitch=1.20;round.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};round.player._selectedSlot=0;round.player._drawnSlot=null;round.selected=round.player.action=kind;target={kind:'desk'};if(!round.player._drawerOpen)this.key('KeyE');target={kind:'item',slot:0};this.key('KeyE');target=null;assert.equal(round.snapshot().drawer.drawnSlot,0);},
   close(){game.dispose();for(const[name,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name];}}
  };
 }
@@ -54,9 +54,8 @@ test('bound mouse hold stays at four circles, and release without contact launch
   assert.equal(f.element('#use-progress').attrs['aria-valuenow'],'100');assert.equal(f.element('#use-progress').style.width,'106px');assert.equal(f.rendered.player.bubble.cycles,4);assert.equal(r.bubbles.length,0);f.mouse(false);assert.equal(f.rendered.bubbles.length,1);assert.equal(f.rendered.bubbles[0].kind,'orange');assert.equal(f.rendered.player.bubble.progress,0);
  }finally{f.close();}
 });
-test('production food input converts banana to a throwable peel and garlic to a five-second click ability',()=>{
+test('production food input converts banana to a throwable peel on the next click',()=>{
  const f=fixture();try{f.take('banana');f.mouse(true);f.advance(2);assert.equal(f.rendered.selected,'bananaPeel');assert.equal(f.rendered.drawer.drawnSlot,0);f.mouse(false);assert.equal(f.round.peels.length,0);f.mouse(true);f.mouse(false);assert.equal(f.rendered.peels.length,1);assert.equal(f.rendered.drawer.drawnSlot,null);
-  f.take('garlic');f.mouse(true);f.advance(2);assert.equal(f.rendered.player.burpReadyLeft,5);assert.equal(f.round.burps.length,0);f.mouse(false);f.mouse(true);assert.equal(f.rendered.burps.length,1);assert.equal(f.rendered.player.burpReadyLeft,0);f.mouse(false);
  }finally{f.close();}
 });
 test('E takes a harmless twirling pen, toggles writing, and Q returns without opening storage',()=>{
@@ -84,7 +83,7 @@ test('teacher production left click requires but does not consume stamina and ke
 
 
 test('production mouse release clears a partly eaten meal, raised head pauses, and low head resumes only while held',()=>{
- const f=fixture();try{f.take('burger');f.round.setLook(0,0);f.mouse(true);f.advance(1);assert.equal(f.rendered.actionProgress,0);assert.equal(f.rendered.player.eating,false);f.round.setLook(0,.55);f.advance(1);assert.ok(f.rendered.actionProgress>.30);f.round.setLook(0,.1);const before=f.round.snapshot().actionProgress;f.advance(.5);assert.equal(f.rendered.actionProgress,before);f.mouse(false);assert.equal(f.round.snapshot().actionProgress,0);f.round.setLook(0,.55);f.mouse(true);f.advance(3);assert.equal(f.round.score,1);f.mouse(false);assert.equal(f.sounds.filter(([kind])=>kind==='food-complete').length,1);assert.equal(f.worldEffects.filter(e=>e.type==='food-complete').length,1);}finally{f.close();}
+ const f=fixture();try{f.take('burger');f.round.setLook(0,0);f.mouse(true);f.advance(1);assert.equal(f.rendered.actionProgress,0);assert.equal(f.rendered.player.eating,false);f.round.setLook(0,1.20);f.advance(1);assert.ok(f.rendered.actionProgress>.30);f.round.setLook(0,.1);const before=f.round.snapshot().actionProgress;f.advance(.5);assert.equal(f.rendered.actionProgress,before);f.mouse(false);assert.equal(f.round.snapshot().actionProgress,0);f.round.setLook(0,1.20);f.mouse(true);f.advance(3);assert.equal(f.round.score,1);f.mouse(false);assert.equal(f.sounds.filter(([kind])=>kind==='food-complete').length,1);assert.equal(f.worldEffects.filter(e=>e.type==='food-complete').length,1);}finally{f.close();}
 });
 test('WASD, Enter and the touch stick operate a focused monitor without moving the player',()=>{
  const f=fixture({map:'computer'});try{
@@ -193,7 +192,7 @@ test('saved custom controls drive real interactions, keyboard use, return and cr
  const original=Object.getOwnPropertyDescriptor(globalThis,'localStorage');
  Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:()=>JSON.stringify({keys:{interact:'KeyF',return:'KeyR',use:'Space',crawl:'KeyC'}})}});
  const f=fixture();try{
-  f.round.player.pitch=.55;f.round.player._slots[0]={id:0,action:'burger',progress:0,readyAt:0};f.round.player._selectedSlot=0;f.round.player._drawnSlot=null;f.round.selected=f.round.player.action='burger';
+  f.round.player.pitch=1.20;f.round.player._slots[0]={id:0,action:'burger',progress:0,readyAt:0};f.round.player._selectedSlot=0;f.round.player._drawnSlot=null;f.round.selected=f.round.player.action='burger';
   f.target({kind:'desk'});f.key('KeyE');assert.equal(f.round.player._drawerOpen,false,'old E binding still executes');f.key('KeyF');assert.equal(f.round.player._drawerOpen,true);
   f.target({kind:'item',slot:0});f.key('KeyF');assert.equal(f.round.snapshot().drawer.drawnSlot,0);
   f.mouse(true);f.advance(.2);f.mouse(false);assert.equal(f.round.snapshot().actionProgress,0,'mouse still consumes while Use is bound to Space');

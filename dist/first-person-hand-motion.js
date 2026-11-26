@@ -1,7 +1,7 @@
 import {TEXTBOOK,bookAngle,bookSpineHeight,BOOK_PAPER_FACE} from './study-book58.js?v=campus-110';
 import * as T from './vendor/three.module.js';
 import {FIRST_PERSON_PEN_FITS} from './first-person-pen-fit58.js?v=campus-83';
-import {createPenFingerContact} from './pen-motion.js?v=campus-93';
+import {createPenFingerContact} from './pen-motion.js?v=campus-117';
 
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const ease=(t,a,b)=>T.MathUtils.smootherstep(t,a,b);
@@ -115,10 +115,7 @@ export function createFirstPersonHandMotion(hand,side){
      // The source forearm is deliberately short. Bringing it nearer keeps
      // its open sleeve below the lower frame while the food reaches centre;
      // moving the same crop upwards at carry depth made a floating cut wrist.
-     const camera=parent.userData.viewCamera,anchor=camera||parent.parent;
-     const goal=camera?V(-.080,-.095+bob*.65,-.415):V(-.015,-.145+bob,-.42);
-     if(anchor)anchor.localToWorld(goal);
-     const wanted=baseProp.lerp(goal,reach);prop.updateWorldMatrix(true,false);
+     const wanted=baseProp.clone().add(V(0,bob*.35,0));
      const travel=wanted.sub(prop.getWorldPosition(V()));
      const local=parent.worldToLocal(travel).sub(parent.worldToLocal(V()));root.position.add(local);prop.position.add(local);
     }

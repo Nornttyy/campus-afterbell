@@ -38,14 +38,14 @@ test('all eighteen sesame seeds are visible above the actual upper bun mesh',()=
 });
 
 const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
-for(const kind of THROWABLE_ITEM_KINDS)test(`${kind}: imported first-person palm maintains grip, winds up and opens on both quick and charged release`,()=>{
+for(const kind of THROWABLE_ITEM_KINDS)test(`${kind}: imported first-person palm maintains grip before a click throw and opens on release`,()=>{
  for(const charge of [0,1]){
   const actor=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)}),hand=actor.getHand('left'),prop=actor.group.getObjectByName(names[kind]);let t=0,anchor;
   for(let i=0;i<120;i++){actor.update(t+=1/60,{action:kind,carrying:true,holding:true,progress:charge});actor.group.updateMatrixWorld(true);if(prop.visible){const relative=new T.Matrix4().copy(hand.group.matrixWorld).invert().multiply(prop.matrixWorld);if(anchor)assert.ok(relative.elements.every((n,j)=>Math.abs(n-anchor.elements[j])<.0001),'object slipped away from palm');else anchor=relative.clone();}}
-  assert.ok(prop.visible);const closed=hand.indexTip().y,previous=hand.group.position.clone();let open=-Infinity,maxStep=0;
+  assert.ok(prop.visible);const closed=hand.indexTip().y,previous=hand.group.getWorldPosition(V());let open=-Infinity,maxStep=0;
   for(let i=0;i<25;i++){
    actor.update(t+=1/60,{action:kind,carrying:false,holding:false,progress:0,throwAge:i/60});
-   assert.equal(prop.visible,false,'a second projectile remains stuck in hand');maxStep=Math.max(maxStep,previous.distanceTo(hand.group.position));previous.copy(hand.group.position);
+   assert.equal(prop.visible,false,'a second projectile remains stuck in hand');const wrist=hand.group.getWorldPosition(V());maxStep=Math.max(maxStep,previous.distanceTo(wrist));previous.copy(wrist);
    if(i>=7&&i<=13)open=Math.max(open,hand.indexTip().y);
   }
   assert.ok(open>closed+.012,`${kind}/${charge}: real index skin did not open (${closed}→${open})`);assert.ok(maxStep<.11,`release snapped ${maxStep}`);

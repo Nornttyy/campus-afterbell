@@ -12,7 +12,7 @@ import {STUDENT_PROPORTIONS} from '../dist/student-proportions73.js';
 
 function quiet(map){const r=new ClassroomRound({map,target:10000});r.start();r._advanceTeacher=()=>{};r._perceive=()=>{};r._hear=()=>{};for(const a of r.students)if(a!==r.player){a.isTeammate=false;a._profile=null;a._slots=[];}return r;}
 function clearSeat(r,id){const a=r.students.find(s=>s!==r.player&&s.seatId===id);if(a)Object.assign(a,{x:9,z:4,seated:false,seatId:null,bedId:null,lying:false,visible:false});}
-function food(r){Object.assign(r.player._slots[0],{action:'burger',progress:0,readyAt:0});assert.equal(r.setDrawerOpen(true),true);assert.equal(r.takeSlot(0),true);r.setLook(r.player.yaw,.55);assert.equal(r.hold(true),true);}
+function food(r){Object.assign(r.player._slots[0],{action:'burger',progress:0,readyAt:0});assert.equal(r.setDrawerOpen(true),true);assert.equal(r.takeSlot(0),true);r.setLook(r.player.yaw,1.20);assert.equal(r.hold(true),true);}
 
 test('all eight modes initialize finite actor snapshots; legacy saved map names retain their mode',()=>{
  for(const map of ['classroom','night','tiered','computer','hotpot','toilet','dorm','playground','computer7','tiered8']){const r=quiet(map),s=r.step(.05);assert.equal(s.map,map);assert.ok(s.students.length>=12);assert.ok(Number.isFinite(s.player.supportHeight+s.player.eyeHeight));assert.equal(s.drawer.slots.length,map==='playground'?0:map.startsWith('computer')?1:map==='dorm'?2:3);}
@@ -98,7 +98,7 @@ test('vending cancels on early release, keeps every drop and scores on eating',(
  assert.ok(r.setFixtureUse(v.id));r.step(1.9);r.setFixtureUse(null);r.step(.3);assert.equal(r.groundItems.size,0);
  for(let i=0;i<4;i++){assert.ok(r.setFixtureUse(v.id));r.step(2);}
  assert.equal(r.snapshot().groundItems.length,4);assert.equal(r.score,0);
- const item=r.snapshot().groundItems[0];Object.assign(p,{x:item.x,z:item.z});assert.ok(r.takeGroundItem(item.id));assert.ok(r.hold(true));r.setLook(0,.7);r.step(2.1);assert.equal(r.score,1);
+ const item=r.snapshot().groundItems[0];Object.assign(p,{x:item.x,z:item.z});assert.ok(r.takeGroundItem(item.id));assert.ok(r.hold(true));r.setLook(0,1.20);r.step(2.1);assert.equal(r.score,1);
 });
 
 test('hotpot chalk hits all four rotated books and the actual full pot, with no phantom outdoor desktop',()=>{

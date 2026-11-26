@@ -18,7 +18,7 @@ test('public tracks are bundled AAC recordings with a marching default',async()=
   const data=await readFile(new URL('../dist/assets/audio/'+song.id+'.m4a',import.meta.url));
   assert.ok(data.length>300000);assert.ok(data.subarray(0,40).includes(Buffer.from('ftyp')));
  }
- const a=radioAnchor('playground'),target={kind:'radio'},s={...state(),player:{x:a.x,z:a.z-.9},role:'student'};
+ const a=radioAnchor('playground'),target={kind:'radio'},s={...state(),player:{x:a.x,z:a.z+.9},role:'student'};
  assert.deepEqual(interactionIntent(s,target,'E'),{method:'setFixtureUse',args:['radio'],label:'换歌',hold:true});
  assert.equal(interactionIntent({...s,radio:station},target,'E'),null);
  assert.equal(interactionIntent({...s,role:'teacher',radio:station},target,'Q').method,'changeRadio');

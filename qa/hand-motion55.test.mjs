@@ -38,7 +38,7 @@ for(const [kind,fit]of Object.entries(WHOLE_PALM_PROFILES))test(`${kind}: every 
 test('effective eating pauses when looking up, release returns to carry and a new press restarts the lift',()=>{
  const h=make(),prop=h.group.getObjectByName('snack-packet');let time=0;const step=o=>h.update(time+=DT,{action:'snack',carrying:true,freeLook:true,...o});
  for(let i=0;i<120;i++)step({});const carry=prop.getWorldPosition(V());
- for(let i=0;i<90;i++)step({holding:true,eating:true,progress:i/180});assert.ok(prop.getWorldPosition(V()).distanceTo(carry)>.10);
+ let stroke=0;for(let i=0;i<90;i++){step({holding:true,eating:true,progress:i/180});stroke=Math.max(stroke,prop.getWorldPosition(V()).distanceTo(carry));}assert.ok(stroke>.022&&stroke<.06);
  for(let i=0;i<90;i++)step({holding:true,eating:false,progress:.5});assert.ok(prop.getWorldPosition(V()).distanceTo(carry)<.002,'looking up continues eating');
  for(let i=0;i<60;i++)step({holding:false,eating:false,progress:0});assert.equal(h.getDebug().foodPhase,0);
  step({holding:true,eating:true,progress:0});assert.equal(h.getDebug().foodPhase,0);assert.ok(prop.getWorldPosition(V()).distanceTo(carry)<.002,'new press resumes the old chewing phase');

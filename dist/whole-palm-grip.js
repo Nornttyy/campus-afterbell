@@ -1,6 +1,6 @@
 import {FIRST_PERSON_FOOD_FITS} from './first-person-packet-grips112.js?v=campus-114';
 import * as T from './vendor/three.module.js';
-import {createFingerRig,handFrame} from './hand-motion.js?v=campus-116';
+import {createFingerRig,handFrame} from './hand-motion.js?v=campus-117';
 import {WHOLE_PALM_PROFILES} from './whole-palm-profiles54.js?v=campus-112';
 const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
 
@@ -11,9 +11,12 @@ export function createWholePalmGrip(hand,side){
  const prefix=side<0?'Left':'Right';if(!bones[prefix+'Hand']||side>0||hand.group.userData.characterRole==='teacher')return{fit:()=>null,apply:()=>false};
  hand.setCurl(0);hand.group.updateMatrixWorld(true);const rig=createFingerRig(hand.group,bones,prefix),frame=handFrame(bones,prefix),chains={};
  for(const finger of ['Index','Middle','Pinky','Thumb','Ring']){const digits=rig.digits.filter(d=>d.finger===finger),inverse=digits[0].bone.getWorldQuaternion(Q()).invert();chains[finger]={digits,spread:frame.normal.clone().applyQuaternion(inverse),opposition:frame.along.clone().applyQuaternion(inverse)};}
+ const local=hand.group.getWorldQuaternion(Q()).invert();
+ const axes=(y,z)=>{const up=y.clone().normalize(),back=z.clone().addScaledVector(up,-z.dot(up)).normalize();return Q().setFromRotationMatrix(new T.Matrix4().makeBasis(V().crossVectors(up,back),up,back));};
+ const palmUp=axes(new T.Vector3(.82,.10,-.44),new T.Vector3(-.20,-.78,-.55)).multiply(axes(frame.along,frame.normal).premultiply(local).invert());
  const profileFor=kind=>FIRST_PERSON_FOOD_FITS[kind]||WHOLE_PALM_PROFILES[kind]||null;
  return {
-  fit:profileFor,
+  fit:profileFor,palmUp,
   apply(kind,weight=1){const fit=profileFor(kind);if(!fit)return false;
    for(const [finger,angles]of Object.entries(fit.profile)){const chain=chains[finger];for(const [i,d]of chain.digits.entries()){const target=d.rest.clone().multiply(Q().setFromAxisAngle(d.axis,angles[i]));if(i===0){target.multiply(Q().setFromAxisAngle(chain.spread,angles[3]||0));if(finger==='Thumb')target.multiply(Q().setFromAxisAngle(chain.opposition,angles[4]||0));}d.bone.quaternion.slerp(target,weight);}}
    return true;

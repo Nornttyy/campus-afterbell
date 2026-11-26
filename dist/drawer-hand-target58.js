@@ -1,4 +1,8 @@
-import {mapKind,OFFICE_DESKS} from './classroom-layout.js?v=campus-116';
+import {mapKind,OFFICE_DESKS} from './classroom-layout.js?v=campus-117';
+
+export const DESK_DRAWER_TRAVEL=.40;
+export const LAB_DRAWER_TRAVEL=.36;
+export const DRAWER_LOOK_PITCH=1.18;
 
 // Both directions retrace the same rail. The hand arrives before the tray
 // travels and lets go after it stops, including when a slide is reversed.
@@ -20,7 +24,7 @@ export function drawerHandTarget({player,drawer,seats,map,amount=0,geometry=null
  if(!desk)return null;
  const a=Math.max(0,Math.min(1,amount)),yaw=desk.yaw||0;
  const coach=map==='bus'&&!office,upper=coach&&desk.busDeck===1;
- const localZ=coach?-(upper?.37:0)-.12-.18*a:office?-.08-.52*a:-.08-.24*a;
+ const localZ=coach?-(upper?.37:0)-.12-.18*a:office?-.08-.52*a:-.08-(computer?LAB_DRAWER_TRAVEL:DESK_DRAWER_TRAVEL)*a;
  const trayX=office?(geometry?.x||0):0;
  const dx=(office?desk.x:desk.deskX)+Math.cos(yaw)*trayX+Math.sin(yaw)*localZ-player.x;
  const dz=(office?desk.z:desk.deskZ)-Math.sin(yaw)*trayX+Math.cos(yaw)*localZ-player.z;

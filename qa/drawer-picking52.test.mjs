@@ -49,8 +49,8 @@ test('direct visible surfaces win over nearby bounds and blocked surfaces cannot
  const f=fixture();f.castAt(1);const original=f.targets[0].bounds.clone();f.targets[0].bounds.expandByScalar(.4);assert.equal(pickDrawerItem(f.ray,f.targets,[f.body,f.host]),1,'exact middle hit takes priority over larger bounds');f.targets[0].bounds.copy(original);
  const wall=new T.Mesh(new T.BoxGeometry(.4,.4,.03),new T.MeshBasicMaterial());wall.position.copy(f.origin).addScaledVector(f.ray.ray.direction,.45);wall.lookAt(f.origin);wall.updateMatrixWorld(true);assert.equal(pickDrawerItem(f.ray,f.targets,[f.body,f.host,wall]),null);
 });
-test('real geometry selection drives take/use/return and garlic five-second burp',()=>{
- const f=fixture(),r=new ClassroomRound({target:1000});r.start();r.player.pitch=.55;r.teacher.x=r.teacher.z=40;r._thinkAt=r._plan.until=Infinity;for(const s of r.students)s._decisionAt=Infinity;
- r.player._slots=Array.from({length:3},(_,id)=>({id,action:'garlic',progress:0,readyAt:0}));r.player._drawnSlot=null;r.player._drawerOpen=true;
- assert.equal(r.takeSlot(f.castAt(1,V(.04,0,0))),true);assert.equal(r.snapshot().drawer.drawnSlot,1);assert.equal(r.returnItem(),true);assert.equal(r.takeSlot(f.castAt(0)),true);r.hold(true);r.step(2);assert.equal(r.snapshot().player.burpReadyLeft,5);assert.equal(r.snapshot().completed.garlic,1);
+test('real geometry selection drives take/use/return and food completion',()=>{
+ const f=fixture({kind:'banana'}),r=new ClassroomRound({target:1000});r.start();r.player.pitch=1.20;r.teacher.x=r.teacher.z=40;r._thinkAt=r._plan.until=Infinity;for(const s of r.students)s._decisionAt=Infinity;
+ r.player._slots=Array.from({length:3},(_,id)=>({id,action:'banana',progress:0,readyAt:0}));r.player._drawnSlot=null;r.player._drawerOpen=true;
+ assert.equal(r.takeSlot(f.castAt(1,V(.04,0,0))),true);assert.equal(r.snapshot().drawer.drawnSlot,1);assert.equal(r.returnItem(),true);assert.equal(r.takeSlot(f.castAt(0)),true);r.hold(true);r.step(2);assert.equal(r.snapshot().selected,'bananaPeel');assert.equal(r.snapshot().completed.banana,1);
 });

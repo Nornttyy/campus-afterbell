@@ -27,7 +27,7 @@ function fixture(yaw=0,kind='burger'){
  const cast=()=>{scene.updateMatrixWorld(true);const centre=new T.Box3().setFromObject(object,true).getCenter(V());ray.set(origin,centre.sub(origin).normalize());return pickDrawerItem(ray,[target],[variants.group]);};
  return{scene,variants,drawer,station,slot,object,target,state,ray,origin,settle,cast,dispose(){variants.dispose();const materials=new Set();scene.traverse(o=>{o.geometry?.dispose();if(o.material)materials.add(o.material);});for(const m of materials)m.dispose();}};
 }
-function quiet(map='computer',seed=73){const round=new ClassroomRound({map,seed,target:10000});round.start();round.player.pitch=.9;round._advanceTeacher=()=>{};round._perceive=()=>{};for(const actor of round.students)actor._decisionAt=Infinity;return round;}
+function quiet(map='computer',seed=73){const round=new ClassroomRound({map,seed,target:10000});round.start();round.player.pitch=1.20;round._advanceTeacher=()=>{};round._perceive=()=>{};for(const actor of round.students)actor._decisionAt=Infinity;return round;}
 function key(round,target,code){const intent=interactionIntent(round.snapshot(),target,code);return intent?round[intent.method](...intent.args):false;}
 
 test('computer storage draws one food at creation and every refill, while ordinary and office stock keep their own pools',()=>{
@@ -82,7 +82,7 @@ test('twenty/thirty-seat layouts, reversed seats and remote drawer states keep i
    const seats=createSeatLayout(73,pattern);f.variants.setSeats(seats);assert.equal([...f.variants.stations.values()].filter(o=>o.visible).length,seats.length);
    const seat=seats.find(s=>s.yaw===Math.PI)||seats[2],drawer=f.variants.drawers.get(seat.id),station=f.variants.stations.get(seat.id);
    for(let i=0;i<90;i++)f.variants.updateDrawers({player:{id:99,seated:false},students:[{id:2,seatId:seat.id,seated:true,drawerOpen:true}]},DT);
-   station.updateWorldMatrix(true,true);const p=drawer.group.getWorldPosition(V());assert.ok(Math.abs(p.x-(seat.deskX-Math.sin(seat.yaw)*.24))<1e-5);assert.ok(Math.abs(p.z-(seat.deskZ-Math.cos(seat.yaw)*.24))<1e-5);
+   station.updateWorldMatrix(true,true);const p=drawer.group.getWorldPosition(V());assert.ok(Math.abs(p.x-(seat.deskX-Math.sin(seat.yaw)*.36))<1e-5);assert.ok(Math.abs(p.z-(seat.deskZ-Math.cos(seat.yaw)*.36))<1e-5);
    assert.deepEqual(station.scale.toArray(),[1,1,1]);assert.deepEqual(drawer.group.scale.toArray(),[1,1,1]);
    assert.ok([...f.variants.drawers].filter(([id])=>id!==seat.id).every(([,d])=>d.open<1e-5),'other drawers close independently');
   }

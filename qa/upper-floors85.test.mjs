@@ -92,7 +92,7 @@ test('the chicken bucket and layer cake keep the same appearance on the belt and
   const mesh=createServingDish(dish);assert.equal(mesh.name,dish);let triangles=0;
   mesh.traverse(o=>{if(o.isMesh)triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;});assert.ok(triangles>0&&triangles<=8000);
   Object.assign(r.player,{seated:false,x:p.x+.8,z:p.z});assert.equal(r.takeMeal(id),true);assert.equal(r.snapshot().drawer.source.dish,dish);
-  r.setLook(0,.9);assert.equal(r.hold(true),true);r.step(2.05);assert.equal(r.snapshot().drawer.drawnSlot,null);
+  r.setLook(0,1.20);assert.equal(r.hold(true),true);r.step(2.05);assert.equal(r.snapshot().drawer.drawnSlot,null);
  }
  assert.equal(r.score,2);
 });

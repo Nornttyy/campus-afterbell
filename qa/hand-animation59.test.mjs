@@ -54,7 +54,7 @@ test('empty standing student and teacher select their own idle, never a standing
   assert.equal(selectHandAnimationClip({role,movement:0,freeLook:true}),`${role}-idle`);
   assert.equal(selectHandAnimationClip({role,movement:.01}),`${role}-idle`);
   assert.equal(selectHandAnimationClip({role,movement:.02}),`${role}-walk`);
-  for(const special of [{seated:true},{carrying:true},{holding:true},{eating:true},{drawerOpen:true},{computerActive:true},{bookRaised:true},{caught:true},{captivity:'carried'},{writing:true},{throwing:true},{penTwirling:true},{penWriting:true},{freeLook:false}])assert.equal(selectHandAnimationClip({role,movement:0,...special}),null);
+  for(const special of [{seated:true},{carrying:true},{holding:true},{eating:true},{drawerOpen:true},{computerActive:true},{bookRaised:true},{caught:true},{captivity:'carried'},{writing:true},{throwing:true},{penTwirling:true},{penWriting:true},{freeLook:false}])assert.equal(selectHandAnimationClip({role,movement:0,...special}),role==='student'&&special.carrying?'student-idle':null);
  }
  for(const extra of [{crouched:true},{crawling:true},{crawlBlend:1}])assert.equal(selectHandAnimationClip({role:'student',movement:0,...extra}),'student-crawl-idle');
  assert.equal(selectHandAnimationClip({role:'student',movement:0,crawlBlend:.25}),null);

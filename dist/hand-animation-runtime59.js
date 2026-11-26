@@ -22,6 +22,9 @@ export async function saveCurrentHandAnimation(id,clip,storage=defaultStorage())
 export function clearHandAnimations(storage=defaultStorage()){try{storage?.removeItem(HAND_ANIMATION_STORAGE_KEY);}catch{throw new Error('无法清除已保存动画');}signal();}
 function blocked(s){return Boolean(s.freeLook===false||s.seated||s.carrying||s.holding||s.eating||s.penWriting||s.penTwirling||s.caught||s.computer||s.computerActive||s.bookAmount>0||s.bookRaised||s.drawerOpen||s.surveillance||s.writing||s.carryingStudent||s.throwing||s.teacherPhase&& !['patrolling','watching','idle','moving','chasing'].includes(s.teacherPhase)||s.captivity&&s.captivity!=='free');}
 export function selectHandAnimationClip(state={}){
+ if(state.role==='student'&&state.carrying&&!state.seated&&!state.holding&&!state.eating&&!state.caught&&!state.computer&&(!state.captivity||state.captivity==='free')){
+  return selectHandAnimationClip({...state,carrying:false,drawerOpen:false});
+ }
  if(state.foodItem&&state.role==='student'&&state.carrying&&!state.caught&&(!state.captivity||state.captivity==='free')&&!state.computer&&!state.bookAmount)return state.eating?'student-eat-food':'student-carry-food';
  if(blocked(state))return null;
  const teacher=state.role==='teacher',moving=state.movement>.01,crawling=state.crawlBlend>.5||state.crouched||state.crawling;

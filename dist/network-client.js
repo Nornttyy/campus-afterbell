@@ -1,10 +1,10 @@
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-116';
-import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-116';
-import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-93';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117';
+import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-117';
+import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-117';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-116';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-117';
 import {applyNetworkDelta} from './network-state65.js?v=campus-83';
-import {playableCampusMap} from './campus-destinations.js?v=campus-116';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
 const NO_ROOM_SERVICE='这个地址没有多人房间服务，请先玩单人模式，或填写已部署的联机服务器地址。';
@@ -150,7 +150,7 @@ export class NetworkRound{
  _moveVisual(position,movement,dt){
   const actor={...this._state.player,...position,...(this._look?{yaw:this._look.yaw}:{})};
   if(this._state.elevator?.phase==='travel'){moveElevatorPassenger(actor,movement,dt,this._predictionLayout);return{x:actor.x,z:actor.z};}
-  const speed=(actor.crouched?CRAWL_TUNING.speed:normalWalkSpeed(actor))*movementScale(actor,movement);
+  const speed=(actor.crouched?CRAWL_TUNING.speed:normalWalkSpeed(actor,this._state.map))*movementScale(actor,movement);
   return moveInRoom(actor,movement.x*speed*dt,movement.z*speed*dt,.18,this._predictionLayout);
  }
  _reconcileLocal(previous,state){

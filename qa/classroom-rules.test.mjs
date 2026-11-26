@@ -7,7 +7,7 @@ function advanceUntil(round,condition,seconds=120,control=()=>{}){
   for(let i=0;i<seconds*60;i++){const s=round.snapshot();if(condition(s))return s;control(s,round);round.step(DT);}
   assert.fail('Expected simulation condition was not reached.');
 }
-function takeAndUse(round){round.setLook(round.player.yaw,.55);const s=round.snapshot();if(s.drawer.drawnSlot===null)round.takeSlot(s.drawer.selectedSlot);return round.hold(true);}
+function takeAndUse(round){round.setLook(round.player.yaw,1.20);const s=round.snapshot();if(s.drawer.drawnSlot===null)round.takeSlot(s.drawer.selectedSlot);return round.hold(true);}
 function choose(round,index){if(round.snapshot().drawer.drawnSlot!==null)round.returnItem();return round.selectSlot(index);}
 function useAvailable(round,state=round.snapshot()){
   if(state.player.caught)return;
@@ -16,7 +16,7 @@ function useAvailable(round,state=round.snapshot()){
   if(state.holding&&CLASSROOM_ACTIONS[state.selected]?.releaseToUse&&state.actionProgress>=.5)round.releaseUse();else takeAndUse(round);
 }
 function quietFixture(seed=73){
-  const round=new ClassroomRound({seed,target:100000});round.start();round.player.pitch=.55;
+  const round=new ClassroomRound({seed,target:100000});round.start();round.player.pitch=1.20;
   round.teacher.x=30;round.teacher.z=30;round._thinkAt=Infinity;round._plan.route=[];round._plan.until=Infinity;
   for(const actor of round.students)if(actor.isTeammate){actor._decisionAt=Infinity;actor.holding=false;}
   return round;
@@ -137,7 +137,7 @@ test('smoke must be thrown from a consumed drawer slot before impact creates a g
   const r=quietFixture();Object.assign(r.player._slots[0],{action:'smoke',progress:0,readyAt:0});
   assert.equal(r.hold(true),false);r.step(1);assert.equal(r.snapshot().projectiles.length,0);
   r.toggleDrawer();r.takeSlot(0);r.step(1);assert.equal(r.snapshot().projectiles.length,0);
-  r.hold(true);assert.equal(r.snapshot().projectiles.length,1);r.releaseUse();
+  r.setLook(r.player.yaw,.08);r.hold(true);assert.equal(r.snapshot().projectiles.length,1);r.releaseUse();
   let s=r.snapshot();assert.equal(s.completed.smoke,1);assert.equal(s.score,0);assert.equal(s.drawer.slots[0].action,null);
   assert.equal(s.drawer.slots[0].readyIn,3);assert.equal(s.projectiles.length,1);assert.equal(s.smokes.length,0);assert.equal(r.hold(true),false);
   const launch=s.projectiles[0];r.step(.15);s=r.snapshot();assert.ok(Math.hypot(s.projectiles[0].x-launch.x,s.projectiles[0].z-launch.z)>.5);assert.equal(s.smokes.length,0);

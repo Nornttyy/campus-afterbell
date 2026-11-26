@@ -5,7 +5,7 @@ const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
 // presses an item button, or awards score; network peers receive the same mood.
 export function ordinaryStudyState(actor,teacher,elapsed,seed=0,map=false){
  const computer=map===true||map==='computer';
- if(['toilet','dorm','playground'].includes(map))return {mood:map==='dorm'?'resting':map==='toilet'?'sitting':'standing',holding:false,action:null,_computerActive:false,_computerApp:'desktop',yaw:actor.seatYaw||0,pitch:0,studyBookHeld:false};
+ if(['toilet','dorm','playground'].includes(map))return {_drawerOpen:false,mood:map==='dorm'?'resting':map==='toilet'?'sitting':'standing',holding:false,action:null,_computerActive:false,_computerApp:'desktop',yaw:actor.seatYaw||0,pitch:0,studyBookHeld:false};
  const offset=((Math.imul((actor.id+1)>>>0,2654435761)^seed)>>>0)%3700/100;
  const phase=((Math.max(0,elapsed)+offset)%37+37)%37;
  const seatYaw=actor.seatYaw||0;
@@ -14,13 +14,16 @@ export function ordinaryStudyState(actor,teacher,elapsed,seed=0,map=false){
   const watch=ease((phase-11)/2)*(1-ease((phase-20)/2)),down=ease((phase-26)/1.8)*(1-ease((phase-33)/2.4));
   const toward=teacher&&teacher.busDeck!==1?clamp(wrap(Math.atan2(teacher.x-actor.x,teacher.z-actor.z)-seatYaw),-.72,.72):0;
   const window=(actor.z< -13?1:-1)*.68;
-  return {mood:'riding',holding:false,action:null,_computerActive:false,_computerApp:'desktop',
+  return {_drawerOpen:false,mood:'riding',holding:false,action:null,_computerActive:false,_computerApp:'desktop',
    yaw:seatYaw+watch*window+(1-watch)*(1-down)*toward*.60,pitch:.028+.34*down,studyBookHeld:false};
+ }
+ if(['classroom','tiered','night','computer'].includes(map)&&phase>=33&&phase<35.4){
+  return {mood:computer?'computer-idle':'listening',holding:false,action:computer?'computer':null,studyBookHeld:false,_drawerOpen:true,_computerActive:false,_computerApp:computer?'photoshop':'desktop',yaw:seatYaw,pitch:1.18};
  }
  const mood=computer?(phase<23?'computer':'computer-idle'):phase<9?'listening':phase<20?'reading':'writing';
  const toward=teacher?Math.atan2(teacher.x-actor.x,teacher.z-actor.z):seatYaw;
  const watch=mood==='listening'||mood==='computer-idle';
- return {mood,holding:false,action:computer?'computer':null,
+ return {_drawerOpen:false,mood,holding:false,action:computer?'computer':null,
   _computerActive:mood==='computer',_computerApp:computer?'photoshop':'desktop',
   yaw:watch?seatYaw+clamp(wrap(toward-seatYaw),-.72,.72):seatYaw,
   pitch:watch?-.035:mood==='reading'?.16:mood==='writing'?.48+.055*Math.sin((elapsed+offset)*.91):-.02,

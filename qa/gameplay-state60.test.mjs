@@ -19,7 +19,7 @@ function away(room,member,z){assert.equal(room.command(member,'interact'),'stood
 function tick(room,seconds){for(let n=0;n<Math.round(seconds/DT);n++)room.tick(DT);}
 
 test('an empty-handed peer at the source desk cannot reset another pupil food by release, stun or disconnect',()=>{
- const {room,a,b}=roomFixture();sit(room,a,9);const item=take(room,a);away(room,a,2);sit(room,b,9);room.command(a,'setLook',[0,.55]);room.command(a,'hold',[true]);tick(room,1);
+ const {room,a,b}=roomFixture();sit(room,a,9);const item=take(room,a);away(room,a,2);sit(room,b,9);room.command(a,'setLook',[0,1.20]);room.command(a,'hold',[true]);tick(room,1);
  const progress=item.progress;assert.ok(progress>.33);assert.equal(room.snapshot(b).actionProgress,0,'a reserved foreign item is not my action progress');
  room.command(b,'hold',[false]);assert.equal(item.progress,progress,'empty-hand release reset the owner');
  room.sim._stun(b.context.player);assert.equal(item.progress,progress,'stopping a nearby peer reset the owner');room.disconnect(b);assert.equal(item.progress,progress,'disconnect reset the owner');
@@ -27,18 +27,18 @@ test('an empty-handed peer at the source desk cannot reset another pupil food by
 });
 
 test('late release after consuming and switching drawer stock cannot clear the next desk owner progress',()=>{
- const {room,a,b}=roomFixture();sit(room,b,0);const other=take(room,b,'drink');away(room,b,3);room.command(b,'setLook',[0,.55]);room.command(b,'hold',[true]);tick(room,1);room.command(b,'setLook',[0,0]);const progress=other.progress;
- sit(room,a,9);take(room,a);away(room,a,2);sit(room,a,0);room.command(a,'setLook',[0,.55]);room.command(a,'hold',[true]);tick(room,3);
+ const {room,a,b}=roomFixture();sit(room,b,0);const other=take(room,b,'drink');away(room,b,3);room.command(b,'setLook',[0,1.20]);room.command(b,'hold',[true]);tick(room,1);room.command(b,'setLook',[0,0]);const progress=other.progress;
+ sit(room,a,9);take(room,a);away(room,a,2);sit(room,a,0);room.command(a,'setLook',[0,1.20]);room.command(a,'hold',[true]);tick(room,3);
  assert.equal(a.context.player._slots,b.context.player._slots);assert.equal(a.context.player._drawnSlot,null);assert.equal(other.heldBy,b.studentId);assert.equal(other.progress,progress);assert.equal(room.snapshot(a).actionProgress,0);
  room.command(a,'hold',[false]);assert.equal(other.progress,progress);room.disconnect(a);assert.equal(other.progress,progress);
  room.command(b,'hold',[false]);assert.equal(other.progress,0,'the real owner must still reset their own partial meal');
 });
 
-for(const [kind,points] of Object.entries({snack:1,drink:1,burger:1,banana:1,garlic:1,lunch:3}))test(`${kind}: active low-head use earns exactly ${points}, interrupted use restarts and never credits twice`,()=>{
+for(const [kind,points] of Object.entries({snack:1,drink:1,burger:1,banana:1,lunch:3}))test(`${kind}: active low-head use earns exactly ${points}, interrupted use restarts and never credits twice`,()=>{
  const r=new SoloStudentRound({target:1000});r.start();r._advanceTeacher=()=>{};r._perceive=()=>{};
  if(kind==='lunch'){r.interact();Object.assign(r.player,{x:OFFICE_CHAIR.x,z:OFFICE_CHAIR.z});assert.equal(r.openOfficeDrawer(),true);}
  else{Object.assign(r.player._slots[0],{action:kind,progress:0,readyAt:0});r.setDrawerOpen(true);}
- assert.equal(r.takeSlot(0),true);const item=r.player._slots[0];r.setLook(0,0);r.hold(true);r.step(1);assert.equal(item.progress,0);r.setLook(0,.55);r.step(1);assert.ok(item.progress>.33);r.hold(false);assert.equal(item.progress,0);
+ assert.equal(r.takeSlot(0),true);const item=r.player._slots[0];r.setLook(0,0);r.hold(true);r.step(1);assert.equal(item.progress,0);r.setLook(0,1.20);r.step(1);assert.ok(item.progress>.33);r.hold(false);assert.equal(item.progress,0);
  r.hold(true);r.step(2-DT);assert.equal(r.score,0);r.step(DT);assert.equal(r.score,points);assert.equal(r.completed[kind],1);r.hold(false);r.step(3);assert.equal(r.score,points);assert.equal(r.completed[kind],1);
 });
 

@@ -48,7 +48,7 @@ test('seat ownership, item completion and door duration are authoritative for se
  const r=new CampusRoom({code:'654321',seed:73}),host=r.join({rolePreference:'teacher'}),a=r.join({name:'甲'}),b=r.join({name:'乙'});r.begin(host);
  for(let i=0;i<299;i++)r.tick(.1);assert.equal(r.sim.stage,'seating');assert.equal(r.sim.layout.officeLocked,true);r.tick(.1);assert.equal(r.sim.stage,'class');assert.equal(r.sim.layout.officeLocked,false);
  for(const actor of r.sim.students)if(!actor.networkHuman){actor.seated=false;actor.seatId=null;actor.visible=false;}
- r.sim._seatingRoutes.clear();const seat=r.sim.seats[0];Object.assign(a.context.player,{x:seat.x,z:seat.z,yaw:seat.yaw,pitch:.55,seated:false});Object.assign(b.context.player,{x:seat.x+.1,z:seat.z,yaw:seat.yaw,seated:false});
+ r.sim._seatingRoutes.clear();const seat=r.sim.seats[0];Object.assign(a.context.player,{x:seat.x,z:seat.z,yaw:seat.yaw,pitch:1.20,seated:false});Object.assign(b.context.player,{x:seat.x+.1,z:seat.z,yaw:seat.yaw,seated:false});
  assert.equal(r.command(a,'interact',[seat.id]),'seated');assert.equal(r.command(b,'interact',[seat.id]),false);
  a.context.player._slots=[{id:0,action:'snack',readyAt:0,progress:0}];a.context.player._selectedSlot=0;a.context.selected='snack';
  assert.equal(r.command(a,'toggleDrawer'),true);assert.equal(r.command(a,'takeSlot',[0]),true);assert.equal(r.command(a,'hold',[true]),true);
