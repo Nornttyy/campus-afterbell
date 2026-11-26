@@ -2,6 +2,12 @@ import {Euler,Quaternion} from './vendor/three.module.js';
 export const HAND_ANIMATION_FORMAT='campus-first-person-hands';
 export const HAND_ANIMATION_VERSION=1;
 export const HAND_CLIP_IDS=Object.freeze(['student-idle','student-walk','student-crawl-idle','student-crawl','teacher-idle','teacher-walk']);
+export const ITEM_HAND_CLIPS=Object.freeze(['student-carry-food','student-eat-food']);
+export function newItemHandClip(id){
+ if(!ITEM_HAND_CLIPS.includes(id))throw new RangeError('未知的手部动作');
+ const hand=side=>({position:[side*(side<0?.17:.20),-.20,-.52],rotation:[0,0,0],curl:side<0?.82:.18});
+ return {duration:id==='student-carry-food'?1.2:2,loop:true,easing:'smoothstep',keyframes:[{time:0,left:hand(-1),right:hand(1)}]};
+}
 export const HAND_FINGERS=Object.freeze(['Thumb','Index','Middle','Pinky']);
 export const HAND_EASINGS=Object.freeze(['linear','smoothstep','step']);
 export const HAND_ANIMATION_MAX_BYTES=262144;
@@ -19,8 +25,9 @@ function readHand(input,path,errors){
 export function validateHandAnimationDocument(input){
  const errors=[];if(!plain(input)||input.format!==HAND_ANIMATION_FORMAT||input.version!==1||!plain(input.clips))return{ok:false,errors:['动画文件格式或版本不正确']};
  const value={format:HAND_ANIMATION_FORMAT,version:1,clips:{}};
- if(Object.keys(input.clips).some(id=>!HAND_CLIP_IDS.includes(id)))errors.push('存在不支持的动作');
- for(const id of HAND_CLIP_IDS){if(!own(input.clips,id))continue;const c=input.clips[id],path=id;if(!plain(c)){errors.push(`${path}：动作格式不正确`);continue;}
+ const supported=[...HAND_CLIP_IDS,...ITEM_HAND_CLIPS];
+ if(Object.keys(input.clips).some(id=>!supported.includes(id)))errors.push('存在不支持的动作');
+ for(const id of supported){if(!own(input.clips,id))continue;const c=input.clips[id],path=id;if(!plain(c)){errors.push(`${path}：动作格式不正确`);continue;}
   if(!finite(c.duration)||c.duration<.2||c.duration>20)errors.push(`${path}：时长须在 0.2 至 20 秒之间`);
   if(typeof c.loop!=='boolean')errors.push(`${path}：循环设置无效`);
   if(!HAND_EASINGS.includes(c.easing))errors.push(`${path}：插值方式无效`);

@@ -10,9 +10,9 @@ const ease=(t,a,b)=>T.MathUtils.smootherstep(t,a,b);
 // Zero-velocity endpoints return to the carry pose for any interaction duration.
 export function sampleFoodGesture(seconds){
  const t=T.MathUtils.clamp(seconds,0,3),out=1-ease(t,2.12,3);
- const turn=ease(t,0,.45)*out,reach=ease(t,.25,.85)*out;
+ const reach=ease(t,.25,.85)*out;
  const chewing=ease(t,.65,.90)*(1-ease(t,2.20,2.45));
- return {turn,reach,bob:.040*Math.sin((t-.70)*Math.PI*2/.72)*chewing,chewing};
+ return {reach,bob:.040*Math.sin((t-.70)*Math.PI*2/.72)*chewing,chewing};
 }
 
 // Bounding-box contacts can land inside a curved banana. Fit that authored
@@ -78,25 +78,19 @@ export function createFirstPersonHandMotion(hand,side){
     const limited=Q().slerp(turn,amount*Math.min(1,.30/Math.max(angle,.00001)));bone.quaternion.premultiply(parentQ.clone().invert().multiply(limited).multiply(parentQ));
    }
   },
-  apply({parent,prop=null,food=null,amount=0,movement=0,phase=0,empty=false,palmRoll=0}={}){
+  apply({parent,prop=null,food=null,amount=0,movement=0,phase=0,empty=false}={}){
    if(!food&&!empty)return;
    parent.updateWorldMatrix(true,true);frame(before);
-   const baseCanonical=canonical(),baseWrist=V().setFromMatrixPosition(before),baseProp=prop?.getWorldPosition(V());
+   const baseWrist=V().setFromMatrixPosition(before),baseProp=prop?.getWorldPosition(V());
    const beat=Math.sin(phase+(side>0?Math.PI:0)),lag=Math.sin(phase+(side>0?Math.PI:0)-.42);
-   const turn=(food?.turn||0)*amount,reach=(food?.reach||0)*amount,bob=(food?.bob||0)*amount;
+   const reach=(food?.reach||0)*amount,bob=(food?.bob||0)*amount;
    if(wrist){
     const elbow=joints.find(j=>j.bone===forearm),palm=joints.find(j=>j.bone===wrist);
-    bend(elbow,food?.18*reach+bob*.65:.09*beat*movement,food?.65*turn:side*.12*lag*movement,0);
-    bend(palm,food?.20*turn+bob*1.4:.10*lag*movement,food?.45*turn:side*.19*lag*movement,food?.035*turn:side*.07*beat*movement);
-   }
-   // Let the elbow and wrist articulate while the arm's unseen upper part
-   // carries the palm to its target. The palm faces the eye, not the floor.
-   if(food){
-    const bodyQ=parent.parent?.getWorldQuaternion(Q())||Q();
-    const target=bodyQ.multiply(Q().setFromEuler(new T.Euler(-.18,Math.PI,-.10+palmRoll)));
-    const desired=baseCanonical.clone().slerp(target,turn),current=canonical();
-    const parentQ=root.parent.getWorldQuaternion(Q());
-    root.quaternion.premultiply(parentQ.clone().invert().multiply(desired.multiply(current.invert())).multiply(parentQ));
+    // Lift from the elbow and let the wrist counterbend. The thumb stays
+    // on the same side of the food throughout a bite, even during free look.
+    const lift=.14*reach+bob*.26;
+    bend(elbow,food?lift:.09*beat*movement,food?0:side*.12*lag*movement,0);
+    bend(palm,food?-lift*.82:.10*lag*movement,food?0:side*.19*lag*movement,food?0:side*.07*beat*movement);
    }
    // Keep the wrist on the authored path while its actual forearm bends.
    frame(after);const shift=baseWrist.clone().sub(V().setFromMatrixPosition(after));
@@ -112,7 +106,9 @@ export function createFirstPersonHandMotion(hand,side){
      // The source forearm is deliberately short. Bringing it nearer keeps
      // its open sleeve below the lower frame while the food reaches centre;
      // moving the same crop upwards at carry depth made a floating cut wrist.
-     const anchor=parent.parent,goal=V(-.015,-.145+bob,-.46);if(anchor)anchor.localToWorld(goal);
+     const camera=parent.userData.viewCamera,anchor=camera||parent.parent;
+     const goal=camera?V(-.027,-.105+bob*.8,-.285):V(-.015,-.145+bob,-.42);
+     if(anchor)anchor.localToWorld(goal);
      const wanted=baseProp.lerp(goal,reach);prop.updateWorldMatrix(true,false);
      const travel=wanted.sub(prop.getWorldPosition(V()));
      const local=parent.worldToLocal(travel).sub(parent.worldToLocal(V()));root.position.add(local);prop.position.add(local);

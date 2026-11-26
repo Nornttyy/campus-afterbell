@@ -57,7 +57,7 @@
     <footer class="play-bottom"><div id="interaction-prompt"></div></footer>
     <div id="drawer-hint"></div>
   </section>
-  <dialog id="pause-dialog" class="sheet round-sheet" aria-labelledby="pause-title"><h2 id="pause-title">暂停</h2><details class="controls-guide"><summary>操作</summary><p id="student-controls">中心瞄准 · E 开桌 / 拿取 / 竖放书本<br>Q 放回 / 关闭 · 长按左键使用<br>投掷物：点击抛出 / 长按蓄力<br>Q 起身 · E 持物起身 / 坐下 · WASD 移动<br>靠近被绑同学，按住 E 解救<br>按住 Shift 爬行 · ESC 暂停<br>机房：E 打开电脑 · WASD / 方向键控制贪吃蛇<br>M 麦克风</p><p id="teacher-controls" hidden>WASD 移动 · 按住 Shift 奔跑 · 鼠标转向<br>左键投粉笔 · 眩晕后靠近，E 抓住<br>带到木桩按 E 绑住 · Q 放下<br>黑板前按住 E 写板书恢复体力<br>对准已绑同学按 E 释放<br>ESC 暂停</p></details><button class="primary-button" id="resume-game">继续上课</button><button class="paper-button" id="restart-game" hidden>重新开始</button><button class="paper-button" id="leave-game">返回主菜单</button></dialog>
+  <dialog id="pause-dialog" class="sheet round-sheet" aria-labelledby="pause-title"><h2 id="pause-title">暂停</h2><details class="controls-guide"><summary>操作</summary><p id="student-controls">中心瞄准 · E 开桌 / 拿取 / 竖放书本<br>Q 放回 / 关闭 · 长按左键使用<br>墨水瓶、闪光弹、烟雾弹：点击即扔<br>Q 起身 · E 持物起身 / 坐下 · WASD 移动<br>靠近被绑同学，按住 E 解救<br>按住 Shift 爬行 · ESC 暂停<br>机房：瞄准电脑 · WASD / 方向键控制贪吃蛇<br>M 麦克风</p><p id="teacher-controls" hidden>WASD 移动 · 按住 Shift 奔跑 · 鼠标转向<br>左键投粉笔 · 眩晕后靠近，E 抓住<br>带到木桩按 E 绑住 · Q 放下<br>黑板前按住 E 写板书恢复体力<br>对准已绑同学按 E 释放<br>ESC 暂停</p></details><button class="primary-button" id="resume-game">继续上课</button><button class="paper-button" id="restart-game" hidden>重新开始</button><button class="paper-button" id="leave-game">返回主菜单</button></dialog>
   <dialog id="result-dialog" class="sheet round-sheet" aria-labelledby="result-title"><span class="result-bell"><svg><use href="#i-bell"/></svg></span><h2 id="result-title">下课啦！</h2><div class="result-number"><strong id="result-score">0</strong><span id="result-goal">捣乱值</span></div><p id="result-detail"></p><p id="result-actions"></p><button class="primary-button" id="retry-game">继续</button><button class="paper-button" id="result-menu">返回主菜单</button></dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -78,7 +78,7 @@
     <div class="setting-row"><span>画面质量</span><div class="segmented" role="group" aria-label="画面质量"><button data-quality="high" aria-pressed="true">精致</button><button data-quality="low" aria-pressed="false">流畅</button></div></div>
     <label class="setting-row" for="motion-toggle"><span>场景动态</span><input id="motion-toggle" type="checkbox" class="switch" checked></label>
     <label class="setting-row" for="sound-cues-toggle"><span>声纹提示</span><input id="sound-cues-toggle" type="checkbox" class="switch" checked></label>
-    <div class="setting-row"><span>手部动作</span><a class="paper-button" href="./animation-editor.html?v=campus-110" target="_blank" rel="noopener">打开编辑器</a></div>
+    <div class="setting-row"><span>手部动作</span><a class="paper-button" href="./animation-editor.html?v=campus-111" target="_blank" rel="noopener">打开编辑器</a></div>
     <div id="control-settings"></div></div><button class="primary-button compact close" id="settings-done"><span>完成</span><svg><use href="#i-check"/></svg></button>
   </dialog>
 </main>
@@ -88,5 +88,5 @@
   <link rel="modulepreload" href="./vendor/addons/loaders/GLTFLoader.js">
   <link rel="preload" as="fetch" crossorigin href="./assets/stream93/models.json?v=campus-93">
 </template>
-<script type="module" src="./app.js?v=campus-110&amp;entry=3"></script>
+<script type="module" src="./app.js?v=campus-111&amp;entry=3"></script>
 </body></html>

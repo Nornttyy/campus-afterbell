@@ -1,4 +1,4 @@
-import {createHandAnimationDocument} from './hand-animation-data59.js?v=campus-83';
+import {createHandAnimationDocument} from './hand-animation-data59.js?v=campus-111';
 import {HAND_ANIMATION_BASELINE} from './hand-animation-baseline59.js?v=campus-83';
 import {completeAnimationDocument} from './animation-editor-state59.js?v=campus-83';
 

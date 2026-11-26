@@ -13,6 +13,7 @@ export function visionEffectState(snapshot){
   return{
     // Impact stays fully white, then smoothly reveals the scene. The timer is
     // still authoritative, so pausing cannot advance the recovery locally.
+    flashBack:Boolean(p.flashBack&&flashLeft>0),
     flashAlpha:flashLeft>0&&strength>0?smooth(flashLeft/Math.min(1.35,flashDuration*.4)):0,
     inkAlpha:inkLeft>0?smooth(inkLeft/Math.min(2,inkDuration)):0,
     inkAge:inkLeft>0?Math.max(0,inkDuration-inkLeft):0,
@@ -90,7 +91,7 @@ export function createVisionEffects(host){
   }
   function draw(){
     if(!alive||!c||!inkContext)return;
-    const dripAge=Math.floor(state.inkAge*24)/24,key=[width,height,state.flashAlpha.toFixed(4),state.inkAlpha.toFixed(4),state.gumAlpha.toFixed(4),state.gumSize.toFixed(4),state.gumKind,dripAge].join('|');
+    const dripAge=Math.floor(state.inkAge*24)/24,key=[width,height,state.flashAlpha.toFixed(4),state.flashBack,state.inkAlpha.toFixed(4),state.gumAlpha.toFixed(4),state.gumSize.toFixed(4),state.gumKind,dripAge].join('|');
     if(key===lastKey)return;lastKey=key;c.clearRect(0,0,width,height);
     canvas.hidden=state.inkAlpha<=0&&state.flashAlpha<=0&&state.gumAlpha<=0;
     // A confirmed flash is opaque and covers the game HUD as well as the world.
@@ -99,7 +100,11 @@ export function createVisionEffects(host){
     if(canvas.hidden)return;
     if(state.inkAlpha>0){c.globalAlpha=state.inkAlpha;c.drawImage(ink,0,0,width,height);paintDrips(c,width,height,dripAge);}
     if(state.gumAlpha>0){if(lastGumKind!==state.gumKind){paintInk(gumContext,width,height,state.gumKind);lastGumKind=state.gumKind;}c.globalAlpha=state.gumAlpha;c.drawImage(gum,0,0,width,height);}
-    if(state.flashAlpha>0){c.globalAlpha=state.flashAlpha;c.fillStyle='#ffffff';c.fillRect(0,0,width,height);}
+    if(state.flashAlpha>0){
+      c.globalAlpha=state.flashAlpha;c.fillStyle='#ffffff';
+      if(state.flashBack){const r=Math.hypot(width,height)*.53,veil=c.createRadialGradient(width*.5,height*.5,0,width*.5,height*.5,r);veil.addColorStop(0,'rgba(255,251,229,.05)');veil.addColorStop(.56,'rgba(255,250,227,.12)');veil.addColorStop(1,'rgba(255,250,229,.62)');c.fillStyle=veil;}
+      c.fillRect(0,0,width,height);
+    }
     c.globalAlpha=1;
   }
   const onResize=()=>{if(resize())draw();};

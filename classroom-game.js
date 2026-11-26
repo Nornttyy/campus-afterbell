@@ -4,13 +4,13 @@ import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
-import {createReferenceHUD} from './reference-hud54.js?v=campus-107';
+import {createReferenceHUD} from './reference-hud54.js?v=campus-111';
 import {interactionIntent} from './interaction-intent54.js?v=campus-97';
 import {createSessionUI} from './session-ui.js?v=campus-102';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
-import {createVisionEffects} from './vision-effects.js?v=campus-83';
+import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-110';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-111';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -22,8 +22,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   const refreshControls=event=>{release();stopMovement();controls=event?.detail||readControls();};
   window.addEventListener('campus-controls-change',refreshControls);
   const referenceHUD=createReferenceHUD({document,root:ui,bindings:()=>controls,touchMode:()=>session.touch});
-  const labels={wrapper:'零食包装',hotpotPlate:'食材盘',hotpotBite:'涮菜',snack:'零食',drink:'饮料',burger:'汉堡',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡糖',banana:'香蕉',bananaPeel:'香蕉皮',garlic:'大蒜',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set(),physicalKeys=new Map();
-  const throwables=new Set(['smoke','flash','ink','bananaPeel']),vision=canvas.parentElement&&document.createElement?createVisionEffects(canvas.parentElement):null;
+  const labels={wrapper:'零食包装',hotpotPlate:'食材盘',hotpotBite:'涮菜',snack:'辣条',chips:'没事薯片',noodles:'小困熊干脆面',drink:'饮料',burger:'汉堡',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡堂',banana:'香蕉',bananaPeel:'香蕉皮',garlic:'大蒜',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set(),physicalKeys=new Map();
+  const throwables=new Set(['bananaPeel']),vision=canvas.parentElement&&document.createElement?createVisionEffects(canvas.parentElement):null;
   let active=false,finished=false,continued=false,raf=0,last=0,lastHud=0,lastEffect=0;
   const teacherFootsteps=createTeacherFootsteps();
   let yaw=0,pitch=0,dragLook=false,dragX=0,dragY=0,feedbackTimer=0,lastFriends='',lastTeacher=null,lastInteractionState=null;
@@ -208,11 +208,11 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function renderUseProgress(s){
     const ring=$('#use-progress'),rescuing=s.rescue?.id!=null,bubble=s.player.bubble,blowing=Boolean(bubble?.blowing),plunging=s.player.mapActivity?.kind==='plunge',door=s.interaction?.kind==='rear-door',cycles=Number(bubble?.cycles)||0;
     const writing=s.role==='teacher'&&s.teacher.writing;
-    const progress=writing?s.teacher.writeProgress:s.exam?.using?s.exam.progress:plunging?s.player.mapActivity.progress:blowing?(cycles>=4?1:cycles-Math.floor(cycles)):door?s.interaction.progress:rescuing?s.rescue.progress:s.actionProgress;
+    const progress=writing?s.teacher.writeProgress:s.exam?.using?s.exam.progress:plunging?s.player.mapActivity.progress:blowing?(bubble.kind==='orange'&&cycles>=4?1:cycles-Math.floor(cycles)):door?s.interaction.progress:rescuing?s.rescue.progress:s.actionProgress;
     const visible=!s.paused&&(writing||s.exam?.using||plunging||blowing||door||rescuing||s.selected!=='pen'&&s.drawer.drawnSlot!==null&&!s.player.caught&&(s.holding||s.actionProgress>0));
     ring.hidden=!visible;ring.dataset.active=String(writing||s.holding);ring.dataset.cycles=String(Math.floor(cycles));ring.setAttribute('aria-valuenow',String(Math.round(clamp(progress,0,1)*100)));
     ring.setAttribute('aria-label',writing?'写板书进度':plunging?'疏通进度':blowing?'吹泡泡':door?'开关门':rescuing?'解救进度':throwables.has(s.selected)?'投掷蓄力':'物品使用进度');ring.dataset.charged=String(!blowing&&throwables.has(s.selected)&&s.actionProgress>=1);
-    const size=blowing?54+Math.min(4,Math.floor(cycles))*13:54;ring.style.width=size+'px';ring.style.height=size+'px';$('#use-progress-fill').style.strokeDashoffset=String(100-clamp(progress,0,1)*100);
+    const size=blowing?54+Math.min(bubble?.kind==='orange'?4:5,Math.floor(cycles))*13:54;ring.style.width=size+'px';ring.style.height=size+'px';$('#use-progress-fill').style.strokeDashoffset=String(100-clamp(progress,0,1)*100);
     ui.dataset.useProgress=String(progress);ui.dataset.holding=String(s.holding);ui.dataset.bubbleProgress=String(bubble?.progress||0);ui.dataset.bubbleCooldown=String(bubble?.cooldown||0);
   }
 

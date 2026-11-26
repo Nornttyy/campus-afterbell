@@ -7,17 +7,17 @@ export function createBubbleEffects(scene,camera,{floorAt=()=>0}={}){
   const geometry=new T.SphereGeometry(1,36,24);
   const makeMaterial=()=>new T.ShaderMaterial({
     transparent:true,depthWrite:false,depthTest:true,
-    uniforms:{fade:{value:1},orange:{value:0}},
+    uniforms:{veil:{value:0},fade:{value:1},orange:{value:0}},
     vertexShader:`varying vec3 n; varying vec3 eye;
       void main(){vec4 mv=modelViewMatrix*vec4(position,1.0); n=normalize(normalMatrix*normal);eye=-mv.xyz;gl_Position=projectionMatrix*mv;}`,
-    fragmentShader:`uniform float fade;uniform float orange;varying vec3 n;varying vec3 eye;
+    fragmentShader:`uniform float veil;uniform float fade;uniform float orange;varying vec3 n;varying vec3 eye;
       void main(){vec3 normal=normalize(n),view=normalize(eye);
         float facing=clamp(dot(normal,view),0.0,1.0),rim=pow(1.0-facing,2.8);
         vec3 light=normalize(vec3(-.45,.65,1.0));
         float gloss=pow(max(0.0,dot(normal,light)),55.0);
         vec3 colour=mix(mix(vec3(1.0,.28,.58),vec3(1.0,.55,.12),orange),mix(vec3(1.0,.72,.86),vec3(1.0,.83,.40),orange),rim*.75);
         colour=mix(colour,vec3(1.0,.96,.99),gloss*.9);
-        gl_FragColor=vec4(colour,(.13+rim*.50+gloss*.23)*fade);
+        gl_FragColor=vec4(colour,(.13+veil*.28+rim*.50+gloss*.23)*fade);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`
@@ -31,7 +31,14 @@ export function createBubbleEffects(scene,camera,{floorAt=()=>0}={}){
     if(state){
       const player=state.player,bubble=player?.bubble;
       if(bubble?.progress>0){
-        const r=Number.isFinite(bubble.radius)?bubble.radius:radius(bubble.progress);own.visible=r>0;own.scale.setScalar(r);own.position.set(0,-.13,-.28-r*1.08);own.material.uniforms.fade.value=1;own.material.uniforms.orange.value=bubble.kind==='orange'?1:0;
+        const r=Number.isFinite(bubble.radius)?bubble.radius:radius(bubble.progress);own.visible=r>0;own.scale.setScalar(r);own.position.set(0,-.13,-.28-r*1.08);
+        if(bubble.kind!=='orange'){
+          const fill=T.MathUtils.smoothstep(bubble.progress,0,1),aspect=camera.aspect||1;
+          const halfH=Math.tan((camera.fov||60)*Math.PI/360)*.56;
+          own.scale.setScalar(.035+fill*halfH*Math.hypot(aspect,1)*1.12);
+          own.scale.z=Math.min(.16,own.scale.z);own.position.set(0,-.13*(1-fill),-.56);
+          own.material.uniforms.veil.value=fill;own.material.depthTest=false;own.renderOrder=30;
+        }else{own.material.uniforms.veil.value=0;own.material.depthTest=true;own.renderOrder=0;}own.material.uniforms.fade.value=1;own.material.uniforms.orange.value=bubble.kind==='orange'?1:0;
       }
       for(const student of state.students||[]){
         if(student.id===player?.id||student.visible===false||!(student.bubble?.progress>0))continue;
