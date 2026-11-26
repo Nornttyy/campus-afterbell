@@ -8,7 +8,7 @@ import {DETENTION} from '../dist/classroom-layout.js';
 
 // Keep the production mouse/keyboard handlers, frame loop, HUD and simulation.
 // Only DOM rendering and WebGL are replaced; this is not a screenshot test.
-function fixture({map='classroom',teacher=false}={}){
+function fixture({map='classroom',teacher=false,drawerPitch=null}={}){
  const saved=new Map(),nodes=new Map(),frames=new Map();let now=0,nextFrame=0,target=null,commands,rendered=null,computer=false,playback=null,axes={side:0,forward:0,crawl:false};const sounds=[],worldEffects=[];
  class Element extends EventTarget{
   constructor(){super();this.dataset={};this.style={};this.attrs={};this.open=false;this.classList={add(){},remove(){},toggle(){}};}
@@ -19,7 +19,7 @@ function fixture({map='classroom',teacher=false}={}){
  const canvas=doc.querySelector('#classroom');doc.pointerLockElement=canvas;doc.exitPointerLock=()=>doc.pointerLockElement=null;canvas.requestPointerLock=()=>doc.pointerLockElement=canvas;
  for(const[name,value]of Object.entries({document:doc,window:win,performance:{now:()=>now},requestAnimationFrame:fn=>{frames.set(++nextFrame,fn);return nextFrame;},cancelAnimationFrame:id=>frames.delete(id)})){saved.set(name,Object.getOwnPropertyDescriptor(globalThis,name));Object.defineProperty(globalThis,name,{value,writable:true,configurable:true});}
  const round=new (teacher?TeacherRound:ClassroomRound)({map,target:100000});round._advanceTeacher=()=>{};round._perceive=()=>{};round._hear=()=>{};
- const game=createClassroomGame({round,scene:{getComputerPlayback:()=>typeof playback==='function'?playback(now/1000):playback,setGameplay:s=>rendered=s,getInteraction:()=>target,playFeedback(){},playWorldEffect:e=>worldEffects.push(e)},audio:{apply(){},start(){},effect:(...args)=>sounds.push(args),click(){}},sessionFactory:options=>{commands=options.commands;return{touch:false,get computer(){return computer;},axes:()=>axes,update:s=>computer=!!s.player.computerActive,reset(){computer=false;},dispose(){}};}});game.start();
+ const game=createClassroomGame({round,scene:{getDrawerLookPitch:()=>drawerPitch,getComputerPlayback:()=>typeof playback==='function'?playback(now/1000):playback,setGameplay:s=>rendered=s,getInteraction:()=>target,playFeedback(){},playWorldEffect:e=>worldEffects.push(e)},audio:{apply(){},start(){},effect:(...args)=>sounds.push(args),click(){}},sessionFactory:options=>{commands=options.commands;return{touch:false,get computer(){return computer;},axes:()=>axes,update:s=>computer=!!s.player.computerActive,reset(){computer=false;},dispose(){}};}});game.start();
  for(const s of round.students)s._decisionAt=Infinity;round.teacher.x=round.teacher.z=40;
  const send=(type,props={})=>{const e=new Event(type,{cancelable:true});for(const[k,v]of Object.entries(props))Object.defineProperty(e,k,{value:v});doc.dispatchEvent(e);};
  const advance=seconds=>{for(let left=seconds;left>1e-9;){const dt=Math.min(1/60,left);left-=dt;now+=dt*1000;const pending=[...frames.values()];frames.clear();for(const fn of pending)fn(now);}};
@@ -28,6 +28,20 @@ function fixture({map='classroom',teacher=false}={}){
   close(){game.dispose();for(const[name,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name];}}
  };
 }
+
+test('opening a desk eases the actual gaze down; closing restores it unless the player has looked elsewhere',()=>{
+ const f=fixture({drawerPitch:1.12});
+ try{
+  f.round.setLook(.25,.12);f.target({kind:'desk'});f.key('KeyE');f.advance(.10);
+  const first=f.round.player.pitch;assert.ok(first>.12&&first<1.12);
+  f.advance(.25);assert.ok(Math.abs(f.round.player.pitch-1.12)<.001);
+  const pose=f.rendered.students.find(p=>p.id===f.round.player.id);
+  assert.equal(pose.pitch,f.rendered.player.pitch);assert.ok(Math.abs(f.round.player.yaw-.25)<.001);
+  f.key('KeyQ');f.advance(.35);assert.ok(Math.abs(f.round.player.pitch-.12)<.001);
+  f.key('KeyE');f.advance(.08);f.commands.look(0,-45);const manual=f.round.player.pitch;
+  f.advance(.35);f.key('KeyQ');f.advance(.35);assert.ok(Math.abs(f.round.player.pitch-manual)<.001);
+ }finally{f.close();}
+});
 
 test('production E and mouse input show one gum circle per 1.5 seconds, grow it for five safe breaths and pay on release',()=>{
  const f=fixture();try{f.take('gum');f.mouse(true);f.advance(.375);let ring=f.element('#use-progress');assert.equal(ring.hidden,false);assert.ok(Math.abs(Number(ring.attrs['aria-valuenow'])-25)<=1);assert.equal(ring.style.width,'54px');

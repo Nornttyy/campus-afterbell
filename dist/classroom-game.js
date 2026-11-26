@@ -10,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-102';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-113';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-114';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -42,12 +42,35 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function lock(){if(session?.touch)return;if(document.pointerLockElement===canvas||!canvas.requestPointerLock)return;try{canvas.requestPointerLock()?.catch?.(()=>{});}catch{}}
   let stickDirection=null,repeatAfter=0,computerStation=null,focusRetryAt=0;
   let keyboardSelection=false,framedApp=null,centerMove=null;
+  let openDrawer=null,drawerRestPitch=null,drawerMove=null;
+  function resetDrawerLook(){openDrawer=null;drawerRestPitch=null;drawerMove=null;}
+  function updateDrawerLook(state,dt){
+    const p=state.player;
+    if(state.paused||session.modal)return;
+    if(!p.seated||p.caught||p.captivity&&p.captivity!=='free'||state.status!=='playing'){
+      resetDrawerLook();return;
+    }
+    const id=state.drawer?.open?[state.map,state.role,p.officeDeskId??p.seatId].join('/'):null;
+    const current=round.player.pitch||0;
+    if(id!==openDrawer){
+      const target=id?scene.getDrawerLookPitch?.(state):drawerRestPitch;
+      drawerRestPitch=id?current:null;
+      drawerMove=Number.isFinite(target)?{from:current,to:id?Math.max(current,target):target,age:0}:null;
+      openDrawer=id;
+    }
+    if(!drawerMove)return;
+    const m=drawerMove;
+    m.age+=dt;const t=Math.min(1,m.age/.30),blend=t*t*(3-2*t);
+    const next=m.from+(m.to-m.from)*blend;
+    if(Math.abs(next-current)>.0001)round.setLook(round.player.yaw,next);
+    if(t===1)drawerMove=null;
+  }
   function chooseComputerDirection(direction){keyboardSelection=true;return round.computerSelect?.(direction);}
   function updateComputerFocus(state,now){
     const p=state.player,pc=p.computer;
     const isLab=state.map==='computer'||state.map==='computer7';
     if(!isLab&&computerStation==null&&!framedApp&&!pc?.active)return;
-    const enabled=active&&!finished&&state.status==='playing'&&state.stage==='class'&&isLab&&state.role==='student'&&!p.caught&&(!p.captivity||p.captivity==='free')&&state.drawer?.drawnSlot==null&&!state.paused&&!session.modal&&!document.hidden;
+    const enabled=active&&!finished&&state.status==='playing'&&state.stage==='class'&&isLab&&state.role==='student'&&!p.caught&&!state.drawer?.open&&(!p.captivity||p.captivity==='free')&&state.drawer?.drawnSlot==null&&!state.paused&&!session.modal&&!document.hidden;
     const hit=enabled?(scene.getAimedComputer?scene.getAimedComputer():scene.getInteraction?.()):null;
     const id=hit?.kind==='computer'?(hit.id??p.seatId):null;
     const changed=id!==computerStation;
@@ -92,7 +115,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function chooseRole(role){
     if(round.network)return round.setPreference?.(role);
     const next=switchSoloRole(round,role);if(!next)return false;
-    round=next;if(externalRound)externalRound=next;options={...options,role,map:next.map,...next.snapshot().settings};
+    round=next;resetDrawerLook();if(externalRound)externalRound=next;options={...options,role,map:next.map,...next.snapshot().settings};
     yaw=next.player.yaw||0;pitch=next.player.pitch||0;lastInteractionState=null;lastTeacher=null;
     $('#student-controls').hidden=role==='teacher';$('#teacher-controls').hidden=role!=='teacher';render(next.snapshot());return true;
   }
@@ -100,6 +123,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function look(dx,dy){
     if(!canInput())return;
     if(dx||dy){centerMove=null;keyboardSelection=false;}
+    if(dy){drawerMove=null;drawerRestPitch=null;}
     const p=round.player;
     if(p.seated&&p.lying){
       const c=Math.cos(DORM_REST_VIEW.roll),s=Math.sin(DORM_REST_VIEW.roll);
@@ -227,7 +251,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function frame(now){
     // The rules already substep at 60 Hz. Preserve ordinary slow-frame time;
     // only a long foreground stall is bounded to avoid an unbounded catch-up.
-    if(!active)return;raf=requestAnimationFrame(frame);const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;movement();const s=round.step(dt);updateComputerFocus(s,now);reportVideoWatching(s,now);processEvents();renderUseProgress(s);vision?.update(s);
+    if(!active)return;raf=requestAnimationFrame(frame);const dt=Math.min(.25,Math.max(0,(now-last)/1000||0));last=now;movement();const s=round.step(dt);updateDrawerLook(s,dt);updateComputerFocus(s,now);reportVideoWatching(s,now);processEvents();renderUseProgress(s);vision?.update(s);
 
     playFootsteps(s);
     if(now-lastHud>80){lastHud=now;render(s);}else scene.setGameplay(s);
@@ -243,7 +267,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     else if(active)options={...options,...round.snapshot().settings};
     if(!externalRound)round=createSoloRound(options);
     cancelAnimationFrame(raf);if(pauseDialog.open)pauseDialog.close();if(resultDialog.open)resultDialog.close();release();keys.clear();session.reset();teacherFootsteps.reset();round.reset(Date.now()>>>0);if(!round.network&&options.character){round.player.character=options.character;round.player.variant=options.character;}round.start({gathering:!externalRound||nextOptions?.gathering===true});yaw=round.player.yaw||0;pitch=round.player.pitch||0;round.setLook(yaw,pitch);
-    computerStation=null;focusRetryAt=0;keyboardSelection=false;framedApp=null;centerMove=null;
+    computerStation=null;focusRetryAt=0;keyboardSelection=false;framedApp=null;centerMove=null;resetDrawerLook();
     active=true;finished=false;continued=false;lastFriends='';lastTeacher=null;lastInteractionState=null;document.body.classList.add('playing');ui.hidden=false;$('#menu').inert=true;$('#menu').setAttribute('aria-hidden','true');
     $('#speech').hidden=true;$('#round-feedback').classList.remove('pop');
     $('#student-controls').hidden=round.snapshot().role==='teacher';$('#teacher-controls').hidden=round.snapshot().role!=='teacher';

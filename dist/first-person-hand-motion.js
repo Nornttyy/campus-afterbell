@@ -116,7 +116,7 @@ export function createFirstPersonHandMotion(hand,side){
      // its open sleeve below the lower frame while the food reaches centre;
      // moving the same crop upwards at carry depth made a floating cut wrist.
      const camera=parent.userData.viewCamera,anchor=camera||parent.parent;
-     const goal=camera?V(-.050,-.078+bob*.65,-.365):V(-.015,-.145+bob,-.42);
+     const goal=camera?V(-.080,-.095+bob*.65,-.415):V(-.015,-.145+bob,-.42);
      if(anchor)anchor.localToWorld(goal);
      const wanted=baseProp.lerp(goal,reach);prop.updateWorldMatrix(true,false);
      const travel=wanted.sub(prop.getWorldPosition(V()));

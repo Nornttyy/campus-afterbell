@@ -6,7 +6,7 @@ import {CampusModelLoader} from './model-delivery93.js?v=campus-111';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
 import {reachesRadio} from './campus-radio93.js?v=campus-97';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {paperQuestion} from './upper-floor-view85.js?v=campus-113';
+import {paperQuestion} from './upper-floor-view85.js?v=campus-114';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-94';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-92';
 import {FURNITURE_SOURCES67,loadFurniture67} from './furniture-assets67.js?v=campus-99';
@@ -29,23 +29,23 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-111';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork} from './campus-artwork.js?v=campus-93';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-113';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-114';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-108';
-import {createRoomVariants} from './room-variants.js?v=campus-113';
+import {createRoomVariants} from './room-variants.js?v=campus-114';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
 import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96';
 import * as THREE from './vendor/three.module.js';
 import {CAMPUS_SURFACE_SOURCES,loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-108';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-113';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-114';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
-import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-113';
-import {loadStudentAssets} from './student-assets.js?v=campus-113';
+import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-114';
+import {loadStudentAssets} from './student-assets.js?v=campus-114';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-113';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-114';
 import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-108';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
@@ -951,7 +951,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
       if(!frozen)entryTime=Math.min(.7,entryTime+dt);
       const player=gameplay.player||{...SEATS[PLAYER_SEAT],seated:true,yaw:0,pitch:.08},seated=player.seated!==false,crouched=Boolean(player.crouched),caught=Boolean(player.caught);
       drawerFocus=THREE.MathUtils.damp(drawerFocus,seated&&!caught&&gameplay.drawer?.open?1:0,8,activeDt);
-      const basePitch=Number.isFinite(player.pitch)?player.pitch:.08,drawerPitch=0;
+      const basePitch=Number.isFinite(player.pitch)?player.pitch:.08;
       firstPersonMotion=sampleFirstPersonMotion(firstPersonMotion,player,gameTime);
       const officeTray=player.officeChair?(campus.officeDrawers.get(player.officeDeskId)||campus.officeDrawer):null,deskTrayRecord=mapKind(mapVariant)==='bus'?variants.bus.cabinets.get(player.seatId):mapKind(mapVariant)==='computer'?variants.drawers.get(player.seatId):drawerRecords.get(player.seatId);
       const previousDrawerAmount=officeTray?Math.max(0,Math.min(1,(-officeTray.position.z-.08)/.52)):deskTrayRecord?.open||0,drawerTarget=gameplay.drawer?.open?1:0;
@@ -960,7 +960,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
       const playerSeat=seated&&!player.officeChair?currentSeats[player.seatId]:null;
       const bookAmount=gameplay.books?.find(b=>b.id===player.seatId)?.amount||0;
       const lapSeat=playerSeat?.surface==='bus-seat'||playerSeat?.surface==='bus-table'&&!player.penTaken&&bookAmount<.01;
-      hands.update(gameTime,{animationPose:viewRole()==='teacher'?null:customHandAnimation.sample({role:'student',foodItem:FOOD_ITEM_KINDS.includes(gameplay.selected),freeLook:true,seated,crouched,carrying:gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper',holding:Boolean(gameplay.holding),eating:Boolean(player.eating||gameplay.selected==='gum'&&player.bubble?.blowing),penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),drawerOpen:Boolean(gameplay.drawer?.open),captivity:player.captivity,caught,computer:player.computerActive,bookAmount,movement:firstPersonMotion.amount,crawlBlend:firstPersonMotion.crawlBlend},gameTime),drawer:firstPersonDrawer,eyeHeight:firstPersonEyeHeight(player,'student'),coachSeat:lapSeat?playerSeat.surface:null,deskSurface:!player.onBed&&mapKind(mapVariant)!=='toilet'&&!lapSeat,mealDish:gameplay.drawer?.source?.dish,examPen:variants.upper.penContact(gameplay),action:gameplay.exam?.mode==='paper'?'pen':gameplay.selected,penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),holding:Boolean(gameplay.holding&&!caught),eating:Boolean(player.eating&&!caught),carrying:(gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper')&&!caught,progress:gameplay.actionProgress,alert:feedbackKind==='caught'?feedbackTime/.55:(gameplay.suspicion||0)/150,seated,crouched,caught,freeLook:true,viewPitch:basePitch+drawerPitch,computer:gameplay.player.computerActive,typing:Boolean(player.computerActive),bookAmount:gameplay.exam?.mode==='card'?.60:!player.officeChair&&!playerSeat?.hideBook&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))?bookAmount:0,office:Boolean(player.officeChair),throwAge:player.itemThrowAge??Infinity,movement:firstPersonMotion.amount,walkPhase:firstPersonMotion.phase,crawlBlend:firstPersonMotion.crawlBlend});
+      hands.update(gameTime,{animationPose:viewRole()==='teacher'?null:customHandAnimation.sample({role:'student',foodItem:FOOD_ITEM_KINDS.includes(gameplay.selected),freeLook:true,seated,crouched,carrying:gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper',holding:Boolean(gameplay.holding),eating:Boolean(player.eating||gameplay.selected==='gum'&&player.bubble?.blowing),penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),drawerOpen:Boolean(gameplay.drawer?.open),captivity:player.captivity,caught,computer:player.computerActive,bookAmount,movement:firstPersonMotion.amount,crawlBlend:firstPersonMotion.crawlBlend},gameTime),drawer:firstPersonDrawer,eyeHeight:firstPersonEyeHeight(player,'student'),coachSeat:lapSeat?playerSeat.surface:null,deskSurface:!player.onBed&&mapKind(mapVariant)!=='toilet'&&!lapSeat,mealDish:gameplay.drawer?.source?.dish,examPen:variants.upper.penContact(gameplay),action:gameplay.exam?.mode==='paper'?'pen':gameplay.selected,penWriting:Boolean(player.penWriting),penTwirling:Boolean(player.penTwirling),holding:Boolean(gameplay.holding&&!caught),eating:Boolean(player.eating&&!caught),carrying:(gameplay.drawer?.drawnSlot!=null||gameplay.exam?.mode==='paper')&&!caught,progress:gameplay.actionProgress,alert:feedbackKind==='caught'?feedbackTime/.55:(gameplay.suspicion||0)/150,seated,crouched,caught,freeLook:true,viewPitch:basePitch,computer:gameplay.player.computerActive,typing:Boolean(player.computerActive),bookAmount:gameplay.exam?.mode==='card'?.60:!player.officeChair&&!playerSeat?.hideBook&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))?bookAmount:0,office:Boolean(player.officeChair),throwAge:player.itemThrowAge??Infinity,movement:firstPersonMotion.amount,walkPhase:firstPersonMotion.phase,crawlBlend:firstPersonMotion.crawlBlend});
       markStage('hands');const focus=THREE.MathUtils.clamp(hands.getFocus?.()||0,0,1),handState=hands.getDebug?.();canvas.dataset.itemReady=String(focus>.92&&gameplay.holding&&(handState?.extension??1)>=.99&&entryTime>=.7);
       const viewFocus=0,extraDrop=0;
       const yaw=Number.isFinite(player.yaw)?player.yaw:0,pitch=THREE.MathUtils.clamp(basePitch,-1.40,1.40);
@@ -987,6 +987,14 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
         const amount=THREE.MathUtils.smoothstep(bedTransition,0,1);
         camera.position.lerpVectors(bedFrom,playerPosition,amount);camera.quaternion.slerpQuaternions(bedFromRotation,targetQuaternion,amount);
       }else{camera.position.copy(playerPosition);camera.quaternion.copy(targetQuaternion);}
+      if(firstPersonDrawer&&currentDrawerAmount>0&&!bed){
+        // Lean with the sliding tray and leave the palms on the actual desk.
+        const lean=Math.min(.035,firstPersonDrawer.depth*.06)*currentDrawerAmount*blend;
+        const deskYaw=player.seatYaw??yaw;
+        camera.position.x+=Math.sin(deskYaw)*lean;
+        camera.position.z+=Math.cos(deskYaw)*lean;
+        camera.position.y-=lean*.25;
+      }
       socialBlend=THREE.MathUtils.damp(socialBlend,player.emote?1:0,14,activeDt);
       if(socialBlend>.015){
         // Frame the feet, even when a greeting starts directly in front of a wall.
@@ -1054,6 +1062,13 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   return {
     setGameplay,setMap,setSeats,setActive,
     getRolePreviews,
+    getDrawerLookPitch(state){
+      const player=state.player,office=player.officeChair?(campus.officeDrawers.get(player.officeDeskId)||campus.officeDrawer):null;
+      const tray=drawerHandTarget({player,drawer:state.drawer,seats:currentSeats,map:state.map,amount:1,geometry:office?.userData.handTarget});
+      if(!tray||player.onBed)return null;
+      const distance=Math.hypot(tray.centerX,Math.min(-.10,tray.centerZ+tray.depth*.16));
+      return THREE.MathUtils.clamp(Math.atan2(firstPersonEyeHeight(player,state.role)-tray.floor-.045,distance),.56,1.20);
+    },
     getAimedComputer:()=>aimedComputer,getComputerFrame:monitorFrame,setComputerHover:(id,app)=>screenContent.setHover(id,app),
     getComputerPlayback:()=>(screenContent.getPlayback?.()??{playing:false,visible:false,mediaTime:0}),
     setSoundCues:enabled=>soundCues.setEnabled(enabled),

@@ -14,7 +14,7 @@ await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry
 const make=()=>createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});
 const names={snack:'snack-packet',drink:'red-drink-can',burger:'layered-burger',banana:'curved-banana',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox'};
 
-for(const [action,name]of Object.entries(names))test(`${action}: complete 3-second real-skin eating turns from carry into its use orientation, centres, bobs and returns with a rigid wrist grip`,()=>{
+for(const [action,name]of Object.entries(names))test(`${action}: complete 3-second real-skin eating keeps the sideways carry grip, centres, bobs and returns with a rigid wrist grip`,()=>{
  const h=make(),prop=h.group.getObjectByName(name),hand=h.getHand('left'),wrist=hand.group.getObjectByName('mixamorigLeftHand'),middle=hand.group.getObjectByName('mixamorigLeftHandMiddle2');
  let time=0;for(let i=0;i<120;i++)h.update(time+=DT,{action,carrying:true,freeLook:true});h.group.updateMatrixWorld(true);
  const gripHeading=wrist.getWorldQuaternion(Q()),original=prop.getWorldPosition(V()),scale=hand.group.scale.clone(),bones=[];hand.group.traverse(o=>{if(o.isBone)bones.push([o,o.position.clone()]);});
@@ -27,7 +27,7 @@ for(const [action,name]of Object.entries(names))test(`${action}: complete 3-seco
   assert.deepEqual(prop.scale.toArray(),[1,1,1]);assert.ok(hand.group.scale.distanceTo(scale)<1e-10);
   if(frame>=60&&frame<=132){const d=h.getDebug().articulation[0];assert.ok(d.rigged&&d.wristAngle>.07&&d.elbowAngle>.09,'elbow and wrist must articulate');const angle=q.angleTo(gripHeading);
    if(action==='gum')assert.ok(angle<.1,'chewing gum uses the blowing gesture');
-   else assert.ok(angle>Math.PI-.12,'left hand must turn half a revolution for the bite');assert.ok(Math.abs(p.x)<.025);bob.push(p.y);digits.push(middle.quaternion.clone());}
+   else assert.ok(angle>.06&&angle<.30,'left hand tips the food to the mouth without reversing the grip');assert.ok(Math.abs(p.x)<.025);bob.push(p.y);digits.push(middle.quaternion.clone());}
   // Full finger/palm surfaces and winding parity are checked in hand-motion55;
   // a wrapped finger need not contact at its single most distal vertex.
  }

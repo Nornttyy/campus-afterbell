@@ -1,6 +1,6 @@
-import {PACKET_GRIPS} from './first-person-packet-grips112.js?v=campus-112';
+import {FIRST_PERSON_FOOD_FITS} from './first-person-packet-grips112.js?v=campus-114';
 import * as T from './vendor/three.module.js';
-import {createFingerRig,handFrame} from './hand-motion.js?v=campus-113';
+import {createFingerRig,handFrame} from './hand-motion.js?v=campus-114';
 import {WHOLE_PALM_PROFILES} from './whole-palm-profiles54.js?v=campus-112';
 const V=()=>new T.Vector3(),Q=()=>new T.Quaternion();
 
@@ -11,7 +11,7 @@ export function createWholePalmGrip(hand,side){
  const prefix=side<0?'Left':'Right';if(!bones[prefix+'Hand']||side>0||hand.group.userData.characterRole==='teacher')return{fit:()=>null,apply:()=>false};
  hand.setCurl(0);hand.group.updateMatrixWorld(true);const rig=createFingerRig(hand.group,bones,prefix),frame=handFrame(bones,prefix),chains={};
  for(const finger of ['Index','Middle','Pinky','Thumb','Ring']){const digits=rig.digits.filter(d=>d.finger===finger),inverse=digits[0].bone.getWorldQuaternion(Q()).invert();chains[finger]={digits,spread:frame.normal.clone().applyQuaternion(inverse),opposition:frame.along.clone().applyQuaternion(inverse)};}
- const profileFor=kind=>PACKET_GRIPS[kind]||WHOLE_PALM_PROFILES[kind]||null;
+ const profileFor=kind=>FIRST_PERSON_FOOD_FITS[kind]||WHOLE_PALM_PROFILES[kind]||null;
  return {
   fit:profileFor,
   apply(kind,weight=1){const fit=profileFor(kind);if(!fit)return false;

@@ -108,7 +108,7 @@ for(const [kind,propName] of Object.entries({chips:'potato-chip-bag',noodles:'cr
     for(const p of rig.points(finger)){
      const pad=p.pad,distance=surface.query(p.applyMatrix4(toProp)).signed;
      assert.ok(distance>-.0022,'finger passes through '+kind);
-     const onGrippingFace=kind==='drink'||(finger==='Thumb'?p.z<0:p.z>0);
+     const onGrippingFace=kind==='drink'||(finger==='Thumb'?p.z>0:p.z<0);
      if(pad&&onGrippingFace)gap=Math.min(gap,Math.abs(distance));
     }
     assert.ok(gap<.003,finger+' is more than 3 mm from '+kind);
