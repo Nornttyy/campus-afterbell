@@ -1,11 +1,11 @@
 import * as T from './vendor/three.module.js';
 import {OrbitControls} from './vendor/addons/controls/OrbitControls.js';
 import {TransformControls} from './vendor/addons/controls/TransformControls.js';
-import {createRiggedPalm} from './student-assets.js?v=campus-112';
+import {createRiggedPalm} from './student-assets.js?v=campus-113';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createDeskHands} from './game-actors.js?v=campus-112';
+import {createDeskHands} from './game-actors.js?v=campus-113';
 import {ITEM_HAND_CLIPS,newItemHandClip,createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-111';
-import {loadHandAnimations,saveCurrentHandAnimation,clearHandAnimations} from './hand-animation-runtime59.js?v=campus-111';
+import {loadHandAnimations,saveCurrentHandAnimation,clearHandAnimations} from './hand-animation-runtime59.js?v=campus-113';
 import {createAnimationHistory,putAnimationFrame,moveAnimationFrame,retimeAnimationClip,mirrorAnimationHand,completeAnimationDocument} from './animation-editor-state59.js?v=campus-83';
 
 import {prepareAnimationEditorDocument} from './animation-editor-start59.js?v=campus-111';
@@ -124,7 +124,7 @@ async function init(){
   if(d.changed){if(e.type==='pointercancel')recover(d.before);else changed();}orbit.enabled=view!=='first';if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);e.stopImmediatePropagation();}
  canvas.addEventListener('pointerup',finishDrag,true);canvas.addEventListener('pointercancel',finishDrag,true);canvas.addEventListener('lostpointercapture',finishDrag,true);
  const resize=()=>{const r=$('viewport').getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();};resizeObserver=new ResizeObserver(resize);resizeObserver.observe($('viewport'));resize();setView('first');renderReady=true;canvas.dataset.ready='true';$('loading').hidden=true;
- let last=performance.now();function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(playing){time+=dt*speed;if(time>=clip().duration){if(clip().loop)time%=clip().duration;else{time=clip().duration;playing=false;updateFields();}}updateTime();}const p=pose(),teacher=clipId.startsWith('teacher-');rigs.student.group.visible=!teacher;rigs.teacher.group.visible=teacher;arms=rigs[teacher?'teacher':'student'];const itemClip=ITEM_HAND_CLIPS.includes(clipId);arms.update(time,{animationPose:itemClip?{...p,clipId}:p,action:$('preview-item').value,carrying:itemClip,seated:false,freeLook:true,movement:0,crawlBlend:0});
+ let last=performance.now();function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(playing){time+=dt*speed;if(time>=clip().duration){if(clip().loop)time%=clip().duration;else{time=clip().duration;playing=false;updateFields();}}updateTime();}const p=pose(),teacher=clipId.startsWith('teacher-');rigs.student.group.visible=!teacher;rigs.teacher.group.visible=teacher;arms=rigs[teacher?'teacher':'student'];const itemClip=ITEM_HAND_CLIPS.includes(clipId);arms.update(time,{animationPose:itemClip?{...p,clipId}:p,action:$('preview-item').value,progress:time/clip().duration,carrying:itemClip,seated:false,freeLook:true,movement:0,crawlBlend:0});
  if(!gesture){handle.position.fromArray(p[side].position);handle.quaternion.setFromEuler(new T.Euler(...p[side].rotation));}gizmo.enabled=!playing&&$('show-gizmo').checked;gizmo.getHelper().visible=gizmo.enabled;if(needPaths)rebuildPaths();if(view!=='first')orbit.update();renderer.render(scene,camera);raf=requestAnimationFrame(loop);}
  raf=requestAnimationFrame(loop);notice(draftError||draftNotice||'拖动手掌摆姿势，拖动时间线后可继续摆下一帧。',Boolean(draftError));
 }

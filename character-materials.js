@@ -1,4 +1,4 @@
-import {handSkinShading} from './first-person-skin112.js?v=campus-112';
+import {handSkinShading} from './first-person-skin112.js?v=campus-113';
 import * as T from './vendor/three.module.js';
 
 // Keep the authored colour texture, including palm-cap vertex colours.
