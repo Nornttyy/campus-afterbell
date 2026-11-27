@@ -276,15 +276,10 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
   }
  }
  if(includeSky){
-  const skyMaterial=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,uniforms:{},vertexShader:'varying vec3 localP; void main(){localP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 localP;
-   float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-   float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.)),f.x),f.y);}
-   void main(){vec3 n=normalize(localP);float h=max(n.y,0.);vec3 color=mix(vec3(.70,.87,.88),vec3(.16,.74,.84),smoothstep(0.,.8,h));vec2 p=n.xz/(.20+n.y*.78)*2.15;
-    float coarse=noise(p), detail=noise(p*2.7+.43), f=coarse*.62+detail*.26+noise(p*6.5)*.12;
-    float bank=smoothstep(.47,.64,f)*smoothstep(.025,.22,h);
-    float sunward=smoothstep(.41,.72,noise(p+vec2(.09,.15))*.70+.30*detail);
-    vec3 cloud=mix(vec3(.72,.83,.86),vec3(1.,.986,.94),sunward);
-    color=mix(color,cloud,bank*.97);gl_FragColor=vec4(color,1.);}`});materials.add(skyMaterial);
+  const panorama=typeof document==='undefined'?null:ownTexture(new T.TextureLoader().load(new URL('./assets/materials/track-sky119.webp',import.meta.url).href));
+  if(panorama)panorama.colorSpace=T.SRGBColorSpace;
+  const skyMaterial=new T.MeshBasicMaterial({map:panorama,side:T.BackSide,depthWrite:false,fog:false,toneMapped:false});
+  materials.add(skyMaterial);
   const sky=new T.Mesh(ownGeo(new T.SphereGeometry(90,32,16)),skyMaterial);sky.position.set(t.cx,0,t.cz);sky.name='playground-outdoor-sky';sky.renderOrder=-10;group.add(sky);
  }
  unitBox.dispose();
