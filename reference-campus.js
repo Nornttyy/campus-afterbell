@@ -5,12 +5,12 @@ import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campu
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-92';
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-117&rev=124';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-117&rev=124';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-117&rev=125';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-117&rev=125';
 import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-108';
-import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117&rev=124';
-import {CLASS_TURN,turnedClass,LIFT_ALCOVE,ALCOVE_ENTRY,ALCOVE_STORAGE,REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117&rev=124';
-import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=124';
+import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117&rev=125';
+import {CLASS_TURN,turnedClass,LIFT_ALCOVE,ALCOVE_ENTRY,ALCOVE_STORAGE,REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117&rev=125';
+import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=125';
 import {END_ORIGIN,endPoint,officeOffset,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD,officeShelfCenters,officeBinPlan} from './campus-ends.js?v=campus-101';
 const [OFFICE_DESK]=OFFICE_DESKS,[OFFICE_CHAIR]=OFFICE_CHAIRS;
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
@@ -362,8 +362,9 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  // as in the supplied walkthrough; its physical outer boundary never opens.
  const corridorSkin=new T.Group();corridorSkin.name='ordinary-corridor-skin';
  const corridorLowerPanels=new T.Group();corridorLowerPanels.name='corridor-lower-wall-panels';
+ const entry=ALCOVE_ENTRY;
  const corridorWallX=CORRIDOR.maxX+.10,outerWindowZ=CORRIDOR.maxZ-3.7;
- for(const [lo,hi]of [[CORRIDOR.minZ-.20,outerWindowZ-1.59],[outerWindowZ+1.59,CORRIDOR.maxZ+.20]]){
+ for(const [lo,hi]of [[CORRIDOR.minZ-.20,outerWindowZ-1.59],[outerWindowZ+1.59,entry.minZ],[entry.maxZ,CORRIDOR.maxZ+.20]]){
   const length=hi-lo,z=(lo+hi)/2;
   B(cream,[corridorWallX,wallY,z],[.20,wallHeight,length],corridorSkin).name='corridor-solid-outer-wall';
   B(wallGreen,[CORRIDOR.maxX-.014,.57,z],[.025,1.14,length],corridorLowerPanels);
@@ -371,33 +372,38 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  }
  window(2,outerWindowZ,2.95,corridorSkin);
  for(const z of[outerWindowZ-1.5325,outerWindowZ+1.5325])B(cream,[corridorWallX,wallY,z],[.20,wallHeight,.115],corridorSkin);
- strip(CORRIDOR.maxX-.025,corridorMidZ,.05,corridorLength,corridorSkin);
+ for(const [lo,hi] of [[CORRIDOR.minZ,entry.minZ],[entry.maxZ,CORRIDOR.maxZ]]){
+  strip(CORRIDOR.maxX-.025,(lo+hi)/2,.05,hi-lo,corridorSkin);
+ }
+ B(cream,[corridorWallX,(entry.height+wallHeight)/2,(entry.minZ+entry.maxZ)/2],
+  [.20,wallHeight-entry.height,entry.maxZ-entry.minZ],corridorSkin);
  const extensionLength=CLASSROOM.minZ-CORRIDOR.minZ,extensionZ=(CLASSROOM.minZ-.20+CORRIDOR.minZ-.20)/2;
  B(cream,[7.30,wallY,extensionZ],[.20,wallHeight,extensionLength],corridorSkin).name='corridor-extension-inner-wall';
  B(wallGreen,[7.415,.57,extensionZ],[.025,1.14,extensionLength],corridorLowerPanels);B(edge,[7.432,1.145,extensionZ],[.030,.025,extensionLength],corridorLowerPanels);
  strip(7.425,extensionZ,.05,extensionLength,corridorSkin);
  B(cream,[(OFFICE.doorMaxX+CORRIDOR.maxX)/2,wallY,8.91],[CORRIDOR.maxX-OFFICE.doorMaxX,wallHeight,.22],ends).name='office-entry-right-pier';
  B(cream,[(CORRIDOR.minX+LIFT.minX)/2,wallY,CORRIDOR.minZ-.10],[LIFT.minX-CORRIDOR.minX,wallHeight,.20],ends).name='lift-entry-left-pier';
- // Left of a pupil exiting the cabin, the hall turns into a recessed bay.
+ // The bay opens sideways, beyond the last outer window.
  const bay=LIFT_ALCOVE,bayMidX=(bay.minX+bay.maxX)/2,bayMidZ=(bay.minZ+bay.maxZ)/2;
  const alcoveDepth=bay.maxZ-bay.minZ,bayWidth=bay.maxX-bay.minX;
  const bayPlaster=mat('#d3cdb9',{map:plaster,roughness:.97,vertexColors:true}),baySkirt=mat('#69796a',{roughness:.91,vertexColors:true});
  const bayFloor=mat('#cbc7b8',{map:floorMat.map,roughness:.93,vertexColors:true});
- floor(bay.minX,bay.maxX,bay.minZ,bay.maxZ,bayFloor,enclosure);
- B(bayPlaster,[bay.minX-.10,1.71,bayMidZ],[.20,3.42,alcoveDepth+.20],enclosure);
- B(bayPlaster,[bayMidX,1.71,bay.maxZ+.10],[bayWidth,3.42,.20],enclosure);
- B(bayPlaster,[bay.maxX+.10,3.27,bayMidZ],[.20,.30,alcoveDepth],enclosure);
- B(baySkirt,[bay.minX+.012,.08,bayMidZ],[.024,.16,alcoveDepth],enclosure);
- B(baySkirt,[bayMidX,.08,bay.maxZ-.012],[bayWidth,.16,.024],enclosure);
- B(bayPlaster,[bayMidX,3.50,bayMidZ+.10],[bayWidth,.16,alcoveDepth-.20],enclosure);
- for(const part of enclosure.children.filter(o=>o.isMesh&&[bayPlaster,bayFloor,baySkirt].includes(o.material))){
+ floor(bay.minX,bay.maxX,bay.minZ,bay.maxZ,bayFloor,corridorSkin);
+ B(bayPlaster,[bay.maxX+.10,entry.height/2,bayMidZ],[.20,entry.height,alcoveDepth],corridorSkin);
+ for(const sign of [-1,1]){
+  const sideZ=sign<0?bay.minZ:bay.maxZ;
+  B(bayPlaster,[bayMidX+.10,entry.height/2,sideZ+sign*.10],[bayWidth-.20,entry.height,.20],corridorSkin);
+  B(baySkirt,[bayMidX,.08,sideZ-sign*.012],[bayWidth,.16,.024],corridorSkin);
+ }
+ B(bayPlaster,[bayMidX+.10,entry.height+.08,bayMidZ],[bayWidth-.20,.16,alcoveDepth],corridorSkin);
+ for(const part of corridorSkin.children.filter(o=>o.isMesh&&[bayPlaster,bayFloor,baySkirt].includes(o.material))){
   // Local bounce from the opening falls off toward the blind end. Shared
   // unit boxes must keep their original colours for the rest of the building.
   const geo=part.geometry.clone();assets.add(geo);part.geometry=geo;part.updateMatrix();
   const verts=geo.attributes.position,colors=[],v=new T.Vector3();
   for(let i=0;i<verts.count;i++){
    v.fromBufferAttribute(verts,i).applyMatrix4(part.matrix);
-   const distance=Math.hypot(v.x-(CORRIDOR.minX+.58),v.z-bay.minZ);
+   const distance=Math.hypot(v.x-entry.wallX,v.z-bayMidZ);
    const light=.16+.80*Math.exp(-.46*distance);
    colors.push(light,light*.975,light*.925);
   }
@@ -405,12 +411,11 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  }
  // A short feathered throat and an unlit black back keep the recess dark
  // even when direct sun enters the hall. The fade is fixed to the opening.
- const entry=ALCOVE_ENTRY;
  const darknessGeo=new T.BufferGeometry(),points=[],uvs=[],indices=[];
  for(const [depth,inset] of [[0,0],[1.10,.145]]){
-  const x0=entry.minX+inset,x1=entry.maxX-inset,y0=.012+inset,y1=entry.height-.012-inset;
-  for(const [x,y] of [[x0,y0],[x1,y0],[x1,y1],[x0,y1]]){
-   points.push(x,y,entry.minZ+depth);uvs.push(0,depth/1.10);
+  const z0=entry.minZ+inset,z1=entry.maxZ-inset,y0=.012+inset,y1=entry.height-.012-inset;
+  for(const [z,y] of [[z0,y0],[z1,y0],[z1,y1],[z0,y1]]){
+   points.push(entry.wallX+depth,y,z);uvs.push(0,depth/1.10);
   }
  }
  for(let i=0;i<4;i++){const j=(i+1)%4;indices.push(i,j,j+4,i,j+4,i+4);}
@@ -425,9 +430,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  materials.add(darknessMat);
  const darkness=new T.Mesh(darknessGeo,darknessMat);darkness.name='lift-alcove-darkness';
  darkness.renderOrder=4;
- const pocketEdge=entry.maxX;
- B(cream,[(CORRIDOR.minX+pocketEdge)/2,3.965,bay.minZ+.10],[pocketEdge-CORRIDOR.minX,1.09,.20],enclosure);
- B(cream,[LIFT.maxX+.355,wallY,CORRIDOR.minZ-.10],[.71,wallHeight,.20],ends).name='lift-entry-pocket';
+ B(cream,[(LIFT.maxX+CORRIDOR.maxX)/2,wallY,CORRIDOR.minZ-.10],[CORRIDOR.maxX-LIFT.maxX,wallHeight,.20],ends).name='lift-entry-right-pier';
 
  // The dorm has room doors on both sides. Mount the chalk drawing on the
  // full-height wall between the lift and room 1, above the corridor stripe.
@@ -446,7 +449,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  B(cabinetBack,[.047,.119,.113],[.124,.058,.01],phone);
  for(let row=0;row<4;row++)for(let col=0;col<3;col++)B(edge,[.012+col*.035,.053-row*.035,.116],[.023,.019,.009],phone);
  tube([[-.096,-.168,.14],[-.115,-.29,.13],[-.065,-.32,.10],[-.025,-.21,.08]],.009,receiver,phone);
- const clutter=new T.Group();clutter.name='recessed-hall-storage';clutter.position.set(ALCOVE_STORAGE.x,0,ALCOVE_STORAGE.z);enclosure.add(clutter);
+ const clutter=new T.Group();clutter.name='recessed-hall-storage';clutter.position.set(ALCOVE_STORAGE.x,0,ALCOVE_STORAGE.z);corridorSkin.add(clutter);
  const cardboard=mat('#716246',{roughness:.98});for(const [x,y,z,w,h,d]of [[0,.35,0,.64,.70,.64],[-.03,.95,.05,.58,.50,.58],[.03,1.36,.08,.50,.32,.50]]){B(cardboard,[x,y,z],[w,h,d],clutter);B(darkWood,[x,y+h/2+.003,z],[w,.006,.04],clutter);}
  for(let i=0;i<3;i++){cylinder(boards,[-.21+i*.13,1.01,-.26],[.017,1.95,.017],[0,0,-.05+i*.045],clutter);B(cabinetBack,[-.21+i*.13,.12,-.26],[.13,.15,.08],clutter);}
  // Office shares the north wall with the classroom and can actually be entered.
@@ -799,7 +802,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  for(const object of indoorObjects)indoorEnclosure.attach(object);
  return{boardInk,hallLamp:sharedHallLamp,roleLocker:locker,enclosure,indoorEnclosure,corridorSkin,ceilingMaterial,ceilingRig,upperWalls,curtains,tiered,liftPanel,liftDoors,facades,doors,officeDoors,officeDrawer,officeDrawers,officeScreens,
   attachUpperArchitecture(){
-   enclosure.add(darkness);
+   corridorSkin.add(darkness);
    bakeStatic(classroomCabinet);classroomCabinet.removeFromParent();bakeStatic(rearFixtures);rearFixtures.add(classroomCabinet);bakeStatic(teachingFixtures);room.add(rearFixtures);indoorEnclosure.add(teachingFixtures);
    for(const group of [posterBay,standardBay]){bakeStatic(group);facades[0].add(group);}
    for(const group of [extraClassFixtures,singleHallFixtures,dayHallFixtures,corridorLowerPanels])bakeStatic(group);
