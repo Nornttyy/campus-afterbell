@@ -67,10 +67,9 @@ export function fitOfficeInterior({parent,B,rounded,mat,mesh,texture,assets,cloc
  for(const [a,b] of [[minX,office.doorMinX],[office.doorMaxX,maxX]])put(skirting,(a+b)/2,.065,minZ+.02,b-a,.13,.07);
  const windowVeil=texture(256,256,(c,w,h)=>{
   const fade=c.createLinearGradient(0,0,w*.21,h);fade.addColorStop(0,'#bcd4d4');fade.addColorStop(.47,'#90adb0');fade.addColorStop(1,'#b4c8c4');c.fillStyle=fade;c.fillRect(0,0,w,h);
-  // Only broad shapes show through the patterned glass.
-  c.save();c.filter='blur(9px)';c.fillStyle='rgba(87,111,113,.28)';c.fillRect(-20,136,w+40,12);c.fillRect(163,139,12,h-130);c.restore();
+
  });
- const windowGlass=mat('#abc2c2',{map:windowVeil,transparent:true,opacity:.972,depthWrite:false,roughness:.79});
+ const windowGlass=mat('#abc2c2',{map:windowVeil,transparent:true,opacity:.36,depthWrite:false,roughness:.38});
  const facet=(m,x,y,z,w,h)=>put(m,x,y,z,w,h,.078);
  put(edge,middle,sill-.05,maxZ-.10,windowWidth+.19,.064,.27);
  const sashWidth=windowWidth/5;
@@ -124,5 +123,7 @@ export function fitOfficeInterior({parent,B,rounded,mat,mesh,texture,assets,cloc
   const g=c.createLinearGradient(0,h,w,0);g.addColorStop(0,'#8ebbbc');g.addColorStop(.46,'#b5d5d6');g.addColorStop(1,'#d1e7e2');c.fillStyle=g;c.fillRect(0,0,w,h);
   let seed=345;for(let i=0;i<5300;i++){seed=seed*16807%2147483647;const x=seed%w;seed=seed*16807%2147483647;const y=seed%h;c.fillStyle=i%2?'rgba(65,104,106,.055)':'rgba(255,255,255,.10)';c.fillRect(x,y,1,1);}
  });
- return mat('#dfedeb',{map:frost,transparent:true,opacity:.84,roughness:.86,depthWrite:false});
+ const doorGlass=mat('#dfedeb',{map:frost,roughness:.65});
+ doorGlass.name='staffroom-opaque-door-glass';
+ return doorGlass;
 }

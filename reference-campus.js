@@ -1,16 +1,16 @@
 import {DORM_CORRIDOR_SOLIDS} from './dorm-layout70.js?v=campus-95';
 import {createBoardInk} from './board-ink93.js?v=campus-93';
-import {makeOfficeFloor,fitOfficeInterior,staffroomFinish} from './staff-office92.js?v=campus-101';
+import {makeOfficeFloor,fitOfficeInterior,staffroomFinish} from './staff-office92.js?v=campus-101&rev=123';
 import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campus-99';
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-92';
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-117';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-117';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-117&rev=123';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-117&rev=123';
 import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-108';
-import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117&rev=122';
-import {REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117';
-import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=120';
+import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117&rev=123';
+import {REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117&rev=123';
+import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=123';
 import {END_ORIGIN,endPoint,officeOffset,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD,officeShelfCenters,officeBinPlan} from './campus-ends.js?v=campus-101';
 const [OFFICE_DESK]=OFFICE_DESKS,[OFFICE_CHAIR]=OFFICE_CHAIRS;
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
@@ -21,7 +21,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  const bellZ=START_BELL_POSITION.z;
  const plaster=surfaces?.wall||texture(512,512,(c,w,h)=>{c.fillStyle='#e9e7dc';c.fillRect(0,0,w,h);let seed=71;for(let i=0;i<9000;i++){seed=(seed*16807)%2147483647;const x=seed%w;seed=(seed*16807)%2147483647;const y=seed%h;c.fillStyle=i%3?'rgba(119,119,100,.025)':'rgba(255,255,245,.13)';c.fillRect(x,y,1+i%2,1);}});
  const blue=mat('#748e8f',{metalness:.12,roughness:.48}),edge=mat('#aabdbb',{metalness:.18,roughness:.49}),cream=mat(surfaces?'#f2eee2':'#f6eddb',{map:plaster,bumpMap:surfaces?surfaceHeight(plaster,assets):null,bumpScale:.0007,roughness:.86}),glass=mat('#a9d9ea',{transparent:true,opacity:.065,depthWrite:false,roughness:.10});
- const frostedGlass=mat('#a4d9eb',{transparent:true,opacity:.68,depthWrite:false,roughness:.94,metalness:0}),upperGlass=mat('#b2dce6',{transparent:true,opacity:.58,depthWrite:false,roughness:.38});
+ const frostedGlass=mat('#a4d9eb',{transparent:true,opacity:.48,depthWrite:false,roughness:.55,metalness:0}),upperGlass=mat('#b2dce6',{transparent:true,opacity:.38,depthWrite:false,roughness:.38});
  const frameGroove=mat('#637a7b',{metalness:.10,roughness:.55}),frameLip=mat('#a6bfc4',{metalness:.18,roughness:.43}),windowCloth=mat('#3f706d',{side:T.DoubleSide,roughness:.95});
  const seal=mat('#455c5a',{roughness:.8}),recess=mat('#879b95',{roughness:.82}),doorPaint=mat('#c6d3d1',{roughness:.62}),skirting=mat('#667d6c',{roughness:.72});
  const wallGreen=mat('#e3e2d3',{roughness:.78});addWallContact(cream);addWallContact(wallGreen);

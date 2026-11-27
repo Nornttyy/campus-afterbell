@@ -67,7 +67,7 @@ export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
  const add=(x,z,yaw=0)=>raw.push({deskX:mapKind(map)==='tiered'?(x< -3?x+.15:x):x< -3?x+.45:x,deskZ:z,yaw});
  if(pattern==='facing-aisle'){
   // The desks meet in islands; the two inner chairs face away from the aisle.
-  for(const z of [-5.90,-4.66,-2.12,-.88,1.66,2.90]){
+  for(const z of [-5.90,-4.66,-1.82,-.58,2.76,4.00]){
    for(const [x,yaw] of [[-3.65,Math.PI/2],[-2.34,-Math.PI/2],[2.34,Math.PI/2],[3.20,-Math.PI/2]])add(x,z,yaw);
   }
   for(const [i,x] of [-4.65,-1.55,1.55,4.65].entries())add(x,-7.52,i%2?Math.PI:0);

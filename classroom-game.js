@@ -1,5 +1,5 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=120';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=123';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
@@ -10,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-117&radio=2';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=121';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=123';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
