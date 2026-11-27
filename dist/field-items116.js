@@ -1,5 +1,5 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=125';
-import {actorEyePosition} from './classroom-layout.js?v=campus-117&rev=125';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=126';
+import {actorEyePosition} from './classroom-layout.js?v=campus-117&rev=126';
 import {PLAYGROUND_LAYOUT,vendingPoint} from './playground-layout70.js?v=campus-117';
 
 const foods=['snack','drink','burger','noodles','chips','gum'];

@@ -30,7 +30,7 @@ test('daylight comes through real openings and follows both rows of hall fixture
    return data.subarray(offset,offset+4);
   }
   assert.ok(at(-6,.8)[1]>at(0,.8)[1]+90,'the courtyard window lights the nearest desk');
-  assert.ok(at(12.3,5.1)[0]>at(12.3,-6)[0]+90,'the lift-side exterior window lights the hall floor');
+  assert.ok(at(12.3,CORRIDOR.minZ+3.7)[0]>at(12.3,-6)[0]+90,'the lift-side exterior window lights the hall floor');
   const mid=(CORRIDOR.minX+CORRIDOR.maxX)/2,z=CORRIDOR.minZ+3+4.5;
   for(const x of [mid-1.16,mid+1.16]){
    assert.ok(at(x,z)[2]>at(mid,z)[2]+70);

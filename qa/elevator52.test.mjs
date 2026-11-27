@@ -39,9 +39,9 @@ test('the solo player can walk from the real gathering spawn into the cabin with
   if(len<.04){r.setMovement(0,0);return;}
   r.setMovement(dx/len,dz/len);r.step(1/60);
  }assert.fail('walking input did not reach '+[x,z]);};
- walkTo(LIFT.x,r.player.z);walkTo(LIFT.x,LIFT.z);
+ walkTo(LIFT.x,r.player.z);walkTo(LIFT.x,-12);walkTo(LIFT.x,LIFT.z);
  assert.equal(r.snapshot().elevator.canTravel,true);assert.equal(r.travelFloor('night'),true);
- r.step(3);walkTo(LIFT.x,LIFT.minZ-.4);assert.ok(r.player.z<LIFT.minZ-.20,'arrival opens a walkable exit');
+ r.step(3);walkTo(LIFT.x,LIFT.maxZ+.4);assert.ok(r.player.z>LIFT.maxZ+.20,'arrival opens a walkable exit');
 });
 
 test('network authority: every human boards; AI, look, blocked actions, joining, disconnect and repeated commands',()=>{

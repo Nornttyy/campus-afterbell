@@ -9,7 +9,7 @@ import {chalkHit} from '../dist/teacher-rules.js';
 test('the hall landmarks follow the walkthrough and every relocated office target matches its mesh',()=>{
  const f=campusScene();
  try{
-  assert.ok(LIFT.z>CORRIDOR.maxZ&&OFFICE.maxZ<CORRIDOR.minZ);
+  assert.ok(LIFT.z<CORRIDOR.minZ&&OFFICE.minZ>CORRIDOR.maxZ);
   assert.ok(CLASSROOM.maxX<CORRIDOR.minX);
   const targets=f.campus.getTargets(),ctx=createLayoutContext(createSeatLayout());
   for(const desk of OFFICE_DESKS){

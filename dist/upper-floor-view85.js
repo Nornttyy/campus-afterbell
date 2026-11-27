@@ -1,7 +1,7 @@
-import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=125';
+import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=126';
 import * as T from './vendor/three.module.js';
 import {createServingDish} from './game-actors.js?v=campus-117';
-import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-117&rev=125';
+import {PARTITIONS,CLASSROOM,CORRIDOR,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=126';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {SERVING_BELTS,SERVING_MENU,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92';
 
@@ -58,7 +58,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   }
   // The yellow dado continues around the approach, with both classroom doors left clear.
   for(const p of PARTITIONS)box(orange,[7.444,.56,(p.minZ+p.maxZ)/2],[.019,1.07,p.maxZ-p.minZ],null,fixed);
-  box(orange,[7.444,.56,(CORRIDOR.minZ+CLASSROOM.minZ)/2],[.018,1.07,CLASSROOM.minZ-CORRIDOR.minZ],null,fixed);
+  for(const [a,b] of [[CORRIDOR.minZ,ALCOVE_ENTRY.minZ],[ALCOVE_ENTRY.maxZ,CLASSROOM.minZ]])box(orange,[7.444,.56,(a+b)/2],[.018,1.07,b-a],null,fixed);
   box(orange,[CORRIDOR.maxX-.050,.56,(CORRIDOR.minZ+CORRIDOR.maxZ)/2],[.018,1.07,CORRIDOR.maxZ-CORRIDOR.minZ],null,fixed);
   const label=texture(960,448,(c,w,h)=>{
    c.fillStyle='#ae692e';c.fillRect(0,0,w,h);c.fillStyle='#f9ebd0';c.fillRect(10,10,w-20,h-20);
@@ -70,7 +70,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
     c.fillStyle='#fff1bc';for(let i=0;i<8;i++){c.beginPath();c.ellipse(x+Math.sin(i*7)*v*.63,y+Math.cos(i*4)*v*.27,4,2,-.3,0,Math.PI*2);c.fill();}
    }
   });
-  face(fixed,mat('#fff',{map:label}),CORRIDOR.maxX-.075,2.12,CORRIDOR.minZ+6.8,4.98,2.34,-Math.PI/2);
+  face(fixed,mat('#fff',{map:label}),CORRIDOR.maxX-.075,2.12,CORRIDOR.maxZ-6.8,4.98,2.34,-Math.PI/2);
   bakeStatic?.(fixed);
   const plate=own(new T.CylinderGeometry(.19,.15,.023,20)),ivory=mat('#f4e7cd');
   for(let id=0;id<MEAL_COUNT;id++){

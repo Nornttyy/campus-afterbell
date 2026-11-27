@@ -81,11 +81,11 @@ test('rendered walls, floors, open floor controls and interactive furniture agre
  const mat=(color,o={})=>{const m=new T.MeshStandardMaterial({color,...o});materials.add(m);return m;},mesh=(g,m,p,s=[1,1,1],r=null,parent=room)=>{const o=new T.Mesh(g,m);o.position.set(...p);o.scale.set(...s);if(r)o.rotation.set(...r);parent.add(o);return o;},box=(m,p,s,r=null,parent=room)=>mesh(new T.BoxGeometry(...s),m,p,[1,1,1],r,parent),rounded=(m,p,s,rad,r=null,parent=room)=>box(m,p,s,r,parent),cylinder=(m,p,s,r=null,parent=room)=>mesh(new T.CylinderGeometry(s[0],s[2],s[1],8),m,p,[1,1,1],r,parent),texture=()=>new T.Texture(),base=mat('#fff'),M=new Proxy({},{get:()=>base});
  const campus=buildReferenceCampus({scene,room,M,mat,mesh,box,rounded,cylinder,texture,assets,materials,floorMat:base});campus.enclosure.visible=true;campus.attachUpperArchitecture();scene.updateMatrixWorld(true);
  const hit=(p,d,filter=o=>!o.material.transparent)=>new T.Raycaster(new T.Vector3(...p),new T.Vector3(...d),0,3).intersectObject(scene,true).find(h=>h.object.material&&filter(h.object));
- for(const z of[-9.9,-8.1,-7.4,0,3.2,ALCOVE_ENTRY.minZ-.06,ALCOVE_ENTRY.maxZ+.06])assert.ok(Math.abs(hit([10,3.25,z],[1,0,0]).point.x-CORRIDOR.maxX)<.12,`outer wall hole at ${z}`);
+ for(const z of[-9.9,-8.1,-7.4,0,3.2,7.9])assert.ok(Math.abs(hit([10,3.25,z],[1,0,0]).point.x-CORRIDOR.maxX)<.12,`outer wall hole at ${z}`);
  assert.ok(Math.abs(hit([8,1.52,START_BELL_POSITION.z],[-1,0,0]).point.x-7.40)<1e-5);assert.ok(hit([8,2,-.46],[-1,0,0],o=>o.name==='pale-blue-interior-pane'&&o.material.transparent&&o.material.opacity===.48));
  const midZ=(ALCOVE_ENTRY.minZ+ALCOVE_ENTRY.maxZ)/2;
- assert.equal(hit([10,2,midZ],[1,0,0]),undefined,'side opening must be clear');
- assert.ok(hit([10,ALCOVE_ENTRY.height+.20,midZ],[1,0,0]),'solid lintel above the new opening');
+ assert.equal(hit([9.5,2,midZ],[-1,0,0]),undefined,'side opening must be clear');
+ assert.ok(hit([9.5,ALCOVE_ENTRY.height+.20,midZ],[-1,0,0]),'solid lintel above the new opening');
  assert.ok(hit([8.10,2,CORRIDOR.maxZ-.30],[0,0,1]),'former opening now faces a solid pier');
  const floor=hit([9.2,.8,0],[0,-1,0],o=>o.material===base);assert.ok(Math.abs(floor.point.y)<1e-6);assert.ok(Math.abs(floor.uv.x-floor.point.x/1.6)<1e-6);assert.ok(Math.abs(floor.uv.y-floor.point.z/1.6)<1e-6);
  const planarOverlap=(a,b)=>Math.min(a.max.x,b.max.x)-Math.max(a.min.x,b.min.x)>1e-6&&Math.min(a.max.z,b.max.z)-Math.max(a.min.z,b.min.z)>1e-6;
@@ -95,7 +95,7 @@ test('rendered walls, floors, open floor controls and interactive furniture agre
  assert.deepEqual(floorButtons.map(o=>o.userData.floor),OPEN_CAMPUS_MAPS.map(map=>CAMPUS_MAPS.indexOf(map)+1));
  const [left,right,nextRow]=floorButtons;assert.equal(floorButtons.length,10);assert.ok(left.position.y<nextRow.position.y);assert.equal(left.position.y,right.position.y);assert.ok(left.position.z>right.position.z);
  const t=campus.getTargets();assert.equal(t.doors.length,4);assert.deepEqual([...new Set(t.doors.map(d=>d.id))].sort(),['front','office','rear']);assert.equal(t.officeDesks.length,OFFICE_DESKS.length);assert.equal(t.officeChairs.length,OFFICE_CHAIRS.length);assert.equal(t.lockers.length,1);for(const target of[...t.doors,...t.officeDesks,...t.officeChairs,...t.lockers])target.object.traverse(o=>{if(o.isMesh&&o.userData.campusTarget)assert.equal(o.userData.animated,true);});
- const liftRay=new T.Raycaster(new T.Vector3(LIFT.x,1.6,CORRIDOR.maxZ-.6),new T.Vector3(0,0,1),0,1.4),closed={elevator:{doorClosed:true}},opened={elevator:{doorClosed:false}};
+ const liftRay=new T.Raycaster(new T.Vector3(LIFT.x,1.6,CORRIDOR.minZ+.6),new T.Vector3(0,0,-1),0,1.4),closed={elevator:{doorClosed:true}},opened={elevator:{doorClosed:false}};
  assert.equal(campus.liftDoors.length,2);assert.equal(liftRay.intersectObjects(campus.liftDoors,true).length,0);
  campus.update(closed,.1);assert.ok(campus.liftDoors[0].userData.openAmount>0&&campus.liftDoors[0].userData.openAmount<1,'door begins sliding rather than snapping');
  for(let i=0;i<4;i++)campus.update(closed,.1);scene.updateMatrixWorld(true);assert.equal(campus.liftDoors[0].userData.openAmount,0);assert.ok(liftRay.intersectObjects(campus.liftDoors,true).length>0,'closed door fills the real doorway');
@@ -116,16 +116,16 @@ test('ordinary pupils face the board with the hall to their right and can walk i
   const mouth=ALCOVE_ENTRY,midZ=(mouth.minZ+mouth.maxZ)/2;
   for(const radius of [.18,.23]){
    let point={x:LIFT.x,z:LIFT.z};
-   for(const [x,z] of [[LIFT.x,midZ],[mouth.wallX+.30,midZ]]){
+   for(const [x,z] of [[LIFT.x,midZ],[mouth.wallX-.30,midZ]]){
     point=moveInRoom(point,x-point.x,z-point.z,radius,ctx);
     assert.ok(Math.hypot(x-point.x,z-point.z)<.001);
    }
-   const stop=moveInRoom(point,5,0,radius,ctx);
-   assert.ok(stop.x<=mouth.stopX-radius+.001&&stop.x>mouth.stopX-radius-.081);
-   assert.ok(blocked(mouth.stopX+.1,midZ,radius,ctx));
+   const stop=moveInRoom(point,-5,0,radius,ctx);
+   assert.ok(stop.x>=mouth.stopX+radius-.001&&stop.x<mouth.stopX+radius+.081);
+   assert.ok(blocked(mouth.stopX-.1,midZ,radius,ctx));
    assert.ok(moveInRoom(stop,0,-4,radius,ctx).z>=mouth.minZ+radius-.001);
    assert.ok(moveInRoom(stop,0,4,radius,ctx).z<=mouth.maxZ-radius+.001);
-   assert.ok(moveInRoom(stop,-1,0,radius,ctx).x<mouth.wallX);
+   assert.ok(moveInRoom(stop,1,0,radius,ctx).x>mouth.wallX);
    assert.ok(blocked(8.10,CORRIDOR.maxZ+.10,radius,ctx),'former end-wall opening is closed');
   }
  }

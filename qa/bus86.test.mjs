@@ -34,7 +34,7 @@ function walk(from,to,ctx={},radius=.18){
  assert.ok(Math.hypot(p.x-to.x,p.z-to.z)<.01);assert.equal(p.busDeck,to.busDeck||0);return p;
 }
 test('the two saloons share a footprint and connect only on the flight of stairs',()=>{
- const origin={x:LIFT.x,z:LIFT.z},a=walk(origin,{x:-5,z:-14.35,busDeck:0}),b=walk(a,{x:6.03,z:-12.91,busDeck:1}),c=walk(b,{x:9.70,z:-13.1,busDeck:0});
+ const origin={x:(BUS.lift.minX+BUS.lift.maxX)/2,z:(BUS.lift.minZ+BUS.lift.maxZ)/2},a=walk(origin,{x:-5,z:-14.35,busDeck:0}),b=walk(a,{x:6.03,z:-12.91,busDeck:1}),c=walk(b,{x:9.70,z:-13.1,busDeck:0});
  assert.equal(actorFloorHeight(b,'bus'),BUS.high);assert.equal(actorFloorHeight(c,'bus'),BUS.low);
  assert.ok(busBlocked(BUS.body.minX,-14,.2,1));assert.ok(busBlocked(7.19,0,.18,0));assert.ok(busBlocked(10.05,BUS.body.maxZ,.18,0,{busDeparted:true}));
  const cross=moveOnBus({x:7,z:BUS.body.maxZ-.3,busDeck:1},0,2);assert.ok(cross.z<BUS.body.maxZ);

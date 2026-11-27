@@ -40,7 +40,7 @@ test('wall controls, clock and tutorials stand clear of plaster, posters, board 
   assert.ok(controls.max.y<2.0,'switches must not overlap the habits poster');
   assert.ok(clock.max.z<8.8&&8.8-clock.max.z<.02);assert.ok(clock.max.y<CEILING_HEIGHT);assert.ok(clock.min.y>bounds(scene.getObjectByName('teaching-board-frame')).max.y,'clock clears blackboard top');
   const student=bounds(scene.getObjectByName('corridor-student-tutorial'));assert.ok(student.max.x<CORRIDOR.maxX&&CORRIDOR.maxX-student.max.x<.006);
-  const teacher=bounds(scene.getObjectByName('teacher-tutorial-whiteboard'));assert.ok(Math.abs(teacher.min.z-(OFFICE_BOARD.z+.05))<1e-5);
+  const teacher=bounds(scene.getObjectByName('teacher-tutorial-whiteboard'));assert.ok(Math.abs(teacher.min.z-(OFFICE_BOARD.z-.05))<1e-5);
   assert.equal(overlaps(controls,clock),false);
  }finally{dispose();}
 });

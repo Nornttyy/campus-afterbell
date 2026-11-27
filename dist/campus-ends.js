@@ -1,11 +1,7 @@
-// The end rooms are authored in a common prefab frame. A half-turn places the
-// lift north and the office south of the corridor without reflecting the props.
+// Campus end rooms use the same world coordinates for rendering and movement.
 export const HALL=Object.freeze({minX:7.40,maxX:12.44,minZ:-17.52,maxZ:8.80});
-export const END_ORIGIN=Object.freeze({x:HALL.minX+HALL.maxX,z:HALL.minZ+HALL.maxZ});
 export const officePlan=Object.freeze({minX:3.05,maxX:HALL.maxX,minZ:9.02,maxZ:16.94,height:3.92,doorX:9.20,doorMinX:8.30,doorMaxX:10.10});
 export const liftPlan=Object.freeze({minX:8.10,maxX:10.60,minZ:HALL.minZ-3,maxZ:HALL.minZ-.20,x:9.35,z:HALL.minZ-1.70});
-export function endPoint(x,z){return {x:END_ORIGIN.x-x,z:END_ORIGIN.z-z};}
-export function endBounds(b){return {...b,minX:END_ORIGIN.x-b.maxX,maxX:END_ORIGIN.x-b.minX,minZ:END_ORIGIN.z-b.maxZ,maxZ:END_ORIGIN.z-b.minZ};}
 
 // Desks, chairs, monitor collisions and drawer targets share the same local axes.
 export function officeOffset(origin,side,forward){
