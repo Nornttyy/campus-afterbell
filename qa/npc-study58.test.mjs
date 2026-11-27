@@ -34,6 +34,38 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: re
  t.diagnostic(JSON.stringify({maxDeskDepth,maxBookDepth,minHandGap,worstSideGap,headGap}));actor.dispose();
 });
 
+for(const [variant,{file}] of Object.entries(STUDENT_ASSETS))test(variant+': writing on the first frame reaches across the notebook with the other hand on the page',async()=>{
+ const actor=createRiggedStudent(await loadGeometry(file+'.glb'),{variant});
+ const samples=bodySamples(actor).filter(s=>s.head||s.side==='Left');
+ const pen=actor.group.getObjectByName('school-writing-pen');
+ actor.setStudyBook(bookSource());actor.setMood('reading');actor.setMotion({seated:true,lookPitch:.52});
+ actor.update(1);actor.setMood('writing');
+ const point=V(),closest=V(),shaft=new T.Line3();
+ for(let frame=0;frame<150;frame++){
+  actor.update(1+(frame+1)/60);
+  if(frame%6)continue;
+  actor.group.updateMatrixWorld(true);
+  const nib=pen.localToWorld(V(0,-.0875,0));
+  shaft.set(nib,pen.localToWorld(V(0,.0815,0)));
+  assert.ok(nib.z>.57&&nib.z<TEXTBOOK.flatSeatDistance+TEXTBOOK.leafHeight,'pen writes by the near edge');
+  assert.ok(Math.abs(nib.y-writingPageY(nib.x))<.003,'pen leaves the sloping paper');
+  let penGap=Infinity,supportGap=Infinity;
+  for(const {mesh,index,head} of samples){
+   mesh.getVertexPosition(index,point).applyMatrix4(mesh.matrixWorld);
+   if(head){
+    shaft.closestPointToPoint(point,true,closest);
+    penGap=Math.min(penGap,closest.distanceTo(point)-.010);
+   }else if(point.x>0&&point.x<TEXTBOOK.leafWidth*Math.cos(TEXTBOOK.leafYaw)&&
+     point.z>TEXTBOOK.flatSeatDistance&&point.z<TEXTBOOK.flatSeatDistance+TEXTBOOK.leafHeight){
+    supportGap=Math.min(supportGap,point.y-writingPageY(point.x));
+   }
+  }
+  assert.ok(penGap>.025,'pen shaft touches face or glasses: '+penGap);
+  assert.ok(Math.abs(supportGap)<.012,'supporting hand leaves the opposite page: '+supportGap);
+ }
+ actor.dispose();
+});
+
 test('ordinary study schedule alternates three useful actions without items or score and looks toward teacher',()=>{
  for(const id of [0,7,29]){const actor={id,x:0,z:0,seatYaw:0},moods=new Set();for(let elapsed=0;elapsed<75;elapsed+=.1){const s=ordinaryStudyState(actor,{x:3,z:2},elapsed,42);moods.add(s.mood);assert.equal(s.holding,false);assert.equal(s.action,null);assert.equal(s._computerActive,false);if(s.mood==='listening')assert.ok(s.yaw>0&&s.yaw<=.72);const pc=ordinaryStudyState(actor,{x:3,z:2},elapsed,42,true);assert.ok(['computer','computer-idle'].includes(pc.mood));assert.equal(pc.studyBookHeld,false);assert.equal(pc._computerApp,'photoshop');}assert.deepEqual([...moods].sort(),['listening','reading','writing']);}
 });

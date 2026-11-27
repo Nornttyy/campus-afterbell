@@ -7,7 +7,7 @@ import {readFile} from 'node:fs/promises';
 // filesystem pathname is identical; that can split asset registries/caches.
 async function productionGraph(){
   const entry=new URL('../dist/index.html',import.meta.url),html=await readFile(entry,'utf8');
-  const roots=[...html.matchAll(/<script\b(?=[^>]*\btype="module")(?=[^>]*\bsrc="([^"]+)")[^>]*>/g)].map(m=>new URL(m[1],entry));
+  const roots=[...html.matchAll(/<script\b(?=[^>]*\btype="module")(?=[^>]*\bsrc="([^"]+)")[^>]*>/g)].map(m=>new URL(m[1].replaceAll('&amp;','&'),entry));
   assert.ok(roots.length,'production module entry missing');
   const visited=new Set(),byPath=new Map();
   async function visit(url){
@@ -41,20 +41,20 @@ test('production menu and classroom share one URL per physical module',async()=>
 test('multiplayer worker and authoritative rules use the current release cache key',async()=>{
   const {graph,revision}=await productionGraph();
   const client=await readFile(new URL('../dist/peer-room79.js',import.meta.url),'utf8');
-  const roomRevision=revision+'&rev=120';
+  const roomRevision=revision+'&rev=121';
   assert.ok(client.includes(`new URL('./peer-room-worker79.js?v=${roomRevision}'`));
   const chain={
     'peer-room-worker79.js':['peer-room-host79.js'],
     'peer-room-host79.js':['room-simulation.js'],
-    'room-simulation.js':['elevator-session.js','campus-destinations.js'],
-    'elevator-session.js':['campus-destinations.js'],
+    'room-simulation.js':['classroom-rules.js','teacher-rules.js'],
+    'classroom-rules.js':['npc-study58.js'],
   };
   for(const [file,dependencies]of Object.entries(chain)){
     const source=await readFile(new URL('../dist/'+file,import.meta.url),'utf8');
     for(const name of dependencies)assert.ok(source.includes(`'./${name}?v=${roomRevision}'`),`${file} can load stale ${name}`);
   }
   const hostSource=await readFile(new URL('../dist/room-simulation.js',import.meta.url),'utf8');
-  for(const name of ['item-rules50.js','classroom-rules.js','teacher-rules.js']){
+  for(const name of ['item-rules50.js','classroom-rules.js','teacher-rules.js','elevator-session.js','campus-destinations.js']){
     const path=new URL('../dist/'+name,import.meta.url).pathname;
     const [pageUrl]=graph.get(path);
     assert.ok(hostSource.includes(`'./${name}${new URL(pageUrl).search}'`),'worker and page must share '+name);

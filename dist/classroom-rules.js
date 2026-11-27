@@ -14,7 +14,7 @@ import {TOILET_STALLS,TOILET_DOOR,toiletDoorPose,toiletDoorSolids,toiletDoorReac
 import {PLAYGROUND_LAYOUT,PLAYGROUND_BOARD,PLAYGROUND_POSTS,vendingPoint,canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117';
 import {floatingBubblePosition,bubbleTouchesHead} from './bubble-flight69.js?v=campus-83';
 import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-117';
-import {ordinaryStudyState} from './npc-study58.js?v=campus-117';
+import {ordinaryStudyState} from './npc-study58.js?v=campus-117&rev=121';
 import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-117';
 import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-117';
 import {INTERACTION_SECONDS,ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-117';
@@ -72,6 +72,9 @@ const angle=n=>Math.atan2(Math.sin(n),Math.cos(n));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const heading=(a,b)=>Math.atan2(b.x-a.x,b.z-a.z);
 const valid=n=>typeof n==='number'&&Number.isFinite(n);
+function poseDeskBook(book,raised){
+  if(book){book.raised=raised;book.amount=Number(raised);}
+}
 const nonStudyMaps=new Set(['toilet','dorm','playground']);
 function idleMood(map,actor){
   if(!actor.seated||mapKind(map)==='playground')return 'standing';
@@ -293,8 +296,17 @@ export class ClassroomRound{
     return false;
   }
   pressVendingButton(id){return this.setFixtureUse(id);}
-  takeGroundItem(id){return Number.isSafeInteger(id)&&takeLoose(this,id);}
-  dropItem(){return dropLoose(this);}
+  takeGroundItem(id){
+    if(!Number.isSafeInteger(id)||!takeLoose(this,id))return false;
+    if(this.player._penTaken)this.player.mood='pen-twirling';
+    return true;
+  }
+  dropItem(){
+    const pen=this.player._penTaken;
+    if(!dropLoose(this))return false;
+    if(pen)this._updateStudentMood(this.player);
+    return true;
+  }
   takeCoolerItem(id){return takeCooler(this,id);}
   collectVendingFood(id){
     const item=[...this.groundItems.values()].find(i=>i.origin===id&&Math.hypot(i.x-this.player.x,i.z-this.player.z)<1.8);
@@ -477,9 +489,15 @@ export class ClassroomRound{
   _penActive(actor=this.player){return this.status==='playing'&&this.stage==='class'&&!this.paused&&!actor._computerActive&&!this._restrained(actor)&&actor._drawnSlot!==null&&actor._slots[actor._drawnSlot]?.action==='pen';}
   _penWriting(actor=this.player){return this._penActive(actor)&&actor.seated&&!actor._officeChair&&!this.seats[actor.seatId]?.hidePen&&actor._penMode==='writing';}
   _penTwirling(actor=this.player){return this._penActive(actor)&&!this._penWriting(actor);}
+  _updateStudentMood(s){
+    const read=s.seated&&!s._officeChair&&s._drawnSlot==null&&this.books[s.seatId]?.raised&&!this.seats[s.seatId]?.hideBook;
+    s.mood=s._computerActive&&s.seated?'computer':s.holding?s.action:read?'reading':s.seated||mapKind(this.map)==='playground'?idleMood(this.map,s):'walking';
+  }
   togglePenMode(){
     const p=this.player;if(!p.seated||p._officeChair||this.seats[p.seatId]?.hidePen||!this._penActive(p))return false;
-    p._penMode=p._penMode==='writing'?'twirling':'writing';p.mood=p._penMode==='writing'?'writing':'pen-twirling';this.holding=p.holding=false;return true;
+    p._penMode=p._penMode==='writing'?'twirling':'writing';
+    if(p._penMode==='writing')poseDeskBook(this.books[p.seatId],false);
+    p.mood=p._penMode==='writing'?'writing':'pen-twirling';this.holding=p.holding=false;return true;
   }
   setDrawerOpen(open){
     if(typeof open!=='boolean'||!this._classInputAllowed()||this._restrained()||!this.player.seated||this.player._drawerOpen===open)return false;
@@ -489,7 +507,8 @@ export class ClassroomRound{
   }
   setBookRaised(raised){
     const p=this.player;if(typeof raised!=='boolean'||!this._classInputAllowed()||this._restrained(p)||!p.seated||p._drawnSlot!==null)return false;
-    const book=this.books[p.seatId];if(this.seats[p.seatId]?.hideBook||!book||book.raised===raised)return false;book.raised=raised;book.amount=Number(raised);return true;
+    const book=this.books[p.seatId];if(this.seats[p.seatId]?.hideBook||!book||book.raised===raised)return false;
+    poseDeskBook(book,raised);this._updateStudentMood(p);return true;
   }
   toggleDrawer(){
     if(!this._classInputAllowed()||this._restrained()||!this.player.seated)return false;
@@ -498,7 +517,10 @@ export class ClassroomRound{
   }
   toggleBook(){
     const p=this.player;if(!this._classInputAllowed()||this._restrained(p)||!p.seated)return false;
-    if(this.seats[p.seatId]?.hideBook||!this.books[p.seatId])return false;const book=this.books[p.seatId];book.raised=!book.raised;book.amount=Number(book.raised);return true;
+    const book=this.books[p.seatId];if(!book||this.seats[p.seatId]?.hideBook||this._penWriting(p))return false;
+    poseDeskBook(book,!book.raised);
+    if(p._drawnSlot==null)this._updateStudentMood(p);
+    return true;
   }
   selectSlot(index){
     this._sanitizeActorItems(this.player);
@@ -574,7 +596,9 @@ export class ClassroomRound{
       p._slots=[];p._selectedSlot=0;p.action=null;this.selected='snack';
     }
     if(slot?.action==='pen'){p._slots.splice(p._drawnSlot,1);this.penOwners.delete(p._penSeatId);p._penSeatId=null;p._penTaken=false;p._penMode=null;p._selectedSlot=0;this.selected=p.action=p._slots[0]?.action||'snack';}
-    p._drawnSlot=null;this._finishHeldItem(p);p._drawerOpen=Boolean(meal==null&&p.seated&&slot?.action!=='pen');return true;
+    p._drawnSlot=null;this._finishHeldItem(p);p._drawerOpen=Boolean(meal==null&&p.seated&&slot?.action!=='pen');
+    if(slot?.action==='pen')this._updateStudentMood(p);
+    return true;
   }
   startComputer(seatId=this.player.seatId){
     const p=this.player,seat=this.seats[seatId];
@@ -956,7 +980,7 @@ export class ClassroomRound{
   }
   takePen(){
     const p=this.player;if(!this._classInputAllowed()||!p.seated||this._restrained(p)||p._drawnSlot!==null||p._officeChair||this.seats[p.seatId]?.hidePen||mapKind(this.map)==='computer')return false;
-    if(p._penTaken||this.penOwners.has(p.seatId))return false;this.stopComputer();this._claimItemSource(p);p._penSeatId=p.seatId;this.penOwners.set(p.seatId,p.id);const slot={id:p._slots.length,action:'pen',readyAt:Infinity,progress:0,temporary:true,heldBy:p.id};p._slots.push(slot);p._selectedSlot=slot.id;p._drawnSlot=slot.id;p._penTaken=true;p._penMode='twirling';this.selected=p.action='pen';this.holding=p.holding=false;p.mood='pen-twirling';if(this.books[p.seatId])this.books[p.seatId].raised=false;return true;
+    if(p._penTaken||this.penOwners.has(p.seatId))return false;this.stopComputer();this._claimItemSource(p);p._penSeatId=p.seatId;this.penOwners.set(p.seatId,p.id);const slot={id:p._slots.length,action:'pen',readyAt:Infinity,progress:0,temporary:true,heldBy:p.id};p._slots.push(slot);p._selectedSlot=slot.id;p._drawnSlot=slot.id;p._penTaken=true;p._penMode='twirling';this.selected=p.action='pen';this.holding=p.holding=false;p.mood='pen-twirling';poseDeskBook(this.books[p.seatId],false);return true;
   }
   drainEvents(){const events=this._events;this._events=[];return events;}
   _random(){let t=this._rng=(this._rng+0x6D2B79F5)>>>0;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}
@@ -1093,12 +1117,16 @@ export class ClassroomRound{
       if(this._penActive(s)){s.holding=false;s.mood=this._penWriting(s)?'writing':'pen-twirling';if(s.isPlayer)this.holding=false;continue;}
       if(s.isPlayer||s.networkHuman){
         if(s.isPlayer){s.holding=this.holding;s.action=this.selected;}
-        const read=s.seated&&!s._officeChair&&s._drawnSlot==null&&this.books[s.seatId]?.raised&&!this.seats[s.seatId]?.hideBook;
-        s.mood=s._computerActive&&s.seated?'computer':s.holding?s.action:read?'reading':s.seated||mapKind(this.map)==='playground'?idleMood(this.map,s):'walking';
+        this._updateStudentMood(s);
         continue;
       }
       if(!s.isTeammate){
-        if(s.seated){Object.assign(s,ordinaryStudyState(s,this.teacher,this.elapsed,this.seed,mapKind(this.map)));s._drawnSlot=null;const book=this.books[s.seatId];if(book)book.raised=false;}
+        if(s.seated){
+          const kind=mapKind(this.map),book=this.books[s.seatId];
+          const deskPenAvailable=!this.penOwners.has(s.seatId);
+          Object.assign(s,ordinaryStudyState(s,this.teacher,this.elapsed,this.seed,kind,deskPenAvailable));s._drawnSlot=null;
+          poseDeskBook(book,s.studyBookHeld&&!this.seats[s.seatId]?.hideBook&&!s._officeChair);
+        }
         else {s.holding=false;s.studyBookHeld=false;s._computerActive=false;s.mood='standing';}
         continue;
       }
