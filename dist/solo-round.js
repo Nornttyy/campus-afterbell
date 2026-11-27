@@ -1,8 +1,8 @@
-import {ClassroomRound} from './classroom-rules.js?v=campus-117&rev=124';
-import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=124';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=124';
-import {updateLayoutDoors,campusFloor} from './classroom-layout.js?v=campus-117&rev=124';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=124';
+import {ClassroomRound} from './classroom-rules.js?v=campus-117&rev=125';
+import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=125';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=125';
+import {updateLayoutDoors,campusFloor} from './classroom-layout.js?v=campus-117&rev=125';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=125';
 
 const elevatorRound=Base=>class extends Base{
  reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();return this.snapshot();}

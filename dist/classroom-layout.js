@@ -21,11 +21,13 @@ export const LIFT=Object.freeze({...endBounds(liftPlan),...endPoint(liftPlan.x,l
 // fittings about the room centre so a seated pupil has the hall on the right.
 export const CLASS_TURN=Object.freeze({x:CLASSROOM.minX+CLASSROOM.maxX,z:CLASSROOM.minZ+CLASSROOM.maxZ});
 export const turnedClass=map=>['classroom','night'].includes(mapKind(map));
-export const LIFT_ALCOVE=Object.freeze({minX:3.70,maxX:LIFT.minX-.20,minZ:CORRIDOR.maxZ,maxZ:LIFT.maxZ});
-// The recess is visible beyond this shallow, walkable threshold.
-export const ALCOVE_ENTRY=Object.freeze({minX:CORRIDOR.minX,maxX:LIFT.minX-.71,
- minZ:CORRIDOR.maxZ,stopZ:CORRIDOR.maxZ+.75,height:3.42});
-export const ALCOVE_STORAGE=Object.freeze({x:LIFT_ALCOVE.minX+.51,z:LIFT_ALCOVE.maxZ-.52});
+// From the corridor looking at the lift, screen-left is +X. Entry is
+// perpendicular to the lift doors and stops just inside the side wall.
+export const ALCOVE_ENTRY=Object.freeze({wallX:CORRIDOR.maxX,stopX:CORRIDOR.maxX+.75,
+ minZ:CORRIDOR.maxZ-1.98,maxZ:CORRIDOR.maxZ-.12,height:3.42});
+export const LIFT_ALCOVE=Object.freeze({minX:ALCOVE_ENTRY.wallX,maxX:ALCOVE_ENTRY.wallX+3.40,
+ minZ:ALCOVE_ENTRY.minZ,maxZ:ALCOVE_ENTRY.maxZ});
+export const ALCOVE_STORAGE=Object.freeze({x:LIFT_ALCOVE.maxX-.52,z:LIFT_ALCOVE.maxZ-.51});
 function turnPoint(p){return {...p,x:CLASS_TURN.x-p.x,z:CLASS_TURN.z-p.z};}
 function turnBox(b){return {...b,minX:CLASS_TURN.x-b.maxX,maxX:CLASS_TURN.x-b.minX,minZ:CLASS_TURN.z-b.maxZ,maxZ:CLASS_TURN.z-b.minZ};}
 export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:CORRIDOR.maxZ-.65});
@@ -150,17 +152,18 @@ export const DOOR_LEAVES=Object.freeze(DOORS.map(d=>V(7.30,8.88,d.maxZ-.07,d.max
 // The lift portal/cabin use the corridor's end, never the classroom's rear wall.
 const portalZ=CORRIDOR.maxZ,west=CLASSROOM.minX;
 const endWalls=Object.freeze([
- V(LIFT.minX-.71,LIFT.minX,portalZ,portalZ+.20),
- V(LIFT_ALCOVE.minX-.20,LIFT_ALCOVE.minX,portalZ,LIFT_ALCOVE.maxZ+.20),
- V(LIFT_ALCOVE.minX,LIFT_ALCOVE.maxX,LIFT_ALCOVE.maxZ,LIFT_ALCOVE.maxZ+.20),
- V(LIFT_ALCOVE.minX,CORRIDOR.minX,portalZ,portalZ+.22),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ,portalZ+.20),
+ V(CORRIDOR.minX,LIFT.minX,portalZ,portalZ+.20),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ,portalZ+.20),
  V(OFFICE.minX-.20,OFFICE.doorMinX,OFFICE.maxZ,CORRIDOR.minZ),V(OFFICE.doorMaxX,OFFICE.maxX+.20,OFFICE.maxZ,CORRIDOR.minZ),
  V(OFFICE.minX-.20,OFFICE.minX,OFFICE.minZ-.20,OFFICE.maxZ),V(OFFICE.maxX,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ),
  V(OFFICE.minX,OFFICE.maxX,OFFICE.minZ-.20,OFFICE.minZ),
  V(LIFT.minX-.20,LIFT.minX,portalZ,LIFT.maxZ+.20),V(LIFT.maxX,LIFT.maxX+.20,portalZ,LIFT.maxZ+.20),V(LIFT.minX,LIFT.maxX,LIFT.maxZ,LIFT.maxZ+.20)
 ]);
 const corridorEdges=[
- V(CORRIDOR.maxX,CORRIDOR.maxX+.20,CORRIDOR.minZ,portalZ),
+ V(CORRIDOR.maxX,CORRIDOR.maxX+.20,CORRIDOR.minZ,ALCOVE_ENTRY.minZ),
+ V(CORRIDOR.maxX,CORRIDOR.maxX+.20,ALCOVE_ENTRY.maxZ,portalZ),
+ V(LIFT_ALCOVE.minX,LIFT_ALCOVE.maxX+.20,LIFT_ALCOVE.minZ-.20,LIFT_ALCOVE.minZ),
+ V(LIFT_ALCOVE.minX,LIFT_ALCOVE.maxX+.20,LIFT_ALCOVE.maxZ,LIFT_ALCOVE.maxZ+.20),
+ V(LIFT_ALCOVE.maxX,LIFT_ALCOVE.maxX+.20,LIFT_ALCOVE.minZ,LIFT_ALCOVE.maxZ),
  V(CLASSROOM.maxX,CORRIDOR.minX,CORRIDOR.minZ,CLASSROOM.minZ-.20)
 ];
 const classEdges=[
@@ -169,13 +172,13 @@ const classEdges=[
  V(west,CORRIDOR.minX,CLASSROOM.maxZ,CLASSROOM.maxZ+.22)
 ];
 const dormCommonWalls=endWalls;
-const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(OFFICE.doorMinX,OFFICE.doorMaxX,OFFICE.maxZ,CORRIDOR.minZ,3.08),V(LIFT.minX,LIFT.maxX,portalZ,portalZ+.20,3.12),V(CORRIDOR.minX,LIFT.minX-.71,portalZ,portalZ+.20,3.42)];
+const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(OFFICE.doorMinX,OFFICE.doorMaxX,OFFICE.maxZ,CORRIDOR.minZ,3.08),V(LIFT.minX,LIFT.maxX,portalZ,portalZ+.20,3.12),V(ALCOVE_ENTRY.wallX,ALCOVE_ENTRY.wallX+.20,ALCOVE_ENTRY.minZ,ALCOVE_ENTRY.maxZ,ALCOVE_ENTRY.height)];
 const baseWalls=Object.freeze([...PARTITIONS,...classEdges,...corridorEdges,...endWalls]);
 const liftThreshold=()=>V(LIFT.minX,LIFT.maxX,portalZ-.02,portalZ+.22,.02,3.12);
 const sealedLift=ELEVATOR_ENABLED?[]:[liftThreshold()];
 export const WALLS=Object.freeze([...baseWalls,...DOOR_LEAVES,...sealedLift]);
 export const WALL_VOLUMES=Object.freeze([...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...DOOR_LEAVES,...sealedLift,...headers]);
-const fixedCeilings=Object.freeze([V(LIFT_ALCOVE.minX-.20,LIFT_ALCOVE.maxX,portalZ+.20,LIFT_ALCOVE.maxZ+.20,3.42,3.58),V(CORRIDOR.minX-.20,CORRIDOR.maxX+.20,CORRIDOR.minZ-.22,portalZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ,OFFICE.height,OFFICE.height+.16),V(LIFT.minX-.20,LIFT.maxX+.20,portalZ+.20,LIFT.maxZ+.20,3.12,3.28)]);
+const fixedCeilings=Object.freeze([V(LIFT_ALCOVE.minX,LIFT_ALCOVE.maxX+.20,LIFT_ALCOVE.minZ-.20,LIFT_ALCOVE.maxZ+.20,ALCOVE_ENTRY.height,ALCOVE_ENTRY.height+.16),V(CORRIDOR.minX-.20,CORRIDOR.maxX+.20,CORRIDOR.minZ-.22,portalZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ,OFFICE.height,OFFICE.height+.16),V(LIFT.minX-.20,LIFT.maxX+.20,portalZ+.20,LIFT.maxZ+.20,3.12,3.28)]);
 // Height to underside of each room ceiling. The hallway and office have their own slabs.
 const teachingHeights=Object.freeze({classroom:4.10,night:4.10,computer:4.08,hotpot:4.18,toilet:4.04,cafeteria:4.25,exam:4.14,tiered:TIERED_CEILING_HEIGHT});
 export function teachingRoomHeight(map){return teachingHeights[mapKind(map)]??CEILING_HEIGHT;}
@@ -287,7 +290,7 @@ export function walkableFootprint(x,z,r=.18,context=null){
  const kind=mapKind(context?.map);if(kind==='playground'&&playgroundWalkable(x,z,r))return true;
  const room=kind==='dorm'?DORM_ROOM_RECTS.some(b=>x>=b.minX+r&&x<=b.maxX-r&&z>=b.minZ+r&&z<=b.maxZ-r):(x>=CLASSROOM.minX+r&&x<=CORRIDOR.maxX-r&&z>=CLASSROOM.minZ+r&&z<=CLASSROOM.maxZ-r);
  const mouth=ALCOVE_ENTRY;
- const entry=x>=mouth.minX+r&&x<=mouth.maxX-r&&z>=mouth.minZ-r&&z<=mouth.stopZ-r;
+ const entry=kind!=='dorm'&&x>=mouth.wallX-r&&x<=mouth.stopX-r&&z>=mouth.minZ+r&&z<=mouth.maxZ-r;
  return entry||room||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=OFFICE.minZ+r&&z<=CORRIDOR.minZ+r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=CORRIDOR.maxZ-r&&z<=LIFT.maxZ-r);
 }
 export function clearWallSegment(a,b,context=null){

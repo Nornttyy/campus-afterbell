@@ -1,4 +1,4 @@
-import {mapKind,OFFICE_DESKS} from './classroom-layout.js?v=campus-117&rev=124';
+import {mapKind,OFFICE_DESKS} from './classroom-layout.js?v=campus-117&rev=125';
 
 export const DESK_DRAWER_TRAVEL=.40;
 export const LAB_DRAWER_TRAVEL=.36;

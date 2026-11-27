@@ -5,7 +5,7 @@ import {loadGeometry} from './gltf-geometry.mjs';
 import {buildReferenceCampus} from '../dist/reference-campus.js';
 import {createSoloRound} from '../dist/solo-round.js';
 import {ClassroomRound} from '../dist/classroom-rules.js';
-import {CAMPUS_MAPS,LAYOUT_PATTERNS,LIFT,CLASSROOM,CORRIDOR,boardForMap,BOARD,OFFICE,TEACHER_SPAWN,createSeatLayout,createLayoutContext,mapKind,floorHeight,floorTiles,blocked,chairExit,walkRoute,moveInRoom} from '../dist/classroom-layout.js';
+import {CAMPUS_MAPS,LAYOUT_PATTERNS,LIFT,ALCOVE_ENTRY,CLASSROOM,CORRIDOR,boardForMap,BOARD,OFFICE,TEACHER_SPAWN,createSeatLayout,createLayoutContext,mapKind,floorHeight,floorTiles,blocked,chairExit,walkRoute,moveInRoom} from '../dist/classroom-layout.js';
 
 function campusScene(){
  const scene=new T.Scene(),room=new T.Group();scene.add(room);const assets=new Set(),materials=new Set();
@@ -50,7 +50,7 @@ test('corridor has glazing only at lift end, while other outer wall spans are ac
  const {scene,dispose}=campusScene();try{
   const panes=scene.getObjectsByProperty('name','clear-exterior-pane').filter(o=>{const p=o.getWorldPosition(new T.Vector3());return p.x>CORRIDOR.maxX-.01&&p.x<CORRIDOR.maxX+.20;});assert.equal(panes.length,4);
   for(const pane of panes){const p=pane.getWorldPosition(new T.Vector3());assert.ok(p.z>=CORRIDOR.maxZ-5.3&&p.z<=CORRIDOR.maxZ-2.1);assert.ok(pane.material.opacity<.10);}
-  for(const z of[-9.0,-3.8,0,3.2,7.9]){const hit=new T.Raycaster(new T.Vector3(CORRIDOR.maxX-.5,2,z),new T.Vector3(1,0,0),0,1).intersectObject(scene,true).find(h=>h.object.name==='corridor-solid-outer-wall');assert.ok(hit,`hole at z=${z}`);assert.ok(Math.abs(hit.point.x-CORRIDOR.maxX)<1e-6);assert.equal(hit.object.material.transparent,false);}
+  for(const z of[-9.0,-3.8,0,3.2,ALCOVE_ENTRY.minZ-.06,ALCOVE_ENTRY.maxZ+.06]){const hit=new T.Raycaster(new T.Vector3(CORRIDOR.maxX-.5,2,z),new T.Vector3(1,0,0),0,1).intersectObject(scene,true).find(h=>h.object.name==='corridor-solid-outer-wall');assert.ok(hit,`hole at z=${z}`);assert.ok(Math.abs(hit.point.x-CORRIDOR.maxX)<1e-6);assert.equal(hit.object.material.transparent,false);}
   const inner=scene.getObjectsByProperty('name','pale-blue-interior-pane');assert.ok(inner.length>10);assert.deepEqual([...new Set(inner.map(p=>p.material.opacity))].sort(),[.38,.48]);
  }finally{dispose();}
 });
