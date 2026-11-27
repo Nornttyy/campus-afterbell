@@ -31,7 +31,7 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-111';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork} from './campus-artwork.js?v=campus-93';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=120';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=122';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117';
 import {createRoomVariants} from './room-variants.js?v=campus-117&rev=120';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
@@ -552,7 +552,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     applyRoomLighting(night,{ambient,sun,fill,teachingFill,lampMat,ceilingMaterial,scene});
     setCampusNight(night);firstPersonView.setNight(night);
     setCharacterClassroomDay(active);setCharacterNight(scene,night,active);
-    campus.daylight.setOrdinary(active&&['classroom','computer','tiered'].includes(mapVariant));
+    campus.daylight.setOrdinary(active&&['classroom','computer','tiered'].includes(mapVariant),active&&mapKind(mapVariant)==='classroom');
     campus.setDaylight(active);
     if(active)scene.background=campus.daylight.sky;
     if(grout)grout.moonlight.value=night&&mapVariant==='night'?1:0;
@@ -560,8 +560,9 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     if(active){
       // Cool skylight in the aisles, warm indirect light off the desks.
       ambient.color.set('#f3f3f6');ambient.groundColor.set('#e7ded2');
-      ambient.intensity=4.02;fill.intensity=.73;teachingFill.intensity=.72;
-      sun.color.set('#fff0db');sun.intensity=4.48;
+      const classroom=mapKind(mapVariant)==='classroom';
+      ambient.intensity=classroom?3.58:4.02;fill.intensity=classroom?.61:.73;teachingFill.intensity=.72;
+      sun.color.set('#fff0db');sun.intensity=classroom?4.96:4.48;
       ceilingMaterial.color.set('#e8eff6');
     }
     if(grout)grout.value=active?.69:.22;

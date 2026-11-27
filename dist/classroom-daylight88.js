@@ -140,6 +140,10 @@ const finishes={
    // One axis is on the wall, the other measures distance to its return.
    float endWall=max(min(p88.x-${f(CLASSROOM.minX)},${f(CLASSROOM.maxX)}-p88.x),min(p88.z-${f(CLASSROOM.minZ)},${f(CLASSROOM.maxZ)}-p88.z));
    float cove=1.0-smoothstep(.08,.62,4.10-p88.y);
+   if(classroomDay){
+    float floorBounce=smoothstep(.15,1.65,p88.y)*(1.0-smoothstep(2.3,3.95,p88.y));
+    diffuseColor.rgb*=mix(vec3(.85,.84,.82),vec3(1.11,1.07,1.01),day88)*mix(.96,1.035,floorBounce);
+   }
    diffuseColor.rgb*=vec3(1.02,.985,.965)*mix(.81,1.0,smoothstep(.0,.85,endWall))*(1.0-.19*cove);
   }
   if(hall88){
@@ -148,7 +152,13 @@ const finishes={
    diffuseColor.rgb*=mix(.83,1.0,end88)*mix(.89,1.0,cove88);
   }
   diffuseColor.rgb*=1.0-.095*(1.0-smoothstep(.06,.65,p88.y));`,
- frame:`diffuseColor.rgb*=mix(vec3(.75,.74,.66),vec3(.92,.89,.84),day88);`,
+ frame:`diffuseColor.rgb*=mix(vec3(.75,.74,.66),vec3(.92,.89,.84),day88);
+  if(classroomDay&&!hall88&&p88.y>.75){
+   float grey=dot(diffuseColor.rgb,vec3(.21,.72,.07));
+   diffuseColor.rgb=mix(vec3(grey),diffuseColor.rgb,.72);
+   float upFacing=max(0.0,dot(normal,mat3(viewMatrix)*vec3(0.0,1.0,0.0)));
+   diffuseColor.rgb*=mix(.87,1.16,upFacing);
+  }`,
  floor:`diffuseColor.rgb*=mix(vec3(.65,.74,.73),vec3(.99,1.00,.98),day88);
   diffuseColor.rgb*=mix(.88,1.0,field88.a);
   if(!hall88){
@@ -156,9 +166,23 @@ const finishes={
    if(ordinaryClass103){
     vec2 seatUv=(p88.xz-vec2(${f(CLASSROOM.minX)},${f(CLASSROOM.minZ)}))/vec2(${f(CLASSROOM.maxX-CLASSROOM.minX)},${f(CLASSROOM.maxZ-CLASSROOM.minZ)});
     float belowDesk=texture2D(seatShade,seatUv).r;
+    if(classroomDay){
+     // Quiet the fine aggregate while keeping the texture's larger stone chips.
+     const vec3 cement=vec3(.44,.417,.36);
+     vec3 fleck=diffuseColor.rgb-cement;
+     float sizeContrast=smoothstep(.07,.22,abs(dot(fleck,vec3(.27,.60,.13))));
+     diffuseColor.rgb=cement+fleck*mix(.48,.85,sizeContrast);
+    }
     float grey=dot(diffuseColor.rgb,vec3(.27,.60,.13));
     diffuseColor.rgb=mix(vec3(grey),diffuseColor.rgb,.40)*vec3(1.17,1.085,1.055);
     diffuseColor.rgb*=mix(vec3(.88,.87,.89),vec3(1.22,1.18,1.13),pool)*(1.0-belowDesk*.78);
+    if(classroomDay){
+     // Offsetting the projected footprint toward the light leaves a soft
+     // shadow on the aisle side of each real desk, including in rotated rows.
+     vec2 shadowOffset=vec2(.35,-.05)/vec2(${f(CLASSROOM.maxX-CLASSROOM.minX)},${f(CLASSROOM.maxZ-CLASSROOM.minZ)});
+     float penumbra=texture2D(seatShade,seatUv-shadowOffset).r;
+     diffuseColor.rgb*=mix(.91,1.12,pool)*(1.0-.44*penumbra);
+    }
    }else diffuseColor.rgb*=mix(vec3(.88,.91,.96),vec3(1.13,1.10,1.065),pool);
   }`,
  furniture:`float wood88=smoothstep(1.22,1.72,diffuseColor.r/max(.001,diffuseColor.g))*(1.0-smoothstep(.50,.86,diffuseColor.b/max(.001,diffuseColor.g)));
@@ -171,6 +195,10 @@ const finishes={
    float face=abs(dot(normal,mat3(viewMatrix)*vec3(0.0,1.0,0.0)));
    vec3 honey=vec3(.78,.43,.115);
    diffuseColor.rgb=mix(grain,honey,.30*face);
+   if(classroomDay){
+    float aperture=windowTransmission94(p88,2.2);
+    diffuseColor.rgb*=mix(vec3(.90,.88,.84),vec3(1.17,1.12,1.01),aperture*face);
+   }
   }`,
  ceiling:`if(hall88){
    vec2 course88=vec2((p88.x-${f(CORRIDOR.minX)})/.67,p88.z/2.8);
@@ -180,6 +208,10 @@ const finishes={
    diffuseColor.rgb*=vec3(.63,.73,.75)*mix(.82,1.17,.32*day88+.68*field88.b)*mix(.78,1.0,field88.a);
    diffuseColor.rgb*=1.0-.18*max(joint88.x,joint88.y);
   }else{
+   if(classroomDay){
+    float toWall=min(min(p88.x-${f(CLASSROOM.minX)},${f(CLASSROOM.maxX)}-p88.x),min(p88.z-${f(CLASSROOM.minZ)},${f(CLASSROOM.maxZ)}-p88.z));
+    diffuseColor.rgb*=mix(vec3(.72,.75,.76),vec3(1.01,.99,.97),smoothstep(.02,1.55,toWall));
+   }
    vec3 perimeter=mix(vec3(.80,.82,.80),vec3(.90,.83,.77),field88.a);
    diffuseColor.rgb*=perimeter*mix(.84,1.12,day88)*mix(.78,1.0,field88.a);
    if(ordinaryClass103)diffuseColor.rgb*=vec3(1.055,1.00,1.03)*mix(.79,1.0,smoothstep(.02,1.05,min(min(p88.x-${f(CLASSROOM.minX)},${f(CLASSROOM.maxX)}-p88.x),min(p88.z-${f(CLASSROOM.minZ)},${f(CLASSROOM.maxZ)}-p88.z))));
@@ -188,6 +220,7 @@ const finishes={
   float edge88=smoothstep(.015,.19,min(border88.x,border88.y));
   float grazing88=1.0-max(0.0,abs(dot(normal,normalize(vViewPosition))));
   diffuseColor.rgb*=mix(vec3(.70,.69,.70),vec3(.89,.83,.86),.52*vPaneUv88.y+.35*(1.0-edge88)+.13*day88);
+  if(classroomDay&&!hall88)diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.52,.67,.70),.24);
   float overhead=smoothstep(.16,.96,vPaneUv88.y);
   diffuseColor.rgb*=mix(vec3(.81,.88,.92),vec3(1.06,1.035,.98),overhead);
   diffuseColor.a=mix(.77,.91,clamp(.66*edge88+.34*grazing88,0.0,1.0));`
@@ -195,7 +228,7 @@ const finishes={
 
 export function createClassroomDaylight(openings,lamps){
  const seatShade=makeSeatShade();
- const map=makeBounceMap(openings,lamps),windowMask=makeWindowMask(openings),enabled={value:false},ordinary={value:false},bound=new Set(),glassMaterials=[];
+ const map=makeBounceMap(openings,lamps),windowMask=makeWindowMask(openings),enabled={value:false},ordinary={value:false},classroom={value:false},bound=new Set(),glassMaterials=[];
  // Include both poses of the swinging classroom doors and the office door.
  const paneBounds=[
   new T.Box3(new T.Vector3(partition-1.7,1.04,CLASSROOM.minZ-.2),new T.Vector3(partition+1.7,4.22,CLASSROOM.maxZ+.2)),
@@ -211,7 +244,7 @@ export function createClassroomDaylight(openings,lamps){
    previous.call(this,shader,renderer);
    shader.uniforms.seatShade={value:seatShade.texture};
    shader.uniforms.schoolMaple={value:material.name==='School-maple'};
-   shader.uniforms.ordinaryClass103=ordinary;shader.uniforms.campusWindow94={value:windowMask};shader.uniforms.campusDay88=enabled;shader.uniforms.campusBounce88={value:map};
+   shader.uniforms.classroomDay=classroom;shader.uniforms.ordinaryClass103=ordinary;shader.uniforms.campusWindow94={value:windowMask};shader.uniforms.campusDay88=enabled;shader.uniforms.campusBounce88={value:map};
    const vary='varying vec3 vCampusPosition88;\n'+(finish==='glass'?'varying vec2 vPaneUv88;\n':'');
    shader.vertexShader=vary+shader.vertexShader.replace('#include <worldpos_vertex>',`#include <worldpos_vertex>
     vec4 local88=vec4(transformed,1.0);
@@ -223,7 +256,7 @@ export function createClassroomDaylight(openings,lamps){
     #endif
     vCampusPosition88=(modelMatrix*local88).xyz;
     ${finish==='glass'?'vPaneUv88=uv;':''}`);
-   shader.fragmentShader=sunlight+vary+ 'uniform sampler2D seatShade;uniform bool schoolMaple;uniform bool campusDay88;\nuniform sampler2D campusBounce88;\n'+shader.fragmentShader
+   shader.fragmentShader=sunlight+vary+ 'uniform bool classroomDay;uniform sampler2D seatShade;uniform bool schoolMaple;uniform bool campusDay88;\nuniform sampler2D campusBounce88;\n'+shader.fragmentShader
     .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
      ${location}
      float day88=0.0;vec4 field88=vec4(1.0);
@@ -256,9 +289,9 @@ export function createClassroomDaylight(openings,lamps){
      #include <opaque_fragment>`);
    };
   }
-  material.customProgramCacheKey=()=>key+'-daylight108-'+finish+'-'+finishSpec;material.needsUpdate=true;
+  material.customProgramCacheKey=()=>key+'-daylight122-'+finish+'-'+finishSpec;material.needsUpdate=true;
  }
- return{map,windowMask,seatShade:seatShade.texture,setSeats:seatShade.setSeats,sky:makeDaySky(),bind,setOrdinary(value){ordinary.value=value;},
+ return{map,windowMask,seatShade:seatShade.texture,setSeats:seatShade.setSeats,sky:makeDaySky(),bind,setOrdinary(value,classroomActive=false){ordinary.value=value;classroom.value=classroomActive;},
   setActive(value){
    if(enabled.value===Boolean(value))return;
    enabled.value=Boolean(value);

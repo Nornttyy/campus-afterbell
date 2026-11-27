@@ -8,7 +8,7 @@ import * as T from './vendor/three.module.js';
 import {createCampusWallProps} from './campus-wall-props54.js?v=campus-117';
 import {buildDesktop55} from './computer-hardware55.js?v=campus-117';
 import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-108';
-import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117';
+import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117&rev=122';
 import {REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117';
 import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=120';
 import {END_ORIGIN,endPoint,officeOffset,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD,officeShelfCenters,officeBinPlan} from './campus-ends.js?v=campus-101';
