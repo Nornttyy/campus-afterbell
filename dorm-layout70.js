@@ -1,3 +1,4 @@
+import {HALL} from './campus-ends.js?v=campus-101&rev=127';
 // Eight beds per room. Keep established seat IDs stable when adding the fourth room.
 export const DORM_ROOM_BOUNDS=Object.freeze({minX:-3.1,maxX:3.1,minZ:0,maxZ:9.62,height:3.45});
 export const DORM_ROOMS=Object.freeze([
@@ -17,7 +18,7 @@ export const DORM_CABINET=Object.freeze({x:-1.65,z:.10,width:.66,depth:.58,heigh
 export const DORM_TABLES=Object.freeze(DORM_ROOMS.map(r=>Object.freeze({id:r.id,...dormPoint(r,0,1.9),yaw:r.yaw,width:1.02,depth:1.44,height:.78})));
 export const DORM_TABLE=DORM_TABLES[0];
 export const DORM_WATCH=Object.freeze({x:10.3,z:5.8});
-export const DORM_POSTS=Object.freeze([[12.02,-4.85],[12.02,-3.4],[12.02,-1.95],[7.82,-4.85],[7.82,-3.4],[7.82,-1.95],[12.02,-13.3],[12.02,-14.75],[12.02,-16.2]].map(([x,z],id)=>Object.freeze({id,x,z})));
+export const DORM_POSTS=Object.freeze([[12.02,-4.85],[12.02,-3.4],[12.02,-1.95],[7.82,-4.85],[7.82,-3.4],[7.82,-1.95],[12.02,10.5],[12.02,11.95],[12.02,13.4]].map(([x,z],id)=>Object.freeze({id,x,z})));
 export const DORM_BUNK_ROWS=Object.freeze([3.88,7.12]);
 export const DORM_BUNKS=Object.freeze(DORM_ROOMS.flatMap((room,ri)=>DORM_BUNK_ROWS.flatMap((z,row)=>[-2.3,2.3].map((x,col)=>Object.freeze({id:ri*4+row*2+col,roomId:room.id,row,col,...dormPoint(room,x,z),yaw:room.yaw+(col?-Math.PI/2:Math.PI/2)})))));
 export const DORM_BEDS=Object.freeze(DORM_BUNKS.flatMap(b=>[0,1].map(level=>{
@@ -49,14 +50,14 @@ export const DORM_CEILING=DORM_CEILINGS[0];
 export const DORM_CORRIDOR_SOLIDS=Object.freeze(['left','right'].flatMap(side=>{
  const left=side==='left',minX=left?7.2:12.44,maxX=left?7.4:12.64;
  const rooms=DORM_ROOMS.filter(room=>(room.yaw<0)===left).sort((a,b)=>a.z-b.z);
- const panels=[];let cursor=-17.72;
+ const panels=[];let cursor=HALL.minZ-.20;
  for(const room of rooms){
   const start=room.z+b.minX-.2,end=room.z+b.maxX+.2;
   panels.push(volume('dorm-hall-'+side+'-'+room.id,minX,maxX,cursor,start,0,4.51));
   panels.push(volume('dorm-hall-'+side+'-cap-'+room.id,minX,maxX,start,end,b.height,4.51));
   cursor=end;
  }
- panels.push(volume('dorm-hall-'+side+'-end',minX,maxX,cursor,8.8,0,4.51));
+ panels.push(volume('dorm-hall-'+side+'-end',minX,maxX,cursor,HALL.maxZ,0,4.51));
  return panels;
 }));
 export const DORM_HALL_CABINETS=Object.freeze([

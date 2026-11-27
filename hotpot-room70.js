@@ -1,7 +1,7 @@
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import * as T from './vendor/three.module.js';
 
-import {CORRIDOR,PARTITIONS,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=126';
+import {CORRIDOR,PARTITIONS,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=127';
 import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
 export {HOTPOT_TABLE_SIZE,HOTPOT_TABLE_HEIGHT,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-94';
 
@@ -93,7 +93,7 @@ export function createHotpotRoom({parent,box,rounded,mat,texture,bakeStatic,fini
  }
  lineWall(CORRIDOR.maxX-.065,-1,CORRIDOR.minZ+.05,CORRIDOR.maxZ-.05);
  for(const part of PARTITIONS)lineWall(CORRIDOR.minX+.066,1,part.minZ,part.maxZ);
- for(const [a,b] of [[CORRIDOR.minZ+.05,ALCOVE_ENTRY.minZ],[ALCOVE_ENTRY.maxZ,-10]])lineWall(CORRIDOR.minX+.066,1,a,b);
+ for(const [a,b] of [[CORRIDOR.minZ+.05,-10.2],[9.02,ALCOVE_ENTRY.minZ],[ALCOVE_ENTRY.maxZ,CORRIDOR.maxZ]])lineWall(CORRIDOR.minX+.066,1,a,b);
  if(menus){
   const print=material('#fff',{map:menus,roughness:.86});
   for(const [i,z] of [-5.3,.02].entries()){

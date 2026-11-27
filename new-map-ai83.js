@@ -1,5 +1,5 @@
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117';
-import {DORM_ROOMS,DORM_BUNK_ROWS,dormRoomPoint} from './dorm-layout70.js?v=campus-95';
+import {DORM_ROOMS,DORM_BUNK_ROWS,dormRoomPoint} from './dorm-layout70.js?v=campus-95&rev=127';
 import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94';
 import {NORMAL_WALK_SPEEDS} from './movement55.js?v=campus-117';
