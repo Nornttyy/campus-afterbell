@@ -9,8 +9,8 @@ import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v
 import {movementScale,normalWalkSpeed} from './movement55.js?v=campus-117';
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
 const newMemberId=()=>globalThis.crypto.randomUUID?.()??randomToken();
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117';
-import {TeacherRound} from './teacher-rules.js?v=campus-117';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=119';
+import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=119';
 import * as Layout from './classroom-layout.js?v=campus-117';
 import {playableCampusMap} from './campus-destinations.js?v=campus-117';
 import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117';
@@ -19,7 +19,7 @@ const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
 const cleanName=value=>String(value||'同学').replace(/[\u0000-\u001f<>]/g,'').slice(0,16)||'同学';
 const CONTEXT=['player','selected','holding','_movement','_rescueId','_rescueProgress','completed'];
-const studentCommands=new Set(['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
+const studentCommands=new Set(['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
 const teacherCommands=new Set(['changeRadio','setEmote','jump','setSprint','toggleToiletDoor','toggleDormDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
 const scoringEvents=new Set(['complete','gum-score','bubble-score','snake-food','valorant-watch','arcade-score','exam-answer']);
 const teacherFeedbackEvents=new Set(['wrong-grab','correct-capture','stamina-low']);
@@ -330,6 +330,6 @@ export class RoomError extends Error{constructor(status,message){super(message);
 
 // Base helpers call other public helpers through this; dispatch those too so
 // a student's hold/take flow does not hit TeacherRound's intentional no-ops.
-for(const name of ['hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','toggleBedLie','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer']){
+for(const name of ['hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer']){
  SharedRound.prototype[name]=function(...args){const proto=this.player?.id===-1?TeacherRound.prototype:ClassroomRound.prototype;return proto[name]?.apply(this,args);};
 }

@@ -43,12 +43,12 @@ test('toilet interaction reaches the bowl from inside its cubicle, without cross
  assert.equal(r.interact(seat.id),false,'closed door still blocks sitting');
 });
 
-test('both bunks stay reclined awake and asleep, with stable support height and an explicit exit',()=>{
- const r=quiet('dorm'),p=r.player;assert.equal(r.interact(),'stood');for(const id of [0,1]){clearSeat(r,id);const bed=r.seats[id];Object.assign(p,{x:bed.exitX,z:bed.exitZ});assert.equal(r.interact(id),'seated');let snap=r.snapshot().player;assert.equal(snap.onBed,true);assert.equal(snap.bedId,id);assert.equal(snap.supportHeight,bed.supportHeight);assert.equal(snap.eyeHeight,.23);assert.equal(snap.lying,true);assert.equal(snap.sleeping,false);assert.equal(r.toggleBedLie(),'sleeping');snap=r.snapshot().player;assert.equal(snap.lying,true);assert.equal(snap.eyeHeight,.23);assert.equal(p.x,bed.lieX);assert.equal(p.z,bed.lieZ);assert.equal(r.setCrouch(true),'awake');assert.equal(p.lying,true);assert.equal(p.sleeping,false);assert.equal(p.crouched,false);assert.equal(r.toggleBedLie(),'sleeping');assert.equal(r.interact(),'stood');snap=r.snapshot().player;assert.equal(snap.onBed,false);assert.equal(snap.lying,false);assert.equal(snap.bedId,null);assert.equal(snap.supportHeight,0);assert.equal(snap.eyeHeight,STUDENT_PROPORTIONS.eyeHeight);assert.ok(!blocked(p.x,p.z,.18,r.layout));}assert.equal(r.toggleBedLie(),false);
+test('both bunks stay reclined with open eyes, with stable support height and an explicit exit',()=>{
+ const r=quiet('dorm'),p=r.player;assert.equal(r.interact(),'stood');for(const id of [0,1]){clearSeat(r,id);const bed=r.seats[id];Object.assign(p,{x:bed.exitX,z:bed.exitZ});assert.equal(r.interact(id),'seated');let snap=r.snapshot().player;assert.equal(snap.onBed,true);assert.equal(snap.bedId,id);assert.equal(snap.supportHeight,bed.supportHeight);assert.equal(snap.eyeHeight,.23);assert.equal(snap.lying,true);assert.equal(snap.sleeping,false);snap=r.snapshot().player;assert.equal(snap.lying,true);assert.equal(snap.eyeHeight,.23);assert.equal(p.x,bed.lieX);assert.equal(p.z,bed.lieZ);assert.equal(r.setCrouch(true),false);assert.equal(p.lying,true);assert.equal(p.sleeping,false);assert.equal(p.crouched,false);assert.equal(r.interact(),'stood');snap=r.snapshot().player;assert.equal(snap.onBed,false);assert.equal(snap.lying,false);assert.equal(snap.bedId,null);assert.equal(snap.supportHeight,0);assert.equal(snap.eyeHeight,STUDENT_PROPORTIONS.eyeHeight);assert.ok(!blocked(p.x,p.z,.18,r.layout));}
 });
 
 test('a stunned pupil stays supported by the bunk until actually grabbed, without falling through its solid frame',()=>{
- const r=quiet('dorm'),p=r.player,bed=r.seats[p.seatId];r.toggleBedLie();assert.equal(r._stun(p),true);assert.equal(actorFloorHeight(p,r.map),bed.supportHeight);assert.equal(actorEyeHeight(p,r.map),.23);assert.equal(r.toggleBedLie(),false);r.step(5.1);assert.equal(p.captivity,'free');assert.equal(r.interact(),'stood');
+ const r=quiet('dorm'),p=r.player,bed=r.seats[p.seatId];assert.equal(r._stun(p),true);assert.equal(actorFloorHeight(p,r.map),bed.supportHeight);assert.equal(actorEyeHeight(p,r.map),.23);r.step(5.1);assert.equal(p.captivity,'free');assert.equal(r.interact(),'stood');
 });
 
 test('boarding a bunk replaces the downward ladder gaze with a view toward the foot and aisle',()=>{
@@ -75,14 +75,15 @@ test('Q first closes the bedside cupboard, then gets up while still looking at i
  assert.equal(close.method,'setDrawerOpen');
  r[close.method](...close.args);
  assert.ok(r.player.lying);
+ assert.equal(interactionIntent(r.snapshot(),{kind:'bed',id:r.player.bedId},'E'),null);
  const leave=interactionIntent(r.snapshot(),target,'Q');
  assert.equal(r[leave.method](...leave.args),'stood');
 });
 
-test('waking and using the bedside cupboard preserve the player look direction and side-lying body heading',()=>{
+test('using the bedside cupboard preserve the player look direction and side-lying body heading',()=>{
  const r=quiet('dorm'),p=r.player,bodyYaw=p.seatYaw;
  r.setLook(-1.51,-.38);const gaze={yaw:p.yaw,pitch:p.pitch};
- r.toggleBedLie();r.setDrawerOpen(true);r.takeSlot(0);
+ r.setDrawerOpen(true);r.takeSlot(0);
  assert.equal(p.sleeping,false);assert.equal(p.lying,true);
  assert.equal(p.yaw,gaze.yaw);assert.equal(p.pitch,gaze.pitch);assert.equal(p.seatYaw,bodyYaw);
 });
@@ -113,7 +114,7 @@ test('playground teacher writes at the rendered outdoor board and binds at outdo
 // Exercise the existing shared authoritative context: the controls themselves
 // are the public ClassroomRound actions, not hand-edited inventory snapshots.
 test('two authenticated dorm peers keep bed pose and cabinet food ownership private while sharing visible cabinet motion',()=>{
- const room=new CampusRoom({code:'710071',seed:71,map:'dorm'}),host=room.join({rolePreference:'teacher'}),guest=room.join({rolePreference:'student'});room.begin(host);room.sim.stage='class';room.sim._seatingRoutes.clear();const p=guest.context.player,bed=room.sim.seats[p.id];for(const a of room.sim.students)if(a!==p&&a.seatId===bed.id){a.seated=false;a.seatId=null;}Object.assign(p,{x:bed.exitX,z:bed.exitZ,seated:false,seatId:null});const call=(method,...args)=>room.withMember(guest,sim=>ClassroomRound.prototype[method].apply(sim,args));assert.equal(call('interact',bed.id),'seated');assert.equal(call('toggleBedLie'),'sleeping');assert.equal(call('setDrawerOpen',true),true);assert.equal(call('takeSlot',0),true);room.tick(.2);const own=room.snapshot(guest),other=room.snapshot(host);assert.equal(own.player.lying,true);assert.equal(own.player.sleeping,false);assert.equal(own.player.bedId,bed.id);assert.equal(own.drawer.drawnSlot,0);assert.ok(own.dormCabinets[bed.id]>0);assert.equal(other.dormCabinets[bed.id],own.dormCabinets[bed.id]);assert.ok(other.students.every(s=>!s.drawer));assert.equal(call('returnItem'),true);assert.equal(p._drawnSlot,null);assert.equal(call('interact'),'stood');
+ const room=new CampusRoom({code:'710071',seed:71,map:'dorm'}),host=room.join({rolePreference:'teacher'}),guest=room.join({rolePreference:'student'});room.begin(host);room.sim.stage='class';room.sim._seatingRoutes.clear();const p=guest.context.player,bed=room.sim.seats[p.id];for(const a of room.sim.students)if(a!==p&&a.seatId===bed.id){a.seated=false;a.seatId=null;}Object.assign(p,{x:bed.exitX,z:bed.exitZ,seated:false,seatId:null});const call=(method,...args)=>room.withMember(guest,sim=>ClassroomRound.prototype[method].apply(sim,args));assert.equal(call('interact',bed.id),'seated');assert.equal(room.command(guest,'setCrouch',[true]),false);assert.equal(call('setDrawerOpen',true),true);assert.equal(call('takeSlot',0),true);room.tick(.2);const own=room.snapshot(guest),other=room.snapshot(host);assert.equal(own.player.lying,true);assert.equal(own.player.sleeping,false);assert.equal(own.player.bedId,bed.id);assert.equal(own.drawer.drawnSlot,0);assert.ok(own.dormCabinets[bed.id]>0);assert.equal(other.dormCabinets[bed.id],own.dormCabinets[bed.id]);assert.ok(other.students.every(s=>!s.drawer));assert.equal(call('returnItem'),true);assert.equal(p._drawnSlot,null);assert.equal(call('interact'),'stood');
 });
 
 test('two pupils can dispense together and each physical item has one owner',()=>{
@@ -133,10 +134,10 @@ test('two pupils can dispense together and each physical item has one owner',()=
  assert.throws(()=>room.command(a,'pressVendingButton',['not-a-machine']));
 });
 
-test('holding a posture on a bunk toggles sleep once per press while gaze remains free',()=>{
+test('posture input leaves bunk occupants awake and gaze remains free',()=>{
  const r=quiet('dorm'),p=r.player;
- assert.equal(r.setCrouch(true),'sleeping');
+ assert.equal(r.setCrouch(true),false);
  for(let i=0;i<90;i++){r.setLook(.4+i*.001,.12);r.setCrouch(true);r.step(1/60);}
- assert.equal(p.sleeping,true);assert.equal(p.lying,true);assert.ok(p.yaw>.4);assert.equal(p.crouched,false);
- r.setCrouch(false);assert.equal(r.setCrouch(true),'awake');assert.equal(p.sleeping,false);
+ assert.equal(p.sleeping,false);assert.equal(p.lying,true);assert.ok(p.yaw>.4);assert.equal(p.crouched,false);
+ r.setCrouch(false);assert.equal(r.setCrouch(true),false);assert.equal(p.sleeping,false);
 });

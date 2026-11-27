@@ -1,6 +1,6 @@
 import {fitUniform} from './uniform-detail102.js?v=campus-109';
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
-import {createFacialEffects} from './facial-effects64.js?v=campus-109';
+import {createFacialEffects} from './facial-effects64.js?v=campus-109&rev=119';
 import {requireModelBudget} from './model-budget64.js';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';

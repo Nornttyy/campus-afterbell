@@ -19,7 +19,7 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   if(built)return;built=true;
   const coach=new T.Group();stop=new T.Group();stop.name='excursion-origin-station';world.add(stop);vehicle.add(coach);shells.push(stop,coach);let fixed=stop;
   const C=(color,rough=.75,extra={})=>mat(color,{roughness:rough,...extra});
-  const paint=C('#f4ab12',.52),edge=C('#e8bb37'),night=C('#293442',.55),tire=C('#28272c',.93),iron=C('#727d7f',.46),cream=C('#eee4cc'),plaster=C('#eee7d4'),lip=C('#637879'),amber=C('#be5b26'),red=C('#b43d32',.43),white=C('#f0eedd'),oak=C('#bb814c'),cab=C('#ded4bf'),rubber=C('#525e68'),glass=C('#72a6d5',.24,{transparent:true,opacity:.22,depthWrite:false}),lit=C('#fff7d6',.38,{emissive:'#ffefb2',emissiveIntensity:.5});
+  const paint=C('#ecb80a',.54),edge=C('#e8bb37'),night=C('#293442',.55),tire=C('#28272c',.93),iron=C('#727d7f',.46),cream=C('#eee4cc'),plaster=C('#eee7d4'),lip=C('#637879'),amber=C('#be5b26'),red=C('#b43d32',.43),white=C('#f0eedd'),oak=C('#bb814c'),cab=C('#ded4bf'),rubber=C('#525e68'),glass=C('#72a6d5',.24,{transparent:true,opacity:.22,depthWrite:false}),lit=C('#fff7d6',.38,{emissive:'#ffefb2',emissiveIntensity:.5});
   const B=(m,x,y,z,w,h,d,parent=fixed,rot=null)=>box(m,[x,y,z],[w,h,d],rot,parent);
   const R=(m,x,y,z,w,h,d,bevel=.04,parent=fixed,rot=null)=>rounded(m,[x,y,z],[w,h,d],bevel,rot,parent);
   function shape(geo,m,x,y,z,parent=fixed){owned.push(geo);const o=new T.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=!m.transparent;o.receiveShadow=true;parent.add(o);return o;}
@@ -32,8 +32,8 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   }
   function art(name){const tex=new T.TextureLoader().load(new URL('./assets/posters/'+name,import.meta.url).href,t=>{if(disposed)t.dispose();});tex.colorSpace=T.SRGBColorSpace;tex.anisotropy=4;ownedTextures.push(tex);return tex;}
   function patterned(base,dot,scale){const tex=texture(256,256,(c,w,h)=>{c.fillStyle=base;c.fillRect(0,0,w,h);let n=86;for(let i=0;i<1250;i++){n=(Math.imul(n,1664525)+1013904223)>>>0;const x=n%256,y=n>>>11&255;c.fillStyle=i%4?dot:'#ffffff24';c.fillRect(x,y,1+(i%4),1+(i%2));}});tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(...scale);return C('#ffffff',.94,{map:tex});}
-  const vinyl=texture(128,128,(c,w,h)=>{c.fillStyle='#d77a32';c.fillRect(0,0,w,h);let n=83;for(let i=0;i<6100;i++){n=(Math.imul(n,1664525)+1013904223)>>>0;c.fillStyle=i%4?'rgba(117,58,25,.13)':'rgba(255,205,136,.26)';c.fillRect(n%128,n>>>11&127,1,1);}});
-  const felt=C('#fff6e5',.62,{map:vinyl}),asphalt=patterned('#37383b','#7075758a',[12,6]),floor=C('#ffffff',.83);
+  const vinyl=texture(128,128,(c,w,h)=>{c.fillStyle='#b55d26';c.fillRect(0,0,w,h);let n=83;for(let i=0;i<6100;i++){n=(Math.imul(n,1664525)+1013904223)>>>0;c.fillStyle=i%4?'rgba(117,58,25,.13)':'rgba(255,205,136,.26)';c.fillRect(n%128,n>>>11&127,1,1);}});
+  const felt=C('#fae5c9',.73,{map:vinyl}),asphalt=patterned('#37383b','#7075758a',[12,6]),floor=C('#ffffff',.83);
   const tread=texture(192,192,(c,w,h)=>{
    c.fillStyle='#9ba8ac';c.fillRect(0,0,w,h);
    for(let y=-12;y<h+12;y+=24)for(let x=-12;x<w+12;x+=24){
@@ -128,7 +128,7 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   const min=body.minX,max=body.maxX,near=body.maxZ,far=body.minZ,midZ=(near+far)/2;
   B(night,3.35,.43,midZ,19.58,.32,4.69);B(floor,3.35,L-.085,midZ,20.09,.17,5.04);
   groundPrint(texture(1280,384,coachSunlight),(min+max)/2,L+.005,midZ,max-min-.06,near-far-.08,coach);
-  const tintGlass=C('#4c6481',.32,{transparent:true,opacity:.54,side:T.FrontSide,depthWrite:false}),gasket=C('#30333c',.66),belt=C('#32313b',.61),skirt=C('#3d4950',.67);
+  const tintGlass=C('#32314a',.48,{transparent:true,opacity:.66,side:T.FrontSide,depthWrite:false}),gasket=C('#30333c',.66),belt=C('#32313b',.61),skirt=C('#3d4950',.67);
   function skirtPanel(a,b,z,dir){
    if(b-a<.02)return;const outline=new T.Shape();outline.moveTo(a,1.22);outline.lineTo(b,1.22);outline.lineTo(b,.45);
    const arches=[11.72,-4.83].filter(x=>x+.66>=a&&x-.66<=b);
@@ -144,6 +144,11 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
    for(const [a,b]of segments){
     skirtPanel(a,b,z,dir);B(paint,(a+b)/2,1.47,z,b-a,.55,.13);
     B(belt,(a+b)/2,1.54,z+dir*.080,b-a,.116,.031);B(belt,(a+b)/2,1.34,z+dir*.080,b-a,.049,.027);
+    let start=a;for(const wheel of [-4.83,11.72,b+.73]){
+     const end=Math.min(b,wheel-.73);
+     if(end>start)B(skirt,(start+end)/2,.53,z+dir*.074,end-start,.16,.032);
+     start=Math.max(start,wheel+.73);
+    }
     B(cream,(a+b)/2,1.24,z-dir*.086,b-a,1.01,.042);B(edgeLight,(a+b)/2,1.731,z-dir*.111,b-a,.046,.12);
     for(let x=a+1.10;x<b-.50;x+=2.23){if([-4.83,11.72].some(wheel=>Math.abs(x-wheel)<.86))continue;B(amber,x,.81,z+dir*.071,.015,.56,.012);B(belt,x+.15,1.12,z+dir*.080,.16,.036,.018);}
    }
@@ -151,7 +156,7 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
     for(let i=0;i<n;i++){const x0=a+(b-a)*i/n,x1=a+(b-a)*(i+1)/n;B(gasket,x0+.039,2.4,z,.094,1.35,.15);B(glass,(x0+x1)/2,2.41,z,x1-x0-.08,1.23,.035);
      sign(tintGlass,(x0+x1)/2,2.41,z+dir*.061,x1-x0-.082,1.23,dir>0?0:Math.PI);
     }B(night,b-.037,2.4,z,.075,1.34,.15);}
-   B(paint,3.18,3.22,z,19.70,.31,.18);
+   B(paint,(min+12.62)/2,3.22,z,12.62-min,.31,.18);
    for(const wheelX of [-4.83,11.72]){
     const hub=new T.Group();hub.position.set(wheelX,.55,z);vehicle.add(hub);wheels.push(hub);
     rod(tire,[0,0,-dir*.18],[0,0,dir*.16],.60,hub,24);rod(night,[0,0,dir*.161],[0,0,dir*.172],.457,hub,24);rod(red,[0,0,dir*.173],[0,0,dir*.19],.38,hub,22);
@@ -161,6 +166,11 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
    }
   }
   B(paint,min+.03,1.25,midZ,.12,1.40,5.03);B(glass,min+.04,2.36,midZ,.08,1.28,4.72);B(cream,min+.13,2.42,midZ,.10,1.42,1.05);
+  // Both sides of the cowl share the sloped windscreen and roof edge.
+  const roofNose=new T.Shape();roofNose.moveTo(12.60,3.375);roofNose.lineTo(12.90,3.32);
+  roofNose.lineTo(max+.02,2.83);roofNose.lineTo(max+.02,2.64);roofNose.lineTo(12.60,3.065);roofNose.closePath();
+  shape(new T.ExtrudeGeometry(roofNose,{depth:.16,bevelEnabled:false}),paint,0,0,far-.036);
+  shape(new T.ExtrudeGeometry(roofNose,{depth:.16,bevelEnabled:false}),paint,0,0,near-.124);
   B(paint,max-.04,1.19,midZ,.13,1.0,4.98);B(night,max+.031,.76,midZ,.04,.16,4.72);
   B(glass,max-.37,2.39,midZ,.085,1.61,4.81,fixed,[0,0,.43]);
   const windshield=shape(new T.PlaneGeometry(4.77,1.59),tintGlass,max-.314,2.40,midZ);windshield.rotation.order='ZYX';windshield.rotation.set(0,Math.PI/2,.43);
@@ -261,6 +271,7 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   rod(oak,[-4.15,L+.11,-15.51],[-4.15,L+.82,-15.51],.024);shape(new T.ConeGeometry(.13,.13,14),red,-4.15,L+.10,-15.51);B(iron,-4.72,L+1.02,-15.70,.28,.13,.18);rod(white,[-4.81,L+.97,-15.58],[-4.62,L+.97,-15.58],.10);
   const boardFace=C('#285647',.94);B(iron,9.15,L+1.36,far+.14,2.12,1.09,.07);sign(boardFace,9.15,L+1.36,far+.19,2.04,1.01);if(boardInk)sign(boardInk,9.15,L+1.36,far+.194,2.01,.99);
   const speaker=C('#deaa39');for(const x of [-5.85,8.85]){R(night,x,L+2.18,far+.13,.37,.47,.16);rod(speaker,[x,L+2.18,far+.20],[x,L+2.18,far+.25],.127);rod(night,[x,L+2.18,far+.25],[x,L+2.18,far+.26],.061);}
+  const cabinetFace=C('#476366',.69),cabinetFrame=C('#42494c',.62);
   const pads=[seatPads(COACH_CUSHION['bus-seat'],false),seatPads(COACH_CUSHION['bus-table'],true)],ivory=C('#f3d9a7',.55);
   for(const s of BUS_SEATS){const h=s.busDeck?U:L,dir=Math.sign(Math.sin(s.yaw)),g=new T.Group();g.position.set(s.x,h,s.z);g.rotation.y=s.yaw;vehicle.add(g);chairs.set(s.id,g);
    const cushion=COACH_CUSHION[s.surface],set=pads[s.busDeck],headY=s.busDeck?1.052:1.224;
@@ -274,13 +285,13 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
    const boxX=s.busDeck?s.deskX-dir*.37:s.deskX;const cabinet=new T.Group();cabinet.position.set(boxX,h,s.z);cabinet.rotation.y=s.yaw;vehicle.add(cabinet);
    const height=s.busDeck?.42:.83,bottom=s.busDeck?.33:.05,top=bottom+height;
    for(const side of [-1,1])B(cab,side*.267,(bottom+top)/2,0,.042,height,.39,cabinet);
-   B(cab,0,top,0,.57,.045,.39,cabinet);B(cab,0,bottom,0,.57,.04,.39,cabinet);B(cab,0,(top+bottom)/2,.185,.57,height,.035,cabinet);
+   B(cab,0,top,0,.57,.045,.39,cabinet);B(cab,0,bottom,0,.57,.04,.39,cabinet);B(s.busDeck?cab:cabinetFrame,0,(top+bottom)/2,.185,.57,height,.035,cabinet);if(!s.busDeck)B(cabinetFace,0,(top+bottom)/2,.205,.535,height-.035,.008,cabinet);
    const shelf=bottom+height*.36;
    B(cab,0,shelf,0,.52,.035,.38,cabinet);B(cab,0,(shelf+bottom)/2,-.197,.53,shelf-bottom-.025,.043,cabinet);
    B(night,0,bottom+height*.24,-.231,.16,.032,.021,cabinet);B(amber,0,shelf+.018,.02,.49,.009,.29,cabinet);
    B(cream,0,top+.018,-.014,.60,.028,.409,cabinet);B(skirt,0,bottom+.017,-.188,.53,.024,.050,cabinet);bakeStatic(cabinet);
    const drawer=new T.Group();drawer.position.set(0,shelf,-.205);cabinet.add(drawer);
-   const doorHeight=top-shelf-.025;B(cab,0,doorHeight/2,0,.53,doorHeight,.036,drawer);B(iron,0,doorHeight-.057,-.025,.124,.020,.021,drawer);bakeStatic(drawer);
+   const doorHeight=top-shelf-.025;B(s.busDeck?cab:cabinetFrame,0,doorHeight/2,0,.53,doorHeight,.036,drawer);if(!s.busDeck)B(cabinetFace,0,doorHeight/2,-.019,.496,doorHeight-.034,.006,drawer);B(iron,0,doorHeight-.057,-.025,.124,.020,.021,drawer);bakeStatic(drawer);
    const anchor=new T.Group();anchor.position.set(0,shelf+.03,-.058);cabinet.add(anchor);cabinets.set(s.id,{target:cabinet,drawer,foodAnchor:anchor,open:0});
   }
   for(const x of [-.05,3.95,7.95]){
@@ -290,7 +301,7 @@ export function createBusRoom({scene,box,rounded,mat,texture,bakeStatic,liftPane
   for(const [x,z] of [[-7.45,-10.38],[-7.45,-9.63],[13.93,-10.03]]){B(tire,x,.031,z,.33,.06,.33);shape(new T.ConeGeometry(.121,.60,12),red,x,.36,z);rod(white,[x,.33,z],[x,.39,z],.067);}
   // A blue zenith, bright horizon and sparse summer clouds stay outside all
   // shadow casters. Distant buildings drift only after the door actually closes.
-  const skyTex=new T.TextureLoader().load(new URL('./assets/materials/excursion-sky93.webp',import.meta.url).href);skyTex.colorSpace=T.SRGBColorSpace;ownedTextures.push(skyTex);
+  const skyTex=new T.TextureLoader().load(new URL('./assets/materials/outing-sky119.webp',import.meta.url).href);skyTex.colorSpace=T.SRGBColorSpace;ownedTextures.push(skyTex);
   const skyM=new T.MeshBasicMaterial({map:skyTex,side:T.BackSide,fog:false,depthWrite:false,toneMapped:false});sky=shape(new T.SphereGeometry(151,50,24),skyM,2,0,-10,group);sky.castShadow=false;sky.receiveShadow=false;sky.renderOrder=-100;
   bakeStatic(stop);bakeStatic(coach);
   const furniture=[...chairs.values(),...[...cabinets.values()].map(c=>c.target)];

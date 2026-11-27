@@ -48,7 +48,7 @@ export function interactionIntent(s,target,key){
  if(target?.kind==='plunger'&&!teacher&&!carrying)return intent('startMapActivity',['plunge',target.id],'疏通',true);
  if(target?.kind==='dorm-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&!target.open?intent('toggleDormDoor',[target.id],'开门'):null;
  if(target?.kind==='toilet-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&!target.open?intent('toggleToiletDoor',[target.id],'开门'):null;
- if(target?.kind==='bed'&&!teacher)return p.onBed?intent('toggleBedLie',[],p.sleeping?'睁眼':'闭眼'):!p.seated?intent('interact',[target.id],'上床'):null;
+ if(target?.kind==='bed'&&!teacher)return !p.seated?intent('interact',[target.id],'上床'):null;
  if(target?.kind==='vending'&&!teacher&&!carrying&&target.ready){
   return intent('setFixtureUse',[target.id],'出货',true);
  }

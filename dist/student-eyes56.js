@@ -162,7 +162,7 @@ function eyeShellMaterial(source,regions,rest,optics){
    float cool=smoothstep(.53,.77,diffuseColor.b/max(diffuseColor.r,.001));
    float flank=(1.-smoothstep(1.29,1.42,eyeRadius))*smoothstep(edgeDepth-.085,edgeDepth-.059,eyeRest.z);
    float sclera=max(max(wall,neutral*rim),cool*flank);
-   float white=.988-.052*smoothstep(.68,1.19,eyeRadius);
+   float white=.989-.111*smoothstep(.62,1.16,eyeRadius);
    diffuseColor.rgb=mix(diffuseColor.rgb,white*vec3(1.,.983,.968),sclera);
    vec3 origin=(eyeBindFromView*vec4(eyeView,1.)).xyz;
    vec3 ray=normalize(mat3(eyeBindFromView)*(isOrthographic?vec3(0.,0.,-1.):normalize(eyeView)));
@@ -179,7 +179,7 @@ function eyeShellMaterial(source,regions,rest,optics){
 // parallax without moving a dot on the white surface.
 function createInteriors(head,variant){
  const geometry=new T.SphereGeometry(1,12,8);
- const material=new T.MeshBasicMaterial({color:0x29252b,toneMapped:false,fog:false});
+ const material=new T.MeshBasicMaterial({color:0x141319,toneMapped:false,fog:false});
  const eyes=new T.InstancedMesh(geometry,material,2);eyes.name='student-eye-interiors';
  eyes.userData.characterSurface=true;eyes.frustumCulled=false;eyes.matrixAutoUpdate=false;
  eyes.matrix.copy(head.matrixWorld).invert();head.add(eyes);
@@ -187,7 +187,7 @@ function createInteriors(head,variant){
  const transform=new T.Matrix4(),regions=STUDENT_EYE_REGIONS[variant];
  for(const [i,region] of regions.entries()){
   const [cx,cy,profile]=SCLERA_PATCHES[variant][i];
-  const radius=variant==='boy'?.0187:variant==='ponytail'?.0193:.0189,z=region.center[2]-.40*(profile[0]-region.center[2]);
+  const radius=variant==='boy'?.017:variant==='ponytail'?.018:.0175,z=region.center[2]-.40*(profile[0]-region.center[2]);
   transform.makeScale(radius,radius,radius).setPosition(cx,cy,z);
   eyes.setMatrixAt(i,transform);optics['eyeBall'+i].value.set(cx,cy,z,radius);
  }
