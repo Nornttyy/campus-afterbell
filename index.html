@@ -78,6 +78,10 @@
     <div class="setting-row"><span>画面质量</span><div class="segmented" role="group" aria-label="画面质量"><button data-quality="high" aria-pressed="true">精致</button><button data-quality="low" aria-pressed="false">流畅</button></div></div>
     <label class="setting-row" for="motion-toggle"><span>场景动态</span><input id="motion-toggle" type="checkbox" class="switch" checked></label>
     <label class="setting-row" for="sound-cues-toggle"><span>声纹提示</span><input id="sound-cues-toggle" type="checkbox" class="switch" checked></label>
+    <fieldset id="radio-import" class="control-section"><legend>本机广播录音</legend>
+      <div class="setting-row"><output aria-live="polite">可导入《雨爱》和《朋友的酒》</output><div><button type="button" class="paper-button" data-choose>导入录音</button> <button type="button" data-clear hidden>清除</button></div></div>
+      <input type="file" accept="audio/*,.m4a" aria-label="选择广播录音" multiple hidden>
+    </fieldset>
     <div class="setting-row"><span>手部动作</span><a class="paper-button" href="./animation-editor.html?v=campus-117" target="_blank" rel="noopener">打开编辑器</a></div>
     <div id="control-settings"></div></div><button class="primary-button compact close" id="settings-done"><span>完成</span><svg><use href="#i-check"/></svg></button>
   </dialog>
@@ -88,5 +92,6 @@
   <link rel="modulepreload" href="./vendor/addons/loaders/GLTFLoader.js">
   <link rel="preload" as="fetch" crossorigin href="./assets/stream93/models.json?v=campus-93">
 </template>
-<script type="module" src="./app.js?v=campus-117&amp;entry=3"></script>
+<script type="module" src="./radio-library118.js"></script>
+<script type="module" src="./app.js?v=campus-117&amp;entry=4"></script>
 </body></html>
