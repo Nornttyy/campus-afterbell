@@ -1,9 +1,9 @@
-import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=127';
+import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=128';
 import * as T from './vendor/three.module.js';
 import {createServingDish} from './game-actors.js?v=campus-117';
-import {PARTITIONS,CLASSROOM,CORRIDOR,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=127';
+import {PARTITIONS,CLASSROOM,CORRIDOR,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=128';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
-import {SERVING_BELTS,SERVING_MENU,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92';
+import {SERVING_BELTS,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92&rev=128';
 
 const paperWidth=.89,paperDepth=.60;
 const paperFont='"PingFang SC","Microsoft YaHei",sans-serif';
@@ -13,10 +13,12 @@ export function paperQuestion(u,v){
  if(x<0||x>=2*columnWidth||y<0||y>=6*rowHeight)return null;
  return Math.floor(x/columnWidth)*6+Math.floor(y/rowHeight);
 }
-export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords,finishes={}}){
+export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords}){
  const root=new T.Group();root.name='upper-floor-furnishings';root.visible=false;scene.add(root);
  const wings={},portions=[],paperSeats=new Map(),cards=[],cardPrint=new Map(),paperPrint=new Map();
  const geometry=new Set(),own=g=>(geometry.add(g),g);
+ const dishPool=new Map();
+ let beltTexture=null;
  let mode=null,seats=[],held=null,activeCard=-1,lastPaper=null,liveSheet=null;
  function wing(name){const g=new T.Group();g.name=name;root.add(g);return g;}
  function surface(g,geo,material,x,y,z,flat=false){
@@ -28,19 +30,18 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
  }
  function cafeteria(){
   const group=wing('cafeteria-serving-hall'),fixed=new T.Group();group.add(fixed);
-  const orange=mat('#e4a137'),steel=mat('#a6aca8',{metalness:.48,roughness:.38}),cream=mat('#c5b196',{roughness:.73}),lip=mat('#d79a65',{map:finishes.veneer||null,roughness:.52});
+  const orange=mat('#e4a137'),steel=mat('#a6aca8',{metalness:.48,roughness:.38}),cream=mat('#e6d7be',{roughness:.73}),lip=mat('#e69857',{roughness:.68});
   const runner=texture(256,512,(c,w,h)=>{
-   c.fillStyle='#c59871';c.fillRect(0,0,w,h);
-   for(let y=0;y<h;y+=8){c.fillStyle=y%24?'#c79e7b':'#b98e68';c.fillRect(0,y,w,1);}
+   c.fillStyle='#cfa483';c.fillRect(0,0,w,h);
    c.fillStyle='#fff2de';c.beginPath();c.moveTo(w*.5,h*.16);c.lineTo(w*.87,h*.76);c.quadraticCurveTo(w*.88,h*.79,w*.84,h*.79);c.lineTo(w*.16,h*.79);c.quadraticCurveTo(w*.12,h*.79,w*.13,h*.76);c.closePath();c.fill();
-  });runner.wrapT=T.RepeatWrapping;runner.repeat.y=9;
+  });runner.wrapT=T.RepeatWrapping;runner.repeat.y=8;beltTexture=runner;
   const beltMat=mat('#ffffff',{map:runner,roughness:.88});
   for(const b of SERVING_BELTS){
    const center=(b.maxZ+b.minZ)/2,len=b.maxZ-b.minZ;
    box(cream,[b.x,b.top/2,center],[b.width-.08,b.top-.07,len-.03],null,fixed);
    box(steel,[b.x,.09,center],[b.width-.04,.10,len],null,fixed);
-   box(lip,[b.x,b.top-.045,center],[b.width,.09,len],null,fixed);
-   const top=surface(fixed,own(new T.PlaneGeometry(b.width-.055,len-.035)),beltMat,b.x,b.top+.001,center,true);
+   box(lip,[b.x,b.top-.065,center],[b.width,.13,len],null,fixed);
+   const top=surface(fixed,own(new T.PlaneGeometry(b.width-.12,len-.035)),beltMat,b.x,b.top+.001,center,true);
    if(b.id)top.rotation.z=0;
    for(const side of [-1,1]){
     const x=b.x+side*(b.width/2-.034);
@@ -61,8 +62,8 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   for(const [a,b] of [[CORRIDOR.minZ,CLASSROOM.minZ-.20],[CLASSROOM.maxZ+.22,ALCOVE_ENTRY.minZ],[ALCOVE_ENTRY.maxZ,CORRIDOR.maxZ]])box(orange,[7.444,.56,(a+b)/2],[.018,1.07,b-a],null,fixed);
   box(orange,[CORRIDOR.maxX-.050,.56,(CORRIDOR.minZ+CORRIDOR.maxZ)/2],[.018,1.07,CORRIDOR.maxZ-CORRIDOR.minZ],null,fixed);
   const label=texture(960,448,(c,w,h)=>{
-   c.fillStyle='#ae692e';c.fillRect(0,0,w,h);c.fillStyle='#f9ebd0';c.fillRect(10,10,w-20,h-20);
-   c.textAlign='center';c.fillStyle='#593322';c.font='bold 109px '+paperFont;c.fillText('自 助',w*.72,h*.44);c.fillText('食 堂',w*.72,h*.77);
+   c.fillStyle='#ccb186';c.fillRect(0,0,w,h);c.fillStyle='#fffdf1';c.fillRect(10,10,w-20,h-20);
+   c.textAlign='center';c.fillStyle='#24211e';c.font='bold 109px '+paperFont;c.fillText('自 助',w*.72,h*.44);c.fillText('食 堂',w*.72,h*.77);
    for(const [x,y,v,color] of [[147,168,66,'#e78c37'],[290,246,62,'#cb723d'],[216,260,43,'#88a65a']]){
     c.fillStyle='#e6d6ba';c.beginPath();c.ellipse(x+4,y+22,v+17,v*.55,0,0,Math.PI*2);c.fill();
     c.fillStyle='#fff9e9';c.beginPath();c.ellipse(x,y+16,v+14,v*.54,0,0,Math.PI*2);c.fill();
@@ -71,46 +72,53 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
    }
   });
   face(fixed,mat('#fff',{map:label}),CORRIDOR.maxX-.075,2.12,CORRIDOR.minZ+7.8,4.98,2.34,-Math.PI/2);
+  const cutlery=texture(640,240,(c,w,h)=>{
+   c.fillStyle='#fff7de';c.strokeStyle=c.fillStyle;c.lineWidth=9;c.lineCap='round';
+   c.beginPath();c.arc(w*.50,h*.51,h*.44,0,2*Math.PI);c.fill();
+   c.strokeStyle='#efbc67';c.lineWidth=3;c.beginPath();c.arc(w*.50,h*.51,h*.35,0,2*Math.PI);c.stroke();
+   c.strokeStyle=c.fillStyle;c.lineWidth=8;
+   c.beginPath();for(const x of [148,160,172]){c.moveTo(x,23);c.lineTo(x,81);}
+   c.moveTo(148,72);c.quadraticCurveTo(160,117,172,72);c.moveTo(160,94);c.lineTo(160,214);c.stroke();
+   c.beginPath();c.moveTo(474,22);c.quadraticCurveTo(444,56,454,128);c.lineTo(466,128);c.lineTo(466,212);c.quadraticCurveTo(469,221,475,212);c.closePath();c.fill();
+  });
+  face(fixed,mat('#fff',{map:cutlery,transparent:true,alphaTest:.25}),CORRIDOR.maxX-.078,.56,CORRIDOR.minZ+7.8,2.64,1.00,-Math.PI/2);
   bakeStatic?.(fixed);
-  const plate=own(new T.CylinderGeometry(.19,.15,.023,20)),ivory=mat('#f4e7cd');
   for(let id=0;id<MEAL_COUNT;id++){
    const carrier=new T.Group();carrier.name='serving-portion-'+id;group.add(carrier);
-   surface(carrier,plate,ivory,0,.012,0);
-   const models=new Map();
-   for(const action of SERVING_MENU){
-    const object=createServingDish(action);if(action==='snack'||action==='drink')object.rotation.x=-Math.PI*.45;
-    restDeskItem(object,.025);object.visible=false;carrier.add(object);models.set(action,object);
-   }
-   portions.push({carrier,models,action:null});
+   portions.push({carrier,dish:null,model:null});
   }
   return group;
  }
  function drawSheet(c,w,h,answered=0,hint=null){
-  c.fillStyle='#fbf9f0';c.fillRect(0,0,w,h);
-  const spine=c.createLinearGradient(w*.47,0,w*.53,0);spine.addColorStop(0,'rgba(142,119,91,0)');spine.addColorStop(.48,'rgba(121,116,100,.11)');spine.addColorStop(.54,'rgba(255,255,249,.62)');spine.addColorStop(1,'rgba(255,255,250,0)');c.fillStyle=spine;c.fillRect(w*.47,0,w*.06,h);
-  c.strokeStyle='#b8b5a7';c.lineWidth=1.4;c.strokeRect(w*.026,h*.035,w*.948,h*.921);
-  c.fillStyle='#68716b';c.font='16px '+paperFont;c.textAlign='left';c.fillText('校内试卷',w*.044,h*.081);
-  c.textAlign='right';c.fillText('第 1 页',w*.95,h*.926);
-  c.fillStyle='#29363a';c.textAlign='center';c.font='bold 40px '+paperFont;c.fillText('随 堂 测 验',w/2,h*.095);
-  c.font='20px '+paperFont;c.fillText('班级 __________     姓名 __________     座号 ______',w/2,h*.151);
-  c.strokeStyle='#b2b3aa';c.lineWidth=1.5;c.beginPath();c.moveTo(w*.5,h*.19);c.lineTo(w*.5,h*.935);c.stroke();
+  c.fillStyle='#faf9f4';c.fillRect(0,0,w,h);
+  const printFont='"Songti SC","SimSun",serif';
+  c.fillStyle='#252421';c.textAlign='center';c.font='bold 29px '+printFont;c.fillText('期末考试',w/2,h*.10);
+  c.strokeStyle='#d4d1c9';c.lineWidth=1;c.setLineDash([3,5]);c.beginPath();c.moveTo(w*.5,h*.15);c.lineTo(w*.5,h*.92);c.stroke();c.setLineDash([]);
   c.textAlign='left';
-  for(const [i,[q,a]]of EXAM_QUESTIONS.entries()){
-   const x=(columnLeft+Math.floor(i/6)*columnWidth)*w,y=(rowTop+i%6*rowHeight)*h,done=Boolean(answered&(1<<i));
+  for(const [i,[question,answer]]of EXAM_QUESTIONS.entries()){
+   const x=(columnLeft+Math.floor(i/6)*columnWidth)*w,y=(rowTop+i%6*rowHeight)*h;
    if(i===hint){c.fillStyle='#d6ebbd';c.fillRect(x-7,y,w*.439,h*rowHeight-3);}
-   c.fillStyle='#28343b';c.font='21px '+paperFont;c.fillText((i+1)+'．'+q,x,y+25,w*.431);
-   c.strokeStyle='#b6b6a9';c.beginPath();c.moveTo(x+25,y+54);c.lineTo(x+w*.405,y+54);c.stroke();
-   if(done){c.font='24px '+paperFont;c.fillStyle='#bd3336';c.fillText(a+'  ✓',x+48,y+49);}
+   c.fillStyle='#312f2b';c.font='20px '+printFont;c.fillText((i+1)+'．'+question,x,y+24,w*.43);
+   c.fillText('答：',x+12,y+52);
+   if(answered&(1<<i)){c.font='24px '+paperFont;c.fillStyle='#b92d31';c.fillText(answer,x+58,y+53);}
   }
  }
  function cardMaterial(n){
   if(!cardPrint.has(n)){
-   const tex=texture(256,336,(c,w,h)=>{c.fillStyle='#fffbef';c.fillRect(0,0,w,h);c.strokeStyle='#d44939';c.lineWidth=6;c.beginPath();c.ellipse(128,75,42,51,.06,0,Math.PI*2);c.stroke();c.fillStyle='#232c32';c.font='bold 71px '+paperFont;c.textAlign='center';c.fillText(String(n+1),128,99);c.font='bold 30px '+paperFont;c.fillText('答  案',128,180);c.font='bold 36px '+paperFont;c.fillText(EXAM_QUESTIONS[n][1],128,255,226);c.strokeStyle='#577c93';c.lineWidth=3;c.beginPath();c.moveTo(36,274);c.lineTo(214,269);c.stroke();});
+   const tex=texture(320,512,(c,w,h)=>{
+    const brush='"Kaiti SC","STKaiti","KaiTi",serif';
+    c.fillStyle='#fffdf5';c.fillRect(0,0,w,h);
+    c.strokeStyle='#d91e27';c.lineWidth=11;c.beginPath();c.ellipse(w*.50,h*.24,65,94,.10,0,2*Math.PI);c.stroke();
+    c.textAlign='center';c.fillStyle='#1d1b18';c.font='bold 144px '+brush;c.fillText(String(n+1),w*.50,h*.34,115);
+    c.save();c.translate(w*.49,h*.62);c.rotate(-.044);c.font='bold 47px '+brush;c.fillText('答：',0,0);
+    c.font='bold 58px '+brush;c.fillText(EXAM_QUESTIONS[n][1]+'。',0,79,w*.86);
+    c.strokeStyle='#2582b4';c.lineWidth=8;c.lineCap='round';c.beginPath();c.moveTo(-57,98);c.quadraticCurveTo(4,86,60,93);c.stroke();c.restore();
+   });
    cardPrint.set(n,mat('#fff',{map:tex,side:T.DoubleSide}));
   }return cardPrint.get(n);
  }
  function deskPaper(){
-  const group=wing('examination-room'),plane=own(new T.PlaneGeometry(paperWidth,paperDepth,12,6)),card=own(new T.PlaneGeometry(.203,.211)),clean=mat('#fff',{map:texture(1200,760,drawSheet)});
+  const group=wing('examination-room'),plane=own(new T.PlaneGeometry(paperWidth,paperDepth,12,6)),card=own(new T.PlaneGeometry(.20,.32)),clean=mat('#fff',{map:texture(1200,760,drawSheet)});
   const leaf=plane.attributes.position;
   for(let i=0;i<leaf.count;i++){
    const x=leaf.getX(i)/(paperWidth*.5),y=leaf.getY(i)/(paperDepth*.5);
@@ -128,7 +136,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
    paperSeats.set(id,{desk,sheet,back});
   }
   for(const id of [0,1]){const cardMesh=surface(group,card,cardMaterial(id),0,0,0,true);cardMesh.name='drawer-answer-card-'+id;cards.push(cardMesh);}
-  held=surface(group,own(new T.PlaneGeometry(.26,.35)),cardMaterial(0),0,0,0);held.name='answer-card-in-hand';
+  held=surface(group,own(new T.PlaneGeometry(.25,.40)),cardMaterial(0),0,0,0);held.name='answer-card-in-hand';
   return group;
  }
  function setSeats(next){
@@ -138,6 +146,8 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   for(const s of seats){const place=paperSeats.get(s.id);if(!place)continue;place.desk.visible=true;place.desk.position.set(s.deskX,0,s.deskZ);place.desk.rotation.y=s.yaw||0;}
  }
  function setMap(map){
+  if(held)held.visible=false;
+  for(const {back} of paperSeats.values())back.visible=false;
   mode=map==='cafeteria'||map==='exam'?map:null;root.visible=!!mode;
   if(mode&&!wings[mode])wings[mode]=mode==='exam'?deskPaper():cafeteria();
   for(const [key,wing]of Object.entries(wings))wing.visible=key===mode;
@@ -149,27 +159,76 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
    for(const [id,r]of portions.entries()){
     const p=mealPortion(id,state.sceneElapsed??state.elapsed??0);r.carrier.visible=state.mealsTaken?.[id]!==p.lap;
     r.carrier.position.set(p.x,p.y,p.z);
-    if(r.action!==p.dish){if(r.action)r.models.get(r.action).visible=false;r.models.get(p.dish).visible=true;r.action=p.dish;}
+    if(id===0){
+     const belt=SERVING_BELTS[0],length=belt.maxZ-belt.minZ;
+     const travel=p.lap*(length-.42)+p.z-belt.minZ-.21;
+     beltTexture.offset.y=-(travel*beltTexture.repeat.y/(length-.035))%1;
+    }
+    if(r.dish!==p.dish){
+     if(r.model){r.carrier.remove(r.model);dishPool.get(r.dish).push(r.model);}
+     if(!dishPool.has(p.dish))dishPool.set(p.dish,[]);
+     let model=dishPool.get(p.dish).pop();
+     if(!model){
+      model=createServingDish(p.dish);
+      if(p.dish==='drink')model.rotation.x=-Math.PI/2;
+      if(p.dish==='snack')model.rotation.x=-Math.PI*.45;
+      restDeskItem(model,-.012);
+     }
+     r.carrier.add(model);r.dish=p.dish;r.model=model;
+    }
    }return;
   }
   const p=state.player,exam=state.exam,seat=p?.seated&&!p.officeChair?seats.find(s=>s.id===p.seatId):null;
   const place=seat&&paperSeats.get(seat.id);
   for(const spot of paperSeats.values())spot.back.visible=false;
   for(const actor of state.students||[]){
-   const spot=paperSeats.get(actor.seatId);if(spot)spot.back.visible=!!(actor.readingAnswer&&!actor.isPlayer&&actor.seated&&!actor.caught&&!actor.officeChair);
+   const spot=paperSeats.get(actor.seatId);
+   if(spot?.readerHand&&actor.readingAnswer&&!actor.isPlayer&&actor.seated&&!actor.caught&&!actor.officeChair){
+    const hand=spot.readerHand;
+    if(spot.back.parent!==hand)hand.add(spot.back);
+    spot.back.position.set(.066,.125,-.03);spot.back.rotation.set(-.50,Math.PI,.08,'YXZ');spot.back.visible=true;
+   }
   }
-  if(lastPaper!==place){if(lastPaper)lastPaper.sheet.material=paperPrint.get('blank');lastPaper=place;activeCard=-1;}
+  for(const spot of paperSeats.values())spot.readerHand=null;
+  if(lastPaper!==place){if(lastPaper)lastPaper.sheet.material=paperPrint.get('blank');lastPaper=place;activeCard=-1;for(const card of cards)delete card.userData.question;}
   if(place&&exam){
    const key=exam.answered+'-'+exam.hint;
    if(liveSheet.userData.key!==key){const map=liveSheet.map,c=map.image?.getContext?.('2d');if(c){drawSheet(c,map.image.width,map.image.height,exam.answered,exam.hint);map.needsUpdate=true;}liveSheet.userData.key=key;}place.sheet.material=liveSheet;
   }
+  // Keep the second slip on the tray while the first is in the student's hand.
   const extension=place?(drawerRecords?.get(seat.id)?.open??1):0;
   for(const [id,c]of cards.entries()){
-   c.visible=!!(place&&exam&&!exam.complete&&state.drawer?.open&&!exam.mode&&extension>.12);
-   if(c.visible){if(c.parent!==place.desk)place.desk.add(c);c.position.set(id?.17:-.17,.668,-.169-DESK_DRAWER_TRAVEL*extension);c.material=cardMaterial(exam.cards[id]);}
+   if(!place||!exam||exam.complete||!state.drawer?.open||extension<=.12){c.visible=false;continue;}
+   if(!exam.mode||c.userData.question==null)c.userData.question=exam.cards[id];
+   c.visible=!exam.mode||(exam.mode==='card'&&c.userData.question!==exam.card);
+   if(!c.visible)continue;
+   if(c.parent!==place.desk)place.desk.add(c);
+   c.position.set(id?.17:-.17,.668,-.169-DESK_DRAWER_TRAVEL*extension);
+   c.material=cardMaterial(c.userData.question);
   }
   held.visible=!!(place&&exam?.mode==='card');
-  if(held.visible){if(held.parent!==place.desk)place.desk.add(held);held.position.set(.085,.952,-.52);held.rotation.set(-.41,Math.PI,0,'YXZ');if(activeCard!==exam.card){held.material=cardMaterial(exam.card);activeCard=exam.card;}}
+  if(held.visible&&activeCard!==exam.card){held.material=cardMaterial(exam.card);activeCard=exam.card;}
+ }
+ function setReaderHand(id,hand){const place=paperSeats.get(id);if(place)place.readerHand=hand;}
+ // Pose the wrist relative to its desk. Mount the printed slip in the hand's
+ // render pass so the thumb can cover the front and the index sit behind it.
+ const slipPose=new T.Object3D(),slipIndex=new T.Vector3(),slipThumb=new T.Vector3();
+ slipPose.position.set(-.072,.932,-.625);slipPose.rotation.set(-1.10,Math.PI,.035,'YXZ');slipPose.updateMatrix();
+ function gripAnswerSlip(hand){
+  if(mode!=='exam'||!held?.visible||!hand||!lastPaper)return;
+  hand.setCurl(.52);
+  const palm=hand.group;
+  lastPaper.desk.updateWorldMatrix(true,false);
+  slipPose.matrixWorld.multiplyMatrices(lastPaper.desk.matrixWorld,slipPose.matrix);
+  slipIndex.set(-.113,-.103,-.005).applyMatrix4(slipPose.matrixWorld);
+  palm.parent.worldToLocal(slipIndex);
+  palm.position.copy(slipIndex).sub(hand.indexTip().multiply(palm.scale).applyQuaternion(palm.quaternion));
+  palm.updateWorldMatrix(true,false);
+  if(held.parent!==palm)palm.add(held);
+  held.matrix.multiplyMatrices(held.matrix.copy(palm.matrixWorld).invert(),slipPose.matrixWorld);
+  held.matrix.decompose(held.position,held.quaternion,held.scale);
+  slipThumb.set(-.096,-.098,.005).applyMatrix4(slipPose.matrixWorld);
+  hand.aimThumb(palm.worldToLocal(slipThumb));
  }
  function penContact(s){
   if(mode!=='exam'||s?.exam?.mode!=='paper'||!s.player?.seated)return null;
@@ -180,7 +239,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   const x=-(u-.5)*paperWidth,z=(v-.5)*paperDepth-.035,a=seat.yaw||0;
   const dx=seat.deskX+Math.cos(a)*x+Math.sin(a)*z-p.x;
   const dz=seat.deskZ-Math.sin(a)*x+Math.cos(a)*z-p.z;
-  return {x:-Math.cos(p.yaw)*dx+Math.sin(p.yaw)*dz,z:-Math.sin(p.yaw)*dx-Math.cos(p.yaw)*dz};
+  return {x:-Math.cos(a)*dx+Math.sin(a)*dz,z:-Math.sin(a)*dx-Math.cos(a)*dz};
  }
  function targets(s){
   const p=s.player;if(!mode||!p||s.role==='teacher'||s.stage!=='class'||p.caught)return [];
@@ -198,5 +257,5 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   if(kind==='exam-question')return paperSeats.get(s?.player?.seatId)?.sheet;
   return null;
  }
- return {root,setMap,setSeats,update,targets,target,penContact,dispose(){for(const g of geometry)g.dispose();scene.remove(root);}};
+ return {root,setMap,setSeats,update,targets,target,setReaderHand,gripAnswerSlip,penContact,dispose(){held?.removeFromParent();for(const {back} of paperSeats.values())back.removeFromParent();for(const g of geometry)g.dispose();scene.remove(root);}};
 }

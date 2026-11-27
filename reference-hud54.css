@@ -95,3 +95,5 @@
 .radio-playing a{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1}
 .radio-playing button{white-space:nowrap;min-height:28px}
 body:not(.playing) #school-radio-player{top:auto;bottom:max(18px,env(safe-area-inset-bottom));right:max(15px,env(safe-area-inset-right))}
+
+#play-ui[data-exam-reading="true"] .play-bottom{left:auto;right:3%;top:38%;max-width:25%}

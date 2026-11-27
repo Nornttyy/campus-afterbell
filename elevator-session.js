@@ -1,5 +1,5 @@
-import {LIFT,isCampusMap,campusFloor,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-117&rev=127';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=127';
+import {LIFT,isCampusMap,campusFloor,ELEVATOR_ENABLED,moveInRoom} from './classroom-layout.js?v=campus-117&rev=128';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=128';
 
 import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-117';
 
