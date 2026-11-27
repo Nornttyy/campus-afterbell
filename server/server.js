@@ -7,7 +7,7 @@ import {randomInt} from 'node:crypto';
 import {CampusRoom,RoomError} from './room-simulation.js';
 import {diffNetworkState} from '../dist/network-state65.js';
 
-const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.glb':'model/gltf-binary','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2','.mp3':'audio/mpeg','.wav':'audio/wav','.ogg':'audio/ogg','.mp4':'video/mp4'};
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.glb':'model/gltf-binary','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2','.mp3':'audio/mpeg','.wav':'audio/wav','.ogg':'audio/ogg','.m4a':'audio/mp4','.mp4':'video/mp4'};
 const DIST=path.resolve(fileURLToPath(new URL('../dist/',import.meta.url)));
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 export function createCampusServer({rooms=new Map(),allowedOrigins=[],tickHz=30,snapshotHz=15,maxRooms=40}={}){
