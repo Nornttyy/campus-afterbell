@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-117&rev=123';
+import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-117&rev=124';
 
 // The three colour channels store window bounce near the floor, window bounce
 // at eye height, and diffuse light near the suspended hall tubes. One bilinear
@@ -162,7 +162,7 @@ const finishes={
  floor:`diffuseColor.rgb*=mix(vec3(.65,.74,.73),vec3(.99,1.00,.98),day88);
   diffuseColor.rgb*=mix(.88,1.0,field88.a);
   if(!hall88){
-   float pool=windowTransmission94(p88,2.8);
+   float pool=windowTransmission94(p88,ordinaryClass103?3.75:2.8);
    if(ordinaryClass103){
     vec2 seatUv=(p88.xz-vec2(${f(CLASSROOM.minX)},${f(CLASSROOM.minZ)}))/vec2(${f(CLASSROOM.maxX-CLASSROOM.minX)},${f(CLASSROOM.maxZ-CLASSROOM.minZ)});
     float belowDesk=texture2D(seatShade,seatUv).r;
@@ -181,7 +181,7 @@ const finishes={
      // shadow on the aisle side of each real desk, including in rotated rows.
      vec2 shadowOffset=vec2(.35,-.05)/vec2(${f(CLASSROOM.maxX-CLASSROOM.minX)},${f(CLASSROOM.maxZ-CLASSROOM.minZ)});
      float penumbra=texture2D(seatShade,seatUv-shadowOffset).r;
-     diffuseColor.rgb*=mix(.91,1.12,pool)*(1.0-.44*penumbra);
+     diffuseColor.rgb*=mix(.96,1.075,pool)*(1.0-.38*penumbra);
     }
    }else diffuseColor.rgb*=mix(vec3(.88,.91,.96),vec3(1.13,1.10,1.065),pool);
   }`,
