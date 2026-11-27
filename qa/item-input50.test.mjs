@@ -50,7 +50,7 @@ test('production E and mouse input show one gum circle per 1.5 seconds, grow it 
  }finally{f.close();}
 });
 test('bound mouse hold stays at four circles, and release without contact launches orange bubble',()=>{
- const f=fixture();try{const r=f.round,p=r.player;Object.assign(r.teacher,{x:p.x,z:p.z-.7});r._stun(p);r._grab(p);Object.assign(r.teacher,{x:DETENTION[0].x,z:DETENTION[0].z-.9});r._bind(0);r.teacher.x=r.teacher.z=40;f.advance(.02);f.mouse(true);f.advance(7);
+ const f=fixture();try{const r=f.round,p=r.player;Object.assign(r.teacher,{x:p.x,z:p.z-.7});r._stun(p);r._grab(p);Object.assign(r.teacher,{x:DETENTION[0].x,z:DETENTION[0].z+.9});r._bind(0);r.teacher.x=r.teacher.z=40;f.advance(.02);f.mouse(true);f.advance(7);
   assert.equal(f.element('#use-progress').attrs['aria-valuenow'],'100');assert.equal(f.element('#use-progress').style.width,'106px');assert.equal(f.rendered.player.bubble.cycles,4);assert.equal(r.bubbles.length,0);f.mouse(false);assert.equal(f.rendered.bubbles.length,1);assert.equal(f.rendered.bubbles[0].kind,'orange');assert.equal(f.rendered.player.bubble.progress,0);
  }finally{f.close();}
 });

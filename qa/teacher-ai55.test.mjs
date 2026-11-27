@@ -23,7 +23,7 @@ test('exhausted AI reaches, chalks, grabs and binds a far confirmed pupil rather
 test('AI and human teachers share one binding reward or penalty, based on identity rather than current action',()=>{
  for(const Round of[ClassroomRound,TeacherRound])for(const correct of[true,false])for(const stamina of[10,95]){
   const r=new Round({seed:73,target:1000});r.start();const p=r.students.find(s=>r._team.has(s.id)===correct);p.action=null;p.holding=false;
-  Object.assign(r.teacher,{x:p.x,z:p.z-.9});assert.equal(r._stun(p),true);assert.equal(r._grab(p),true);Object.assign(r.teacher,{x:DETENTION[0].x,z:DETENTION[0].z-1.1,stamina});
+  Object.assign(r.teacher,{x:p.x,z:p.z-.9});assert.equal(r._stun(p),true);assert.equal(r._grab(p),true);Object.assign(r.teacher,{x:DETENTION[0].x,z:DETENTION[0].z+1.1,stamina});
   r.drainEvents();assert.equal(r._bind(0),true);assert.equal(r.teacher.stamina,correct?Math.min(100,stamina+20):Math.max(0,stamina-40));const events=r.drainEvents();assert.equal(events.filter(e=>e.type===(correct?'correct-capture':'wrong-grab')).length,1);assert.equal(r._bind(0),false);assert.equal(r.drainEvents().length,0);r.reset();assert.equal(r.wrongGrabs,0);
  }
 });
@@ -31,7 +31,7 @@ test('AI and human teachers share one binding reward or penalty, based on identi
 test('network idle human identity is a correct capture while an ordinary AI pupil is a wrong capture',()=>{
  const r=new CampusRoom({code:'552222',seed:73}),host=r.join({rolePreference:'teacher'}),peer=r.join({name:'静静坐着'});r.begin(host);for(let i=0;i<301;i++)r.tick(.1);
  for(const [p,correct,postId]of[[peer.context.player,true,0],[r.sim.students.find(p=>!p.networkHuman),false,1]]){
-  p.action=null;p.holding=false;Object.assign(r.sim.teacher,{x:p.x,z:p.z-.9});assert.ok(r.sim._stun(p));assert.ok(r.sim._grab(p));Object.assign(r.sim.teacher,{x:DETENTION[postId].x,z:DETENTION[postId].z-1.1,stamina:50});assert.ok(r.sim._bind(postId));assert.equal(r.sim.teacher.stamina,correct?70:10);
+  p.action=null;p.holding=false;Object.assign(r.sim.teacher,{x:p.x,z:p.z-.9});assert.ok(r.sim._stun(p));assert.ok(r.sim._grab(p));Object.assign(r.sim.teacher,{x:DETENTION[postId].x,z:DETENTION[postId].z+1.1,stamina:50});assert.ok(r.sim._bind(postId));assert.equal(r.sim.teacher.stamina,correct?70:10);
  }
 });
 

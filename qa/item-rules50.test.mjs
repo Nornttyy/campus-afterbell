@@ -7,7 +7,7 @@ import {OFFICE_CHAIR,TEACHER_SPAWN,BOARD,DETENTION,blocked,createSeatLayout,upda
 const DT=1/60;
 function quiet(map='classroom',Round=ClassroomRound){const r=new Round({map,target:1000});r.start();r.player.pitch=1.20;r._thinkAt=r._plan.until=Infinity;for(const s of r.students)s._decisionAt=Infinity;if(Round===ClassroomRound){r.teacher.x=40;r.teacher.z=40;}return r;}
 function stock(r,kind){r.player.pitch=1.20;r.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};r.player._selectedSlot=0;r.player._drawnSlot=null;r.selected=r.player.action=kind;if(!r.player._drawerOpen)r.toggleDrawer();assert.equal(r.takeSlot(0),true);}
-function bind(r,p){r.teacher.x=p.x;r.teacher.z=p.z-.9;r._stun(p);assert.ok(r._grab(p));r.teacher.x=DETENTION[0].x;r.teacher.z=DETENTION[0].z-1.1;assert.ok(r._bind(0));r.teacher.x=r.teacher.z=40;}
+function bind(r,p){r.teacher.x=p.x;r.teacher.z=p.z-.9;r._stun(p);assert.ok(r._grab(p));r.teacher.x=DETENTION[0].x;r.teacher.z=DETENTION[0].z+1.1;assert.ok(r._bind(0));r.teacher.x=r.teacher.z=40;}
 
 test('five safe breaths bank points, each later breath has a one-in-five pop risk, and only a pop pays',()=>{
  const r=quiet();stock(r,'gum');r.hold(true);r._random=()=>0;

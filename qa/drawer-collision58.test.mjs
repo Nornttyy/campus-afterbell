@@ -18,13 +18,13 @@ test('opening blocks an actual walking route and closing restores it without cha
 
 test('a drawer opened beside a standing player permits gradual outward escape, never deeper entry or a crossing to its other side',()=>{
  const r=new ClassroomRound({seed:73,target:10000});r.start();r._advanceTeacher=()=>{};r._perceive=()=>{};for(const s of r.students)s._decisionAt=Infinity;
- const owner=r.students[6],p=r.player;Object.assign(p,{x:owner.x+.55,z:owner.z+.13,seated:false,seatId:null});
+ const owner=r.students[6],p=r.player;Object.assign(p,{x:owner.x-.55,z:owner.z-.13,yaw:Math.PI,seated:false,seatId:null});
  syncDrawerCollisions(r.layout,r.map,r.students);assert.equal(blocked(p.x,p.z,.18,r.layout),false);
  owner._drawerOpen=true;syncDrawerCollisions(r.layout,r.map,r.students);assert.equal(blocked(p.x,p.z,.18,r.layout),true);
- const before={x:p.x,z:p.z};assert.deepEqual(moveInRoom(before,-.06,0,.18,r.layout),before,'must not move further into the new drawer');
- const first=moveInRoom(before,.03,0,.18,r.layout);assert.ok(Math.abs(first.x-before.x-.03)<1e-9);assert.equal(first.z,before.z);assert.equal(blocked(first.x,first.z,.18,r.layout),true,'first step stays overlapped: this must be an escape, not a teleport');
- r.setMovement(1,0);r.step(.2);assert.ok(p.x>before.x+.3);assert.equal(blocked(p.x,p.z,.18,r.layout),false);
- const end=moveInRoom(p,-1,0,.18,r.layout);assert.ok(end.x>=owner.x+.68,'after leaving, normal collision prevents walking back through');
+ const before={x:p.x,z:p.z};assert.deepEqual(moveInRoom(before,.06,0,.18,r.layout),before,'must not move further into the new drawer');
+ const first=moveInRoom(before,-.03,0,.18,r.layout);assert.ok(Math.abs(first.x-before.x+.03)<1e-9);assert.equal(first.z,before.z);assert.equal(blocked(first.x,first.z,.18,r.layout),true,'first step stays overlapped: this must be an escape, not a teleport');
+ r.setMovement(-1,0);r.step(.2);assert.ok(p.x<before.x-.3);assert.equal(blocked(p.x,p.z,.18,r.layout),false);
+ const end=moveInRoom(p,1,0,.18,r.layout);assert.ok(end.x<=owner.x-.68,'after leaving, normal collision prevents walking back through');
 });
 
 test('two adjacent opened drawers act as one overlap region, allowing escape between the chairs instead of mutually trapping the player',()=>{

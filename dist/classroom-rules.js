@@ -1,11 +1,11 @@
-import {advanceLoose,dropLoose,takeLoose,takeCooler,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=123';
-import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=123';
+import {advanceLoose,dropLoose,takeLoose,takeCooler,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=124';
+import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=124';
 import {RADIO_SONGS,radioSong,radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117';
 import {expandTuning} from './round-tuning93.js?v=campus-117';
 import {SOCIAL_ACTIONS,canEmote,actorEmote} from './social-actions93.js?v=campus-93';
 import {RESULT_SECONDS,nextStudentAppearance} from './class-dismissal92.js?v=campus-102';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=123';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=124';
 import {takeMeal,canReturnMeal,examMode,examUse,examSnapshot,advanceExams} from './upper-floor-rules85.js?v=campus-117';
 import {advancePlaygroundPupil,inspectionPoints} from './new-map-ai83.js?v=campus-117';
 import {DORM_ROOMS,DORM_REST_VIEW,dormDoorPose,dormDoorSolids,dormRoomPoint} from './dorm-layout70.js?v=campus-95';
@@ -13,21 +13,21 @@ import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivitie
 import {TOILET_STALLS,TOILET_DOOR,toiletDoorPose,toiletDoorSolids,toiletDoorReach} from './toilet-layout70.js?v=campus-94';
 import {PLAYGROUND_LAYOUT,PLAYGROUND_BOARD,PLAYGROUND_POSTS,vendingPoint,canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117';
 import {floatingBubblePosition,bubbleTouchesHead} from './bubble-flight69.js?v=campus-83';
-import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-117&rev=123';
+import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-117&rev=124';
 import {ordinaryStudyState} from './npc-study58.js?v=campus-117&rev=121';
 import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-117';
-import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-117&rev=123';
+import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-117&rev=124';
 import {INTERACTION_SECONDS,ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-117';
 import {validRoundSettings,chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-117';
 import {advanceBoard} from './board-lesson93.js?v=campus-93';
 import {createArcade,advanceArcade,arcadeInput,arcadeSnapshot} from './classroom-arcade93.js?v=campus-93';
 import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,withinComputerReach,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-96';
-import {smokeEnvelope} from './smoke-physics.js?v=campus-117&rev=123';
+import {smokeEnvelope} from './smoke-physics.js?v=campus-117&rev=124';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {createThrowableProjectile,stepThrowableProjectile,effectEye,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-117&rev=123';
+import {createThrowableProjectile,stepThrowableProjectile,effectEye,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-117&rev=124';
 import {BUS} from './bus-layout86.js?v=campus-94';
 import {coachDistanceAt,COACH_BRAKE_SECONDS} from './excursion-journey91.js?v=campus-93';
-import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorEyePosition, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-117&rev=123';
+import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, lecternForMap, turnedClass, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorEyePosition, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-117&rev=124';
 
 /** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:NORMAL_WALK_SPEEDS.student, teacherWalkSpeed:NORMAL_WALK_SPEEDS.teacher, crouchSpeed:CRAWL_TUNING.speed, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
@@ -39,7 +39,7 @@ export const RESCUE_DURATION=INTERACTION_SECONDS;
 // belong to another pupil, so this action awards no points without more evidence.
 export const BUBBLE_TUNING=Object.freeze({duration:6,cycle:ITEM50_TUNING.gumCycleSeconds,cooldown:10,pointsPerSecond:0,maxPoints:10,lifetime:6});
 export const FOOD_ACTIONS=Object.freeze(['snack','noodles','chips','drink','burger','banana','lunch','hotpotBite']);
-import {DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=123';
+import {DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=124';
 export const EATING_PITCH=Object.freeze({enter:DRAWER_LOOK_PITCH,leave:DRAWER_LOOK_PITCH-.035});
 export const START_BELL=START_BELL_POSITION;
 export const CLASS_START_TIMING=Object.freeze({seating:30,classDuration:600,firstArrival:.15,arrivalSpacing:.36});
@@ -135,9 +135,9 @@ export function chalkHit(a,b,students,books,map,layout=null,throwerId=null){
   for(const [id,wall] of enclosureVolumes(map,layout).entries())test(wall,'wall',id);
   if(map!=='bus')for(const solid of OFFICE_SOLIDS)test(solid,'wall',-1);
   for(const tile of floorTiles(map))test({...tile,minY:0,maxY:tile.height},'wall',-1);
-  if(map!=='bus'&&!nonStudyMaps.has(mapKind(map)))test({...LECTERN,minY:.16,maxY:1.15},'desk',-1);
+  if(map!=='bus'&&!nonStudyMaps.has(mapKind(map)))test({...lecternForMap(map),minY:.16,maxY:1.15},'desk',-1);
   const kind=mapKind(map);
-  for(const s of layout?.seats||SEATS){
+  for(const s of layout?.seats||(kind==='classroom'?SEATS:createSeatLayout(73,null,map))){
     if(s.hideBook||s.standing)continue;
     const base=floorHeight(s.x,s.z,map,s.busDeck),computer=kind==='computer';
     if(kind!=='hotpot'&&kind!=='bus')test(orientedVolume(s.deskX,s.deskZ,s.yaw,computer?1.22:1.20,.85,base+.58,base+.875),'desk',s.id);
@@ -185,7 +185,7 @@ export class ClassroomRound{
     for(const a of this.students)a._stockSeatId=a.seatId;
     if(mapKind(this.map)==='computer')for(const b of this.books){b.raised=false;b.amount=0;}
     this.player=this.students[PLAYER_SEAT];this.selected=this.player._slots[0]?.action||'snack';this.player.action=this.selected;
-    this.teacher={id:-1,stamina:100,captivity:'free',_chalkUntil:0,fov:['night','dorm'].includes(mapKind(this.map))?49:DEVELOPMENT_TUNING.fov,viewRange:['night','dorm'].includes(mapKind(this.map))?12:DEVELOPMENT_TUNING.viewRange,x:this.board.x,z:this.board.z,yaw:0,phase:'board',phaseTime:0,phaseDuration:1,intent:'write',targetId:null,looking:false,warning:false,attention:0,walkProgress:0,castProgress:0,carriedId:null};
+    this.teacher={id:-1,stamina:100,captivity:'free',_chalkUntil:0,fov:['night','dorm'].includes(mapKind(this.map))?49:DEVELOPMENT_TUNING.fov,viewRange:['night','dorm'].includes(mapKind(this.map))?12:DEVELOPMENT_TUNING.viewRange,x:this.board.x,z:this.board.z,yaw:this.board.yaw||0,phase:'board',phaseTime:0,phaseDuration:1,intent:'write',targetId:null,looking:false,warning:false,attention:0,walkProgress:0,castProgress:0,carriedId:null};
     this._memory=new Map();this._plan={intent:mapKind(this.map)==='dorm'?'scan':'write',targetId:null,since:0,until:mapKind(this.map)==='dorm'?0:3,route:[],routeLength:0,arrivedAt:null,utility:0};
     if(mapKind(this.map)==='dorm')Object.assign(this.teacher,{phase:'watching',intent:'scan',pitch:0});
     this._turnLeft=0;this._thinkAt=0;this._lastScan=0;this._writingNeed=.8;this._cast=null;this._rescueId=null;this._rescueProgress=0;this._escortRoute=null;this._escortPost=null;
@@ -1297,7 +1297,7 @@ export class ClassroomRound{
       const remaining=this._teacherEntryRoute.reduce((n,p,i)=>n+distance(i?this._teacherEntryRoute[i-1]:t,p),0);
       t.walkProgress=this._teacherEntryLength?clamp(1-remaining/this._teacherEntryLength,0,1):1;
       if(arrived){
-        this._teacherEntryRoute=null;t.phase=mapKind(this.map)==='dorm'?'watching':'board';t.intent=mapKind(this.map)==='dorm'?'scan':'write';t.yaw=this.map==='bus'?Math.PI:0;t.phaseTime=0;t.phaseDuration=3;
+        this._teacherEntryRoute=null;t.phase=mapKind(this.map)==='dorm'?'watching':'board';t.intent=mapKind(this.map)==='dorm'?'scan':'write';t.yaw=this.map==='bus'?Math.PI:this.board.yaw||0;t.phaseTime=0;t.phaseDuration=3;
         this._plan={intent:t.intent,targetId:null,since:this.elapsed,until:this.elapsed+(mapKind(this.map)==='dorm'?0:3),route:[],routeLength:0,arrivedAt:this.elapsed,utility:0};this._thinkAt=this.elapsed+.3;
         this._events.push({type:'teacher-entered'});
       }
@@ -1321,12 +1321,12 @@ export class ClassroomRound{
     if(target){const a=this.students[m.id];if(a)look={...target,y:actorFloorHeight(a,this.map)+actorEyeHeight(a,this.map)};}
     const desiredPitch=look?.y!=null?Math.atan2(TEACHER_EYE_HEIGHT+floorHeight(t.x,t.z,this.map,t.busDeck)-look.y,distance(t,look)):0;
     t.pitch=(t.pitch||0)+(desiredPitch-(t.pitch||0))*(1-Math.exp(-5*dt));
-    let desired=this.map==='bus'&&p.intent==='write'?Math.PI:0;
+    let desired=p.intent==='write'?(this.map==='bus'?Math.PI:this.board.yaw||0):0;
     if(look)desired=heading(t,look);
     else if(target)desired=heading(t,target);
     else if(p.route.length)desired=heading(t,p.route[0]);
     else if(p.intent==='inspect')desired=Math.PI/2+Math.sin((this.elapsed-p.since)*1.1)*1.2;
-    else if(p.intent==='scan')desired=Math.PI+Math.sin((this.elapsed-p.since)*.7)*.72;
+    else if(p.intent==='scan')desired=Math.PI+(this.board.yaw||0)+Math.sin((this.elapsed-p.since)*.7)*.72;
     t.yaw=angle(t.yaw+clamp(angle(desired-t.yaw),-2.2*dt,2.2*dt));
     this._turnLeft=Math.max(0,this._turnLeft-dt);
     this._openDormDoorForRoute(t,p.route[0]);
@@ -1394,7 +1394,7 @@ export class ClassroomRound{
   _bind(postId){
     const actor=this.students[this.teacher.carriedId],post=this.posts.find(p=>p.id===postId);
     if(!actor||!post||distance(this.teacher,post)>1.55||!this._clearWallSegment(this.teacher,post)||this.students.some(s=>s.captivity==='bound'&&s.postId===post.id))return false;
-    actor.captivity='bound';actor.caught=true;actor.postId=post.id;actor.x=post.x;actor.z=post.z+.39*(this.map==='bus'?1:-1);if(this.map==='bus')actor.busDeck=post.busDeck;actor.yaw=Math.PI;actor._boundAt=this.elapsed;actor._chalkUntil=0;actor.mood='bound';
+    actor.captivity='bound';actor.caught=true;actor.postId=post.id;actor.x=post.x;actor.z=post.z+.39*(this.map==='bus'||turnedClass(this.map)?1:-1);if(this.map==='bus')actor.busDeck=post.busDeck;actor.yaw=turnedClass(this.map)?0:Math.PI;actor._boundAt=this.elapsed;actor._chalkUntil=0;actor.mood='bound';
     this._cancelBubble(actor,true);actor._bubbleNextAt=this.elapsed+(actor.isPlayer||actor.networkHuman||!this._team.has(actor.id)?Infinity:this._range(.8,2.4));
     this.teacher.carriedId=null;this._escortRoute=null;this._escortPost=null;this._plan.until=0;this._thinkAt=0;
     const memory=this._memory.get(actor.id);if(memory){memory.detained=true;memory.x=actor.x;memory.z=actor.z;}
@@ -1483,8 +1483,8 @@ export class ClassroomRound{
   }
   _advanceEscort(dt){
     const t=this.teacher;t.phase='patrol';t.intent='escort';t.warning=false;t.castProgress=0;
-    if(!this._escortRoute){this._escortPost=this.posts.find(p=>!this.students.some(s=>s.captivity==='bound'&&s.postId===p.id));if(!this._escortPost)return;this._escortRoute=this._walkRoute(t,{x:this._escortPost.x,z:this._escortPost.z+(this.map==='bus'?1:-1)*1.1,busDeck:this._escortPost.busDeck});}
-    if(this._follow(t,this._escortRoute,AI_WALK_SPEEDS.teacherEscort,dt)){t.yaw=0;this._bind(this._escortPost.id);}
+    if(!this._escortRoute){this._escortPost=this.posts.find(p=>!this.students.some(s=>s.captivity==='bound'&&s.postId===p.id));if(!this._escortPost)return;this._escortRoute=this._walkRoute(t,{x:this._escortPost.x,z:this._escortPost.z+(this.map==='bus'||turnedClass(this.map)?1:-1)*1.1,busDeck:this._escortPost.busDeck});}
+    if(this._follow(t,this._escortRoute,AI_WALK_SPEEDS.teacherEscort,dt)){t.yaw=this.board.yaw||0;this._bind(this._escortPost.id);}
   }
   _advanceRescuer(s,dt){
     if(s._returnRoute){
@@ -1506,7 +1506,7 @@ export class ClassroomRound{
     if(!target||target.captivity!=='bound'){s._rescueTarget=null;s._rescueRoute=null;s._helpProgress=0;target=null;}
     if(!target&&s.isTeammate&&s._decisionAt!==Infinity){
       target=this.students.find(a=>a.captivity==='bound'&&this._team.has(a.id)&&this.elapsed-a._boundAt>3&&distance(this.teacher,a)>2.8&&!this.students.some(b=>b!==s&&b._rescueTarget===a.id));
-      if(target){s._rescueTarget=target.id;this._stopActor(s);s.seated=false;s.seatId=null;s._rescueRoute=this._walkRoute(s,{x:target.x,z:target.z+(this.map==='bus'?.7:-.7),busDeck:target.busDeck});}
+      if(target){s._rescueTarget=target.id;this._stopActor(s);s.seated=false;s.seatId=null;s._rescueRoute=this._walkRoute(s,{x:target.x,z:target.z+(this.map==='bus'||turnedClass(this.map)?.7:-.7),busDeck:target.busDeck});}
     }
     if(!target)return false;
     s.mood='walking';s.holding=false;

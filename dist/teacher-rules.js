@@ -1,11 +1,11 @@
 import {chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-117';
-import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-117&rev=123';
-import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-117&rev=123';
+import {createSurveillance,surveillanceSnapshot,deploySurveillance,viewSurveillance,closeSurveillance} from './surveillance54.js?v=campus-117&rev=124';
+import {ClassroomRound,chalkHit} from './classroom-rules.js?v=campus-117&rev=124';
 import {teacherViewHeight} from './camera-height58.js?v=campus-83';
-import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,actorFloorHeight} from './classroom-layout.js?v=campus-117&rev=123';
+import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clearWallSegment,actorFloorHeight} from './classroom-layout.js?v=campus-117&rev=124';
 
 // Shared with the AI teacher: a visible projectile must hit before it can stun.
-export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-117&rev=123';
+export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-117&rev=124';
 
 import {BOARD_SECONDS} from './board-lesson93.js?v=campus-93';
 export class TeacherRound extends ClassroomRound{
@@ -88,7 +88,8 @@ export class TeacherRound extends ClassroomRound{
   canWriteBoard(){
     const p=this.player,yaw=Math.atan2(Math.sin(p.yaw),Math.cos(p.yaw));
     if(this.map==='bus')return this._classInputAllowed()&&!p.seated&&!p.crouched&&!p.busDeck&&this.teacher.carriedId===null&&Math.abs(p.x-this.board.x)<1.25&&Math.abs(p.z-this.board.z)<1.25&&Math.abs(yaw)>Math.PI-.85&&Math.abs(p.pitch)<.72;
-    return this.stage==='class'&&!p.crouched&&this.teacher.carriedId===null&&Math.abs(p.x-this.board.x)<3.5&&p.z>this.board.z-1&&p.z<this.board.z+.65&&Math.abs(yaw)<.85&&p.pitch<.45&&p.pitch>-.85;
+    const facing=this.board.yaw||0,depth=(p.z-this.board.z)*Math.cos(facing);
+    return this.stage==='class'&&!p.crouched&&this.teacher.carriedId===null&&Math.abs(p.x-this.board.x)<3.5&&depth> -1&&depth<.65&&Math.cos(yaw-facing)>Math.cos(.85)&&p.pitch<.45&&p.pitch>-.85;
   }
   setWriting(value){
     if(!value){this._writing=false;this.teacher.writing=false;this.teacher.writeProgress=0;return false;}

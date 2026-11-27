@@ -5,12 +5,12 @@ import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campu
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-92';
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-117&rev=123';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-117&rev=123';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-117&rev=124';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-117&rev=124';
 import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-108';
-import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117&rev=123';
-import {REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117&rev=123';
-import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=123';
+import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117&rev=124';
+import {CLASS_TURN,turnedClass,LIFT_ALCOVE,ALCOVE_ENTRY,ALCOVE_STORAGE,REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117&rev=124';
+import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=124';
 import {END_ORIGIN,endPoint,officeOffset,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD,officeShelfCenters,officeBinPlan} from './campus-ends.js?v=campus-101';
 const [OFFICE_DESK]=OFFICE_DESKS,[OFFICE_CHAIR]=OFFICE_CHAIRS;
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
@@ -212,7 +212,8 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  // complete opening animation. It is only shown on the dormitory floor.
  const lockerBounds=REAR_CLASS_CABINET,cx=(lockerBounds.minX+lockerBounds.maxX)/2,cz=(lockerBounds.minZ+lockerBounds.maxZ)/2;
  const cabinetWidth=lockerBounds.maxX-lockerBounds.minX,cabinetDepth=lockerBounds.maxZ-lockerBounds.minZ;
- const classroomCabinet=new T.Group();classroomCabinet.name='rear-class-cabinet';classroomCabinet.position.set(cx,0,cz);posterBay.add(classroomCabinet);
+ const teachingFixtures=new T.Group(),rearFixtures=new T.Group();
+ const classroomCabinet=new T.Group();classroomCabinet.name='rear-class-cabinet';classroomCabinet.position.set(cx,0,cz);rearFixtures.add(classroomCabinet);
  const cabinetEnamel=mat('#deded9',{roughness:.51,metalness:.09});
  B(frameGroove,[0,.065,0],[cabinetWidth-.06,.13,cabinetDepth-.04],classroomCabinet);
  rounded(cabinetEnamel,[0,.78,0],[cabinetWidth-.014,1.31,cabinetDepth-.025],.008,null,classroomCabinet);
@@ -236,19 +237,19 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  B(wallGreen,[classMidX,.57,-9.983],[classWidth-.02,1.14,.025]);B(edge,[classMidX,1.145,-9.966],[classWidth-.02,.025,.030]);B(wallGreen,[classMidX,.57,8.785],[classWidth,1.14,.025],enclosure);B(edge,[classMidX,1.145,8.768],[classWidth,.025,.030],enclosure);
  strip(classMidX,-9.98,classWidth,.04,room,true,ceilingRig);strip(classMidX,8.78,classWidth,.04,enclosure,true,ceilingRig);
  const lesson=texture(1024,512,(c,w,h)=>drawBoardSurface(c,w,h,surfaces?.board));
- B(edge,[0,2.40,8.76],[7.50,2.18,.11],enclosure).name='teaching-board-frame';
- B(mat('#fff',{map:lesson,roughness:.92}),[0,2.40,8.69],[7.36,2.05,.025],enclosure);B(edge,[0,1.30,8.61],[7.55,.05,.20],enclosure);
+ B(edge,[0,2.40,8.76],[7.50,2.18,.11],teachingFixtures).name='teaching-board-frame';
+ B(mat('#fff',{map:lesson,roughness:.92}),[0,2.40,8.69],[7.36,2.05,.025],teachingFixtures);B(edge,[0,1.30,8.61],[7.55,.05,.20],teachingFixtures);
  const boardInk=createBoardInk({mat,texture}),chalkPlane=new T.PlaneGeometry(7.33,2.035);assets.add(chalkPlane);
- const frontInk=mesh(chalkPlane,boardInk.material,[0,2.40,8.675],[1,1,1],[0,Math.PI,0],enclosure);frontInk.name='teaching-board-writing';frontInk.castShadow=false;
+ const frontInk=mesh(chalkPlane,boardInk.material,[0,2.40,8.675],[1,1,1],[0,Math.PI,0],teachingFixtures);frontInk.name='teaching-board-writing';frontInk.castShadow=false;
  const motto=texture(1536,164,(c,w,h)=>{
   c.fillStyle='#ae211a';c.font='bold 130px "PingFang SC","Microsoft YaHei",sans-serif';c.textAlign='center';c.textBaseline='middle';
   for(const [i,ch] of Array.from('立德树人追求卓越').entries())c.fillText(ch,(i+.56+(i>=4?.95:0))*w/9.05,h*.52);
  });
  const lettering=mat('#fff',{map:motto,transparent:true,alphaTest:.35,roughness:.88});
  const mottoGeometry=new T.PlaneGeometry(5.55,.54);assets.add(mottoGeometry);
- mesh(mottoGeometry,lettering,[0,3.73,8.748],[1,1,1],[0,Math.PI,0],enclosure).name='front-wall-school-motto';
+ mesh(mottoGeometry,lettering,[0,3.73,8.748],[1,1,1],[0,Math.PI,0],teachingFixtures).name='front-wall-school-motto';
  const rearDisplays=new T.Group();rearDisplays.name='classroom-rear-display-group';
- rearDisplays.scale.set(.96,.94,1);rearDisplays.position.set(.16,.02,0);room.add(rearDisplays);
+ rearDisplays.scale.set(.96,.94,1);rearDisplays.position.set(.16,.02,0);rearFixtures.add(rearDisplays);
  const poster=artwork.chalkNewspaper||texture(1024,512,(c,w,h)=>{drawBoardSurface(c,w,h,surfaces?.board);c.fillStyle='#eee6ba';c.textAlign='center';c.font='bold 66px "Kaiti SC",serif';c.fillText('迎接新世纪',w/2,105);c.strokeStyle='#c9d4b8';c.lineWidth=3;for(const x of [45,355,665]){c.strokeRect(x,160,280,300);c.font='30px "Kaiti SC",serif';c.fillText(['团结友爱','认真学习','文明班级'][(x-45)/310],x+140,220);for(let j=0;j<7;j++){c.fillStyle='#b5c7b3';c.fillRect(x+25,255+j*22,230-j%3*32,3);}}});
  // Recessed chalk surface, real corner joints and a hollow lower tray. Keep
  // the original wall position/extent; the detail does not alter navigation.
@@ -311,7 +312,7 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  // The hotpot print sits on a full pier between the outside windows.
  if(artwork.hotpotVegetables)framedArt('hotpot-vegetables-print',artwork.hotpotVegetables,.92,1.38,[CLASSROOM.minX+.023,2.22,CLASSROOM.minZ+2*bayDepth],Math.PI/2,facades[3]);
  // To a pupil facing +Z, the bulletin is on the right of the teaching board.
- framedArt('front-class-notices',noticeBoard,2.18,1.72,[-5.02,2.64,8.744],Math.PI,enclosure,mat('#458775',{roughness:.91}));
+ framedArt('front-class-notices',noticeBoard,2.18,1.72,[-5.02,2.64,8.744],Math.PI,teachingFixtures,mat('#458775',{roughness:.91}));
  if(artwork.classroomNotice){
   const paper=mat('#ffffff',{map:artwork.classroomNotice,roughness:.98});
   function wallPrint(name,tile,w,h,position,yaw,parent){
@@ -346,17 +347,17 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  const officePlanks=texture(1024,1024,(c,w,h)=>{c.fillStyle='#c1a47c';c.fillRect(0,0,w,h);for(let row=0;row<8;row++){const y=row*128;c.fillStyle=['#c8ac84','#cbb18b','#bfa27c','#d0b58f'][row%4];c.fillRect(0,y,w,127);for(let line=0;line<27;line++){c.strokeStyle=line%3?'rgba(83,53,24,.045)':'rgba(255,240,198,.12)';c.lineWidth=1;c.beginPath();for(let x=0;x<=w;x+=16){const yy=y+3+line*4.55+Math.sin(x*.013+line+row)*1.4;x?c.lineTo(x,yy):c.moveTo(x,yy);}c.stroke();}c.fillStyle='rgba(65,48,28,.25)';c.fillRect(0,y,w,1.2);for(let cut=0;cut<2;cut++){const x=(row%2?256:0)+cut*512;c.fillRect(x,y,1.4,128);}}});officePlanks.wrapS=officePlanks.wrapT=T.RepeatWrapping;
  const officeWood=mat('#a56847',{map:woodGrain,roughness:.62}),darkWood=mat('#73503b',{map:woodGrain,roughness:.72}),cabinetPaint=mat('#b6cbc4',{roughness:.58}),cabinetBack=mat('#687b75',{roughness:.82}),boards=mat(surfaces?.veneer?'#eddbc5':'#d5a66a',{map:surfaces?.veneer||woodGrain,roughness:.53}),officeFloor=mat('#ead8bc',{map:surfaces?.officeOak||officePlanks,vertexColors:true,roughness:.68});
  const podiumDepth=PODIUM.back-PODIUM.front,podiumZ=(PODIUM.front+PODIUM.back)/2;
- B(boards,[0,PODIUM.height/2,podiumZ],[2*PODIUM.halfWidth,PODIUM.height,podiumDepth],enclosure);
- B(boards,[0,PODIUM.height/4,PODIUM.front-PODIUM.tread/2],[2*(PODIUM.halfWidth+PODIUM.tread),PODIUM.height/2,PODIUM.tread],enclosure);
- for(const side of [-1,1])B(boards,[side*(PODIUM.halfWidth+PODIUM.tread/2),PODIUM.height/4,podiumZ],[PODIUM.tread,PODIUM.height/2,podiumDepth],enclosure);
+ B(boards,[0,PODIUM.height/2,podiumZ],[2*PODIUM.halfWidth,PODIUM.height,podiumDepth],teachingFixtures);
+ B(boards,[0,PODIUM.height/4,PODIUM.front-PODIUM.tread/2],[2*(PODIUM.halfWidth+PODIUM.tread),PODIUM.height/2,PODIUM.tread],teachingFixtures);
+ for(const side of [-1,1])B(boards,[side*(PODIUM.halfWidth+PODIUM.tread/2),PODIUM.height/4,podiumZ],[PODIUM.tread,PODIUM.height/2,podiumDepth],teachingFixtures);
  // Rounded stair lip and flush staggered boards share the physical platform.
  const stageGrain=mat('#dbc29d',{map:officePlanks,roughness:.55});
  const stageGeo=new T.PlaneGeometry(PODIUM.halfWidth*2-.025,podiumDepth-.018);
  const suv=stageGeo.attributes.uv;
  for(let i=0;i<suv.count;i++)suv.setXY(i,suv.getX(i)*2.55,suv.getY(i)*1.17);
- assets.add(stageGeo);mesh(stageGeo,stageGrain,[0,PODIUM.height+.0015,podiumZ],[1,1,1],[-Math.PI/2,0,0],enclosure);
- rounded(boards,[0,PODIUM.height-.015,PODIUM.front+.008],[2*PODIUM.halfWidth,.036,.038],.006,null,enclosure);
- const lx=(LECTERN.minX+LECTERN.maxX)/2,lz=(LECTERN.minZ+LECTERN.maxZ)/2;if(!placeFurniture67(enclosure,'cabinet',lx,0,lz)){rounded(M.wood,[lx,1.11,lz],[1.35,.075,.82],.022,null,enclosure);rounded(cream,[lx,.65,lz+.07],[1.22,.87,.60],.016,null,enclosure);B(edge,[lx,.23,lz+.05],[1.24,.055,.63],enclosure);}
+ assets.add(stageGeo);mesh(stageGeo,stageGrain,[0,PODIUM.height+.0015,podiumZ],[1,1,1],[-Math.PI/2,0,0],teachingFixtures);
+ rounded(boards,[0,PODIUM.height-.015,PODIUM.front+.008],[2*PODIUM.halfWidth,.036,.038],.006,null,teachingFixtures);
+ const lx=(LECTERN.minX+LECTERN.maxX)/2,lz=(LECTERN.minZ+LECTERN.maxZ)/2;if(!placeFurniture67(teachingFixtures,'cabinet',lx,0,lz)){rounded(M.wood,[lx,1.11,lz],[1.35,.075,.82],.022,null,teachingFixtures);rounded(cream,[lx,.65,lz+.07],[1.22,.87,.60],.016,null,teachingFixtures);B(edge,[lx,.23,lz+.05],[1.24,.055,.63],teachingFixtures);}
  // Only the section beside the lift is glazed. The remaining wall is solid,
  // as in the supplied walkthrough; its physical outer boundary never opens.
  const corridorSkin=new T.Group();corridorSkin.name='ordinary-corridor-skin';
@@ -377,7 +378,57 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  strip(7.425,extensionZ,.05,extensionLength,corridorSkin);
  B(cream,[(OFFICE.doorMaxX+CORRIDOR.maxX)/2,wallY,8.91],[CORRIDOR.maxX-OFFICE.doorMaxX,wallHeight,.22],ends).name='office-entry-right-pier';
  B(cream,[(CORRIDOR.minX+LIFT.minX)/2,wallY,CORRIDOR.minZ-.10],[LIFT.minX-CORRIDOR.minX,wallHeight,.20],ends).name='lift-entry-left-pier';
- B(cream,[(LIFT.maxX+CORRIDOR.maxX)/2,wallY,CORRIDOR.minZ-.10],[CORRIDOR.maxX-LIFT.maxX,wallHeight,.20],ends).name='lift-entry-right-pier';
+ // Left of a pupil exiting the cabin, the hall turns into a recessed bay.
+ const bay=LIFT_ALCOVE,bayMidX=(bay.minX+bay.maxX)/2,bayMidZ=(bay.minZ+bay.maxZ)/2;
+ const alcoveDepth=bay.maxZ-bay.minZ,bayWidth=bay.maxX-bay.minX;
+ const bayPlaster=mat('#d3cdb9',{map:plaster,roughness:.97,vertexColors:true}),baySkirt=mat('#69796a',{roughness:.91,vertexColors:true});
+ const bayFloor=mat('#cbc7b8',{map:floorMat.map,roughness:.93,vertexColors:true});
+ floor(bay.minX,bay.maxX,bay.minZ,bay.maxZ,bayFloor,enclosure);
+ B(bayPlaster,[bay.minX-.10,1.71,bayMidZ],[.20,3.42,alcoveDepth+.20],enclosure);
+ B(bayPlaster,[bayMidX,1.71,bay.maxZ+.10],[bayWidth,3.42,.20],enclosure);
+ B(bayPlaster,[bay.maxX+.10,3.27,bayMidZ],[.20,.30,alcoveDepth],enclosure);
+ B(baySkirt,[bay.minX+.012,.08,bayMidZ],[.024,.16,alcoveDepth],enclosure);
+ B(baySkirt,[bayMidX,.08,bay.maxZ-.012],[bayWidth,.16,.024],enclosure);
+ B(bayPlaster,[bayMidX,3.50,bayMidZ+.10],[bayWidth,.16,alcoveDepth-.20],enclosure);
+ for(const part of enclosure.children.filter(o=>o.isMesh&&[bayPlaster,bayFloor,baySkirt].includes(o.material))){
+  // Local bounce from the opening falls off toward the blind end. Shared
+  // unit boxes must keep their original colours for the rest of the building.
+  const geo=part.geometry.clone();assets.add(geo);part.geometry=geo;part.updateMatrix();
+  const verts=geo.attributes.position,colors=[],v=new T.Vector3();
+  for(let i=0;i<verts.count;i++){
+   v.fromBufferAttribute(verts,i).applyMatrix4(part.matrix);
+   const distance=Math.hypot(v.x-(CORRIDOR.minX+.58),v.z-bay.minZ);
+   const light=.16+.80*Math.exp(-.46*distance);
+   colors.push(light,light*.975,light*.925);
+  }
+  geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));
+ }
+ // A short feathered throat and an unlit black back keep the recess dark
+ // even when direct sun enters the hall. The fade is fixed to the opening.
+ const entry=ALCOVE_ENTRY;
+ const darknessGeo=new T.BufferGeometry(),points=[],uvs=[],indices=[];
+ for(const [depth,inset] of [[0,0],[1.10,.145]]){
+  const x0=entry.minX+inset,x1=entry.maxX-inset,y0=.012+inset,y1=entry.height-.012-inset;
+  for(const [x,y] of [[x0,y0],[x1,y0],[x1,y1],[x0,y1]]){
+   points.push(x,y,entry.minZ+depth);uvs.push(0,depth/1.10);
+  }
+ }
+ for(let i=0;i<4;i++){const j=(i+1)%4;indices.push(i,j,j+4,i,j+4,i+4);}
+ indices.push(4,5,6,4,6,7);
+ darknessGeo.setAttribute('position',new T.Float32BufferAttribute(points,3));
+ darknessGeo.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));darknessGeo.setIndex(indices);assets.add(darknessGeo);
+ const darknessMat=new T.ShaderMaterial({
+  transparent:true,depthWrite:false,side:T.DoubleSide,forceSinglePass:true,toneMapped:false,
+  vertexShader:'varying float depth; void main(){depth=uv.y; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+  fragmentShader:'varying float depth; void main(){gl_FragColor=vec4(0.0,0.0,0.0,smoothstep(0.0,0.78,depth));}'
+ });
+ materials.add(darknessMat);
+ const darkness=new T.Mesh(darknessGeo,darknessMat);darkness.name='lift-alcove-darkness';
+ darkness.renderOrder=4;
+ const pocketEdge=entry.maxX;
+ B(cream,[(CORRIDOR.minX+pocketEdge)/2,3.965,bay.minZ+.10],[pocketEdge-CORRIDOR.minX,1.09,.20],enclosure);
+ B(cream,[LIFT.maxX+.355,wallY,CORRIDOR.minZ-.10],[.71,wallHeight,.20],ends).name='lift-entry-pocket';
+
  // The dorm has room doors on both sides. Mount the chalk drawing on the
  // full-height wall between the lift and room 1, above the corridor stripe.
  const dormTutorialWall=DORM_CORRIDOR_SOLIDS.find(wall=>wall.id==='dorm-hall-left-1');
@@ -395,8 +446,8 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  B(cabinetBack,[.047,.119,.113],[.124,.058,.01],phone);
  for(let row=0;row<4;row++)for(let col=0;col<3;col++)B(edge,[.012+col*.035,.053-row*.035,.116],[.023,.019,.009],phone);
  tube([[-.096,-.168,.14],[-.115,-.29,.13],[-.065,-.32,.10],[-.025,-.21,.08]],.009,receiver,phone);
- const clutter=new T.Group();clutter.name='rear-door-dark-storage';clutter.position.set(CORRIDOR.maxX-.37,0,CORRIDOR.minZ+.68);enclosure.add(clutter);
- const cardboard=mat('#947f5c',{roughness:.98});for(const [x,y,z,w,h,d]of [[0,.35,0,.64,.70,.64],[-.03,.95,.05,.58,.50,.58],[.03,1.36,.08,.50,.32,.50]]){B(cardboard,[x,y,z],[w,h,d],clutter);B(darkWood,[x,y+h/2+.003,z],[w,.006,.04],clutter);}
+ const clutter=new T.Group();clutter.name='recessed-hall-storage';clutter.position.set(ALCOVE_STORAGE.x,0,ALCOVE_STORAGE.z);enclosure.add(clutter);
+ const cardboard=mat('#716246',{roughness:.98});for(const [x,y,z,w,h,d]of [[0,.35,0,.64,.70,.64],[-.03,.95,.05,.58,.50,.58],[.03,1.36,.08,.50,.32,.50]]){B(cardboard,[x,y,z],[w,h,d],clutter);B(darkWood,[x,y+h/2+.003,z],[w,.006,.04],clutter);}
  for(let i=0;i<3;i++){cylinder(boards,[-.21+i*.13,1.01,-.26],[.017,1.95,.017],[0,0,-.05+i*.045],clutter);B(cabinetBack,[-.21+i*.13,.12,-.26],[.13,.15,.08],clutter);}
  // Office shares the north wall with the classroom and can actually be entered.
  const office=new T.Group();office.name='walkable-teacher-office';ends.add(office);
@@ -505,7 +556,13 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  }
  B(edge,[9.35,3.165,-9.98],[2.68,.09,.025],lift).name='lift-lintel-face';
  B(cream,[9.35,(3.12+CEILING_HEIGHT)/2,-10.1],[2.5,CEILING_HEIGHT-3.12,.2],lift).name='lift-entry-lintel';
- const liftDoors=[-1,1].map(side=>{const g=new T.Group();g.name=side<0?'lift-door-left':'lift-door-right';g.position.set(9.35+side*.625,0,-10.10);lift.add(g);B(liftBlue,[0,1.56,0],[1.25,3.08,.08],g);B(liftInset,[0,1.56,-.046],[1.15,2.95,.012],g);B(edge,[-side*.605,1.56,-.055],[.025,3.03,.012],g);markDynamic(g);return g;});
+ const leafSections=[];
+ const liftDoors=[-1,1].map(side=>{const g=new T.Group();g.name=side<0?'lift-door-left':'lift-door-right';g.position.set(9.35+side*.625,0,-10.10);lift.add(g);for(let rank=0;rank<2;rank++){
+   const z=rank*.052,base=side*(rank-.5)*.625;
+   const meshes=[B(liftBlue,[base,1.56,z],[.625,3.08,.045],g),B(liftInset,[base,1.57,z-.028],[.566,2.95,.010],g),B(edge,[base-side*.301,1.56,z-.035],[.019,3.03,.010],g)];
+   for(const part of meshes)leafSections.push({part,x:part.position.x,travel:side*(rank===0?1.27:.645)});
+  }
+  markDynamic(g);return g;});
  for(const x of [8.73,9.97]){B(liftInset,[x,1.57,-12.99],[1.18,2.94,.018],lift);B(edge,[x+.575,1.57,-12.975],[.018,2.92,.01],lift);}for(const x of [8.125,10.575])B(edge,[x,1.02,-11.6],[.03,.04,2.1],lift);
  const liftPanel=new T.Group();liftPanel.name='floor-selection';liftPanel.position.set(8.13,1.50,-10.85);lift.add(liftPanel);
  // Numbered floors occupy pairs, from 1/2 at the bottom to 9/10 at the top.
@@ -703,7 +760,11 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  let officeLocked=false,rearDoorClosed=false,drawerOpen=false,liftAmount=ELEVATOR_ENABLED?1:0,liftTarget=ELEVATOR_ENABLED?1:0;const drawerAmounts=new Map();
  // Retract the leading door edge inside its pocket. Stopping precisely at
  // the clear opening left its blue end face coplanar with the plaster reveal.
- const placeLiftDoors=()=>liftDoors.forEach((g,i)=>{g.position.x=9.35+(i===0?-1:1)*(.625+liftAmount*liftAmount*(3-2*liftAmount)*1.27);g.userData.openAmount=liftAmount;});placeLiftDoors();
+ const placeLiftDoors=()=>{
+  const ease=liftAmount*liftAmount*(3-2*liftAmount);
+  for(const {part,x,travel} of leafSections)part.position.x=x+travel*ease;
+  for(const g of liftDoors)g.userData.openAmount=liftAmount;
+ };placeLiftDoors();
  const placeSchoolDoors=()=>{for(const[id,leaf]of doors)leaf.rotation.y=schoolDoorMotion[id].amount?-Math.PI/2*schoolDoorMotion[id].amount:0;officeDoors.forEach((g,i)=>g.rotation.y=(i===0?-1:1)*Math.PI/2*schoolDoorMotion.office.amount);};
  let litFloor=null;
  const setDoors=state=>{
@@ -738,6 +799,8 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  for(const object of indoorObjects)indoorEnclosure.attach(object);
  return{boardInk,hallLamp:sharedHallLamp,roleLocker:locker,enclosure,indoorEnclosure,corridorSkin,ceilingMaterial,ceilingRig,upperWalls,curtains,tiered,liftPanel,liftDoors,facades,doors,officeDoors,officeDrawer,officeDrawers,officeScreens,
   attachUpperArchitecture(){
+   enclosure.add(darkness);
+   bakeStatic(classroomCabinet);classroomCabinet.removeFromParent();bakeStatic(rearFixtures);rearFixtures.add(classroomCabinet);bakeStatic(teachingFixtures);room.add(rearFixtures);indoorEnclosure.add(teachingFixtures);
    for(const group of [posterBay,standardBay]){bakeStatic(group);facades[0].add(group);}
    for(const group of [extraClassFixtures,singleHallFixtures,dayHallFixtures,corridorLowerPanels])bakeStatic(group);
    corridorSkin.add(corridorLowerPanels);
@@ -749,6 +812,12 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
   getTargets(){return targets;},setDoors,getDoorMotion:()=>schoolDoorSnapshot(schoolDoorMotion),
   setOfficeDrawer(open){drawerOpen=!!open;},
   setMap(map){
+   const turn=turnedClass(map);
+   for(const group of [teachingFixtures,rearFixtures]){
+    group.rotation.y=turn?Math.PI:0;
+    group.position.set(turn?CLASS_TURN.x:0,0,turn?CLASS_TURN.z:0);
+   }
+   classroomCabinet.visible=mapKind(map)==='classroom';
    if(studentTutorial){
     const kind=mapKind(map),dorm=kind==='dorm';
     studentTutorial.visible=!['bus','cafeteria'].includes(kind);

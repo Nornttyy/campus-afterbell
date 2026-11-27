@@ -97,8 +97,8 @@ test('surveillance E deploys or views, and Q closes surveillance before touching
 
 test('raised books limit the visible mouth bubble and block adhesion; lowering the book clears the route',()=>{
  const r=new ClassroomRound({target:1000});r.start();const p=r.player,target=r.students.find(s=>s!==p);for(const actor of r.students)if(actor!==p)Object.assign(actor,{x:-100,z:-100});r.teacher.x=r.teacher.z=40;
- Object.assign(p,{_bubbleElapsed:4,action:'gum',_drawnSlot:0});Object.assign(target,{x:p.x,z:p.z+.8,seated:true});
- const book=r.books[p.seatId];book.amount=1;book.raised=true;const blocked=r._mouthBubbleGeometry(p),bookZ=r.seats[p.seatId].deskZ-.28;
+ Object.assign(p,{_bubbleElapsed:4,action:'gum',_drawnSlot:0});Object.assign(target,{x:p.x,z:p.z+Math.cos(p.yaw)*.8,seated:true});
+ const book=r.books[p.seatId];book.amount=1;book.raised=true;const blocked=r._mouthBubbleGeometry(p),bookZ=r.seats[p.seatId].deskZ-Math.cos(p.yaw)*.28;
  assert.ok(blocked.radius<.11);assert.ok(Math.hypot(Math.max(0,Math.abs(blocked.center.z-bookZ)-.02),blocked.center.y-1.35)>blocked.radius);assert.equal(r._touchMouthBubble(p),false);assert.equal(r.bubbles.length,0);assert.equal(r.snapshot().player.bubble.radius,blocked.radius);
  book.amount=0;book.raised=false;assert.ok(r._mouthBubbleGeometry(p).radius>blocked.radius);assert.equal(r._touchMouthBubble(p),true);assert.equal(r.bubbles[0].attachedId,target.id);
  Object.assign(p,{x:6.9,z:0,yaw:Math.PI/2,seated:false});const wallBubble=r._mouthBubbleGeometry(p);assert.ok(wallBubble.center.x+wallBubble.radius<=7.20+.001,'displayed sphere cannot extend into the classroom wall');

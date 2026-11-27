@@ -37,6 +37,6 @@ test('crawling uses floor-level projectile exposure and hit heights, including t
 test('teachers reject crawl, retain their standing view, and can throw chalk and write',()=>{
  const r=new TeacherRound();r.start();Object.assign(r.player,{x:7,z:0,yaw:0,pitch:0});assert.equal(r.setCrouch(true),false);assert.equal(r.player.crouched,false);
  assert.equal(r.throwChalk(),true);assert.equal(r.chalks[0].y,teacherViewHeight(r.player));
- Object.assign(r.player,{x:BOARD.x,z:BOARD.z});assert.equal(r.canWriteBoard(),true);
+ Object.assign(r.player,{x:BOARD.x,z:BOARD.z,yaw:BOARD.yaw});assert.equal(r.canWriteBoard(),true);
  r.teacher.carriedId=2;assert.equal(r.setCrouch(true),false);
 });

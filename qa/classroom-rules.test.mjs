@@ -74,7 +74,7 @@ test('book protection is directional and weakens when the teacher approaches or 
 });
 
 test('heard noise can be remembered without visual evidence or a red card',()=>{
-  const r=new ClassroomRound({target:100000});r.start();r._plan.until=100;r.teacher.x=r.player.x;r.teacher.z=r.player.z+5;r.teacher.yaw=0;
+  const r=new ClassroomRound({target:100000});r.start();r._plan.until=100;r.teacher.x=r.player.x;r.teacher.z=r.player.z-5;r.teacher.yaw=Math.PI;
   r.player._slots[0].action='snack';
   r.toggleDrawer();assert.equal(r.selectAction('snack'),true);takeAndUse(r);r.step(5);
   const s=r.snapshot(),memory=s.teacher.memory.find(m=>m.id===PLAYER_SEAT);
@@ -87,11 +87,11 @@ test('movement collides with desks, can use an aisle, and carrying without using
   // This case measures a fixed static aisle route. Independently scheduled AI
   // drawers are covered by drawer-collision58 rather than changing its distance.
   const r=quietFixture(),seatId=r.player.seatId;r.player._slots[0].action='snack';r.toggleDrawer();takeAndUse(r);assert.equal(r.interact(),'stood');
-  r.hold(false);r.setMovement(0,1);r.step(2);
-  let s=r.snapshot();const desk=DESKS[seatId];assert.ok(s.player.z<=desk.minZ-.18+1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
-  const aisle=(desk.maxX+DESKS[seatId+1].minX)/2;
-  r.setMovement(1,0);r.step((aisle-r.player.x)/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,1);r.step(2);
-  s=r.snapshot();assert.ok(s.player.z>SEATS[seatId].z+1);assert.equal(blocked(s.player.x,s.player.z),false);
+  r.hold(false);r.setMovement(0,-1);r.step(2);
+  let s=r.snapshot();const desk=DESKS[seatId];assert.ok(s.player.z>=desk.maxZ+.18-1e-6);assert.equal(blocked(s.player.x,s.player.z),false);assert.equal(s.actionProgress,0);
+  const aisle=(desk.minX+DESKS[seatId+1].maxX)/2;
+  r.setMovement(-1,0);r.step((r.player.x-aisle)/DEVELOPMENT_TUNING.walkSpeed);r.setMovement(0,-1);r.step(2);
+  s=r.snapshot();assert.ok(s.player.z<SEATS[seatId].z-1);assert.equal(blocked(s.player.x,s.player.z),false);
   assert.equal(s.completed.snack,0);assert.equal(s.holding,false);
   const other=new ClassroomRound();other.start();const home=other.player.seatId;assert.equal(other.interact(),'stood');assert.equal(other.interact(),'seated');assert.equal(other.snapshot().player.seatId,home);
 });
@@ -120,7 +120,7 @@ test('teacher revisits remembered individuals and targets only previously seen o
   // The same pupil must be seen and heard, then hide the snack before being
   // identified. Both visits must follow from the teacher's own observations.
   for(const actor of r.students)if(actor.isTeammate)actor._decisionAt=Infinity;
-  Object.assign(r.teacher,{x:r.player.x,z:r.player.z-.9,yaw:0});
+  Object.assign(r.teacher,{x:r.player.x,z:r.player.z+.9,yaw:Math.PI});
   assert.equal(blocked(r.teacher.x,r.teacher.z,.23,r.layout),false);assert.equal(canSee(r.teacher,r.player,[],r.layout),true);
   r.player._slots[0].action='snack';r.toggleDrawer();assert.equal(r.selectSlot(0),true);takeAndUse(r);
   for(let i=0;i<40*60;i++){
@@ -155,10 +155,10 @@ test('confirmed identification survives hiding, stuns, physically escorts and bi
   r.hold(false);const before=r.snapshot().elapsed;
   advanceUntil(r,s=>s.teacher.castProgress>0,10);
   const windup=r.snapshot().elapsed;r.step(.3);assert.equal(r.snapshot().player.caught,false);
-  const carried=advanceUntil(r,s=>s.player.captivity==='carried',10);assert.equal(carried.caughtCount,0);assert.notEqual(carried.player.z,DETENTION[0].z-.39);
+  const carried=advanceUntil(r,s=>s.player.captivity==='carried',10);assert.equal(carried.caughtCount,0);assert.notEqual(carried.player.z,DETENTION[0].z+.39);
   const s=advanceUntil(r,s=>s.player.caught,35);
   assert.ok(s.elapsed-windup>=.7-DT-1e-6);assert.ok(s.elapsed>before);
-  assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.ok(Math.abs(s.player.z-(DETENTION[0].z-.39))<1e-9);
+  assert.equal(s.status,'playing');assert.equal(s.player.seated,false);assert.equal(s.player.seatId,null);assert.ok(Math.abs(s.player.z-(DETENTION[0].z+.39))<1e-9);
   assert.equal(r.takeSlot(0),false);assert.equal(r.hold(true),true);assert.equal(r.snapshot().player.bubble.blowing,true);r.hold(false);assert.equal(r.interact(),false);assert.equal(r.setMovement(1,0),false);assert.equal(r.setLook(1,0),true);
   const events=r.drainEvents();assert.equal(events.filter(e=>e.type==='bound'&&e.studentId===PLAYER_SEAT).length,1);assert.equal(events.filter(e=>e.type==='chalk'&&e.studentId===PLAYER_SEAT).length,1);
   assert.equal(events.some(e=>e.type==='finish'),false);

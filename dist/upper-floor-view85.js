@@ -1,7 +1,7 @@
-import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=123';
+import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=124';
 import * as T from './vendor/three.module.js';
 import {createServingDish} from './game-actors.js?v=campus-117';
-import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-117&rev=123';
+import {PARTITIONS,CLASSROOM,CORRIDOR} from './classroom-layout.js?v=campus-117&rev=124';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {SERVING_BELTS,SERVING_MENU,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92';
 

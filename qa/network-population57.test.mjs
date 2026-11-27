@@ -85,7 +85,7 @@ test('human seating before AI arrival makes the arriving AI choose a free seat',
 
 test('released AI return to a free chair instead of sitting inside the human who took their old chair',()=>{
  const {room,people}=fixture(3,76);beginClass(room,people[0]);const ai=room.sim.students.find(a=>!a.networkHuman&&a.seated),human=people[1].context.player,seat=room.sim.seats[ai.seatId];
- const originalHome=ai.id;Object.assign(ai,{seated:false,seatId:null,captivity:'bound',caught:true,postId:DETENTION[0].id,x:DETENTION[0].x,z:DETENTION[0].z-.3});
+ const originalHome=ai.id;Object.assign(ai,{seated:false,seatId:null,captivity:'bound',caught:true,postId:DETENTION[0].id,x:DETENTION[0].x,z:DETENTION[0].z+.3});
  Object.assign(human,{x:seat.x,z:seat.z,seated:false,seatId:null});assert.equal(room.command(people[1],'interact',[seat.id]),'seated');
  room.sim._release(ai);for(let i=0;i<800&&!ai.seated;i++){room.tick(.1);census(room);}
  assert.equal(ai.seated,true);assert.equal(human.seatId,seat.id);assert.notEqual(ai.seatId,human.seatId);assert.equal(ai.id,originalHome,'reassignment never creates or renumbers an actor');

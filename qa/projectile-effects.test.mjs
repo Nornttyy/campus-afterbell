@@ -12,7 +12,7 @@ function quiet(){
  return r;
 }
 function take(r,kind){Object.assign(r.player._slots[0],{action:kind,progress:0,readyAt:0});r.toggleDrawer();assert.equal(r.takeSlot(0),true);}
-function projectile(kind,values={}){return Object.assign(createThrowableProjectile({id:0,x:1.42,z:0,yaw:0,pitch:0,seated:false},1,kind,.5),values);}
+function projectile(kind,values={}){return Object.assign(createThrowableProjectile({id:0,x:10,z:0,yaw:0,pitch:0,seated:false},1,kind,.5),values);}
 
 test('flash and ink throw on press with no extra use on release and refill after three seconds',()=>{
  const drawn=new Set();for(let seed=0;seed<80;seed++)for(const s of new ClassroomRound({seed}).player._slots)drawn.add(s.action);
@@ -70,8 +70,8 @@ test('both students and teachers receive visual effects; state expires with simu
  for(const Round of [ClassroomRound,TeacherRound]){
   const r=new Round({target:100000});r.start();for(const s of r.students)s._decisionAt=Infinity;
   if(Round===ClassroomRound){r._thinkAt=Infinity;r._plan.until=Infinity;r.teacher.x=r.teacher.z=30;r.interact();}
-  Object.assign(r.player,{x:1.42,z:0,yaw:0,pitch:0});if(Round===TeacherRound)Object.assign(r.teacher,r.player);
-  const origin={x:1.42,y:Round===TeacherRound?1.95:1.65,z:1};
+  Object.assign(r.player,{x:10,z:0,yaw:0,pitch:0});if(Round===TeacherRound)Object.assign(r.teacher,r.player);
+  const origin={x:10,y:Round===TeacherRound?1.95:1.65,z:1};
   r._applyProjectileEffect({id:3,ownerId:2},{kind:'flash',...origin});r._applyProjectileEffect({id:4,ownerId:2},{kind:'ink',...origin});
   let s=r.snapshot();assert.ok(s.player.flashStrength>0&&s.player.flashLeft>0);assert.equal(s.player.inkLeft,7);assert.equal(s.player.inkDuration,7);
   const events=r.drainEvents();assert.ok(events.find(e=>e.type==='flash-burst').affected.includes(r.player.id));assert.ok(events.find(e=>e.type==='ink-splash').affected.includes(r.player.id));
@@ -83,7 +83,7 @@ test('both students and teachers receive visual effects; state expires with simu
 
 test('an ink-covered human teacher can write and throw; the effect is not a stun',()=>{
  const r=new TeacherRound({target:100000});r.start();for(const s of r.students)s._decisionAt=Infinity;
- Object.assign(r.player,{x:BOARD.x,z:BOARD.z,yaw:0,pitch:0});Object.assign(r.teacher,{...r.player,stamina:30});
+ Object.assign(r.player,{x:BOARD.x,z:BOARD.z,yaw:BOARD.yaw,pitch:0});Object.assign(r.teacher,{...r.player,stamina:30});
  r._applyProjectileEffect({id:1,ownerId:2},{kind:'ink',...effectEye(r.teacher)});
  assert.equal(r.snapshot().player.inkLeft,7);assert.equal(r.setWriting(true),true);r.step(1);assert.ok(r.teacher.stamina>39);assert.equal(r.snapshot().teacher.writing,true);
  r.setWriting(false);assert.equal(r.throwChalk(),true);assert.equal(r.snapshot().player.inkLeft,6);

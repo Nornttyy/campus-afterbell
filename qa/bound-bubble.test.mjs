@@ -9,11 +9,11 @@ function quiet(Round=ClassroomRound){const r=new Round({seed:44,target:120});r.s
 function silenceTeacher(r){r._thinkAt=r._plan.until=Infinity;r.teacher.x=r.teacher.z=30;}
 function bind(r,actor,index=0){
  r.teacher.x=actor.x;r.teacher.z=actor.z-.9;r._stun(actor);assert.ok(r._grab(actor));
- r.teacher.x=DETENTION[index].x;r.teacher.z=DETENTION[index].z-1.1;assert.ok(r._bind(index));silenceTeacher(r);
+ r.teacher.x=DETENTION[index].x;r.teacher.z=DETENTION[index].z+1.1;assert.ok(r._bind(index));silenceTeacher(r);
 }
 
 test('a bound pupil can blow while movement, ordinary items and self-rescue remain unavailable',()=>{
- const r=quiet();bind(r,r.player);const stock=r.snapshot().drawer.slots,position={x:r.player.x,z:r.player.z};
+ const r=quiet();bind(r,r.player);const stock=r.snapshot().drawer.slots,position={x:r.snapshot().player.x,z:r.snapshot().player.z};
  assert.equal(r.snapshot().player.bubble.available,true);assert.equal(r.hold(true),true);
  assert.equal(r.setMovement(1,0),false);assert.equal(r.toggleDrawer(),false);assert.equal(r.takeSlot(0),false);assert.equal(r.interact(),false);assert.equal(r.setRescue(r.player.id),false);
  r.step(3);const s=r.snapshot();assert.equal(s.player.bubble.blowing,true);assert.equal(s.player.bubble.progress,.5);assert.equal(s.score,0,'unverified bubble scoring stays disabled');

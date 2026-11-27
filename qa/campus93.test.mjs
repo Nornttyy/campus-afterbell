@@ -51,7 +51,7 @@ test('classroom computers credit the correct student, preserve the game on Q and
 
 test('two seconds of board writing regenerate twenty stamina; cancellation fades and ten seconds end a stroke',()=>{
  const r=createSoloRound({role:'teacher',map:'classroom',seed:12});r.start();
- Object.assign(r.player,{x:r.board.x,z:r.board.z-.35,yaw:0,pitch:0});r.teacher.stamina=0;
+ Object.assign(r.player,{x:r.board.x,z:r.board.z+.35,yaw:r.board.yaw,pitch:0});r.teacher.stamina=0;
  assert.ok(r.setWriting(true));r.step(2);assert.ok(Math.abs(r.teacher.stamina-20)<.01);assert.ok(Math.abs(r.teacher.boardAmount-.2)<.001);
  assert.ok(r.setWriting(true));r.step(1);assert.ok(Math.abs(r.teacher.writeProgress-.3)<.001);
  r.setWriting(false);r.step(.8);assert.ok(r.teacher.boardOpacity>0&&r.teacher.boardOpacity<1);r.step(2);assert.equal(r.teacher.boardAmount,0);assert.ok(Math.abs(r.teacher.stamina-30)<.001);

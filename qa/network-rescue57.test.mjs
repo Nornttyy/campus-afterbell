@@ -5,8 +5,8 @@ import {CampusRoom} from '../server/room-simulation.js';
 import {DETENTION,FRIEND_SEATS} from '../dist/classroom-layout.js';
 
 function pose(sim,rescuer,target){
- const post=DETENTION[0];Object.assign(target,{x:post.x,z:post.z-.3,seated:false,seatId:null,captivity:'bound',caught:true,postId:post.id,_boundAt:0});
- Object.assign(rescuer,{x:post.x,z:post.z-1.1,yaw:0,pitch:0,seated:false,seatId:null,captivity:'free',caught:false});
+ const post=DETENTION[0];Object.assign(target,{x:post.x,z:post.z+.3,seated:false,seatId:null,captivity:'bound',caught:true,postId:post.id,_boundAt:0});
+ Object.assign(rescuer,{x:post.x,z:post.z+1.1,yaw:Math.PI,pitch:0,seated:false,seatId:null,captivity:'free',caught:false});
  for(const actor of sim.students)actor._decisionAt=Infinity;
 }
 function solo(){const sim=new ClassroomRound({seed:76});sim.start();const rescuer=sim.player,target=sim.students[FRIEND_SEATS[0]];pose(sim,rescuer,target);return{sim,rescuer,target,start:()=>sim.setRescue(target.id),cancel:()=>sim.setRescue(null),tick:()=>sim.step(1/60)};}

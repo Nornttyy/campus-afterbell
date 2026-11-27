@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SEATS,CLASSROOM,START_BELL_POSITION,OFFICE,LIFT,BOARD,TEACHER_SPAWN,OFFICE_CHAIR,OFFICE_CHAIRS,OFFICE_DESKS,DETENTION,DOORS,DOOR_LEAVES,CORRIDOR,CAMPUS_MAPS,LAYOUT_PATTERNS,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,createSeatLayout,createLayoutContext,updateLayoutDoors,mapKind,teachingRoomHeight,ceilingVolumes,enclosureVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight,floorTiles} from '../dist/classroom-layout.js';
+import {SEATS,CLASSROOM,ALCOVE_ENTRY,START_BELL_POSITION,OFFICE,LIFT,boardForMap,BOARD,TEACHER_SPAWN,OFFICE_CHAIR,OFFICE_CHAIRS,OFFICE_DESKS,DETENTION,DOORS,DOOR_LEAVES,CORRIDOR,CAMPUS_MAPS,LAYOUT_PATTERNS,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,createSeatLayout,createLayoutContext,updateLayoutDoors,mapKind,teachingRoomHeight,ceilingVolumes,enclosureVolumes,blocked,moveInRoom,walkRoute,clearWallSegment,floorHeight,actorFloorHeight,floorTiles} from '../dist/classroom-layout.js';
 import {DORM_BOUNDS} from '../dist/dorm-layout70.js';
 import {OPEN_CAMPUS_MAPS} from '../dist/campus-destinations.js';
 import {chalkHit} from '../dist/teacher-rules.js';
@@ -25,7 +25,7 @@ test('multiple room layout and door contexts cannot mutate each other or the def
 });
 
 test('every seat in every layout can reach the front and rear of class and the detention posts',()=>{
- for(const pattern of LAYOUT_PATTERNS){const seats=createSeatLayout(73,pattern),ctx=createLayoutContext(seats);for(const radius of [.20,.23])for(const seat of seats){validRoute(seat,{x:6.8,z:DOORS[0].center},radius,ctx);for(const post of DETENTION)validRoute(seat,{x:post.x,z:post.z-1.1},radius,ctx);}}
+ for(const pattern of LAYOUT_PATTERNS){const seats=createSeatLayout(73,pattern),ctx=createLayoutContext(seats);for(const radius of [.20,.23])for(const seat of seats){validRoute(seat,{x:6.8,z:DOORS[0].center},radius,ctx);for(const post of DETENTION)validRoute(seat,{x:post.x,z:post.z+1.1},radius,ctx);}}
 });
 
 test('both classroom door apertures open onto the long corridor, while partition and leaves are solid',()=>{
@@ -67,7 +67,7 @@ test('ten distinct maps preserve corridor/office roofs and give the outdoor play
 });
 
 test('each floor variant supports a whole table and chair on the same local elevation',()=>{
- for(const map of ['classroom','night','tiered','computer','hotpot']){assert.equal(floorTiles(map).length>0,mapKind(map)==='tiered');for(const pattern of LAYOUT_PATTERNS)for(const seat of createSeatLayout(73,pattern,map)){const h=floorHeight(seat.x,seat.z,map);assert.equal(floorHeight(seat.deskX,seat.deskZ,map),h);if(mapKind(map)!=='tiered')assert.equal(h,0);}assert.equal(floorHeight(BOARD.x,BOARD.z,map),.16);}
+ for(const map of ['classroom','night','tiered','computer','hotpot']){assert.equal(floorTiles(map).length>0,mapKind(map)==='tiered');for(const pattern of LAYOUT_PATTERNS)for(const seat of createSeatLayout(73,pattern,map)){const h=floorHeight(seat.x,seat.z,map);assert.equal(floorHeight(seat.deskX,seat.deskZ,map),h);if(mapKind(map)!=='tiered')assert.equal(h,0);}assert.equal(floorHeight(boardForMap(map).x,boardForMap(map).z,map),.16);}
  const carrier={x:BOARD.x,z:BOARD.z},actor={x:0,z:3,captivity:'carried'};assert.equal(actorFloorHeight(actor,'classroom',carrier),.16);actor.captivity='free';assert.equal(actorFloorHeight(actor,'classroom',carrier),0);
 });
 
@@ -85,7 +85,7 @@ test('rendered walls, floors, open floor controls and interactive furniture agre
  assert.ok(Math.abs(hit([8,1.52,START_BELL_POSITION.z],[-1,0,0]).point.x-7.40)<1e-5);assert.ok(hit([8,2,-.46],[-1,0,0],o=>o.name==='pale-blue-interior-pane'&&o.material.transparent&&o.material.opacity===.48));
  const floor=hit([9.2,.8,0],[0,-1,0],o=>o.material===base);assert.ok(Math.abs(floor.point.y)<1e-6);assert.ok(Math.abs(floor.uv.x-floor.point.x/1.6)<1e-6);assert.ok(Math.abs(floor.uv.y-floor.point.z/1.6)<1e-6);
  const planarOverlap=(a,b)=>Math.min(a.max.x,b.max.x)-Math.max(a.min.x,b.min.x)>1e-6&&Math.min(a.max.z,b.max.z)-Math.max(a.min.z,b.min.z)>1e-6;
- for(const [objects,count] of [[scene.getObjectsByProperty('name','campus-continuous-floor'),5],[['classroom','corridor','office'].map(part=>scene.getObjectByName('campus-ceiling-'+part)),3]]){assert.equal(objects.length,count);assert.ok(objects.every(Boolean));const boxes=objects.map(o=>new T.Box3().setFromObject(o,true));for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++)assert.equal(planarOverlap(boxes[i],boxes[j]),false,'coplanar school slabs overlap and flicker at the room seam');}
+ for(const [objects,count] of [[scene.getObjectsByProperty('name','campus-continuous-floor'),6],[['classroom','corridor','office'].map(part=>scene.getObjectByName('campus-ceiling-'+part)),3]]){assert.equal(objects.length,count);assert.ok(objects.every(Boolean));const boxes=objects.map(o=>new T.Box3().setFromObject(o,true));for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++)assert.equal(planarOverlap(boxes[i],boxes[j]),false,'coplanar school slabs overlap and flicker at the room seam');}
  const floorButtons=campus.liftPanel.children.filter(o=>o.userData.floorMap);
  assert.deepEqual(floorButtons.map(o=>o.userData.floorMap),OPEN_CAMPUS_MAPS);
  assert.deepEqual(floorButtons.map(o=>o.userData.floor),OPEN_CAMPUS_MAPS.map(map=>CAMPUS_MAPS.indexOf(map)+1));
@@ -99,4 +99,29 @@ test('rendered walls, floors, open floor controls and interactive furniture agre
  for(const door of campus.liftDoors)door.traverse(o=>{if(o.isMesh)assert.equal(o.userData.animated,true,'sliding leaf cannot be baked into static geometry');});
  campus.setDoors({officeLocked:true,rearDoorClosed:true});assert.equal(campus.doors.get('rear').rotation.y,-Math.PI/2);campus.update({officeLocked:true,rearDoorClosed:true},.1);assert.ok(campus.doors.get('rear').rotation.y<0&&campus.doors.get('rear').rotation.y>-Math.PI/2);campus.update({officeLocked:true,rearDoorClosed:true},2);assert.equal(campus.doors.get('rear').rotation.y,0);campus.setOfficeDrawer(true);campus.update({officeDeskOpen:true},1);assert.ok(campus.officeDrawer.position.z<-.4);campus.setMap('tiered8');assert.equal(campus.tiered.visible,true);campus.setMap('computer7');assert.equal(campus.tiered.visible,false);
  scene.traverse(o=>o.geometry?.dispose());for(const m of materials)m.dispose();for(const a of assets)a.dispose?.();
+});
+
+test('ordinary pupils face the board with the hall to their right and can walk into the bay left of the lift',()=>{
+ for(const map of ['classroom','night']){
+  const seats=createSeatLayout(73,'single',map),ctx=createLayoutContext(seats),board=boardForMap(map);
+  for(const seat of seats){
+   const forward={x:Math.sin(seat.yaw),z:Math.cos(seat.yaw)};
+   assert.ok((board.x-seat.x)*forward.x+(board.z-seat.z)*forward.z>0);
+   assert.ok(-(CORRIDOR.minX-seat.x)*forward.z>0);
+  }
+  const mouth=ALCOVE_ENTRY,midX=(mouth.minX+mouth.maxX)/2;
+  for(const radius of [.18,.23]){
+   let point={x:LIFT.x,z:LIFT.z};
+   for(const [x,z] of [[LIFT.x,8.37],[midX,8.37],[midX,mouth.minZ+.35]]){
+    point=moveInRoom(point,x-point.x,z-point.z,radius,ctx);
+    assert.ok(Math.hypot(x-point.x,z-point.z)<.001);
+   }
+   const stop=moveInRoom(point,0,5,radius,ctx);
+   assert.ok(stop.z<=mouth.stopZ-radius+.001&&stop.z>mouth.stopZ-radius-.081);
+   assert.ok(blocked(midX,mouth.stopZ+.1,radius,ctx));
+   assert.ok(moveInRoom(stop,-4,0,radius,ctx).x>=mouth.minX+radius-.001);
+   assert.ok(moveInRoom(stop,4,0,radius,ctx).x<=mouth.maxX-radius+.001);
+   assert.ok(moveInRoom(stop,0,-1,radius,ctx).z<mouth.minZ);
+  }
+ }
 });

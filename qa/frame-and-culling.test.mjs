@@ -76,10 +76,10 @@ test('paused frames do not catch up hidden time; a long foreground stall stays b
 test('binding does not snap the next mouse pixel, and rescue movement follows the current camera heading',()=>{
   const f=gameFixture();try{
     const r=f.round,p=r.player;Object.assign(r.teacher,{x:p.x,z:p.z-.5,yaw:0});assert.ok(r._stun(p));assert.ok(r._grab(p));
-    Object.assign(r.teacher,{x:DETENTION[0].x,z:DETENTION[0].z-.9});assert.ok(r._bind(0));
+    Object.assign(r.teacher,{x:DETENTION[0].x,z:DETENTION[0].z+.9});assert.ok(r._bind(0));
     const before=p.yaw;f.send(f.doc,'mousemove',{movementX:1,movementY:0});
     const turn=Math.atan2(Math.sin(p.yaw-before),Math.cos(p.yaw-before));assert.ok(Math.abs(turn+.0024)<1e-9,`one pixel turned ${turn} radians`);
-    r._release(p);const z=p.z;f.send(f.doc,'keydown',{code:'KeyW',repeat:false});f.tick(1/60);assert.ok(p.z<z,'W went backward after the authority changed yaw');
+    r._release(p);const z=p.z;f.send(f.doc,'keydown',{code:'KeyW',repeat:false});f.tick(1/60);assert.ok((p.z-z)*Math.cos(p.yaw)>0,'W went backward after the authority changed yaw');
   }finally{f.close();}
 });
 

@@ -5,7 +5,7 @@ import {loadGeometry} from './gltf-geometry.mjs';
 import {buildReferenceCampus} from '../dist/reference-campus.js';
 import {createSoloRound} from '../dist/solo-round.js';
 import {ClassroomRound} from '../dist/classroom-rules.js';
-import {CAMPUS_MAPS,LAYOUT_PATTERNS,LIFT,CLASSROOM,CORRIDOR,BOARD,OFFICE,TEACHER_SPAWN,createSeatLayout,createLayoutContext,mapKind,floorHeight,floorTiles,blocked,chairExit,walkRoute,moveInRoom} from '../dist/classroom-layout.js';
+import {CAMPUS_MAPS,LAYOUT_PATTERNS,LIFT,CLASSROOM,CORRIDOR,boardForMap,BOARD,OFFICE,TEACHER_SPAWN,createSeatLayout,createLayoutContext,mapKind,floorHeight,floorTiles,blocked,chairExit,walkRoute,moveInRoom} from '../dist/classroom-layout.js';
 
 function campusScene(){
  const scene=new T.Scene(),room=new T.Group();scene.add(room);const assets=new Set(),materials=new Set();
@@ -73,7 +73,7 @@ test('pre-class exterior boundaries stay closed while class and office door rule
  const r=new ClassroomRound({seed:3});r.start({gathering:true});
  for(const [p,dx,dz]of [[{x:CORRIDOR.maxX-.3,z:0},3,0],[{x:CLASSROOM.minX+.4,z:0},-3,0],[{x:0,z:-9.6},0,-3],[{x:OFFICE.maxX-2.7,z:OFFICE.minZ+.4},0,-3],[{x:LIFT.x,z:LIFT.maxZ-.3},0,3]]){const q=moveInRoom(p,dx,dz,.18,r.layout);assert.equal(blocked(q.x,q.z,.18,r.layout),false);assert.ok(Math.hypot(q.x-p.x,q.z-p.z)<.5);}
  assert.equal(r.layout.officeLocked,false);r.startBell();assert.equal(r.layout.officeLocked,true);r.step(1.2);assert.ok(walkRoute(LIFT,{x:6.8,z:7},.18,r.layout).length);assert.deepEqual(walkRoute(LIFT,TEACHER_SPAWN,.18,r.layout),[]);
- assert.equal(floorHeight(BOARD.x,BOARD.z,'tiered'),.16);
+ assert.equal(floorHeight(boardForMap('tiered').x,boardForMap('tiered').z,'tiered'),.16);
 });
 
 

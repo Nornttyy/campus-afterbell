@@ -17,6 +17,17 @@ export const CLASSROOM=Object.freeze({minX:-6.65,maxX:7.20,minZ:-10.00,maxZ:8.80
 export const CORRIDOR=HALL;
 export const OFFICE=Object.freeze({...endBounds(officePlan),doorX:END_ORIGIN.x-officePlan.doorX,doorMinX:END_ORIGIN.x-officePlan.doorMaxX,doorMaxX:END_ORIGIN.x-officePlan.doorMinX,doorZ:HALL.minZ-.11,opensZ:-1});
 export const LIFT=Object.freeze({...endBounds(liftPlan),...endPoint(liftPlan.x,liftPlan.z)});
+// Local classroom plans have their board at +Z. Turn both desks and end-wall
+// fittings about the room centre so a seated pupil has the hall on the right.
+export const CLASS_TURN=Object.freeze({x:CLASSROOM.minX+CLASSROOM.maxX,z:CLASSROOM.minZ+CLASSROOM.maxZ});
+export const turnedClass=map=>['classroom','night'].includes(mapKind(map));
+export const LIFT_ALCOVE=Object.freeze({minX:3.70,maxX:LIFT.minX-.20,minZ:CORRIDOR.maxZ,maxZ:LIFT.maxZ});
+// The recess is visible beyond this shallow, walkable threshold.
+export const ALCOVE_ENTRY=Object.freeze({minX:CORRIDOR.minX,maxX:LIFT.minX-.71,
+ minZ:CORRIDOR.maxZ,stopZ:CORRIDOR.maxZ+.75,height:3.42});
+export const ALCOVE_STORAGE=Object.freeze({x:LIFT_ALCOVE.minX+.51,z:LIFT_ALCOVE.maxZ-.52});
+function turnPoint(p){return {...p,x:CLASS_TURN.x-p.x,z:CLASS_TURN.z-p.z};}
+function turnBox(b){return {...b,minX:CLASS_TURN.x-b.maxX,maxX:CLASS_TURN.x-b.minX,minZ:CLASS_TURN.z-b.maxZ,maxZ:CLASS_TURN.z-b.minZ};}
 export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:CORRIDOR.maxZ-.65});
 export const ROOM=Object.freeze({minX:CLASSROOM.minX,maxX:OFFICE.maxX,minZ:OFFICE.minZ,maxZ:LIFT.maxZ});
 export function mapBounds(map='classroom'){
@@ -67,7 +78,7 @@ export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
  const add=(x,z,yaw=0)=>raw.push({deskX:mapKind(map)==='tiered'?(x< -3?x+.15:x):x< -3?x+.45:x,deskZ:z,yaw});
  if(pattern==='facing-aisle'){
   // The desks meet in islands; the two inner chairs face away from the aisle.
-  for(const z of [-5.90,-4.66,-1.82,-.58,2.76,4.00]){
+  for(const z of [-5.90,-4.66,-1.82,-.58,2.94,4.18]){
    for(const [x,yaw] of [[-3.65,Math.PI/2],[-2.34,-Math.PI/2],[2.34,Math.PI/2],[3.20,-Math.PI/2]])add(x,z,yaw);
   }
   for(const [i,x] of [-4.65,-1.55,1.55,4.65].entries())add(x,-7.52,i%2?Math.PI:0);
@@ -100,6 +111,7 @@ export function createSeatLayout(seed=73,arrangement=null,map='classroom'){
   // Give facing desks a real seam without resizing their authored geometry.
   blocks.forEach(({x,z},i)=>{const n=counts[i];if(n===4){for(const dz of [-.44,.44])for(const dx of [-.625,.625])add(x+dx,z+dz,dz>0?Math.PI:0);}else if(n===2){const loose=pattern==='mixed'&&random()>.5;for(const dx of loose?[-1.05,1.05]:[-.64,.64])add(x+dx,z,0);}});
  }
+ if(turnedClass(map))for(const desk of raw){desk.deskX=CLASS_TURN.x-desk.deskX;desk.deskZ=CLASS_TURN.z-desk.deskZ;desk.yaw=(desk.yaw+Math.PI)%(Math.PI*2);}
  const seats=raw.map((s,id)=>Object.freeze({...s,...(mapKind(map)==='exam'?{hideBook:true,hidePen:true}:{}),id,row:Math.floor(id/6),col:id%6,x:s.deskX-Math.sin(s.yaw)*.78,z:s.deskZ-Math.cos(s.yaw)*.78,pattern,map:mapKind(map)}));
  return Object.freeze(seats);
 }
@@ -120,21 +132,28 @@ export const PLAYER_SEAT=9;
 export const FRIEND_SEATS=Object.freeze([2,6,16,19]);
 export const COVERED_SEATS=Object.freeze([PLAYER_SEAT,...FRIEND_SEATS,0,5,10,15,20,25]);
 export const AISLES=Object.freeze([CLASSROOM.minX+.27,-3.35,1.14,6.84]);
-export const BOARD=Object.freeze({x:1.25,z:7.45});
-export const DETENTION=Object.freeze([-5.85,-5.00,-4.15,4.60,5.45,6.30].map((x,id)=>Object.freeze({id,x,z:8.08})));
+const prefabBoard=Object.freeze({x:1.25,z:7.45});
+const prefabPosts=Object.freeze([-5.85,-5.00,-4.15,4.60,5.45,6.30].map((x,id)=>Object.freeze({id,x,z:8.08})));
+export const BOARD=Object.freeze({...turnPoint(prefabBoard),yaw:Math.PI});
+export const DETENTION=Object.freeze(prefabPosts.map(p=>Object.freeze(turnPoint(p))));
 export const teacherSpawnFor=map=>map==='bus'?{...BUS.driver,busDeck:0}:TEACHER_SPAWN;
-export function boardForMap(map='classroom'){if(map==='bus')return BUS.board;return mapKind(map)==='playground'?PLAYGROUND_BOARD.writePosition:mapKind(map)==='dorm'?DORM_WATCH:BOARD;}
-export function detentionForMap(map='classroom'){if(map==='bus')return BUS_POSTS;return mapKind(map)==='playground'?PLAYGROUND_POSTS:mapKind(map)==='dorm'?DORM_POSTS:DETENTION;}
+export function boardForMap(map='classroom'){if(map==='bus')return BUS.board;return mapKind(map)==='playground'?PLAYGROUND_BOARD.writePosition:mapKind(map)==='dorm'?DORM_WATCH:turnedClass(map)?BOARD:prefabBoard;}
+export function detentionForMap(map='classroom'){if(map==='bus')return BUS_POSTS;return mapKind(map)==='playground'?PLAYGROUND_POSTS:mapKind(map)==='dorm'?DORM_POSTS:turnedClass(map)?DETENTION:prefabPosts;}
 export const DOORS=Object.freeze([-8.00,7.00].map((center,i)=>Object.freeze({id:i===0?'rear':'front',center,minZ:center-.80,maxZ:center+.80})));
 export const PARTITIONS=Object.freeze([{minX:7.20,maxX:7.40,minZ:-10.20,maxZ:DOORS[0].minZ},{minX:7.20,maxX:7.40,minZ:DOORS[0].maxZ,maxZ:DOORS[1].minZ},{minX:7.20,maxX:7.40,minZ:DOORS[1].maxZ,maxZ:9.02}]);
 export const LECTERN=Object.freeze({minX:-1.240,maxX:-.450,minZ:7.3215,maxZ:7.8985});
+const turnedLectern=Object.freeze(turnBox(LECTERN));
+export const lecternForMap=map=>turnedClass(map)?turnedLectern:LECTERN;
 const V=(minX,maxX,minZ,maxZ,minY=0,maxY=CEILING_HEIGHT)=>Object.freeze({minX,maxX,minZ,maxZ,minY,maxY});
 export const DOOR_LEAVES=Object.freeze(DOORS.map(d=>V(7.30,8.88,d.maxZ-.07,d.maxZ+.07,.04,3.02)));
 // Continuous shell: classroom proportions are independent of the longer corridor.
 // The lift portal/cabin use the corridor's end, never the classroom's rear wall.
 const portalZ=CORRIDOR.maxZ,west=CLASSROOM.minX;
 const endWalls=Object.freeze([
- V(CORRIDOR.minX,LIFT.minX,portalZ,portalZ+.20),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ,portalZ+.20),
+ V(LIFT.minX-.71,LIFT.minX,portalZ,portalZ+.20),
+ V(LIFT_ALCOVE.minX-.20,LIFT_ALCOVE.minX,portalZ,LIFT_ALCOVE.maxZ+.20),
+ V(LIFT_ALCOVE.minX,LIFT_ALCOVE.maxX,LIFT_ALCOVE.maxZ,LIFT_ALCOVE.maxZ+.20),
+ V(LIFT_ALCOVE.minX,CORRIDOR.minX,portalZ,portalZ+.22),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ,portalZ+.20),
  V(OFFICE.minX-.20,OFFICE.doorMinX,OFFICE.maxZ,CORRIDOR.minZ),V(OFFICE.doorMaxX,OFFICE.maxX+.20,OFFICE.maxZ,CORRIDOR.minZ),
  V(OFFICE.minX-.20,OFFICE.minX,OFFICE.minZ-.20,OFFICE.maxZ),V(OFFICE.maxX,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ),
  V(OFFICE.minX,OFFICE.maxX,OFFICE.minZ-.20,OFFICE.minZ),
@@ -150,13 +169,13 @@ const classEdges=[
  V(west,CORRIDOR.minX,CLASSROOM.maxZ,CLASSROOM.maxZ+.22)
 ];
 const dormCommonWalls=endWalls;
-const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(OFFICE.doorMinX,OFFICE.doorMaxX,OFFICE.maxZ,CORRIDOR.minZ,3.08),V(LIFT.minX,LIFT.maxX,portalZ,portalZ+.20,3.12)];
+const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(OFFICE.doorMinX,OFFICE.doorMaxX,OFFICE.maxZ,CORRIDOR.minZ,3.08),V(LIFT.minX,LIFT.maxX,portalZ,portalZ+.20,3.12),V(CORRIDOR.minX,LIFT.minX-.71,portalZ,portalZ+.20,3.42)];
 const baseWalls=Object.freeze([...PARTITIONS,...classEdges,...corridorEdges,...endWalls]);
 const liftThreshold=()=>V(LIFT.minX,LIFT.maxX,portalZ-.02,portalZ+.22,.02,3.12);
 const sealedLift=ELEVATOR_ENABLED?[]:[liftThreshold()];
 export const WALLS=Object.freeze([...baseWalls,...DOOR_LEAVES,...sealedLift]);
 export const WALL_VOLUMES=Object.freeze([...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...DOOR_LEAVES,...sealedLift,...headers]);
-const fixedCeilings=Object.freeze([V(CORRIDOR.minX-.20,CORRIDOR.maxX+.20,CORRIDOR.minZ-.22,portalZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ,OFFICE.height,OFFICE.height+.16),V(LIFT.minX-.20,LIFT.maxX+.20,portalZ+.20,LIFT.maxZ+.20,3.12,3.28)]);
+const fixedCeilings=Object.freeze([V(LIFT_ALCOVE.minX-.20,LIFT_ALCOVE.maxX,portalZ+.20,LIFT_ALCOVE.maxZ+.20,3.42,3.58),V(CORRIDOR.minX-.20,CORRIDOR.maxX+.20,CORRIDOR.minZ-.22,portalZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ,OFFICE.height,OFFICE.height+.16),V(LIFT.minX-.20,LIFT.maxX+.20,portalZ+.20,LIFT.maxZ+.20,3.12,3.28)]);
 // Height to underside of each room ceiling. The hallway and office have their own slabs.
 const teachingHeights=Object.freeze({classroom:4.10,night:4.10,computer:4.08,hotpot:4.18,toilet:4.04,cafeteria:4.25,exam:4.14,tiered:TIERED_CEILING_HEIGHT});
 export function teachingRoomHeight(map){return teachingHeights[mapKind(map)]??CEILING_HEIGHT;}
@@ -168,7 +187,7 @@ export function ceilingVolumes(map='classroom'){const kind=mapKind(map);return k
 // lid bounds avoid treating the air above its keyboard as a solid monitor.
 const laptopVolumes=Object.freeze([V(-1.175,-.515,7.395,7.825,1.1475,1.1975),V(-1.175,-.515,7.354,7.429,1.1835,1.570)]);
 export const REAR_CLASS_CABINET=Object.freeze({...V(-6.16,-4.98,-9.94,-9.46,0,1.47),id:'rear-class-cabinet'});
-const ordinaryFurniture=Object.freeze([REAR_CLASS_CABINET]);
+const ordinaryFurniture=Object.freeze([Object.freeze(turnBox(REAR_CLASS_CABINET))]);
 export function specialFurnitureVolumes(map='classroom',seats){
  const kind=mapKind(map);return kind==='classroom'?ordinaryFurniture:kind==='cafeteria'?SERVING_SOLIDS:kind==='hotpot'?diningPlanForSeats(seats).solids:kind==='toilet'?TOILET_SOLIDS:kind==='dorm'?DORM_SOLIDS:kind==='playground'?PLAYGROUND_SOLIDS.filter(s=>!s.id.includes('-wall')):[];
 }
@@ -203,7 +222,7 @@ export const OFFICE_SOLIDS=Object.freeze([
   V(officeBoardPlan.x-1.35,officeBoardPlan.x+1.35,officeBoardPlan.z-.37,officeBoardPlan.z+.37,0,2.48)
  ].map(endBounds),
  V(ROLE_LOCKER.x-.37,ROLE_LOCKER.x+.35,ROLE_LOCKER.z-.90,ROLE_LOCKER.z+.90,0,2.28),
- V(CORRIDOR.maxX-.75,CORRIDOR.maxX-.02,CORRIDOR.minZ+.25,CORRIDOR.minZ+1.08,0,1.72)
+ V(ALCOVE_STORAGE.x-.35,ALCOVE_STORAGE.x+.35,ALCOVE_STORAGE.z-.36,ALCOVE_STORAGE.z+.36,0,1.99)
 ]);
 export const PODIUM=Object.freeze({halfWidth:3.15,front:6.50,back:CLASSROOM.maxZ,height:.16,tread:.17});
 const TIER_Z=Object.freeze([CLASSROOM.minZ,...[-5.90,-2.30,1.30].flatMap(z=>[0,.07,.14,.21].map(d=>Number((z+d).toFixed(2))))]);
@@ -212,6 +231,7 @@ export function floorHeight(x,z,map='classroom',deck=0){
  if(map==='bus')return busFloorHeight(x,z,deck);
  if(mapKind(map)==='playground')return playgroundFloorHeight(x,z);
  if(mapKind(map)==='toilet'||mapKind(map)==='dorm')return 0;
+ if(turnedClass(map)){x=CLASS_TURN.x-x;z=CLASS_TURN.z-z;}
  if(z<=PODIUM.back&&z>=PODIUM.front-PODIUM.tread&&Math.abs(x)<=PODIUM.halfWidth+PODIUM.tread){
   return Math.abs(x)<=PODIUM.halfWidth&&z>=PODIUM.front?PODIUM.height:PODIUM.height/2;
  }
@@ -266,7 +286,9 @@ export function walkableFootprint(x,z,r=.18,context=null){
  if(context?.map==='bus')return busFootprint(x,z,r);
  const kind=mapKind(context?.map);if(kind==='playground'&&playgroundWalkable(x,z,r))return true;
  const room=kind==='dorm'?DORM_ROOM_RECTS.some(b=>x>=b.minX+r&&x<=b.maxX-r&&z>=b.minZ+r&&z<=b.maxZ-r):(x>=CLASSROOM.minX+r&&x<=CORRIDOR.maxX-r&&z>=CLASSROOM.minZ+r&&z<=CLASSROOM.maxZ-r);
- return room||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=OFFICE.minZ+r&&z<=CORRIDOR.minZ+r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=CORRIDOR.maxZ-r&&z<=LIFT.maxZ-r);
+ const mouth=ALCOVE_ENTRY;
+ const entry=x>=mouth.minX+r&&x<=mouth.maxX-r&&z>=mouth.minZ-r&&z<=mouth.stopZ-r;
+ return entry||room||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=OFFICE.minZ+r&&z<=CORRIDOR.minZ+r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=CORRIDOR.maxZ-r&&z<=LIFT.maxZ-r);
 }
 export function clearWallSegment(a,b,context=null){
  if(context?.map==='bus')return busSight(a,b,context);
@@ -312,7 +334,7 @@ function rebuildWalkCollisions(context){
  if(context.map==='bus'){context.walls=BUS_WALLS;context.walkSolids=[...BUS_WALLS,...BUS_FURNITURE];context.routeGrids.clear();context.projectileColliderCache?.clear();return context;}
  const kind=mapKind(context.map),sightFurniture=context.furnitureVolumes.filter(s=>/^dorm-room-door-|^hotpot-screen-|^toilet-(left|right|rear|hinge|latch|door)-/.test(s.id||''));
  context.walls=[...(context._buildingWalls||[]),...sightFurniture];
- context.walkSolids=[...context.desks,...context.chairBacks,...(context._buildingWalls||[]),...context.furnitureWalkSolids,...context.postVolumes,...(['toilet','dorm','playground'].includes(kind)?[]:[LECTERN]),...OFFICE_SOLIDS,...(context.dynamicSolids||[])];
+ context.walkSolids=[...context.desks,...context.chairBacks,...(context._buildingWalls||[]),...context.furnitureWalkSolids,...context.postVolumes,...(['toilet','dorm','playground'].includes(kind)?[]:[lecternForMap(context.map)]),...OFFICE_SOLIDS,...(context.dynamicSolids||[])];
  context.routeGrids.clear();context.projectileColliderCache?.clear();return context;
 }
 // The simulation and renderer share CURRENT numeric openness. This function
