@@ -10,7 +10,7 @@ import {buildDesktop55} from './computer-hardware55.js?v=campus-117';
 import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-108';
 import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117';
 import {REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117';
-import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117';
+import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=120';
 import {END_ORIGIN,endPoint,officeOffset,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD,officeShelfCenters,officeBinPlan} from './campus-ends.js?v=campus-101';
 const [OFFICE_DESK]=OFFICE_DESKS,[OFFICE_CHAIR]=OFFICE_CHAIRS;
 // Editable architecture based on the observed classroom/corridor, not a flat photo.
@@ -508,18 +508,18 @@ export function buildReferenceCampus({room,scene,M,mat,box,rounded,cylinder,mesh
  const liftDoors=[-1,1].map(side=>{const g=new T.Group();g.name=side<0?'lift-door-left':'lift-door-right';g.position.set(9.35+side*.625,0,-10.10);lift.add(g);B(liftBlue,[0,1.56,0],[1.25,3.08,.08],g);B(liftInset,[0,1.56,-.046],[1.15,2.95,.012],g);B(edge,[-side*.605,1.56,-.055],[.025,3.03,.012],g);markDynamic(g);return g;});
  for(const x of [8.73,9.97]){B(liftInset,[x,1.57,-12.99],[1.18,2.94,.018],lift);B(edge,[x+.575,1.57,-12.975],[.018,2.92,.01],lift);}for(const x of [8.125,10.575])B(edge,[x,1.02,-11.6],[.03,.04,2.1],lift);
  const liftPanel=new T.Group();liftPanel.name='floor-selection';liftPanel.position.set(8.13,1.50,-10.85);lift.add(liftPanel);
- // Keep real storey positions when a destination is suspended. G occupies its own row.
- const lastRow=Math.ceil(Math.max(...OPEN_CAMPUS_MAPS.map(campusFloor))/2);
- const stepY=.255,middle=lastRow*stepY/2,buttons=new Map();
+ // Numbered floors occupy pairs, from 1/2 at the bottom to 9/10 at the top.
+ const rowCount=Math.ceil(Math.max(...OPEN_CAMPUS_MAPS.map(campusFloor))/2);
+ const stepY=.255,middle=(rowCount-1)*stepY/2,buttons=new Map();
  const keyFace=new T.PlaneGeometry(.202,.207);assets.add(keyFace);
- B(liftInset,[.008,0,.11],[.043,(lastRow+1)*stepY+.095,.66],liftPanel);
+ B(liftInset,[.008,0,.11],[.043,rowCount*stepY+.095,.66],liftPanel);
  for(const map of OPEN_CAMPUS_MAPS){
-  const floor=campusFloor(map),row=Math.ceil(floor/2),col=floor===0?0:(floor-1)%2;
+  const floor=campusFloor(map),row=Math.floor((floor-1)/2),col=(floor-1)%2;
   const y=row*stepY-middle,z=.11+(.5-col)*.28;
   const label=texture(96,96,c=>{
    const enamel=c.createLinearGradient(0,0,0,96);enamel.addColorStop(0,'#7792a8');enamel.addColorStop(1,'#49657d');
    c.fillStyle=enamel;c.fillRect(0,0,96,96);c.strokeStyle='#c4d2d9';c.lineWidth=4;c.strokeRect(5,5,86,86);
-   c.fillStyle='#ffffff';c.textAlign='center';c.textBaseline='middle';c.font='600 63px sans-serif';c.fillText(floor===0?'G':String(floor),48,49);
+   c.fillStyle='#ffffff';c.textAlign='center';c.textBaseline='middle';c.font='600 63px sans-serif';c.fillText(String(floor),48,49);
   });
   const rim=mat('#b7c6d0',{metalness:.31,roughness:.5});
   const button=B(rim,[.055,y,z],[.082,.228,.222],liftPanel);

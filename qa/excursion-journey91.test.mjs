@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {CampusRoom} from '../dist/room-simulation.js';
 import {BUS,BUS_SEATS,onBus,busBlocked} from '../dist/bus-layout86.js';
-import {createSoloRound} from '../dist/solo-round.js';
+import {SoloStudentRound} from '../dist/solo-round.js';
 import {COACH_DOOR_SECONDS,coachDistanceAt,roadSectionAt,ROAD_RADIUS,ROAD_SECTION_LENGTH} from '../dist/excursion-journey91.js';
 import {createExcursionRoad} from '../dist/excursion-road91.js';
 
@@ -36,7 +36,7 @@ test('all eight room members board exactly on zero, including a disconnected mem
  assert.ok(busBlocked(10.05,BUS.body.maxZ+.8,.18,0,room.sim.layout));assert.ok(busBlocked(10,2,.18,0,room.sim.layout));
 });
 test('excursion motion closes the door, accelerates continuously, freezes when paused, and resets next round',()=>{
- const r=createSoloRound({role:'student',map:'bus'});r.start({gathering:true});r.startBell();
+ const r=new SoloStudentRound({map:'bus'});r.start({gathering:true});r.startBell();
  for(let i=0;i<30;i++)r.step(1);
  const at=r.busDepartureAt;
  assert.equal(coachDistanceAt(at+COACH_DOOR_SECONDS,at),0);

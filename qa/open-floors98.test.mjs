@@ -13,11 +13,11 @@ import {FURNITURE_SOURCES67} from '../dist/furniture-assets67.js';
 
 const reopened=['cafeteria','exam','toilet','dorm'];
 const board=p=>Object.assign(p,{x:LIFT.x,z:LIFT.z,seated:false});
-test('the bus and all ten original floor numbers can be selected for a room',()=>{
- assert.deepEqual(OPEN_CAMPUS_MAPS,['bus',...CAMPUS_MAPS]);assert.equal(OPEN_CAMPUS_MAPS.length,11);
+test('only the ten numbered destinations can be selected for a room',()=>{
+ assert.deepEqual(OPEN_CAMPUS_MAPS,CAMPUS_MAPS);assert.equal(OPEN_CAMPUS_MAPS.length,10);assert.equal(playableCampusMap('bus'),null);
  assert.equal(playableCampusMap('missing'),null);assert.equal(playableCampusMap('tiered8'),'tiered');
  for(const map of OPEN_CAMPUS_MAPS){const r=CampusRoom.forPlay({map,code:'980098'});assert.equal(r.sim.map,map);assert.equal(r.floor,campusFloor(map));}
- for(const assets of [CAMPUS_SURFACE_SOURCES,CAMPUS_ARTWORK_SOURCES,FURNITURE_SOURCES67])assert.deepEqual(assetsForOpenMaps(assets),assets);
+ for(const assets of [CAMPUS_SURFACE_SOURCES,CAMPUS_ARTWORK_SOURCES,FURNITURE_SOURCES67])assert.deepEqual(assetsForOpenMaps(assets),Object.fromEntries(Object.entries(assets).filter(([key])=>key!=='upholstery')));
 });
 test('solo lift takes both roles to the reopened floors',()=>{
  for(const role of ['student','teacher'])for(const map of reopened){

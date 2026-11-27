@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createArcade,arcadeInput,arcadeSnapshot,advanceArcade} from '../dist/classroom-arcade93.js';
-import {createSoloRound} from '../dist/solo-round.js';
+import {createSoloRound,SoloStudentRound} from '../dist/solo-round.js';
 import {CampusRoom} from '../dist/room-simulation.js';
 import {validRoundSettings} from '../dist/round-settings55.js';
 import {RULE_FIELDS,TUNING_DEFAULTS,tuningForm} from '../dist/round-tuning93.js';
@@ -92,7 +92,7 @@ const atRadio=(actor,map)=>{
 test('the radio uses the two complete recordings; the host draws once per accepted activation on either map',()=>{
  assert.equal(RADIO_SONGS.length,2);
  for(const map of ['bus','playground'])for(const [i,roll] of [[0,0],[1,.50],[1,.999999]]){
-  const r=createSoloRound({map,seed:7});r.start();atRadio(r.player,map);
+  const r=map==='bus'?new SoloStudentRound({map,seed:7}):createSoloRound({map,seed:7});r.start();atRadio(r.player,map);
   const realRandom=r._random.bind(r);let draws=0;r._random=()=>{draws++;return roll;};
   assert.equal(r.changeRadio('unknown'),false);assert.equal(r.changeRadio(false),false);
   assert.ok(r.changeRadio(true));assert.equal(r.radio,null);r._advanceFixtures(2);assert.equal(r.radio.track,RADIO_SONGS[i].id,'legacy titles cannot pick a track');

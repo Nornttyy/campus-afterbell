@@ -1,27 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSoloRound} from '../dist/solo-round.js';
+import {createSoloRound,SoloTeacherRound,SoloStudentRound} from '../dist/solo-round.js';
 import {CampusRoom} from '../dist/room-simulation.js';
 import {BUS,BUS_SEATS,busFloorHeight,busBlocked,onBusStair,busRoute,moveOnBus} from '../dist/bus-layout86.js';
-import {CAMPUS_MAPS,LIFT,isCampusMap,campusFloor,createLayoutContext,clearWallSegment,actorFloorHeight} from '../dist/classroom-layout.js';
+import {LIFT,createLayoutContext,clearWallSegment,actorFloorHeight} from '../dist/classroom-layout.js';
 import {elevatorDuration} from '../dist/elevator-session.js';
 import {canSee,chalkHit} from '../dist/classroom-rules.js';
 import {surveillanceMounts,reachesSurveillance} from '../dist/surveillance54.js';
 import {ordinaryStudyState} from '../dist/npc-study58.js';
 
-test('G takes a solo class or a boarded multiplayer party to the bus stop once',()=>{
- assert.equal(CAMPUS_MAPS.length,10);assert.ok(isCampusMap('bus'));assert.equal(campusFloor('bus'),0);
- assert.equal(elevatorDuration('exam','bus'),12);assert.equal(elevatorDuration('bus','classroom'),4);
- assert.equal(isCampusMap('bus11'),false);
+test('G is unavailable to both solo roles and to a boarded multiplayer party',()=>{
  for(const role of ['teacher','student']){
-  const r=createSoloRound({role,map:'classroom'});r.start({gathering:true});Object.assign(r.player,{x:LIFT.x,z:LIFT.z,seated:false});
-  assert.ok(r.travelFloor('bus'));assert.equal(r.elevator.used,true);assert.equal(r.elevator.targetMap,'bus');
-  r.step(4);assert.equal(r.map,'bus');assert.equal(r.snapshot().floor,0);assert.equal(r.travelFloor('night'),false);
+  const r=createSoloRound({role,map:'bus'});r.start({gathering:true});
+  assert.equal(r.map,'classroom');
+  Object.assign(r.player,{x:LIFT.x,z:LIFT.z,seated:false});
+  assert.equal(r.travelFloor('bus'),false);assert.equal(r.elevator.used,false);
+  assert.ok(r.travelFloor('playground'));r.step(3);assert.equal(r.snapshot().floor,1);
  }
- const r=new CampusRoom({code:'86',map:'classroom'}),a=r.join({name:'甲'}),b=r.join({name:'乙'});
- Object.assign(a.context.player,{x:LIFT.x,z:LIFT.z,seated:false});Object.assign(b.context.player,{x:LIFT.x+.3,z:LIFT.z,seated:false});
- assert.ok(r.command(a,'travelFloor',['bus']));r.tick(4);
- for(const m of [a,b]){const state=r.snapshot(m);assert.equal(state.floor,0);assert.equal(state.map,'bus');assert.equal(state.elevator.used,true);}
+ const r=CampusRoom.forPlay({code:'860086',map:'bus'}),a=r.join({name:'甲'}),b=r.join({name:'乙'});
+ for(const m of [a,b])Object.assign(m.context.player,{x:LIFT.x,z:LIFT.z,seated:false});
+ assert.equal(r.map,'classroom');
+ assert.throws(()=>r.command(a,'travelFloor',['bus']),/暂未开放|不存在/);
+ assert.equal(r.elevator.used,false);
+ assert.ok(r.command(a,'travelFloor',['exam']));r.tick(elevatorDuration('classroom','exam'));
+ for(const m of [a,b]){const state=r.snapshot(m);assert.equal(state.floor,10);assert.equal(state.map,'exam');}
 });
 
 function walk(from,to,ctx={},radius=.18){
@@ -41,14 +43,14 @@ test('the two saloons share a footprint and connect only on the flight of stairs
  assert.equal(chalkHit({x:6.3,z:-13,y:BUS.low+1.6},{x:6.3,z:-13,y:BUS.high+1.4},[],[],'bus',layout)?.kind,'wall');
 });
 test('every seat admits an ordinary-speed arrival before the bell, with no duplicated assignments',()=>{
- const r=createSoloRound({map:'bus',role:'teacher'});r.start({gathering:true});assert.ok(r.startBell());assert.equal(r.layout.officeLocked,true);
+ const r=new SoloTeacherRound({map:'bus'});r.start({gathering:true});assert.ok(r.startBell());assert.equal(r.layout.officeLocked,true);
  assert.equal(busBlocked(11.12,-13,.18,0,r.layout),true);
  for(let i=0;i<30;i++)r.step(1);assert.equal(r.stage,'class');assert.equal(r._seatingRoutes.size,0);
  assert.equal(r.students.filter(s=>s.seated).length,BUS_SEATS.length);assert.equal(new Set(r.students.map(s=>s.seatId)).size,28);
  for(const s of r.students){const seat=BUS_SEATS[s.seatId];assert.equal(s.busDeck,seat.busDeck);assert.equal(actorFloorHeight(s,'bus'),seat.supportHeight);assert.equal(busBlocked(seat.exitX,seat.exitZ,.18,seat.busDeck),false);}
 });
 test('the bell boards a student waiting at the station and their cabin cabinet remains usable',()=>{
- const r=createSoloRound({map:'bus',role:'student'});r.start({gathering:true});assert.ok(r.startBell());
+ const r=new SoloStudentRound({map:'bus'});r.start({gathering:true});assert.ok(r.startBell());
  for(let i=0;i<29;i++)r.step(1);assert.equal(r.snapshot().busDeparted,false);
  r.step(1);assert.equal(r.snapshot().busDeparted,true);
  const seat=BUS_SEATS[r.player.seatId],p=r.player;assert.ok(p.seated);assert.equal(p.busDeck,seat.busDeck);
@@ -60,6 +62,6 @@ test('lower passengers look around, upper pupils can read, and camera control st
  const top={id:3,busDeck:1,seatYaw:0,x:0,z:-13},low={...top,busDeck:0};
  assert.ok(Array.from({length:40},(_,i)=>ordinaryStudyState(low,null,i,0,'bus')).every(s=>s.mood==='riding'&&!s.studyBookHeld));
  assert.ok(Array.from({length:40},(_,i)=>ordinaryStudyState(top,null,i,0,'bus')).some(s=>s.studyBookHeld));
- const r=createSoloRound({map:'bus',role:'teacher'});r.start();const mounts=surveillanceMounts('bus');assert.deepEqual(mounts.map(m=>m.busDeck),[0,1]);
+ const r=new SoloTeacherRound({map:'bus'});r.start();const mounts=surveillanceMounts('bus');assert.deepEqual(mounts.map(m=>m.busDeck),[0,1]);
  for(const m of mounts){Object.assign(r.player,{x:m.x,z:m.z+(m.busDeck?-.7:.7),busDeck:m.busDeck,yaw:m.busDeck?0:Math.PI,pitch:.64});assert.ok(reachesSurveillance(r,m.id));r.player.busDeck=1-m.busDeck;assert.equal(reachesSurveillance(r,m.id),false);}
 });

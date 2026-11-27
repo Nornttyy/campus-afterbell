@@ -39,17 +39,24 @@ test('production menu and classroom share one URL per physical module',async()=>
 // Workers have their own module realm. Pin the rules chain as well as the page
 // so an existing browser cannot host a new room with cached older use timers.
 test('multiplayer worker and authoritative rules use the current release cache key',async()=>{
-  const {revision}=await productionGraph();
+  const {graph,revision}=await productionGraph();
   const client=await readFile(new URL('../dist/peer-room79.js',import.meta.url),'utf8');
-  const roomRevision=revision+'&rev=119';
+  const roomRevision=revision+'&rev=120';
   assert.ok(client.includes(`new URL('./peer-room-worker79.js?v=${roomRevision}'`));
   const chain={
     'peer-room-worker79.js':['peer-room-host79.js'],
     'peer-room-host79.js':['room-simulation.js'],
-    'room-simulation.js':['item-rules50.js','classroom-rules.js','teacher-rules.js'],
+    'room-simulation.js':['elevator-session.js','campus-destinations.js'],
+    'elevator-session.js':['campus-destinations.js'],
   };
   for(const [file,dependencies]of Object.entries(chain)){
     const source=await readFile(new URL('../dist/'+file,import.meta.url),'utf8');
-    for(const name of dependencies)assert.ok(source.includes(`'./${name}?v=${name==='item-rules50.js'?revision:roomRevision}'`),`${file} can load stale ${name}`);
+    for(const name of dependencies)assert.ok(source.includes(`'./${name}?v=${roomRevision}'`),`${file} can load stale ${name}`);
+  }
+  const hostSource=await readFile(new URL('../dist/room-simulation.js',import.meta.url),'utf8');
+  for(const name of ['item-rules50.js','classroom-rules.js','teacher-rules.js']){
+    const path=new URL('../dist/'+name,import.meta.url).pathname;
+    const [pageUrl]=graph.get(path);
+    assert.ok(hostSource.includes(`'./${name}${new URL(pageUrl).search}'`),'worker and page must share '+name);
   }
 });

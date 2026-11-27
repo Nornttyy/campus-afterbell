@@ -1,7 +1,8 @@
 import {ClassroomRound} from './classroom-rules.js?v=campus-117&rev=119';
 import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=119';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=120';
 import {updateLayoutDoors,campusFloor} from './classroom-layout.js?v=campus-117';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=120';
 
 const elevatorRound=Base=>class extends Base{
  reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();return this.snapshot();}
@@ -50,7 +51,10 @@ const elevatorRound=Base=>class extends Base{
 };
 export const SoloStudentRound=elevatorRound(ClassroomRound);
 export const SoloTeacherRound=elevatorRound(TeacherRound);
-export function createSoloRound(options={}){return new (options.role==='teacher'?SoloTeacherRound:SoloStudentRound)(options);}
+export function createSoloRound(options={}){
+ const Round=options.role==='teacher'?SoloTeacherRound:SoloStudentRound;
+ return new Round(playableCampusMap(options.map)?options:{...options,map:'classroom'});
+}
 
 // Rebuild only the local actor role while retaining this lobby's world and trip.
 export function switchSoloRole(round,role){

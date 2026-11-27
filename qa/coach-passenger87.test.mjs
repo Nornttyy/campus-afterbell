@@ -5,7 +5,7 @@ import {createRiggedStudent,createRiggedPalm,STUDENT_ASSETS} from '../dist/stude
 import {createDeskHands} from '../dist/game-actors.js';
 import {COACH_CUSHION,BUS_SEATS} from '../dist/bus-layout86.js';
 import {ordinaryStudyState} from '../dist/npc-study58.js';
-import {createSoloRound} from '../dist/solo-round.js';
+import {SoloStudentRound} from '../dist/solo-round.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 
 const v=()=>new T.Vector3();
@@ -64,7 +64,7 @@ for(const [variant,{file}] of Object.entries(STUDENT_ASSETS))test(variant+' ride
 
 test('lower bus riders and human passengers never write or read an absent book; the upper table has real actions',()=>{
  function board(i){
-  const round=createSoloRound({map:'bus',role:'student'});round.start({gathering:true});assert.ok(round.startBell());
+  const round=new SoloStudentRound({map:'bus'});round.start({gathering:true});assert.ok(round.startBell());
   const seat=BUS_SEATS[i];Object.assign(round.player,{x:seat.exitX,z:seat.exitZ,busDeck:seat.busDeck});
   assert.equal(round.interact(i),'seated');
   for(let tick=0;tick<30;tick++)round.step(1);

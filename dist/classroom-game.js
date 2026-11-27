@@ -1,5 +1,5 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=120';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
@@ -10,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-117&radio=2';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=119';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=120';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -203,7 +203,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     let actionText='';
     if(target?.kind==='computer')actionText=p.computer?.app==='desktop'?(session.touch?'使用 · 打开应用':'左键 打开应用'):p.computer?.app==='miner'?'左键 下钩':p.computer?.app==='tetris'?'左键 落底':'';
     else if(target?.kind==='bell')actionText='E 开始上课';
-    else if(target?.kind==='lift')actionText=s.elevator?.used?'本局电梯已使用':target.current?'当前楼层':s.elevator&&s.elevator.inside<s.elevator.total?`等待同学 ${s.elevator.inside}/${s.elevator.total}`:round.network&&round.room.selfId!==round.room.hostId?'等待房主选楼层':`E 前往 ${target.floor===0?'G':target.floor||''} 层${target.map==='cafeteria'?' · 自助食堂':target.map==='exam'?' · 考场':target.map==='bus'?' · 秋游大巴车':''}`;
+    else if(target?.kind==='lift')actionText=s.elevator?.used?'本局电梯已使用':target.current?'当前楼层':s.elevator&&s.elevator.inside<s.elevator.total?`等待同学 ${s.elevator.inside}/${s.elevator.total}`:round.network&&round.room.selfId!==round.room.hostId?'等待房主选楼层':`E 前往 ${target.floor} 层${target.map==='cafeteria'?' · 自助食堂':target.map==='exam'?' · 考场':''}`;
     else if(target?.kind==='radio'&&!openIntent)actionText=s.radio?'播音中':'';
     else if(target?.kind==='locker')actionText='E 更衣柜';
     else if(s.surveillance?.viewing!=null)actionText='Q 关闭监控';
