@@ -12,7 +12,7 @@ import {paperQuestion} from './upper-floor-view85.js?v=campus-117';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-94';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117';
 import {FURNITURE_SOURCES67,loadFurniture67} from './furniture-assets67.js?v=campus-99';
-import {assetsForOpenMaps} from './campus-destinations.js?v=campus-117';
+import {assetsForOpenMaps,playableCampusMap} from './campus-destinations.js?v=campus-117&rev=120';
 import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-117';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
 import {advanceDeskDrawer,drawerHandTarget,DESK_DRAWER_TRAVEL,DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117';
@@ -31,9 +31,9 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-111';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork} from './campus-artwork.js?v=campus-93';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-117';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=120';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117';
-import {createRoomVariants} from './room-variants.js?v=campus-117&rev=119';
+import {createRoomVariants} from './room-variants.js?v=campus-117&rev=120';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
 import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96';
 import * as THREE from './vendor/three.module.js';
@@ -48,7 +48,7 @@ import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=119';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
 import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=119';
-import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,isCampusMap,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-117';
+import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-117';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
 
@@ -443,7 +443,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   bakeStatic(room);bakeStatic(teachingEnd);for(const facade of campus.facades||[])bakeStatic(facade);bakeStatic(campus.tiered);for(const furniture of seatFurniture.values()){bakeStatic(furniture.body);bakeStatic(furniture.chair);}
   const screenContent=createComputerScreenContent();
   const looseItems=looseItemView(scene);
-  const variants=createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,batchHardware:instanceRigidProps,finishes:surfaces||{},menus:artwork.hotpotMenus,liftPanel:campus.liftPanel,roleLocker:campus.roleLocker,schoolBell:startBellModel,hallLamp:campus.hallLamp,boardInk:campus.boardInk.material,stationFloor:mat('#f2ece0',{map:floorTexture}),drawerRecords,screenContent,officeScreens:campus.officeScreens});let mapVariant='classroom';
+  const variants=createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,batchHardware:instanceRigidProps,finishes:surfaces||{},menus:artwork.hotpotMenus,boardInk:campus.boardInk.material,drawerRecords,screenContent,officeScreens:campus.officeScreens});let mapVariant='classroom';
   for(const drawer of drawerRecords.values())bakeStatic(drawer.group);
   for(const book of deskBooks.values())bakeStatic(book);
   const rigidProps=instanceRigidProps([...drawerRecords.values()].map(d=>d.group).concat([...deskBooks.values(),...deskPens.values()], [...seatFurniture.values()].flatMap(f=>[f.body,f.chair])),scene);
@@ -561,7 +561,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     if(grout)grout.value=active?.69:.22;
   }
   function setMap(value){
-    mapVariant=isCampusMap(value)?mapKind(value):'classroom';variants.setMap(mapVariant);campus.setMap(mapVariant);if(mapVariant==='bus'){room.visible=false;for(const f of campus.facades)f.visible=false;}teachingEnd.visible=mapVariant!=='bus'&&(Boolean(gameplay)||canvas.dataset.gameplay==='true');setSeats(currentSeats,true);stakes.visible=mapKind(mapVariant)!=='playground';const activePosts=detentionForMap(mapVariant);
+    mapVariant=playableCampusMap(value)??'classroom';variants.setMap(mapVariant);campus.setMap(mapVariant);teachingEnd.visible=mapVariant!=='bus'&&(Boolean(gameplay)||canvas.dataset.gameplay==='true');setSeats(currentSeats,true);stakes.visible=mapKind(mapVariant)!=='playground';const activePosts=detentionForMap(mapVariant);
     postModels.forEach((model,id)=>{const p=activePosts[id];model.visible=Boolean(p);if(p)model.position.set(p.x,floorHeight(p.x,p.z,mapVariant,p.busDeck),p.z);});
     setFloorLighting(Boolean(gameplay));
     const outdoor=['playground','bus'].includes(mapVariant);
@@ -797,12 +797,12 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     // Exact mesh hits first; a small local bounds margin makes a garlic clove
     // usable without enlarging the model or allowing a pick through furniture.
     const previousFar=itemRay.far;itemRay.far=Math.min(previousFar,2.5);
-    try{const blockers=mapVariant==='bus'?[...variants.bus.shells.filter(r=>r.visible),drawerItems.parent]:[room,...furnitureRows.values(),variants.group,...variants.specialRoots,drawerItems.parent];for(const root of blockers)root?.updateWorldMatrix(true,true);return pickDrawerItem(itemRay,drawerSlotProps.flatMap(slot=>slot.pickTargets),blockers);}
+    try{const blockers=[room,...furnitureRows.values(),variants.group,...variants.specialRoots,drawerItems.parent];for(const root of blockers)root?.updateWorldMatrix(true,true);return pickDrawerItem(itemRay,drawerSlotProps.flatMap(slot=>slot.pickTargets),blockers);}
     finally{itemRay.far=previousFar;}
   }
   const campusTargets=campus.getTargets();
   const isObjectVisible=object=>{for(let n=object;n;n=n.parent)if(!n.visible&&!n.userData.rigidInstanceSource)return false;return true;};
-  const campusTargetObject=(kind,id)=>kind==='ground-item'?looseItems.get(id):kind==='cooler-item'?variants.coolerTarget(id):kind==='toilet-bowl'?variants.toilet.seats.get(id)?.mouth:kind==='radio'?variants.radioTarget(mapVariant):variants.upper.target(kind,id,gameplay)||(kind==='sports-bar'||kind==='plunger'?mapActivityView.target(kind,id):kind==='rear-door'?campusTargets.doors.find(d=>d.id===(id||'rear'))?.object:kind==='office-desk'?campusTargets.officeDesks.find(d=>d.id===(id||OFFICE_DESK.id))?.object:kind==='office-chair'?campusTargets.officeChairs.find(c=>c.id===(id||OFFICE_CHAIR.id))?.object:kind==='locker'&&mapVariant==='bus'?variants.bus.lockers.find(l=>l.id===id)?.object:kind==='locker'?campusTargets.lockers.find(l=>l.id===id)?.object||campusTargets.lockers[0]?.object:kind==='dorm-door'?variants.dorm.doors.get(id)?.target:kind==='toilet-door'?variants.toilet.doors.get(id)?.target:kind==='bed'?variants.dorm.beds.get(id)?.target:kind==='vending'?variants.vendingTargets.get(id)?.button:kind==='vending-food'?variants.vendingTargets.get(id)?.pickup:kind==='chair'?variants.seatTarget(id)||chairTargets.get(id):kind==='pen'?deskPens.get(id):null);
+  const campusTargetObject=(kind,id)=>kind==='ground-item'?looseItems.get(id):kind==='cooler-item'?variants.coolerTarget(id):kind==='toilet-bowl'?variants.toilet.seats.get(id)?.mouth:kind==='radio'?variants.radioTarget(mapVariant):variants.upper.target(kind,id,gameplay)||(kind==='sports-bar'||kind==='plunger'?mapActivityView.target(kind,id):kind==='rear-door'?campusTargets.doors.find(d=>d.id===(id||'rear'))?.object:kind==='office-desk'?campusTargets.officeDesks.find(d=>d.id===(id||OFFICE_DESK.id))?.object:kind==='office-chair'?campusTargets.officeChairs.find(c=>c.id===(id||OFFICE_CHAIR.id))?.object:kind==='locker'?campusTargets.lockers.find(l=>l.id===id)?.object||campusTargets.lockers[0]?.object:kind==='dorm-door'?variants.dorm.doors.get(id)?.target:kind==='toilet-door'?variants.toilet.doors.get(id)?.target:kind==='bed'?variants.dorm.beds.get(id)?.target:kind==='vending'?variants.vendingTargets.get(id)?.button:kind==='vending-food'?variants.vendingTargets.get(id)?.pickup:kind==='chair'?variants.seatTarget(id)||chairTargets.get(id):kind==='pen'?deskPens.get(id):null);
   function getInteraction(){
     if(!gameplay||gameplay.paused||gameplay.status!=='playing'||gameplay.player.caught||gameplay.elevator?.phase==='travel')return null;
     const player=gameplay.player,preClass=gameplay.stage&&gameplay.stage!=='class';
@@ -836,10 +836,10 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
       if(mapVariant==='playground')gameplay.coolerSlots?.forEach((action,i)=>{if(action)add(variants.coolerTarget(i),{kind:'cooler-item',id:i},2.5);});
     }
     if(!preClass&&reachesRadio(mapVariant,player))add(variants.radioTarget(mapVariant),{kind:'radio'},2.46);
-    const activeLift=mapVariant==='bus'?variants.bus.liftPanel:campus.liftPanel;
-    if(gameplay.stage==='gathering'&&gameplay.startBellAvailable)add(mapVariant==='bus'?variants.bus.bell:startBellModel,{kind:'bell'});
+    const activeLift=campus.liftPanel;
+    if(gameplay.stage==='gathering'&&gameplay.startBellAvailable)add(startBellModel,{kind:'bell'});
     if(gameplay.elevator?.disabled===false&&gameplay.stage==='gathering'&&!player.seated&&player.x>LIFT.minX&&player.x<LIFT.maxX&&player.z>LIFT.minZ&&player.z<LIFT.maxZ){activeLift.updateWorldMatrix(true,true);const hit=itemRay.intersectObject(activeLift,true).find(h=>h.object.userData.floorMap&&h.distance<2.5);if(hit)candidates.push({object:hit.object,hit,result:{kind:'lift',map:hit.object.userData.floorMap,floor:hit.object.userData.floor,current:hit.object.userData.floorMap===mapVariant}});}
-    if(gameplay.stage==='gathering'&&!player.seated)for(const target of (mapVariant==='bus'?variants.bus.lockers:campusTargets.lockers))add(target.object,{kind:'locker',id:target.id,role:target.id},2.5);
+    if(gameplay.stage==='gathering'&&!player.seated)for(const target of campusTargets.lockers)add(target.object,{kind:'locker',id:target.id,role:target.id},2.5);
     if(player.seated&&gameplay.role!=='teacher'&&player.penTaken&&!player.officeChair)add(chairTargets.get(player.seatId),{kind:'chair',id:player.seatId},2.15);
     if(!player.seated&&gameplay.role!=='teacher'){
       const occupied=new Set((gameplay.students||[]).filter(p=>p.seated&&!p.caught).map(p=>p.seatId));
@@ -882,7 +882,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     // No selection through walls or an intervening desktop. Repeated prop
     // source meshes stay raycastable even though GPU submission is instanced.
     if(candidates.length){
-      const blockerRoots=(mapVariant==='bus'?variants.bus.shells:[room,teachingEnd,variants.group,...variants.specialRoots,...furnitureRows.values()]).filter(o=>o.visible);for(const root of blockerRoots)root.updateWorldMatrix(true,true);
+      const blockerRoots=[room,teachingEnd,variants.group,...variants.specialRoots,...furnitureRows.values()].filter(o=>o.visible);for(const root of blockerRoots)root.updateWorldMatrix(true,true);
       const blockers=itemRay.intersectObjects(blockerRoots,true).filter(h=>isObjectVisible(h.object)&&h.object.material?.visible!==false&&!h.object.material?.transparent);
       for(const c of candidates){const barrier=blockers.find(h=>h.distance<c.hit.distance-.035);if(!barrier)return c.result;let ancestor=barrier.object;while(ancestor&&ancestor!==c.object)ancestor=ancestor.parent;if(ancestor===c.object)return c.result;}
     }
@@ -898,10 +898,10 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     const target=getInteraction();aimedComputer=target?.kind==='computer'?target:null;hoveredSlot=target?.kind==='item'?target.slot:null;
     let prop=campusTargetObject(target?.kind,target?.id);
     if(target?.kind==='lift'){
-      const panel=mapVariant==='bus'?variants.bus.liftPanel:campus.liftPanel;
+      const panel=campus.liftPanel;
       prop=panel.children.find(button=>button.userData.floorMap===target.map);
     }
-    if(!prop)prop=target?.kind==='bell'?(mapVariant==='bus'?variants.bus.bell:startBellCap):target?.kind==='post'?postModels[target.id]:['rescue','release'].includes(target?.kind)?pupilRecords[target.id]?.actor?.group:hoveredSlot===null?target?.kind==='computer'?variants.screens.get(target.id):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?(variants.cabinetFor(gameplay.player.bedId??gameplay.player.seatId)?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(gameplay.player.seatId):deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group)):null:drawerSlotProps[hoveredSlot]?.props.get(gameplay.drawer.slots[hoveredSlot].action);
+    if(!prop)prop=target?.kind==='bell'?startBellCap:target?.kind==='post'?postModels[target.id]:['rescue','release'].includes(target?.kind)?pupilRecords[target.id]?.actor?.group:hoveredSlot===null?target?.kind==='computer'?variants.screens.get(target.id):target?.kind==='book'?deskBooks.get(gameplay.player.seatId):target?.kind==='desk'?(variants.cabinetFor(gameplay.player.bedId??gameplay.player.seatId)?.target||(mapKind(mapVariant)==='computer'?variants.stations.get(gameplay.player.seatId):deskTargets.get(gameplay.player.seatId)||drawerRecords.get(gameplay.player.seatId)?.group)):null:drawerSlotProps[hoveredSlot]?.props.get(gameplay.drawer.slots[hoveredSlot].action);
     itemOutline.select(prop||null);canvas.dataset.hoveredSlot=hoveredSlot===null?'':String(hoveredSlot);canvas.dataset.interaction=target?JSON.stringify(target):'';
     if(gameplay?.drawer?.open)canvas.dataset.drawerTargets=JSON.stringify(drawerSlotProps.map((slot,id)=>{const p=slot.group.getWorldPosition(new THREE.Vector3());p.project(camera);return{id,x:(p.x+1)/2,y:(1-p.y)/2};}));
   }
@@ -960,7 +960,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
       const basePitch=Number.isFinite(player.pitch)?player.pitch:.08;
       firstPersonMotion=sampleFirstPersonMotion(firstPersonMotion,player,gameTime);
       advanceDrawers(gameplay,activeDt);
-      const officeTray=player.officeChair?(campus.officeDrawers.get(player.officeDeskId)||campus.officeDrawer):null,deskTrayRecord=mapKind(mapVariant)==='bus'?variants.bus.cabinets.get(player.seatId):mapKind(mapVariant)==='computer'?variants.drawers.get(player.seatId):drawerRecords.get(player.seatId);
+      const officeTray=player.officeChair?(campus.officeDrawers.get(player.officeDeskId)||campus.officeDrawer):null,deskTrayRecord=mapKind(mapVariant)==='computer'?variants.drawers.get(player.seatId):drawerRecords.get(player.seatId);
       const previousDrawerAmount=officeTray?Math.max(0,Math.min(1,(-officeTray.position.z-.08)/.52)):deskTrayRecord?.open||0,drawerTarget=gameplay.drawer?.open?1:0;
       const currentDrawerAmount=officeTray?THREE.MathUtils.damp(previousDrawerAmount,drawerTarget,14,activeDt):previousDrawerAmount;
       firstPersonDrawer=gameplay.exam?.mode==='card'||['toilet','dorm','playground'].includes(mapKind(mapVariant))?null:drawerHandTarget({player,drawer:gameplay.drawer,seats:currentSeats,map:mapVariant,amount:currentDrawerAmount,geometry:officeTray?.userData.handTarget});
