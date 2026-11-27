@@ -96,3 +96,53 @@ test('the chicken bucket and layer cake keep the same appearance on the belt and
  }
  assert.equal(r.score,2);
 });
+
+test('both conveyor prints travel with the meals through a serving-slot wrap',async()=>{
+ const T=await import('../dist/vendor/three.module.js');
+ const {createUpperFloorView}=await import('../dist/upper-floor-view85.js');
+ const {SERVING_BELTS}=await import('../dist/upper-floors85.js');
+ const view=createUpperFloorView({scene:new T.Scene(),box(){},mat:(color,opts)=>new T.MeshBasicMaterial({color,map:opts?.map||null}),texture:()=>new T.Texture()});
+ try{
+  view.setMap('cafeteria');
+  const strips=[];
+  view.root.traverse(o=>{if(o.material?.map?.wrapT===T.RepeatWrapping)strips.push(o);});
+  assert.equal(strips.length,2);
+  function printPhase(strip,z){
+   const local=strip.worldToLocal(new T.Vector3(strip.position.x,strip.position.y,z));
+   const uv=local.y/strip.geometry.parameters.height+.5;
+   const map=strip.material.map;return uv*map.repeat.y+map.offset.y;
+  }
+  function sample(time){
+   view.update({sceneElapsed:time});
+   return strips.map((strip,i)=>{
+    const carrier=view.target('meal',i*MEAL_COUNT/2+1);
+    assert.equal(carrier.children.length,1);
+    const bounds=new T.Box3().setFromObject(carrier,true);
+    assert.ok(Math.abs(bounds.min.y-SERVING_BELTS[i].top)<.009);
+    return printPhase(strip,carrier.position.z);
+   });
+  }
+  const before=sample(24.9),after=sample(25.1);
+  for(let i=0;i<2;i++){const delta=after[i]-before[i];assert.ok(Math.abs(delta-Math.round(delta))<1e-6);}
+ }finally{view.dispose();}
+});
+
+test('first-person answer slip shares the palm render pass and leaves the hand on return',async()=>{
+ const T=await import('../dist/vendor/three.module.js');
+ const {createUpperFloorView}=await import('../dist/upper-floor-view85.js');
+ const scene=new T.Scene(),handScene=new T.Scene(),palm=new T.Group(),observerHand=new T.Group();
+ handScene.add(palm);scene.add(observerHand);
+ const view=createUpperFloorView({scene,box(){},mat:(color,opts)=>new T.MeshBasicMaterial({color,map:opts?.map||null}),texture:()=>new T.Texture()});
+ const seat={id:0,deskX:1,deskZ:2,yaw:.7};view.setMap('exam');view.setSeats([seat]);
+ const state={player:{seated:true,seatId:0},students:[{readingAnswer:true,seated:true,seatId:1}],exam:{mode:'card',cards:[0,1],card:0},drawer:{open:true}};
+ try{
+  view.setReaderHand(1,observerHand);view.update(state);
+  const tip=new T.Vector3(.02,.04,.01),hand={group:palm,setCurl(){},indexTip:()=>tip.clone(),aimThumb(){}};
+  view.gripAnswerSlip(hand);
+  const card=palm.getObjectByName('answer-card-in-hand');assert.ok(card?.visible);assert.equal(card.parent,palm);
+  assert.ok(card.localToWorld(new T.Vector3(-.113,-.103,-.005)).distanceTo(palm.localToWorld(tip.clone()))<1e-6);
+  assert.equal(observerHand.children.filter(o=>o.visible).length,1);
+  state.exam.mode=null;state.students=[];view.update(state);assert.equal(card.visible,false);assert.equal(observerHand.children[0].visible,false);
+ }finally{view.dispose();}
+ assert.equal(palm.children.length,0);assert.equal(observerHand.children.length,0);
+});

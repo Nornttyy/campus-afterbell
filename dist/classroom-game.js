@@ -1,5 +1,5 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=127';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=128';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83';
@@ -10,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-117&radio=2';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=127';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=128';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -47,7 +47,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   function updateDrawerLook(state,dt){
     const p=state.player;
     if(state.paused||session.modal)return;
-    if(!p.seated||p.caught||p.captivity&&p.captivity!=='free'||state.status!=='playing'){
+    if(state.exam?.mode==='paper'||!p.seated||p.caught||p.captivity&&p.captivity!=='free'||state.status!=='playing'){
       resetDrawerLook();return;
     }
     const id=state.drawer?.open?[state.map,state.role,p.officeDeskId??p.seatId].join('/'):null;
@@ -198,7 +198,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     ui.dataset.role=s.role;ui.dataset.map=s.map;
     const drawer=s.drawer,carrying=drawer.drawnSlot!==null,target=scene.getInteraction?.(),hover=target?.kind==='item'?target.slot:null;
     if(s.fixtureUse&&(s.fixtureUse.id==='radio'?target?.kind!=='radio':target?.kind!=='vending'||target.id!==s.fixtureUse.id))round.setFixtureUse?.(null);
-    ui.dataset.drawerOpen=String(drawer.open);ui.dataset.selectedSlot=String(drawer.selectedSlot);ui.dataset.carrying=String(carrying);
+    ui.dataset.examReading=String(s.exam?.mode==='card');ui.dataset.drawerOpen=String(drawer.open);ui.dataset.selectedSlot=String(drawer.selectedSlot);ui.dataset.carrying=String(carrying);
     const openIntent=interactionIntent(s,target,'E'),closeIntent=interactionIntent(s,target,'Q');session.setActionLabels?.(openIntent,closeIntent);
     let actionText='';
     if(target?.kind==='computer')actionText=p.computer?.app==='desktop'?(session.touch?'使用 · 打开应用':'左键 打开应用'):p.computer?.app==='miner'?'左键 下钩':p.computer?.app==='tetris'?'左键 落底':'';

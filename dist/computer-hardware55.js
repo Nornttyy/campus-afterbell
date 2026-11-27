@@ -1,4 +1,4 @@
-import {LAB_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=127';
+import {LAB_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=128';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-99';
 import * as T from './vendor/three.module.js';
 
