@@ -51,7 +51,7 @@ test('corridor has glazing only at lift end, while other outer wall spans are ac
   const panes=scene.getObjectsByProperty('name','clear-exterior-pane').filter(o=>{const p=o.getWorldPosition(new T.Vector3());return p.x>CORRIDOR.maxX-.01&&p.x<CORRIDOR.maxX+.20;});assert.equal(panes.length,4);
   for(const pane of panes){const p=pane.getWorldPosition(new T.Vector3());assert.ok(p.z>=CORRIDOR.maxZ-5.3&&p.z<=CORRIDOR.maxZ-2.1);assert.ok(pane.material.opacity<.10);}
   for(const z of[-9.0,-3.8,0,3.2,7.9]){const hit=new T.Raycaster(new T.Vector3(CORRIDOR.maxX-.5,2,z),new T.Vector3(1,0,0),0,1).intersectObject(scene,true).find(h=>h.object.name==='corridor-solid-outer-wall');assert.ok(hit,`hole at z=${z}`);assert.ok(Math.abs(hit.point.x-CORRIDOR.maxX)<1e-6);assert.equal(hit.object.material.transparent,false);}
-  const inner=scene.getObjectsByProperty('name','pale-blue-interior-pane');assert.ok(inner.length>10);assert.ok(inner.every(p=>p.material.opacity>=.58&&p.material.opacity<=.70));
+  const inner=scene.getObjectsByProperty('name','pale-blue-interior-pane');assert.ok(inner.length>10);assert.deepEqual([...new Set(inner.map(p=>p.material.opacity))].sort(),[.38,.48]);
  }finally{dispose();}
 });
 

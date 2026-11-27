@@ -41,20 +41,20 @@ test('production menu and classroom share one URL per physical module',async()=>
 test('multiplayer worker and authoritative rules use the current release cache key',async()=>{
   const {graph,revision}=await productionGraph();
   const client=await readFile(new URL('../dist/peer-room79.js',import.meta.url),'utf8');
-  const roomRevision=revision+'&rev=121';
+  const roomRevision=revision+'&rev=123';
   assert.ok(client.includes(`new URL('./peer-room-worker79.js?v=${roomRevision}'`));
   const chain={
     'peer-room-worker79.js':['peer-room-host79.js'],
     'peer-room-host79.js':['room-simulation.js'],
     'room-simulation.js':['classroom-rules.js','teacher-rules.js'],
-    'classroom-rules.js':['npc-study58.js'],
+    'classroom-rules.js':['classroom-layout.js'],
   };
   for(const [file,dependencies]of Object.entries(chain)){
     const source=await readFile(new URL('../dist/'+file,import.meta.url),'utf8');
     for(const name of dependencies)assert.ok(source.includes(`'./${name}?v=${roomRevision}'`),`${file} can load stale ${name}`);
   }
   const hostSource=await readFile(new URL('../dist/room-simulation.js',import.meta.url),'utf8');
-  for(const name of ['item-rules50.js','classroom-rules.js','teacher-rules.js','elevator-session.js','campus-destinations.js']){
+  for(const name of ['item-rules50.js','classroom-rules.js','teacher-rules.js','elevator-session.js','campus-destinations.js','classroom-layout.js']){
     const path=new URL('../dist/'+name,import.meta.url).pathname;
     const [pageUrl]=graph.get(path);
     assert.ok(hostSource.includes(`'./${name}${new URL(pageUrl).search}'`),'worker and page must share '+name);

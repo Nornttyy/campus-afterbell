@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-117';
+import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-117&rev=123';
 
 // The three colour channels store window bounce near the floor, window bounce
 // at eye height, and diffuse light near the suspended hall tubes. One bilinear
@@ -223,7 +223,7 @@ const finishes={
   if(classroomDay&&!hall88)diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.52,.67,.70),.24);
   float overhead=smoothstep(.16,.96,vPaneUv88.y);
   diffuseColor.rgb*=mix(vec3(.81,.88,.92),vec3(1.06,1.035,.98),overhead);
-  diffuseColor.a=mix(.77,.91,clamp(.66*edge88+.34*grazing88,0.0,1.0));`
+  diffuseColor.a=mix(.40,.60,clamp(.66*edge88+.34*grazing88,0.0,1.0));`
 };
 
 export function createClassroomDaylight(openings,lamps){

@@ -95,10 +95,10 @@ export function createSmokeEffects(renderer,{width=0,height=0,samples=4,glassInV
         return 1.-clamp(occlusion*(3.0/16.)*contactStrength,0.,.42);
       }
       vec3 diffusePane(vec3 centre){
-        vec3 sum=centre*.55;float weights=.55;
-        for(int i=0;i<12;i++){
-          float j=float(i)+.5,a=j*2.39996323,r=sqrt(j/12.);
-          vec2 offset=vec2(cos(a),sin(a))*r*.021*screenSize.y/screenSize;
+        vec3 sum=centre*2.;float weights=2.;
+        for(int i=0;i<6;i++){
+          float j=float(i)+.5,a=j*2.39996323,r=sqrt(j/6.);
+          vec2 offset=vec2(cos(a),sin(a))*r*min(2.5,screenSize.y*.0035)/screenSize;
           vec4 tap=texture2D(colorMap,clamp(v+offset,vec2(0.),vec2(1.)));
           float w=(1.-smoothstep(.08,.85,tap.a))*(1.-.55*r*r);
           sum+=w*tap.rgb;weights+=w;

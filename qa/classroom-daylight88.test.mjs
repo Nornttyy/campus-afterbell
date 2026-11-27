@@ -68,6 +68,24 @@ test('only visible interior glass scatters the view and leaving the ordinary day
  }finally{dispose();}
 });
 
+test('both office door leaves block sight in day and night, while classroom glazing transmits light',()=>{
+ const {scene,campus,dispose}=campusScene();
+ try{
+  for(const active of [true,false]){
+   campus.setDaylight(active);
+   assert.equal(campus.officeDoors.length,2);
+   for(const door of campus.officeDoors){
+    const panes=[];door.traverse(o=>{if(o.material?.name==='staffroom-opaque-door-glass')panes.push(o);});
+    assert.equal(panes.length,1);
+    const material=panes[0].material;
+    assert.equal(material.opacity,1);assert.equal(material.transparent,false);assert.equal(material.depthWrite,true);
+   }
+   const classroomGlass=scene.getObjectByName('pale-blue-interior-pane').material;
+   assert.ok(classroomGlass.transparent&&classroomGlass.opacity<.6);
+  }
+ }finally{dispose();}
+});
+
 test('a shared desk material keeps its imported shader and follows the day switch without recompilation',()=>{
  const {campus,dispose}=campusScene(),wood=new T.MeshStandardMaterial();
  try{
