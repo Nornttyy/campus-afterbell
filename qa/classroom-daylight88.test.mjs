@@ -25,12 +25,12 @@ test('daylight comes through real openings and follows both rows of hall fixture
   const {data,width,height}=campus.daylight.map.image,margin=.44;
   function at(x,z){
    const col=Math.floor(width*(x-CLASSROOM.minX+margin)/(CORRIDOR.maxX-CLASSROOM.minX+2*margin));
-   const row=Math.floor(height*(z-CORRIDOR.minZ+margin)/(CLASSROOM.maxZ-CORRIDOR.minZ+2*margin));
+   const row=Math.floor(height*(z-CORRIDOR.minZ+margin)/(CORRIDOR.maxZ-CORRIDOR.minZ+2*margin));
    const offset=(row*width+col)*4;
    return data.subarray(offset,offset+4);
   }
   assert.ok(at(-6,.8)[1]>at(0,.8)[1]+90,'the courtyard window lights the nearest desk');
-  assert.ok(at(12.3,CORRIDOR.minZ+3.7)[0]>at(12.3,-6)[0]+90,'the lift-side exterior window lights the hall floor');
+  assert.ok(at(12.3,CORRIDOR.maxZ-6.7)[0]>at(12.3,-6)[0]+90,'the lift-side exterior window lights the hall floor');
   const mid=(CORRIDOR.minX+CORRIDOR.maxX)/2,z=CORRIDOR.minZ+3+4.5;
   for(const x of [mid-1.16,mid+1.16]){
    assert.ok(at(x,z)[2]>at(mid,z)[2]+70);

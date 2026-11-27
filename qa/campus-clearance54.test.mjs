@@ -40,7 +40,7 @@ test('wall controls, clock and tutorials stand clear of plaster, posters, board 
   assert.ok(controls.max.y<2.0,'switches must not overlap the habits poster');
   assert.ok(clock.max.z<8.8&&8.8-clock.max.z<.02);assert.ok(clock.max.y<CEILING_HEIGHT);assert.ok(clock.min.y>bounds(scene.getObjectByName('teaching-board-frame')).max.y,'clock clears blackboard top');
   const student=bounds(scene.getObjectByName('corridor-student-tutorial'));assert.ok(student.max.x<CORRIDOR.maxX&&CORRIDOR.maxX-student.max.x<.006);
-  const teacher=bounds(scene.getObjectByName('teacher-tutorial-whiteboard'));assert.ok(Math.abs(teacher.min.z-(OFFICE_BOARD.z-.05))<1e-5);
+  const teacher=bounds(scene.getObjectByName('teacher-tutorial-whiteboard'));assert.ok(Math.abs(teacher.min.z-(OFFICE_BOARD.z+.05))<1e-5);
   assert.equal(overlaps(controls,clock),false);
  }finally{dispose();}
 });
@@ -76,7 +76,7 @@ test('the dorm chalk tutorial fits entirely on a fixed wall through every door a
  try{
   const drawing=scene.getObjectByName('corridor-student-tutorial'),ordinary=bounds(drawing);
   campus.setMap('dorm');const ink=bounds(drawing);
-  const wall=DORM_CORRIDOR_SOLIDS.find(w=>w.id==='dorm-hall-left-1');
+  const wall=DORM_CORRIDOR_SOLIDS.find(w=>w.id==='dorm-hall-left-end');
   assert.ok(ink.min.x>wall.maxX&&ink.max.x<wall.maxX+.025);
   assert.ok(ink.min.z>wall.minZ+.2&&ink.max.z<wall.maxZ-.2);
   assert.ok(ink.min.y>1.34&&ink.max.y<wall.maxY);

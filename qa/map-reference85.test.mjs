@@ -2,15 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {campusScene} from './campus-geometry54-helpers.mjs';
-import {CLASSROOM,CORRIDOR,OFFICE,LIFT,OFFICE_CHAIRS,OFFICE_DESKS,LAB_DIVIDER,createLayoutContext,createSeatLayout,walkRoute} from '../dist/classroom-layout.js';
+import {CLASSROOM,CORRIDOR,OFFICE,LIFT,ALCOVE_ENTRY,ROLE_LOCKER,DOORS,OFFICE_CHAIRS,OFFICE_DESKS,LAB_DIVIDER,createLayoutContext,createSeatLayout,walkRoute} from '../dist/classroom-layout.js';
 import {DORM_ROOMS,dormPoint} from '../dist/dorm-layout70.js';
 import {chalkHit} from '../dist/teacher-rules.js';
 
 test('the hall landmarks follow the walkthrough and every relocated office target matches its mesh',()=>{
  const f=campusScene();
  try{
-  assert.ok(LIFT.z<CORRIDOR.minZ&&OFFICE.minZ>CORRIDOR.maxZ);
+  assert.ok(LIFT.z>CORRIDOR.maxZ&&OFFICE.maxZ<CORRIDOR.minZ);
   assert.ok(CLASSROOM.maxX<CORRIDOR.minX);
+  // Looking from the car towards the office (-Z), left is -X.
+  assert.ok(ALCOVE_ENTRY.wallX<LIFT.x&&CLASSROOM.maxX<LIFT.x&&ROLE_LOCKER.x>LIFT.x);
+  assert.ok(LIFT.z>ALCOVE_ENTRY.maxZ&&ALCOVE_ENTRY.minZ>Math.max(...DOORS.map(d=>d.maxZ)));
+  assert.ok(f.campus.roleLocker.getObjectsByProperty('name','locker-door').length===3);
   const targets=f.campus.getTargets(),ctx=createLayoutContext(createSeatLayout());
   for(const desk of OFFICE_DESKS){
    const target=targets.officeDesks.find(t=>t.id===desk.id);

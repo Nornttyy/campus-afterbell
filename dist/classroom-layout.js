@@ -3,7 +3,7 @@ import {SERVING_SOLIDS,CAFETERIA_SEATS} from './upper-floors85.js?v=campus-92';
 import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-83';
 import {hotpotLayout,diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
 import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-94';
-import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-95';
+import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-95&rev=127';
 import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-117';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-92';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
@@ -11,26 +11,26 @@ import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 export const ELEVATOR_ENABLED=true;
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
 export const TEACHER_EYE_HEIGHT=TEACHER_PROPORTIONS.eyeHeight;
-import {HALL,officePlan,liftPlan,officeDeskPlans,officeChairPlans,officeBoardPlan,officeBinPlan,officeShelfCenters,officeOffset} from './campus-ends.js?v=campus-101&rev=126';
- // In the walkthrough a player walking from the office toward the lift has the classroom on the left.
+import {HALL,END_ORIGIN,endPoint,endBounds,officePlan,liftPlan,officeDeskPlans,officeChairPlans,officeBoardPlan,officeBinPlan,officeShelfCenters,officeOffset} from './campus-ends.js?v=campus-101&rev=127';
+ // In the walkthrough a player leaving the lift for the office has the classroom on the left.
 export const CLASSROOM=Object.freeze({minX:-6.65,maxX:7.20,minZ:-10.00,maxZ:8.80});
 export const CORRIDOR=HALL;
-export const OFFICE=Object.freeze({...officePlan,doorZ:HALL.maxZ+.11,opensZ:1});
-export const LIFT=liftPlan;
+export const OFFICE=Object.freeze({...endBounds(officePlan),doorX:END_ORIGIN.x-officePlan.doorX,doorMinX:END_ORIGIN.x-officePlan.doorMaxX,doorMaxX:END_ORIGIN.x-officePlan.doorMinX,doorZ:HALL.minZ-.11,opensZ:-1});
+export const LIFT=Object.freeze({...endBounds(liftPlan),...endPoint(liftPlan.x,liftPlan.z)});
 // Local classroom plans have their board at +Z. Turn both desks and end-wall
 // fittings about the room centre so a seated pupil has the hall on the right.
 export const CLASS_TURN=Object.freeze({x:CLASSROOM.minX+CLASSROOM.maxX,z:CLASSROOM.minZ+CLASSROOM.maxZ});
 export const turnedClass=map=>['classroom','night'].includes(mapKind(map));
 // The unused inner bay starts after the classroom ends, on the way to the lift.
 export const ALCOVE_ENTRY=Object.freeze({wallX:CORRIDOR.minX,stopX:CORRIDOR.minX-.75,
- minZ:CORRIDOR.minZ+1.05,maxZ:CLASSROOM.minZ-1.30,height:3.42});
+ minZ:CLASSROOM.maxZ+.68,maxZ:CORRIDOR.maxZ-.80,height:3.42});
 export const LIFT_ALCOVE=Object.freeze({minX:ALCOVE_ENTRY.wallX-3.40,maxX:ALCOVE_ENTRY.wallX,
  minZ:ALCOVE_ENTRY.minZ,maxZ:ALCOVE_ENTRY.maxZ});
 export const ALCOVE_STORAGE=Object.freeze({x:LIFT_ALCOVE.minX+.52,z:LIFT_ALCOVE.maxZ-.51});
 function turnPoint(p){return {...p,x:CLASS_TURN.x-p.x,z:CLASS_TURN.z-p.z};}
 function turnBox(b){return {...b,minX:CLASS_TURN.x-b.maxX,maxX:CLASS_TURN.x-b.minX,minZ:CLASS_TURN.z-b.maxZ,maxZ:CLASS_TURN.z-b.minZ};}
-export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:CORRIDOR.minZ+.65});
-export const ROOM=Object.freeze({minX:CLASSROOM.minX,maxX:CORRIDOR.maxX,minZ:LIFT.minZ,maxZ:OFFICE.maxZ});
+export const STUDENT_ENTRY=Object.freeze({x:LIFT.x,z:ELEVATOR_ENABLED?LIFT.z:CORRIDOR.maxZ-.65});
+export const ROOM=Object.freeze({minX:CLASSROOM.minX,maxX:OFFICE.maxX,minZ:OFFICE.minZ,maxZ:LIFT.maxZ});
 export function mapBounds(map='classroom'){
  if(map==='bus')return {minX:BUS.apron.minX,maxX:BUS.apron.maxX,minZ:BUS.apron.minZ,maxZ:BUS.lift.maxZ};
  if(mapKind(map)==='dorm')return{...ROOM,maxX:DORM_BOUNDS.maxX,minX:Math.min(ROOM.minX,DORM_BOUNDS.minX)};
@@ -39,12 +39,15 @@ export function mapBounds(map='classroom'){
  return {minX:Math.min(ROOM.minX,b.minX),maxX:Math.max(ROOM.maxX,b.maxX),minZ:Math.min(ROOM.minZ,b.minZ),maxZ:Math.max(ROOM.maxZ,b.maxZ)};
 }
 export const CEILING_HEIGHT=4.51,TIERED_CEILING_HEIGHT=5.36;
-export const TEACHER_SPAWN=Object.freeze({x:OFFICE.doorX,z:12.00,yaw:Math.PI,pitch:.025});
-export const OFFICE_DESKS=officeDeskPlans;
-export const OFFICE_CHAIRS=officeChairPlans;
+export const TEACHER_SPAWN=Object.freeze({...endPoint(9.20,12.00),yaw:0,pitch:.025});
+export const OFFICE_DESKS=Object.freeze(officeDeskPlans.map(d=>{
+ const drawer=endPoint(d.drawerX,d.drawerZ);
+ return Object.freeze({...d,...endPoint(d.x,d.z),yaw:d.yaw+Math.PI,drawerX:drawer.x,drawerZ:drawer.z});
+}));
+export const OFFICE_CHAIRS=Object.freeze(officeChairPlans.map(c=>Object.freeze({...c,...endPoint(c.x,c.z),yaw:c.yaw+Math.PI})));
 export const OFFICE_DESK=OFFICE_DESKS[0],OFFICE_CHAIR=OFFICE_CHAIRS[0];
-export const OFFICE_BOARD=officeBoardPlan;
-export const ROLE_LOCKER=Object.freeze({x:CORRIDOR.maxX-.36,z:CORRIDOR.maxZ-2.28,yaw:-Math.PI/2});
+export const OFFICE_BOARD=Object.freeze(endPoint(officeBoardPlan.x,officeBoardPlan.z));
+export const ROLE_LOCKER=Object.freeze({x:CORRIDOR.maxX-.36,z:CORRIDOR.minZ+1.90,yaw:-Math.PI/2});
 export const START_BELL_POSITION=Object.freeze({x:7.43,z:-4.0});
 export const CAMPUS_MAPS=Object.freeze(['playground','classroom','night','tiered','computer','toilet','hotpot','dorm','cafeteria','exam']);
 export function mapKind(map='classroom'){const kind=String(map).replace(/[0-9]+$/,'');return kind;}
@@ -146,18 +149,19 @@ const V=(minX,maxX,minZ,maxZ,minY=0,maxY=CEILING_HEIGHT)=>Object.freeze({minX,ma
 export const DOOR_LEAVES=Object.freeze(DOORS.map(d=>V(7.30,8.88,d.maxZ-.07,d.maxZ+.07,.04,3.02)));
 // Continuous shell: classroom proportions are independent of the longer corridor.
 // The lift portal/cabin use the corridor's end, never the classroom's rear wall.
-const portalZ=CORRIDOR.minZ,west=CLASSROOM.minX;
+const portalZ=CORRIDOR.maxZ,west=CLASSROOM.minX;
 const endWalls=Object.freeze([
- V(CORRIDOR.minX,LIFT.minX,portalZ-.20,portalZ),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ-.20,portalZ),
- V(OFFICE.minX-.20,OFFICE.doorMinX,CORRIDOR.maxZ,OFFICE.minZ),V(OFFICE.doorMaxX,OFFICE.maxX+.20,CORRIDOR.maxZ,OFFICE.minZ),
- V(OFFICE.minX-.20,OFFICE.minX,OFFICE.minZ,OFFICE.maxZ+.20),V(OFFICE.maxX,OFFICE.maxX+.20,OFFICE.minZ,OFFICE.maxZ+.20),
- V(OFFICE.minX,OFFICE.maxX,OFFICE.maxZ,OFFICE.maxZ+.20),
- V(LIFT.minX-.20,LIFT.minX,LIFT.minZ-.20,portalZ),V(LIFT.maxX,LIFT.maxX+.20,LIFT.minZ-.20,portalZ),V(LIFT.minX,LIFT.maxX,LIFT.minZ-.20,LIFT.minZ)
+ V(CORRIDOR.minX,LIFT.minX,portalZ,portalZ+.20),V(LIFT.maxX,CORRIDOR.maxX+.20,portalZ,portalZ+.20),
+ V(OFFICE.minX-.20,OFFICE.doorMinX,OFFICE.maxZ,CORRIDOR.minZ),V(OFFICE.doorMaxX,OFFICE.maxX+.20,OFFICE.maxZ,CORRIDOR.minZ),
+ V(OFFICE.minX-.20,OFFICE.minX,OFFICE.minZ-.20,OFFICE.maxZ),V(OFFICE.maxX,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ),
+ V(OFFICE.minX,OFFICE.maxX,OFFICE.minZ-.20,OFFICE.minZ),
+ V(LIFT.minX-.20,LIFT.minX,portalZ,LIFT.maxZ+.20),V(LIFT.maxX,LIFT.maxX+.20,portalZ,LIFT.maxZ+.20),V(LIFT.minX,LIFT.maxX,LIFT.maxZ,LIFT.maxZ+.20)
 ]);
 const corridorEdges=[
  V(CORRIDOR.maxX,CORRIDOR.maxX+.20,CORRIDOR.minZ,CORRIDOR.maxZ),
- V(CLASSROOM.maxX,CORRIDOR.minX,CORRIDOR.minZ,ALCOVE_ENTRY.minZ),
- V(CLASSROOM.maxX,CORRIDOR.minX,ALCOVE_ENTRY.maxZ,CLASSROOM.minZ-.20),
+ V(CLASSROOM.maxX,CORRIDOR.minX,CORRIDOR.minZ,CLASSROOM.minZ-.20),
+ V(CLASSROOM.maxX,CORRIDOR.minX,CLASSROOM.maxZ+.22,ALCOVE_ENTRY.minZ),
+ V(CLASSROOM.maxX,CORRIDOR.minX,ALCOVE_ENTRY.maxZ,CORRIDOR.maxZ),
  V(LIFT_ALCOVE.minX-.20,LIFT_ALCOVE.maxX,LIFT_ALCOVE.minZ-.20,LIFT_ALCOVE.minZ),
  V(LIFT_ALCOVE.minX-.20,LIFT_ALCOVE.maxX,LIFT_ALCOVE.maxZ,LIFT_ALCOVE.maxZ+.20),
  V(LIFT_ALCOVE.minX-.20,LIFT_ALCOVE.minX,LIFT_ALCOVE.minZ,LIFT_ALCOVE.maxZ)
@@ -168,13 +172,13 @@ const classEdges=[
  V(west,CORRIDOR.minX,CLASSROOM.maxZ,CLASSROOM.maxZ+.22)
 ];
 const dormCommonWalls=endWalls;
-const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(OFFICE.doorMinX,OFFICE.doorMaxX,CORRIDOR.maxZ,OFFICE.minZ,3.08),V(LIFT.minX,LIFT.maxX,portalZ-.20,portalZ,3.12),V(ALCOVE_ENTRY.wallX-.20,ALCOVE_ENTRY.wallX,ALCOVE_ENTRY.minZ,ALCOVE_ENTRY.maxZ,ALCOVE_ENTRY.height)];
+const headers=[...DOORS.map(d=>V(7.20,7.40,d.minZ,d.maxZ,3.08)),V(OFFICE.doorMinX,OFFICE.doorMaxX,OFFICE.maxZ,CORRIDOR.minZ,3.08),V(LIFT.minX,LIFT.maxX,portalZ,portalZ+.20,3.12),V(ALCOVE_ENTRY.wallX-.20,ALCOVE_ENTRY.wallX,ALCOVE_ENTRY.minZ,ALCOVE_ENTRY.maxZ,ALCOVE_ENTRY.height)];
 const baseWalls=Object.freeze([...PARTITIONS,...classEdges,...corridorEdges,...endWalls]);
-const liftThreshold=()=>V(LIFT.minX,LIFT.maxX,portalZ-.22,portalZ+.02,.02,3.12);
+const liftThreshold=()=>V(LIFT.minX,LIFT.maxX,portalZ-.02,portalZ+.22,.02,3.12);
 const sealedLift=ELEVATOR_ENABLED?[]:[liftThreshold()];
 export const WALLS=Object.freeze([...baseWalls,...DOOR_LEAVES,...sealedLift]);
 export const WALL_VOLUMES=Object.freeze([...baseWalls.map(d=>V(d.minX,d.maxX,d.minZ,d.maxZ,d.minY??0,d.maxY??CEILING_HEIGHT)),...DOOR_LEAVES,...sealedLift,...headers]);
-const fixedCeilings=Object.freeze([V(LIFT_ALCOVE.minX-.20,LIFT_ALCOVE.maxX,LIFT_ALCOVE.minZ-.20,LIFT_ALCOVE.maxZ+.20,ALCOVE_ENTRY.height,ALCOVE_ENTRY.height+.16),V(CORRIDOR.minX-.20,CORRIDOR.maxX+.20,CORRIDOR.minZ-.20,CORRIDOR.maxZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,OFFICE.minZ,OFFICE.maxZ+.20,OFFICE.height,OFFICE.height+.16),V(LIFT.minX-.20,LIFT.maxX+.20,LIFT.minZ-.20,portalZ-.20,3.12,3.28)]);
+const fixedCeilings=Object.freeze([V(LIFT_ALCOVE.minX-.20,LIFT_ALCOVE.maxX,LIFT_ALCOVE.minZ-.20,LIFT_ALCOVE.maxZ+.20,ALCOVE_ENTRY.height,ALCOVE_ENTRY.height+.16),V(CORRIDOR.minX-.20,CORRIDOR.maxX+.20,CORRIDOR.minZ-.22,portalZ+.20,CEILING_HEIGHT,CEILING_HEIGHT+.16),V(OFFICE.minX-.20,OFFICE.maxX+.20,OFFICE.minZ-.20,OFFICE.maxZ,OFFICE.height,OFFICE.height+.16),V(LIFT.minX-.20,LIFT.maxX+.20,portalZ+.20,LIFT.maxZ+.20,3.12,3.28)]);
 // Height to underside of each room ceiling. The hallway and office have their own slabs.
 const teachingHeights=Object.freeze({classroom:4.10,night:4.10,computer:4.08,hotpot:4.18,toilet:4.04,cafeteria:4.25,exam:4.14,tiered:TIERED_CEILING_HEIGHT});
 export function teachingRoomHeight(map){return teachingHeights[mapKind(map)]??CEILING_HEIGHT;}
@@ -212,13 +216,15 @@ export function enclosureVolumes(map='classroom',context=null){
  return [...shell,...furniture,...(context?.postVolumes||postVolumes(map)),...(kind==='tiered'?raisedUpperWalls:[]),...ceilingVolumes(map),...(kind==='computer'?laptopVolumes:[]),...(context?.dynamicSolids||[])];
 }
 export const OFFICE_SOLIDS=Object.freeze([
+ ...[
   V(officePlan.minX+.04,officePlan.minX+.71,officeShelfCenters[0]-1.16,officeShelfCenters.at(-1)+1.16,0,2.79),
   ...officeDeskPlans.map(d=>orientedVolume(d.x,d.z,d.yaw,d.width,d.depth,0,.985)),
   ...officeDeskPlans.map(d=>{const p=officeOffset(d,-.42,.19);return orientedVolume(p.x,p.z,d.yaw,.66,.08,1.105,1.482);}),
   V(officePlan.maxX-.68,officePlan.maxX-.02,11.075,14.925,0,1.291),
   V(officeBinPlan.x-.165,officeBinPlan.x+.165,officeBinPlan.z-.165,officeBinPlan.z+.165,0,.51),
-  V(officeBoardPlan.x-1.35,officeBoardPlan.x+1.35,officeBoardPlan.z-.37,officeBoardPlan.z+.37,0,2.48),
- V(ROLE_LOCKER.x-.37,ROLE_LOCKER.x+.35,ROLE_LOCKER.z-.90,ROLE_LOCKER.z+.90,0,2.28),
+  V(officeBoardPlan.x-1.35,officeBoardPlan.x+1.35,officeBoardPlan.z-.37,officeBoardPlan.z+.37,0,2.48)
+ ].map(endBounds),
+ V(ROLE_LOCKER.x-.37,ROLE_LOCKER.x+.35,ROLE_LOCKER.z-1.40,ROLE_LOCKER.z+1.40,0,2.28),
  V(ALCOVE_STORAGE.x-.35,ALCOVE_STORAGE.x+.35,ALCOVE_STORAGE.z-.36,ALCOVE_STORAGE.z+.36,0,1.99)
 ]);
 export const PODIUM=Object.freeze({halfWidth:3.15,front:6.50,back:CLASSROOM.maxZ,height:.16,tread:.17});
@@ -285,7 +291,7 @@ export function walkableFootprint(x,z,r=.18,context=null){
  const room=kind==='dorm'?DORM_ROOM_RECTS.some(b=>x>=b.minX+r&&x<=b.maxX-r&&z>=b.minZ+r&&z<=b.maxZ-r):(x>=CLASSROOM.minX+r&&x<=CORRIDOR.maxX-r&&z>=CLASSROOM.minZ+r&&z<=CLASSROOM.maxZ-r);
  const mouth=ALCOVE_ENTRY;
  const entry=kind!=='dorm'&&x<=mouth.wallX+r&&x>=mouth.stopX+r&&z>=mouth.minZ+r&&z<=mouth.maxZ-r;
- return entry||room||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=CORRIDOR.maxZ-r&&z<=OFFICE.maxZ-r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=LIFT.minZ+r&&z<=CORRIDOR.minZ+r);
+ return entry||room||(x>=CORRIDOR.minX+r&&x<=CORRIDOR.maxX-r&&z>=CORRIDOR.minZ+r&&z<=CORRIDOR.maxZ-r)||(x>=OFFICE.minX+r&&x<=OFFICE.maxX-r&&z>=OFFICE.minZ+r&&z<=CORRIDOR.minZ+r)||(x>=LIFT.minX+r&&x<=LIFT.maxX-r&&z>=CORRIDOR.maxZ-r&&z<=LIFT.maxZ-r);
 }
 export function clearWallSegment(a,b,context=null){
  if(context?.map==='bus')return busSight(a,b,context);

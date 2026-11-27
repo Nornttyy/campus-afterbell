@@ -26,7 +26,7 @@ test('dense visible-triangle sweep finds no unplanned openings in side walls, ex
   for(const [label,x,dx,wallX]of [['extension',CORRIDOR.minX+.20,-1,CORRIDOR.minX-.10],['exterior',CLASSROOM.minX+.20,-1,CLASSROOM.minX-.10],['partition',7,1,7.30],['corridor',CORRIDOR.maxX-.20,1,CORRIDOR.maxX+.10]]){
    const walls=meshes.filter(m=>m.bounds.min.x<wallX+.15&&m.bounds.max.x>wallX-.15).map(m=>m.object),heights=[.16,.60,1.02,1.15,1.73,2.55,3.08,3.24,3.84,4.05,4.40];
    if(map==='tiered'&&['exterior','partition'].includes(label))heights.push(4.65,5.30);
-   for(const y of heights)for(let z=(['corridor','extension'].includes(label)?CORRIDOR.minZ:CLASSROOM.minZ)+.01;z<(label==='extension'?CLASSROOM.minZ-.20:8.79);z+=.037){
+   for(const y of heights)for(let z=(label==='extension'?CLASSROOM.maxZ+.22:label==='corridor'?CORRIDOR.minZ:CLASSROOM.minZ)+.01;z<(['extension','corridor'].includes(label)?CORRIDOR.maxZ:8.79);z+=.037){
     if(label==='partition'&&y<3.10&&DOORS.some(d=>z>d.minZ&&z<d.maxZ))continue;
     if(label==='extension'&&y<ALCOVE_ENTRY.height&&z>ALCOVE_ENTRY.minZ&&z<ALCOVE_ENTRY.maxZ){
      assert.ok(hit(back,LIFT_ALCOVE.minX+.25,y,z,-1).length,'missing back wall inside recess');

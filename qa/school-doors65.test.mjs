@@ -31,7 +31,7 @@ test('collision follows the same halfway leaf and closed openings cannot be cros
  for(const leaf of expected){const x=(leaf.minX+leaf.maxX)/2,z=(leaf.minZ+leaf.maxZ)/2;assert.equal(blocked(x,z,.02,ctx),true);}
  advanceLayoutDoors(ctx,2,[]);
  for(const id of['rear','front']){const d=DOORS.find(d=>d.id===id),p={x:6.8,z:d.center};assert.equal(clearWallSegment(p,{x:9,z:d.center},ctx),false);assert.ok(moveInRoom(p,3,0,.18,ctx).x<7.2);}
- assert.equal(clearWallSegment({x:9.2,z:8},{x:9.2,z:10},ctx),false);
+ assert.equal(clearWallSegment({x:OFFICE.doorX,z:OFFICE.doorZ+1},{x:OFFICE.doorX,z:OFFICE.doorZ-1},ctx),false);
 });
 
 test('moving door waits for an actor entering its next swept segment, then continues',()=>{

@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {COOLER,coolerPoint} from './field-items116.js?v=campus-117&rev=126';
+import {COOLER,coolerPoint} from './field-items116.js?v=campus-117&rev=127';
 import {createDeskItem} from './game-actors.js?v=campus-117';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {setDish} from './hotpot-food94.js?v=campus-94';

@@ -9,7 +9,7 @@ function ray(scene,origin,direction,far=1){return new T.Raycaster(new T.Vector3(
 test('requested sizing preserves classroom door positions and expands only the existing corridor footprint',()=>{
  close((CORRIDOR.maxX-CORRIDOR.minX)/3.6,1.4);close((CORRIDOR.maxZ-CORRIDOR.minZ)/18.8,1.4);
  assert.ok(CLASSROOM.maxX-CLASSROOM.minX<14.4);assert.ok(CLASSROOM.maxX-CLASSROOM.minX>13.5);
- close(LIFT.maxX-LIFT.minX,2.5);close(LIFT.maxZ-LIFT.minZ,2.8);close(LIFT.maxZ,CORRIDOR.minZ-.2);
+ close(LIFT.maxX-LIFT.minX,2.5);close(LIFT.maxZ-LIFT.minZ,2.8);close(LIFT.minZ,CORRIDOR.maxZ+.2);
  const context=createLayoutContext(SEATS),z=ALCOVE_ENTRY.minZ-.45;
  assert.equal(blocked(0,z,.18,context),true,'extension must not invent a classroom behind the rear wall');
  assert.equal(blocked((CORRIDOR.minX+CORRIDOR.maxX)/2,z,.18,context),false);
@@ -20,7 +20,7 @@ test('requested sizing preserves classroom door positions and expands only the e
 });
 test('corridor extension has continuous floor, walls and ceiling with no stretched floor UV or open corner',()=>{
  const f=campusScene();try{
-  for(let z=CORRIDOR.minZ+.05;z<CLASSROOM.minZ-.25;z+=.19){
+  for(let z=CLASSROOM.maxZ+.25;z<CORRIDOR.maxZ-.05;z+=.19){
    for(const [x,dx,expected]of [[CORRIDOR.minX+.25,-1,CORRIDOR.minX],[CORRIDOR.maxX-.25,1,CORRIDOR.maxX]])for(const y of [.2,1.7,4.1]){
     if(dx<0&&z>ALCOVE_ENTRY.minZ&&z<ALCOVE_ENTRY.maxZ&&y<ALCOVE_ENTRY.height)continue;
     const hits=ray(f.scene,[x,y,z],[dx,0,0],.6);assert.ok(hits.length,`wall opening at ${x},${y},${z}`);assert.ok(Math.abs(hits[0].point.x-expected)<.15);
@@ -28,11 +28,11 @@ test('corridor extension has continuous floor, walls and ceiling with no stretch
    const x=(CORRIDOR.minX+CORRIDOR.maxX)/2,floor=ray(f.scene,[x,.7,z],[0,-1,0],1).find(h=>h.object.name==='campus-continuous-floor');assert.ok(floor);close(floor.point.y,0);close(floor.uv.x,floor.point.x/1.6);close(floor.uv.y,floor.point.z/1.6);
    const ceiling=ray(f.scene,[x,4,z],[0,1,0],.6).find(h=>h.object.name==='campus-ceiling-corridor');assert.ok(ceiling);close(ceiling.point.y,4.51);
   }
-  for(const [x,z]of [[7.3,CLASSROOM.minZ-.2],[7.3,CORRIDOR.minZ-.1],[CORRIDOR.maxX+.1,CORRIDOR.minZ-.1]])for(const y of [.3,2,4.4]){
+  for(const [x,z]of [[7.3,CLASSROOM.maxZ+.2],[7.3,CORRIDOR.maxZ+.1],[CORRIDOR.maxX+.1,CORRIDOR.maxZ+.1]])for(const y of [.3,2,4.4]){
    const hits=ray(f.scene,[x+.4,y,z],[-1,0,0],.7);assert.ok(hits.length,`open corridor corner ${x},${z}`);
   }
-  const cabin=f.scene.getObjectByName('campus-lift');assert.deepEqual(cabin.scale.toArray(),[1,1,1]);close(cabin.position.z,CORRIDOR.minZ-CLASSROOM.minZ);
+  const cabin=f.scene.getObjectByName('campus-lift');assert.deepEqual(cabin.scale.toArray(),[1,1,1]);close(cabin.localToWorld(new T.Vector3(9.35,0,-11.70)).z,LIFT.z);
   const panel=f.campus.liftPanel.getWorldPosition(new T.Vector3());assert.ok(panel.z<LIFT.maxZ&&panel.z>LIFT.minZ);
-  close(f.scene.getObjectByName('role-changing-locker').position.x,ROLE_LOCKER.x);close(OFFICE.maxX,CORRIDOR.maxX);close(OFFICE.minZ,CORRIDOR.maxZ+.22);close(f.scene.getObjectByName('role-changing-locker').position.z,CORRIDOR.maxZ-2.28);
+  close(f.scene.getObjectByName('role-changing-locker').position.x,ROLE_LOCKER.x);close(OFFICE.minX,CORRIDOR.minX);close(OFFICE.maxZ,CORRIDOR.minZ-.22);close(f.scene.getObjectByName('role-changing-locker').position.z,CORRIDOR.minZ+1.90);
  }finally{f.dispose();}
 });

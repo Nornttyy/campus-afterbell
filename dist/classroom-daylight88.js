@@ -1,12 +1,12 @@
 import * as T from './vendor/three.module.js';
-import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-117&rev=126';
+import {CLASSROOM,CORRIDOR,OFFICE} from './classroom-layout.js?v=campus-117&rev=127';
 
 // The three colour channels store window bounce near the floor, window bounce
 // at eye height, and diffuse light near the suspended hall tubes. One bilinear
 // lookup covers the architecture on both desktop and touch devices.
 const margin=.44;
 const left=CLASSROOM.minX-margin,right=CORRIDOR.maxX+margin;
-const back=CORRIDOR.minZ-margin,front=CLASSROOM.maxZ+margin;
+const back=CORRIDOR.minZ-margin,front=CORRIDOR.maxZ+margin;
 const partition=(CLASSROOM.maxX+CORRIDOR.minX)/2;
 const width=80,height=112;
 
@@ -95,7 +95,7 @@ const f=n=>'('+n.toFixed(4)+')';
 const location=`
  vec3 p88=vCampusPosition88;
  bool hall88=p88.x>${f(partition)};
- bool inside88=p88.x>${f(left)}&&p88.x<${f(right)}&&p88.z<${f(front)}&&p88.z>(hall88?${f(back)}:${f(CLASSROOM.minZ-margin)});
+ bool inside88=p88.x>${f(left)}&&p88.x<${f(right)}&&p88.z<(hall88?${f(front)}:${f(CLASSROOM.maxZ+margin)})&&p88.z>(hall88?${f(back)}:${f(CLASSROOM.minZ-margin)});
  vec2 uv88=(p88.xz-vec2(${f(left)},${f(back)}))/vec2(${f(right-left)},${f(front-back)});
 `;
 
@@ -147,7 +147,7 @@ const finishes={
    diffuseColor.rgb*=vec3(1.02,.985,.965)*mix(.81,1.0,smoothstep(.0,.85,endWall))*(1.0-.19*cove);
   }
   if(hall88){
-   float end88=smoothstep(0.0,4.0,p88.z-${f(CORRIDOR.minZ)});
+   float end88=smoothstep(0.0,4.0,${f(CORRIDOR.maxZ)}-p88.z);
    float cove88=smoothstep(0.0,.48,4.50-p88.y);
    diffuseColor.rgb*=mix(.83,1.0,end88)*mix(.89,1.0,cove88);
   }

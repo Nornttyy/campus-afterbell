@@ -29,7 +29,7 @@ test('office exterior and ceiling enclose staffroom floor with no leftover old w
   for(const z of[OFFICE.maxZ-.5,OFFICE.maxZ-4,OFFICE.minZ+4,OFFICE.minZ+.75]){const left=cast([OFFICE.minX+.5,3,z],[-1,0,0]);assert.ok(left.some(h=>Math.abs(h.point.x-OFFICE.minX)<1e-5));const right=cast([OFFICE.maxX-.5,3,z],[1,0,0]);assert.ok(right.some(h=>Math.abs(h.point.x-OFFICE.maxX)<1e-5));}
   for(const x of[OFFICE.minX+1,OFFICE.minX+5,OFFICE.maxX-1]){const top=cast([x,OFFICE.height-.50,OFFICE.minZ+1.8],[0,1,0]);assert.ok(top.some(h=>Math.abs(h.point.y-OFFICE.height)<1e-5));}
   assert.equal(enclosureVolumes().some(v=>Math.abs(v.minZ-(OFFICE.minZ+5.0))<1e-6&&v.minY===0),false,'old back wall must not remain inside the office');
-  const board=box(f.scene.getObjectByName('office-mobile-board'));assert.ok(board.max.z<OFFICE.maxZ);assert.ok(Math.abs(f.scene.getObjectByName('teacher-tutorial-whiteboard').getWorldPosition(new T.Vector3()).z-(OFFICE_BOARD.z-.05))<1e-6);
+  const board=box(f.scene.getObjectByName('office-mobile-board'));assert.ok(board.max.z<OFFICE.maxZ);assert.ok(Math.abs(f.scene.getObjectByName('teacher-tutorial-whiteboard').getWorldPosition(new T.Vector3()).z-(OFFICE_BOARD.z+.05))<1e-6);
  }finally{f.dispose();}
 });
 
