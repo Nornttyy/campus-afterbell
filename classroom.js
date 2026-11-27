@@ -44,7 +44,7 @@ import {createMapActivityView} from './map-activity-view77.js?v=campus-117';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
 import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-117';
-import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=119';
+import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=121';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
 import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=119';
@@ -108,13 +108,19 @@ export function sampleActorHeading(previous,actor,time,captureYaw=null){
 // A writing pupil holds the desk's one pen; it must not also remain on the desk.
 // Check the whole visible chain because cached actors and off-camera pupils can
 // keep their local pencil flag while no longer contributing to the scene.
-export function syncDeskPenVisibility(records,deskPens){
+export function syncDeskPenVisibility(records,deskPens,state){
   for(const pen of deskPens.values())pen.visible=true;
+  const hide=id=>{const pen=deskPens.get(id);if(pen)pen.visible=false;};
+  for(const item of state?.groundItems||[])if(item.action==='pen')hide(item.penSeatId);
+  if(state?.player?.penTaken)hide(state.player.penSeatId??state.player.seatId);
+  for(const student of state?.students||[]){
+    if(student.penTaken||(student.action==='pen'&&(student.carrying??(student.drawer?.drawnSlot!=null))))hide(student.penSeatId??student.seatId);
+  }
   for(const record of records){
     const pencil=record.actor?.group.getObjectByName('held-writing-pencil');
     if(!pencil)continue;
     let held=true;for(let node=pencil;node;node=node.parent)if(!node.visible){held=false;break;}
-    if(held){const pen=deskPens.get(record.currentSeatId??record.seat.id);if(pen)pen.visible=false;}
+    if(held)hide(record.penSeatId??record.currentSeatId??record.seat.id);
   }
 }
 
@@ -392,7 +398,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   const pupilRecords=furnitureSeats.map(seat=>{
     const group=new THREE.Group();group.name='student-seat-'+seat.id;group.position.set(seat.x,0,seat.z);dynamic.add(group);
     const variant=seat.id===PLAYER_SEAT?'boy':STUDENT_VARIANTS[seat.id%STUDENT_VARIANTS.length];
-    return{seat,group,variant,glasses:variant==='glasses',seed:seat.id===PLAYER_SEAT?4:3+(seat.id*7+Math.floor(seat.id/6))%6,menuMood:seat.id===27?'snack':seat.id===26?'chat':'writing',actors:new Map(),actor:null,lastUpdate:-Infinity,lastMood:'',caught:false};
+    return{seat,group,variant,glasses:variant==='glasses',seed:seat.id===PLAYER_SEAT?4:3+(seat.id*7+Math.floor(seat.id/6))%6,menuMood:seat.id===27?'snack':seat.id===26?'chat':coveredSeats.has(seat.id)?'reading':'writing',actors:new Map(),actor:null,lastUpdate:-Infinity,lastMood:'',caught:false};
   });
   function rememberActor(actor){actor.group.traverse(o=>{if(o.geometry)assets.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m));});return actor;}
   const playerNames=createPlayerNames(scene);
@@ -696,8 +702,15 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     handShadows.begin();
     camera.updateMatrixWorld();pupilFrustum.setFromProjectionMatrix(pupilView.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));
     const snapshots=new Map((state?.students||[]).map(s=>[s.id??s.seatId,s])),playerId=state?.player?.id??PLAYER_SEAT,playerSeat=state?.player?.seatId??null;
-    const bookStates=new Map((state?.books||[]).map(b=>[b.id,b]));
-    for(const [id,book] of deskBooks){const a=state?(bookStates.get(id)?.amount??(coveredSeats.has(id)?1:0)):(coveredSeats.has(id)?1:0);book.visible=pupilRecords[id]?.layoutActive!==false&&(mapVariant!=='bus'||currentSeats[id]?.busDeck===1)&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant));book.rotation.x=bookAngle(a);book.position.y=(book.userData.floorY??0)+bookSpineHeight(book.rotation.x);book.userData.raised=a>.5;setDeskBookReach(book,book.userData.raised);}
+    const bookAmounts=new Map((state?.books||[]).map(b=>[b.id,b.amount]));
+    // On the transition frame the occupant and their desk must show one pose,
+    // including when an older room snapshot still has the previous book angle.
+    for(const student of snapshots.values()){
+      if(student.seated&&!student.officeChair&&(student.mood==='writing'||student.penWriting)){
+        bookAmounts.set(student.seatId,0);
+      }
+    }
+    for(const [id,book] of deskBooks){const a=state?(bookAmounts.get(id)??(coveredSeats.has(id)?1:0)):(coveredSeats.has(id)?1:0);book.visible=pupilRecords[id]?.layoutActive!==false&&(mapVariant!=='bus'||currentSeats[id]?.busDeck===1)&&!['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant));book.rotation.x=bookAngle(a);book.position.y=(book.userData.floorY??0)+bookSpineHeight(book.rotation.x);book.userData.raised=a>.5;setDeskBookReach(book,book.userData.raised);}
     const candidates=[];let detentionIndex=0;
     for(const record of pupilRecords){
       const id=record.seat.id,snapshot=snapshots.get(id),caught=Boolean(snapshot?.caught);record.caught=caught;record.previewRole=state?.stage==='gathering'?snapshot?.previewRole:null;
@@ -740,6 +753,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
         if(actor.studyBookVisible?.()){const source=deskBooks.get(student?.seatId??record.seat.id);if(source)source.visible=false;}
       }
       record.currentSeatId=student?.seatId??record.seat.id;
+      record.penSeatId=student?.penSeatId;
       if(prop){
         const phone=record.currentMood==='phone',kind='phone';
         const hand=near?record.actor?.getHand?.('left'):null,attachment=hand?.userData.attachments?.[kind];
@@ -753,10 +767,9 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     }
     handShadows.end();
     playerNames.update(state,pupilRecords);
-    syncDeskPenVisibility(pupilRecords,deskPens);
+    syncDeskPenVisibility(pupilRecords,deskPens,state);
     for(const [id,pen]of deskPens){
-      const taken=state?.groundItems?.some(item=>item.action==='pen'&&item.penSeatId===id)||(state?.students||[]).some(p=>(p.penSeatId??p.seatId)===id&&(p.penTaken||(p.action==='pen'&&(p.carrying??(p.drawer?.drawnSlot!=null)))));
-      if(mapVariant==='bus'&&currentSeats[id]?.busDeck!==1||['computer','toilet','dorm','playground'].includes(mapKind(mapVariant))||((state?.player?.penSeatId??state?.player?.seatId)===id&&state.player.penTaken)||taken)pen.visible=false;
+      if(mapVariant==='bus'&&currentSeats[id]?.busDeck!==1||['computer','toilet','dorm','playground'].includes(mapKind(mapVariant)))pen.visible=false;
     }
   }
   function advanceDrawers(state,dt){

@@ -6,6 +6,27 @@ import {createPenFingerContact} from './pen-motion.js?v=campus-117';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 const armName=/^(Left|Right)(Shoulder|Arm|ForeArm|Hand.*)$/;
 
+// Measured on each skinned hand. The thumb pad touches the print while the
+// curled fingers meet the opposite face of that same book corner.
+const readingGrip={
+ boy: {
+  Left: {depth:0.0618,thumb:[0.404,-0.0189,0.3104,0.8603]},
+  Right: {depth:0.0596,thumb:[-0.361,-0.0447,-0.2831,0.8874]},
+ },
+ girl: {
+  Left: {depth:0.0545,thumb:[-0.5032,-0.0206,-0.029,0.8635]},
+  Right: {depth:0.0608,thumb:[-0.0441,-0.1082,0.3807,0.9173]},
+ },
+ glasses: {
+  Left: {depth:0.0708,thumb:[-0.2307,-0.0621,-0.1449,0.9602]},
+  Right: {depth:0.0754,thumb:[-0.0006,0.0068,0.2741,0.9617]},
+ },
+ ponytail: {
+  Left: {depth:0.0664,thumb:[-0.1824,0.0157,0.0228,0.9828]},
+  Right: {depth:0.0493,thumb:[-0.1458,-0.1134,0.2999,0.9359]},
+ },
+};
+
 // Reading lengthens the two arm segments along their rig axes to reach the desk.
 export function createStudentGestures(group,bones,clips,attachments){
  const saved=new Map(),previous=new Map(),samplers={},sideBlend={Left:0,Right:0};let blend=0,typingBlend=0,lastMood=null,settled=0;
@@ -149,9 +170,10 @@ export function createStudentGestures(group,bones,clips,attachments){
     const flex={Thumb:.24,Index:.44,Middle:.53,Ring:.59,Pinky:.67}[d.finger];
     d.bone.quaternion.copy(d.rest).multiply(Q().setFromAxisAngle(d.axis,flex*[.60,.87,.50][d.n-1]));
    }
-   orient(side,V(-sign*.50,.22,.84).applyQuaternion(orientation),V(sign*.88,-.14,.32).applyQuaternion(orientation));
-   const gripHeight=.076;
-   const edge=group.localToWorld(V(sign*(TEXTBOOK.leafWidth-.006),gripHeight,.013).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
+   const fit=(readingGrip[group.userData.character]||readingGrip.boy)[side];
+   bones[side+'HandThumb1'].quaternion.multiply(Q().fromArray(fit.thumb).normalize());
+   orient(side,V(sign*.04,.20,1).applyQuaternion(orientation),V(sign,.02,.05).applyQuaternion(orientation));
+   const edge=group.localToWorld(V(sign*(TEXTBOOK.leafWidth-.058),.092,fit.depth).applyQuaternion(page).applyQuaternion(bookRotation).add(V(...pose.position)));
    // Lengthen both segments from the shoulder toward the actual wrist target.
    // Offsetting the child joints along their bind axes keeps the hands, sleeve
    // width and knuckle spacing constant. Leave a little flex at each elbow.
@@ -165,8 +187,7 @@ export function createStudentGestures(group,bones,clips,attachments){
     joint.position.multiplyScalar(extension);
    }
    upper.updateWorldMatrix(false,true);
-   // Move the wrist and elbow together. Leave the thumb on its authored joint
-   // axes instead of winding the thumb around an unreachable point on the page.
+   // Move the wrist and elbow together, preserving the fitted hand rotation.
    for(let k=0;k<3;k++){
     group.updateMatrixWorld(true);
     const wrist=bones[side+'Hand'],rotation=wrist.getWorldQuaternion(Q());

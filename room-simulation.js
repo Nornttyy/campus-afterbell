@@ -9,8 +9,8 @@ import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v
 import {movementScale,normalWalkSpeed} from './movement55.js?v=campus-117';
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
 const newMemberId=()=>globalThis.crypto.randomUUID?.()??randomToken();
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=119';
-import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=119';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=121';
+import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=121';
 import * as Layout from './classroom-layout.js?v=campus-117';
 import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=120';
 import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=120';
