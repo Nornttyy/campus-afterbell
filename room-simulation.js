@@ -2,18 +2,18 @@ import {actorEmote} from './social-actions93.js?v=campus-93';
 import {nextStudentAppearance} from './class-dismissal92.js?v=campus-102';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-92';
-import {reachesSchoolDoor} from './door-interaction54.js?v=campus-117&rev=125';
+import {reachesSchoolDoor} from './door-interaction54.js?v=campus-117&rev=126';
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {validComputerPlayback} from './computer-rules55.js?v=campus-96';
 import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-117';
 import {movementScale,normalWalkSpeed} from './movement55.js?v=campus-117';
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
 const newMemberId=()=>globalThis.crypto.randomUUID?.()??randomToken();
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=125';
-import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=125';
-import * as Layout from './classroom-layout.js?v=campus-117&rev=125';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=125';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=125';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=126';
+import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=126';
+import * as Layout from './classroom-layout.js?v=campus-117&rev=126';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=126';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=126';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
@@ -112,7 +112,7 @@ export class CampusRoom{
   const id=newMemberId(),member={id,token:randomToken(),name:cleanName(name),character:variants.has(character)?character:'boy',rolePreference:rolePreference==='teacher'?'teacher':'student',role:'student',studentId:actor.id,connected:true,lastInput:Date.now(),lastSeen:Date.now(),lastSequence:0};
   this._prepareHuman(member,actor);member.context=context(actor);this.members.set(id,member);if(!this.hostId)this.hostId=id;this.sim._team.add(actor.id);this.updatedAt=Date.now();this.sequence++;return member;
  }
- _prepareHuman(member,actor,i=this.members.size){this._restoreDecoy(actor);Object.assign(actor,{...(this.map==='bus'?{busDeck:0}:{}),visible:true,networkHuman:true,isPlayer:false,isTeammate:false,name:member.name,character:member.character,variant:member.character,_profile:null,_decisionAt:Infinity,_speed:1,seated:false,seatId:null,x:Layout.CORRIDOR.minX+1.86+(i%3)*.66,z:Layout.CORRIDOR.maxZ-2.5-Math.floor(i/3)*.85,yaw:Math.PI,pitch:0,caught:false,captivity:'free',holding:false,_drawnSlot:null,_drawerOpen:false});
+ _prepareHuman(member,actor,i=this.members.size){this._restoreDecoy(actor);Object.assign(actor,{...(this.map==='bus'?{busDeck:0}:{}),visible:true,networkHuman:true,isPlayer:false,isTeammate:false,name:member.name,character:member.character,variant:member.character,_profile:null,_decisionAt:Infinity,_speed:1,seated:false,seatId:null,x:Layout.CORRIDOR.minX+1.86+(i%3)*.66,z:this.map==='bus'?Layout.CORRIDOR.maxZ-2.5-Math.floor(i/3)*.85:Layout.CORRIDOR.minZ+2.5+Math.floor(i/3)*.85,yaw:this.map==='bus'?Math.PI:0,pitch:0,caught:false,captivity:'free',holding:false,_drawnSlot:null,_drawerOpen:false});
   actor._slots=Array.from({length:this.sim._deskItemCount()},(_,id)=>this.sim._deskSlot(id));actor._selectedSlot=0;actor.action=actor._slots[0]?.action||'snack';
  }
  findToken(token){return [...this.members.values()].find(m=>m.token===token)||null;}

@@ -1,4 +1,4 @@
-import {mapBounds,DESKS,enclosureVolumes,lecternForMap,OFFICE_SOLIDS,floorTiles,floorHeight,actorEyePosition,mapKind} from './classroom-layout.js?v=campus-117&rev=125';
+import {mapBounds,DESKS,enclosureVolumes,lecternForMap,OFFICE_SOLIDS,floorTiles,floorHeight,actorEyePosition,mapKind} from './classroom-layout.js?v=campus-117&rev=126';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));

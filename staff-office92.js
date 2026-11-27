@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {officePlan as office,officeDeskPlans,END_ORIGIN} from './campus-ends.js?v=campus-101';
+import {officePlan as office,officeDeskPlans} from './campus-ends.js?v=campus-101&rev=126';
 
 // Window bounce is localized to the staffroom. The adjacent hallway shares
 // neither its ceiling finish nor its window, including on the touch renderer.
@@ -12,7 +12,7 @@ export function staffroomFinish(material,kind,day){
    '#include <worldpos_vertex>\n staffPosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
   shader.fragmentShader='varying vec3 staffPosition; uniform bool staffroomDay;\n'+shader.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
    if(staffroomDay){
-    vec2 p=vec2(${END_ORIGIN.x.toFixed(3)},${END_ORIGIN.z.toFixed(3)})-staffPosition.xz;
+    vec2 p=staffPosition.xz;
     float nearGlass=smoothstep(${office.minZ.toFixed(3)},${office.maxZ.toFixed(3)},p.y)*(1.0-smoothstep(2.5,6.5,abs(p.x-${((office.minX+office.maxX)/2).toFixed(3)})));
     float edge=max(0.0,min(min(p.x-${office.minX.toFixed(3)},${office.maxX.toFixed(3)}-p.x),min(p.y-${office.minZ.toFixed(3)},${office.maxZ.toFixed(3)}-p.y)));
     ${kind==='ceiling'?`float cove=smoothstep(.04,.95,edge);
