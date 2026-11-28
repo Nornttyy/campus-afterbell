@@ -56,3 +56,18 @@ test('switching control mode live releases every held touch and respects the pau
   f.el('#touch-jump').dispatchEvent(new Event('click'));assert.ok(f.events.some(([kind])=>kind==='jump'));
  }finally{f.close();}
 });
+
+test('a third finger jumps immediately while the movement and camera pointers remain held',()=>{
+ const f=fixture();
+ try{
+  f.send('#touch-stick','pointerdown',1);
+  f.send('#touch-look','pointerdown',2,40,50);
+  f.send('#touch-jump','pointerdown',3);
+  f.send('#touch-look','pointermove',2,50,55);
+  f.send('#touch-jump','pointerup',3);
+  const click=new Event('click');Object.assign(click,{detail:1,pointerType:'touch'});
+  f.el('#touch-jump').dispatchEvent(click);
+  assert.deepEqual(f.events,[['jump'],['look',15,7.5]]);
+  assert.equal(f.ui.axes().forward,1);
+ }finally{f.close();}
+});

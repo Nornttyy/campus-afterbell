@@ -38,7 +38,7 @@ def digest(raw):
 
 def lossless_webp(raw):
     with Image.open(io.BytesIO(raw)) as src:
-        if src.mode not in ("RGB", "RGBA", "L", "LA") or any(k in src.info for k in ("icc_profile", "gamma", "chromaticity")):
+        if src.mode not in ("RGB", "RGBA", "L", "LA") or ("icc_profile" in src.info or ("srgb" not in src.info and any(k in src.info for k in ("gamma", "chromaticity")))):
             return None
         out = io.BytesIO()
         src.save(out, "WEBP", lossless=True, exact=True, method=4)
@@ -71,8 +71,20 @@ def use_webp(doc,index):
             doc[field].append("EXT_texture_webp")
 
 
-def encode_model(name, shared):
+def encode_model(name, shared, game_materials=False):
     doc, binary = load(name)
+    if game_materials:
+        # School furniture and printed wrappers replace these source materials in full.
+        # Keep the editable source and the default delivery copy for other viewers.
+        assert name in ("desk-v2", "chair-v2", "snack-v1", "gum-v67")
+        for material in doc["materials"]:
+            pbr = material.get("pbrMetallicRoughness", {})
+            for key in ("baseColorTexture", "metallicRoughnessTexture"):
+                pbr.pop(key, None)
+            for key in ("normalTexture", "occlusionTexture", "emissiveTexture"):
+                material.pop(key, None)
+        for key in ("textures", "images", "samplers"):
+            doc.pop(key, None)
     if name == "student-glasses-v2":
         # Both shipped character shaders use the base-colour texture only.
         # Assert the exact source layout before omitting the unused normal atlas.
@@ -137,6 +149,21 @@ def encode_model(name, shared):
     return name, filename
 
 
+def encode_game_finishes():
+    names = ("desk-v2", "chair-v2", "snack-v1", "gum-v67")
+    catalog = dict(encode_model(name, {}, game_materials=True) for name in names)
+    original = json.loads((OUTPUT / "models.json").read_text())
+    shared = {p.stem.removeprefix("shared-"): p.name for p in OUTPUT.glob("shared-*")}
+    for name in MODELS:
+        if name in names or name.startswith(("student-", "teacher-", "hand-", "garlic")):
+            continue
+        _, file = encode_model(name, shared)
+        if (OUTPUT / file).stat().st_size < (OUTPUT / original[name]).stat().st_size:
+            catalog[name] = file
+    (DIST / "game-models158.js").write_text("export const gameMeshes = " + json.dumps(catalog, indent=2) + ";\n")
+    return catalog
+
+
 def main():
     OUTPUT.mkdir(exist_ok=True)
     sources = {}
@@ -159,6 +186,7 @@ def main():
     with ThreadPoolExecutor(max_workers=3) as pool:
         manifest = dict(pool.map(lambda n: encode_model(n, shared), MODELS))
     (OUTPUT / "models.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    encode_game_finishes()
     used = [*manifest.values(), *shared.values()]
     print(len(manifest), "models;", sum((OUTPUT / n).stat().st_size for n in used), "bytes including shared textures")
 

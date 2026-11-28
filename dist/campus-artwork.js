@@ -17,3 +17,25 @@ export async function loadCampusArtwork(sources=CAMPUS_ARTWORK_SOURCES,{loader=n
   catch{return null;}
  }));return Object.fromEntries(entries.filter(Boolean));
 }
+
+// The first playable position is in the corridor. Keep the tutorials on its
+// critical path and stream the prints behind the classroom doors after entry.
+export function prepareEntryArtwork(sources){
+ const loader=new T.TextureLoader(),later=[],textures={},entry={};
+ for(const [key,path] of Object.entries(sources)){
+  if(key==='studentTutorial'||key==='teacherTutorial'){entry[key]=path;continue;}
+  const map=new T.Texture();
+  map.colorSpace=T.SRGBColorSpace;map.anisotropy=4;
+  textures[key]=map;
+  later.push(async()=>{
+   const loaded=await loader.loadAsync(new URL(path,import.meta.url).href);
+   map.image=loaded.image;map.needsUpdate=true;
+   loaded.dispose();
+  });
+ }
+ let started=false;
+ return {
+  ready:loadCampusArtwork(entry).then(first=>Object.assign(textures,first)),
+  start(){if(!started){started=true;for(const load of later)load().catch(error=>console.warn('Classroom print unavailable',error));}}
+ };
+}

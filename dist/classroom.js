@@ -1,3 +1,4 @@
+import {VisibleGroup} from './visible-group158.js?v=campus-117&rev=158';
 import {createPointerView} from './pointer-view130.js?v=146&rev=157';
 import {mountDoubao,teacherProjectiles} from './teacher-effects129.js?v=136&rev=157';
 import {createPlayerNames} from './player-names119.js';
@@ -5,7 +6,7 @@ import {createDeskHandShadows} from './desk-hand-shadows108.js?v=campus-108';
 import {makeSchoolChair} from './school-furniture91.js?v=campus-108';
 import {TEXTBOOK,bookAngle,bookSpineHeight,setDeskBookReach,BOOK_PAPER_FACE,BOOK_COVER_FACE} from './study-book58.js?v=campus-110';
 import {setDish} from './hotpot-food94.js?v=campus-94';
-import {CampusModelLoader} from './model-delivery93.js?v=campus-111';
+import {CampusModelLoader} from './model-delivery93.js?v=campus-111&rev=158';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
 import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=157';
 import {broadcastBeat,broadcastLift,broadcastScale,reachesRadio} from './campus-radio93.js?v=campus-117&rev=157';
@@ -25,31 +26,31 @@ import {setCharacterNight,setCharacterClassroomDay} from './character-materials.
 import {createStaminaVision} from './stamina-vision55.js?v=campus-83';
 import {createSoundCues} from './sound-cue55.js?v=campus-83&rev=150';
 import {createChalkPowder} from './chalk-powder55.js?v=campus-83';
-import {createSurveillanceView} from './surveillance-view54.js?v=campus-117&rev=157';
+import {createSurveillanceView} from './surveillance-view54.js?v=campus-117&rev=158';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=135&rev=157';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
-import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-83';
+import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-83&rev=158';
 import {createItemEffects50} from './item-effects50.js?v=campus-111';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
-import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork} from './campus-artwork.js?v=campus-93';
+import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork,prepareEntryArtwork} from './campus-artwork.js?v=campus-93&rev=158';
 import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=157';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117&rev=157';
-import {createRoomVariants} from './room-variants.js?v=campus-117&rev=157';
+import {createRoomVariants} from './room-variants.js?v=campus-117&rev=158';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
 import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96&rev=153';
 import * as THREE from './vendor/three.module.js';
 import {CAMPUS_SURFACE_SOURCES,loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-108';
-import {createSmokeEffects} from './smoke-effects.js?v=campus-88&rev=123';
+import {createSmokeEffects} from './smoke-effects.js?v=campus-88&rev=158';
 import {createItemOutline} from './item-outline.js?v=campus-83';
 import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=157';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
 import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=157';
-import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=157';
+import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=158';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=157';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=158';
 import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,updateSpecialFurnitureCollisions,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-117&rev=157';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
@@ -130,12 +131,12 @@ export function syncDeskPenVisibility(records,deskPens,state){
 export async function createClassroom(canvas, {onReady,onProgress,active=true,snapEntry=false,renderDevice='auto',profile=false}={}) {
   const mobileRendering=renderDevice==='mobile'||prefersMobileRendering({coarse:matchMedia('(pointer: coarse)').matches,hover:matchMedia('(hover: hover)').matches,touchPoints:navigator.maxTouchPoints});
   const renderBudget=createRenderBudget({mobile:mobileRendering});
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:!mobileRendering,alpha:false,powerPreference:'high-performance'});
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(renderPixelRatio({width:canvas.clientWidth,height:canvas.clientHeight,dpr:devicePixelRatio,quality:initialQuality(null,mobileRendering),mobile:mobileRendering}));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.04;
   renderer.info.autoReset=false;
-  renderer.shadowMap.enabled=!mobileRendering;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   const staminaVision=createStaminaVision(renderer),soundCues=createSoundCues(canvas.parentElement);
   const scene=new THREE.Scene(),baseBackground=new THREE.Color('#d2e7e9');scene.background=baseBackground;
   scene.fog=new THREE.Fog('#e3edf1',28,55);
@@ -153,11 +154,13 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   const room=new THREE.Group();scene.add(room);
   const dynamic=new THREE.Group();scene.add(dynamic);
   const surfacesReady=loadCampusSurfaces(assetsForOpenMaps(CAMPUS_SURFACE_SOURCES));
-  const assetLoader={loader:new CampusModelLoader()};
+  const assetLoader={loader:new CampusModelLoader(undefined,{gameMaterials:true})};
+  const printSources=assetsForOpenMaps(CAMPUS_ARTWORK_SOURCES);
+  const entryPrints=!active&&snapEntry?prepareEntryArtwork(printSources):null;
   const jobs=[
     loadDeskModel(surfacesReady.then(s=>s.veneer,()=>null)),loadStudentAssets(),surfacesReady,
     loadPropAssets(Object.fromEntries(Object.entries(CLASSROOM_PROP_SOURCES).filter(([kind])=>kind!=='garlic')),assetLoader),loadTeacherModel(),
-    loadCampusArtwork(assetsForOpenMaps(CAMPUS_ARTWORK_SOURCES)),
+    entryPrints?.ready??loadCampusArtwork(printSources),
     loadFurniture67({...assetLoader,sources:assetsForOpenMaps(FURNITURE_SOURCES67)})
   ];
   let completed=0;
@@ -398,7 +401,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   // Near pupils are articulated. Shared instanced poses keep all thirty seats responsive.
   const handShadows=createDeskHandShadows(furnitureSeats.length);dynamic.add(handShadows.mesh);
   const pupilRecords=furnitureSeats.map(seat=>{
-    const group=new THREE.Group();group.name='student-seat-'+seat.id;group.position.set(seat.x,0,seat.z);dynamic.add(group);
+    const group=new VisibleGroup();group.name='student-seat-'+seat.id;group.position.set(seat.x,0,seat.z);dynamic.add(group);
     const variant=seat.id===PLAYER_SEAT?'boy':STUDENT_VARIANTS[seat.id%STUDENT_VARIANTS.length];
     return{seat,group,variant,glasses:variant==='glasses',seed:seat.id===PLAYER_SEAT?4:3+(seat.id*7+Math.floor(seat.id/6))%6,menuMood:seat.id===27?'snack':seat.id===26?'chat':coveredSeats.has(seat.id)?'reading':'writing',actors:new Map(),actor:null,lastUpdate:-Infinity,lastMood:'',caught:false};
   });
@@ -1116,7 +1119,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   function setActive(value){
     const next=Boolean(value)&&alive;if(next===renderActive)return;
     renderActive=next;canvas.dataset.renderActive=String(next);cancelAnimationFrame(frame);frame=0;
-    if(next){last=performance.now();resize();frame=requestAnimationFrame(render);}
+    if(next){last=performance.now();resize();frame=requestAnimationFrame(render);entryPrints?.start();}
   }
   setSeats(currentSeats,true);
   canvas.dataset.renderActive=String(renderActive);

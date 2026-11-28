@@ -13,7 +13,7 @@ function failure(type,joining=false){
 
 function cancelled(){return new DOMException('已取消联机','AbortError');}
 
-function waitForOpen(peer,target,signal){
+function waitForOpen(peer,target,signal,deadline){
   const joining=target!==peer;
   return new Promise((resolve,reject)=>{
     const opened=()=>finish();
@@ -21,7 +21,7 @@ function waitForOpen(peer,target,signal){
     const disconnected=()=>finish(failure('network',joining));
     const closed=()=>finish(failure('connection-closed',joining));
     const abort=()=>finish(cancelled());
-    const timer=setTimeout(()=>finish(failure('timeout',joining)),joining?JOIN_TIMEOUT:REGISTRATION_TIMEOUT);
+    const timer=setTimeout(()=>finish(failure('timeout',joining)),Math.min(joining?JOIN_TIMEOUT:REGISTRATION_TIMEOUT,Math.max(0,deadline-performance.now())));
     function finish(error){
       clearTimeout(timer);
       target.off('open',opened);target.off('close',closed);
@@ -51,19 +51,20 @@ const randomCode=()=>String(100000+crypto.getRandomValues(new Uint32Array(1))[0]
 
 // Only retry registration and the data channel handshake. Once /join is sent
 // the host may already have admitted that player, so it must never be replayed.
-export async function openRoomPeer(Peer,{code='',signal,onRetry}={}){
+export async function openRoomPeer(Peer,{code='',signal,onRetry,deadline=performance.now()+25000}={}){
   let roomCode=code||randomCode(),retries=0,collisions=0;
   while(true){
     if(signal?.aborted)throw cancelled();
+    if(performance.now()>=deadline)throw failure('timeout',Boolean(code));
     const id=code?'campus-guest-'+crypto.getRandomValues(new Uint32Array(4)).join('-'):PREFIX+roomCode;
-    const peer=new Peer(id,{debug:0,config:{iceServers:[{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun.l.google.com:19302'}]}});
+    const peer=new Peer(id,{debug:0,config:{iceCandidatePoolSize:1,iceServers:[{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun.l.google.com:19302'}]}});
     try{
-      await waitForOpen(peer,peer,signal);
+      await waitForOpen(peer,peer,signal,deadline);
       let connection=null;
       if(code){
         connection=peer.connect(PREFIX+code,{reliable:true,serialization:'binary'});
         if(!connection)throw failure('network',true);
-        await waitForOpen(peer,connection,signal);
+        await waitForOpen(peer,connection,signal,deadline);
       }
       return {peer,connection,code:roomCode};
     }catch(error){
@@ -71,7 +72,7 @@ export async function openRoomPeer(Peer,{code='',signal,onRetry}={}){
       if(!code&&error.type==='unavailable-id'&&++collisions<5){roomCode=randomCode();continue;}
       // A room can be briefly absent while its host re-registers the same ID.
       const retryable=transient.has(error.type)||(code&&error.type==='peer-unavailable'&&retries===0);
-      if(!retryable||retries>=2)throw error;
+      if(!retryable||retries>=2||performance.now()+1600>=deadline)throw error;
       retries++;onRetry?.(retries);
       await waitToRetry(retries===1?600:1500,signal);
     }

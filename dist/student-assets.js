@@ -16,7 +16,7 @@ import {createMapActivityPose} from './map-activity-pose77.js?v=campus-117&rev=1
 import * as T from './vendor/three.module.js';
 import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=157';
 import {propContact} from './prop-assets.js?v=campus-83';
-import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111';
+import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111&rev=158';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-113';
 import {createCrawlPose} from './crawl-pose.js?v=campus-117';
 import {createStudentGestures} from './student-gestures.js?v=campus-117&rev=121';

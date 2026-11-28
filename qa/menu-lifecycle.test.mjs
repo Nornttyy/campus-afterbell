@@ -78,7 +78,7 @@ test('closing single-player loading cancels entry, and a failed load can be retr
 });
 test('room preparation is deduplicated and never starts automatically; reentry reuses one controller',async()=>{
   const f=fixture();f.click('#enter-classroom');await flush();
-  assert.equal(f.el('#room-dialog').open,true);assert.equal(f.el('#room-enter').disabled,true);assert.equal(f.calls.creates.length,1);
+  assert.equal(f.el('#room-dialog').open,true);assert.equal(f.el('#room-enter').disabled,false);assert.equal(f.calls.creates.length,1);
   assert.equal(f.calls.creates[0].active,false);assert.equal(f.calls.creates[0].snapEntry,true);
   f.el('#room-dialog').close();f.click('#enter-classroom');await flush();assert.equal(f.calls.creates.length,1);
   f.el('#room-dialog').close();f.pending[0].resolve();await flush();assert.equal(f.calls.starts.length,0);assert.equal(f.el('#classroom').hidden,true);
@@ -191,4 +191,11 @@ test('an invalid advanced rule explains why no room opened and can be corrected 
  assert.equal(f.el('#room-settings').querySelector('.room-advanced').open,true);
  f.el('#room-rule-chalkCost').value='9';f.click('#room-enter');await flush();
  assert.equal(f.calls.connectionOptions.settings.tuning.chalkCost,9);assert.equal(f.calls.starts.length,1);
+});
+
+test('creating a room overlaps world loading and closing before entry leaves it once',async()=>{
+ const f=fixture();f.click('#enter-classroom');f.click('#room-enter');await flush();
+ assert.equal(f.calls.connections,1);assert.equal(f.calls.starts.length,0);
+ f.el('#room-dialog').close();await flush();assert.equal(f.calls.leaves,1);
+ f.pending[0].resolve();await flush();assert.equal(f.calls.leaves,1);assert.equal(f.calls.starts.length,0);
 });

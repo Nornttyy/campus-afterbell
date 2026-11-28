@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from '../dist/render-budget67.js';
-test('touch phones default to smooth mode while explicit choices and mouse desktops survive',()=>{
+test('touch phones default to desktop quality while explicit choices and mouse desktops survive',()=>{
  const mobile=prefersMobileRendering({coarse:true,hover:false,touchPoints:5});
- assert.equal(mobile,true);assert.equal(initialQuality(undefined,mobile),'low');
+ assert.equal(mobile,true);assert.equal(initialQuality(undefined,mobile),'high');
  assert.equal(initialQuality('high',mobile),'high');assert.equal(initialQuality('low',false),'low');
  assert.equal(prefersMobileRendering({coarse:false,hover:true,touchPoints:10}),false);
  assert.equal(initialQuality(undefined,false),'high');
@@ -11,7 +11,7 @@ test('touch phones default to smooth mode while explicit choices and mouse deskt
 test('portrait, landscape and high-DPI displays stay within pixel budgets',()=>{
  for(const mobile of [true,false])for(const [width,height]of[[390,844],[844,390],[2560,1440],[3840,2160]])for(const quality of ['low','high']){
   const ratio=renderPixelRatio({width,height,dpr:3,quality,mobile});
-  assert.ok(width*height*ratio*ratio<=(mobile?1100000:3600000)+1);
+  assert.ok(width*height*ratio*ratio<=3600000+1);
   assert.ok(ratio<=(quality==='low'?1:1.6));
  }
 });

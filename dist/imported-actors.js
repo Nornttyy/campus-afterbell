@@ -6,7 +6,7 @@ import {createCapturePose} from './capture-poses.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {normalWalkCycleRate} from './movement55.js?v=campus-117&rev=157';
 import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-83';
-import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111';
+import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111&rev=158';
 import {createCrawlPose} from './crawl-pose.js?v=campus-117';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-113';
 import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-117';
@@ -24,7 +24,7 @@ export async function loadTeacherModel(){
 import {finishSchoolFurniture} from './school-furniture91.js?v=campus-108';
 
 export async function loadDeskModel(grain=null){
-  const loader=new GLTFLoader();
+  const loader=new GLTFLoader(undefined,{gameMaterials:true});
   const [gltf,chairAsset]=await Promise.all(['desk-v2','chair-v2'].map(name=>loader.loadAsync(new URL(`./assets/models/${name}.glb?v=mesh-64`,import.meta.url).href)));
   requireModelBudget(gltf,'desk-v2');requireModelBudget(chairAsset,'chair-v2');
   const body=gltf.scene.getObjectByName('DeskBody'),drawer=gltf.scene.getObjectByName('DeskDrawer');

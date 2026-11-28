@@ -6,7 +6,7 @@ import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
 import {createReferenceHUD} from './reference-hud54.js?v=campus-111&rev=156';
 import {interactionIntent} from './interaction-intent54.js?v=campus-117&rev=157';
-import {createSessionUI} from './session-ui.js?v=campus-117&radio=2&rev=157';
+import {createSessionUI} from './session-ui.js?v=campus-117&radio=2&rev=158';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 

@@ -1,11 +1,11 @@
-import {NetworkRound,RoomConnectionError,readEvent} from './network-client.js?v=campus-117&rev=157';
-import {openRoomPeer,keepRoomRegistered} from './room-signaling.js?v=campus-100';
+import {NetworkRound,RoomConnectionError,readRoomPacket} from './network-client.js?v=campus-117&rev=158';
+import {openRoomPeer,keepRoomRegistered} from './room-signaling.js?v=campus-100&rev=158';
 
 const TIMEOUT=25000;
 class Transport{
  constructor(peer){this.peer=peer;this.requests=new Map();this.serial=0;this.queue=[];this.ended=false;this.lastPacket=performance.now();}
- request(path,data){if(this.ended)return Promise.reject(new Error('房间已结束'));return new Promise((resolve,reject)=>{
-  const id=++this.serial,timer=setTimeout(()=>{this.requests.delete(id);reject(new RoomConnectionError('房间响应超时，请重新加入。'));},TIMEOUT);
+ request(path,data,timeout=TIMEOUT){if(this.ended)return Promise.reject(new Error('房间已结束'));return new Promise((resolve,reject)=>{
+  const id=++this.serial,timer=setTimeout(()=>{this.requests.delete(id);reject(new RoomConnectionError('房间响应超时，请重新加入。'));},timeout);
   this.requests.set(id,{resolve,reject,timer});
   try{this.send({type:'request',id,path,data});}catch(error){this.requests.delete(id);clearTimeout(timer);reject(error);}
  });}
@@ -36,7 +36,7 @@ class PeerRound extends NetworkRound{
   super({endpoint:'',result,...callbacks});this.transport=transport;this._connected=true;
   transport.subscribe(packet=>{
    if(this._closed)return;
-   try{const state=readEvent(JSON.stringify(packet.payload),packet.type,this.room,this._state);
+   try{const state=readRoomPacket(packet.payload,packet.type,this.room,this._state);
     if(packet.type==='state'||packet.type==='patch'){if(state.sequence>=this._sequence)this._receiveState(state);}
     else if(packet.type==='voice')this.voice.receive(state).catch(()=>this._onError('语音连接失败，请重试。'));
    }catch(error){this._terminate(error);transport.close();}
@@ -84,15 +84,16 @@ function attachGuest(peer,connection){
 export async function connectPeerRoom({code='',name='同学',character='boy',rolePreference='student',map='classroom',maxPlayers=8,settings,signal,onRetry,...callbacks}={}){
  if(!globalThis.RTCPeerConnection||!globalThis.Worker)throw new Error('此浏览器不支持联机，请使用最新版 Chrome 或 Safari。');
  code=String(code).trim();if(code&&!/^\d{6}$/.test(code))throw new Error('请输入六位房间号');
+ const deadline=performance.now()+27000;
  await import('./vendor/peerjs-1.5.5.min.js');
- const link=await openRoomPeer(globalThis.Peer,{code,signal,onRetry});
+ const link=await openRoomPeer(globalThis.Peer,{code,signal,onRetry,deadline});
  let transport;
  const abort=()=>transport.close(new DOMException('已取消联机','AbortError'));
  try{
   if(signal?.aborted)throw new DOMException('已取消联机','AbortError');
   transport=link.connection?attachGuest(link.peer,link.connection):attachHost(link.peer,{code:link.code,map,maxPlayers,settings});
   signal?.addEventListener('abort',abort,{once:true});
-  const result=await transport.request('/join',{name,character,rolePreference});
+  const result=await transport.request('/join',{name,character,rolePreference},Math.max(1,deadline-performance.now()));
   if(signal?.aborted)throw new DOMException('已取消联机','AbortError');
   return new PeerRound({transport,result,...callbacks});
  }catch(error){if(transport)transport.close();else link.peer.destroy();throw error;}
