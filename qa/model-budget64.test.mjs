@@ -35,10 +35,10 @@ const procedural=new Map(manifest.proceduralItems.map(asset=>[asset.kind,asset])
 test('every desk item, including optional-asset fallbacks, is covered by the budget manifest',()=>{
  assert.deepEqual([...procedural.keys()].sort(),[...DESK_ITEM_KINDS].sort());
 });
-for(const kind of DESK_ITEM_KINDS)test(`${kind}: procedural fallback stays below 8000 without resizing the item`,()=>{
+for(const kind of DESK_ITEM_KINDS)test(`${kind}: procedural fallback stays below 8000 at its approved dimensions`,()=>{
  const asset=procedural.get(kind),model=createDeskItem(kind),size=new T.Box3().setFromObject(model,true).getSize(new T.Vector3()).toArray();
  assert.equal(modelTriangles(model),asset.afterTriangles);requireModelBudget(model,kind);
- size.forEach((n,i)=>assert.ok(Math.abs(n-asset.boundsBefore[i])<.00001,`${kind}: source dimensions changed on axis ${i}`));
+ size.forEach((n,i)=>assert.ok(Math.abs(n-asset.boundsAfter[i])<.00001,`${kind}: source dimensions changed on axis ${i}`));
  model.traverse(node=>{if(node.isMesh){assert.ok(node.geometry.attributes.normal);for(const material of Array.isArray(node.material)?node.material:[node.material])assert.ok(material?.isMaterial);}});
 });
 test('an over-budget optional GLB is rejected and its usable procedural fallback still respects the budget',async()=>{

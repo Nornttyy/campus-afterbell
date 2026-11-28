@@ -30,3 +30,82 @@ export function handSamplingRig(hand,{side='Left',samples=70}={}){
   points(finger){group.updateMatrixWorld(true);for(const mesh of meshes)mesh.skeleton.update();inverse.copy(group.matrixWorld).invert();return groups[finger].map(({mesh,i,pad,segment})=>{const point=mesh.getVertexPosition(i,V()).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);point.pad=pad;point.segment=segment;return point;});},
  };
 }
+
+// Check the edges of both meshes so a broad palm triangle crossing the bag
+// is detected even when its three vertices are outside the packaging.
+export function countGripIntersections(hand,prop){
+ const inverse=prop.matrixWorld.clone().invert();
+ function triangles(root){
+  const result=[];
+  root.traverseVisible(mesh=>{
+   if(!mesh.isMesh)return;
+   const matrix=inverse.clone().multiply(mesh.matrixWorld);
+   const geometry=mesh.geometry,index=geometry.index;
+   const vertices=Array.from({length:geometry.attributes.position.count},(_,i)=>
+    mesh.getVertexPosition(i,V()).applyMatrix4(matrix));
+   for(let i=0;i<(index?.count??vertices.length);i+=3){
+    const points=[0,1,2].map(j=>vertices[index?index.getX(i+j):i+j]);
+    result.push({points,box:new T.Box3().setFromPoints(points)});
+   }
+  });
+  return result;
+ }
+ const skin=triangles(hand),food=triangles(prop),bounds=new T.Box3();
+ for(const triangle of food)bounds.union(triangle.box);
+ const ray=new T.Ray(),direction=V(),hit=V();
+ function crosses(edges,face){
+  for(let i=0;i<3;i++){
+   const start=edges[i],end=edges[(i+1)%3],length=direction.subVectors(end,start).length();
+   if(length<1e-8)continue;
+   ray.set(start,direction.multiplyScalar(1/length));
+   if(ray.intersectTriangle(...face,false,hit)&&hit.distanceTo(start)<length-1e-7&&hit.distanceToSquared(start)>1e-14)return true;
+  }
+  return false;
+ }
+ let count=0;
+ for(const a of skin){
+  if(!a.box.intersectsBox(bounds))continue;
+  for(const b of food){
+   if(a.box.intersectsBox(b.box)&&(crosses(a.points,b.points)||crosses(b.points,a.points)))count++;
+  }
+ }
+ return count;
+}
+
+// Sample the inner skin over the metacarpals. A bag dangling from a single
+// fingertip can pass a fingertip distance check while missing this patch.
+export function palmSeat(rig,hand,prop,surface=propSurface(prop)){
+ const inverse=prop.matrixWorld.clone().invert();
+ const at=s=>rig.bones['LeftHand'+s].getWorldPosition(V()).applyMatrix4(inverse);
+ const wrist=at(''),middle=at('Middle1'),across=at('Index1').sub(at('Pinky1')).normalize();
+ const knuckles=at('Index1').lerp(at('Pinky1'),.48).lerp(middle,.2);
+ const along=knuckles.clone().sub(wrist).normalize();
+ const normal=along.clone().cross(across).normalize();
+ if(at('Middle3').sub(middle).dot(normal)<0)normal.negate();
+ const center=wrist.clone().lerp(knuckles,.66),triangles=[];
+ hand.traverseVisible(mesh=>{
+  if(!mesh.isSkinnedMesh)return;
+  const matrix=inverse.clone().multiply(mesh.matrixWorld),g=mesh.geometry;
+  const ids=g.attributes.skinIndex,weights=g.attributes.skinWeight;
+  const points=[],onPalm=[];
+  for(let i=0;i<ids.count;i++){
+   let j=0;for(let k=1;k<4;k++)if(weights.getComponent(i,k)>weights.getComponent(i,j))j=k;
+   onPalm.push(mesh.skeleton.bones[ids.getComponent(i,j)].name.endsWith('LeftHand'));
+   points.push(mesh.getVertexPosition(i,V()).applyMatrix4(matrix));
+  }
+  for(let i=0;i<(g.index?.count??points.length);i+=3){
+   const indices=[0,1,2].map(k=>g.index?g.index.getX(i+k):i+k);
+   if(indices.some(k=>onPalm[k]))triangles.push(indices.map(k=>points[k]));
+  }
+ });
+ const gaps=[],ray=new T.Ray(),hit=V();
+ for(const x of [-.012,0,.012])for(const y of [-.012,0,.012]){
+  ray.origin.copy(center).addScaledVector(across,x).addScaledVector(along,y).addScaledVector(normal,.08);
+  ray.direction.copy(normal).negate();
+  let distance=Infinity;
+  for(const face of triangles)if(ray.intersectTriangle(...face,false,hit))distance=Math.min(distance,ray.origin.distanceTo(hit));
+  if(Number.isFinite(distance))gaps.push(surface.query(ray.at(distance,V())).distance);
+ }
+ const offset=surface.bounds.getCenter(V()).sub(center);
+ return {gaps:gaps.sort((a,b)=>a-b),overhang:offset.addScaledVector(normal,-offset.dot(normal)).length()};
+}

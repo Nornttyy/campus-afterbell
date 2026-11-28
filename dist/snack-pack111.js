@@ -2,7 +2,7 @@ import * as T from './vendor/three.module.js';
 
 const wrappers = {
   gum: {name:'bubblegum-wrapper', size:[.130,.055,.017], edge:0xf18ab7},
-  chips: {name:'potato-chip-bag', size:[.126,.174,.044], edge:0xf6b732},
+  chips: {name:'potato-chip-bag', size:[.126,.174,.072], edge:0xf6b732},
   noodles: {name:'crunchy-noodle-bag', size:[.124,.169,.041], edge:0xe67b32},
   snack: {name:'snack-packet', size:[.12,.209,.026], edge:0x211f23}
 };
@@ -42,6 +42,47 @@ function packetGeometry([width,height,depth]){
   }
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(index);g.computeVertexNormals();return g;
 }
+// A pillow pouch expands across both printed panels. Its side pleats fold
+// inward and the heat-sealed strips at the top and bottom stay flat.
+function chipBagGeometry([width,height,depth]){
+  const positions=[],uv=[],indices=[];
+  const levels=[
+    [-.50,.97,.035],[-.46,.97,.035],[-.37,.93,.49],[-.20,.97,.89],
+    [.02,1,1],[.24,.96,.84],[.38,.92,.42],[.46,.98,.035],[.50,.98,.035]
+  ];
+  const columns=[-1,-.83,-.51,0,.51,.83,1];
+  const vertex=(x,y,z,u,v)=>{
+    positions.push(x*width/2,y*height,z*depth/2);
+    uv.push(u,v);
+    return positions.length/3-1;
+  };
+  function strip(rows){
+    for(let i=1;i<rows.length;i++)for(let j=1;j<rows[i].length;j++){
+      const a=rows[i-1][j-1],b=rows[i-1][j],c=rows[i][j],d=rows[i][j-1];
+      indices.push(a,b,c,a,c,d);
+    }
+  }
+  for(const side of [1,-1]){
+    strip(levels.map(([y,w,fill])=>columns.map(u=>{
+      const curve=1-.73*u*u;
+      const ink=(side===1?.503:.003)+(u+1)*.247;
+      return vertex(side*u*w,y,side*fill*curve,ink,y+.5);
+    })));
+    strip(levels.map(([y,w,fill])=>[1,0,-1].map(fold=>{
+      const crease=fold===0&&Math.abs(y)<.46?.10*fill:0;
+      return vertex(side*(w-crease),y,side*fold*fill*.27,side===1?.497:.998,y+.5);
+    })));
+  }
+  for(const end of [0,levels.length-1]){
+    const [y,w,fill]=levels[end],sign=end===0?-1:1;
+    strip([1,-1].map(side=>columns.map(u=>vertex(sign*u*w,y,side*fill*(1-.73*u*u),.503+(u+1)*.247,y+.5))));
+  }
+  const geometry=new T.BufferGeometry();
+  geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));
+  geometry.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+  geometry.setIndex(indices);geometry.computeVertexNormals();
+  return geometry;
+}
 function remapSpicyBag(mesh){
   const original=mesh.geometry;
   if(!rewrapped.has(original)){
@@ -61,7 +102,7 @@ export function printedPacket(kind,source=null){
     source.userData.printedAsset=kind;return source;
   }
   if(!templates.has(kind)){
-    const spec=wrappers[kind],group=new T.Group(),mesh=new T.Mesh(packetGeometry(spec.size),ink(kind));
+    const spec=wrappers[kind],group=new T.Group(),mesh=new T.Mesh(kind==='chips'?chipBagGeometry(spec.size):packetGeometry(spec.size),ink(kind));
     group.name=spec.name;group.userData.printedAsset=kind;mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);templates.set(kind,group);
   }
   const packet=templates.get(kind).clone(true);

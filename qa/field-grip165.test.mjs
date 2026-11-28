@@ -96,3 +96,26 @@ test('standing first-person wrists and palms align to the visible bodies for bot
   animation.dispose();body.dispose?.();
  }
 });
+
+test('food surfaces remain clear of the skin as the fingers close and during a bite',async()=>{
+ const {countGripIntersections}=await import('./whole-palm-geometry54.mjs');
+ await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry(url.split('/').pop())}});
+ const models=await Promise.all(['left','right'].map(side=>loadGeometry('ponytail-hand-'+side+'-v2.glb')));
+ const hands=createDeskHands({createHand:(side,scale)=>createRiggedPalm(models[side<0?0:1],side,scale)});
+ const left=hands.getHand('left'),skin=handSamplingRig(left,{samples:1000});
+ for(const action of ['chips','snack','noodles','burger','drink','gum','banana','lunch']){
+  hands.update(0,{carrying:false});
+  const food=hands.group.getObjectByName(createDeskItem(action).name),surface=propSurface(food);
+  for(let frame=0;frame<=28;frame++){
+   const eating=frame>=20;
+   hands.update(frame/120,{action,seated:true,carrying:true,holding:eating,eating,progress:eating?(frame-20)/10:0});
+   hands.group.updateMatrixWorld(true);
+   assert.equal(countGripIntersections(left.group,food),0,action+' intersects skin at frame '+frame);
+  }
+  const local=food.matrixWorld.clone().invert().multiply(left.group.matrixWorld);
+  for(const digit of ['Thumb','Index','Middle','Pinky']){
+   const gaps=skin.points(digit).filter(p=>p.pad).map(p=>surface.query(p.applyMatrix4(local)).distance);
+   assert.ok(Math.min(...gaps)<.003,action+' '+digit+' should touch the surface');
+  }
+ }
+});

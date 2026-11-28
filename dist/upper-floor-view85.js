@@ -1,6 +1,6 @@
 import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=157';
 import * as T from './vendor/three.module.js';
-import {createServingDish} from './game-actors.js?v=campus-117&rev=170';
+import {createServingDish} from './game-actors.js?v=campus-117&rev=171';
 import {PARTITIONS,CLASSROOM,CORRIDOR,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=157';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {SERVING_BELTS,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92&rev=128';
@@ -229,6 +229,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
   held.matrix.decompose(held.position,held.quaternion,held.scale);
   slipThumb.set(-.096,-.098,.005).applyMatrix4(slipPose.matrixWorld);
   hand.aimThumb(palm.worldToLocal(slipThumb));
+  return held;
  }
  function penContact(s){
   if(mode!=='exam'||s?.exam?.mode!=='paper'||!s.player?.seated)return null;

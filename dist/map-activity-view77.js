@@ -44,6 +44,7 @@ export function createMapActivityView(scene){
     hand.group.quaternion.copy(parent.clone().invert().multiply(delta).multiply(hand.group.getWorldQuaternion(new T.Quaternion())));hand.group.updateWorldMatrix(true,true);
     const destination=target.clone();if(a.kind==='hang')destination.add(new T.Vector3(-.05,-.01,0));
     const offset=destination.sub(wrist.getWorldPosition(new T.Vector3())),position=hand.group.getWorldPosition(new T.Vector3()).add(offset);hand.group.position.copy(hand.group.parent.worldToLocal(position));hand.opposeThumb?.(.75);
+    if(a.kind==='plunge')hands.applyItemGrip?.('plunger',side.toLowerCase());
    }
    hands.group.updateMatrixWorld(true);
   },

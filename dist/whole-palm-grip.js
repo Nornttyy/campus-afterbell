@@ -1,5 +1,5 @@
-import {ponytailGrips} from './ponytail-grips165.js?v=campus-117&rev=170';
-import {FIRST_PERSON_FOOD_FITS} from './first-person-packet-grips112.js?v=campus-114&rev=164';
+import {ponytailGrips} from './ponytail-grips165.js?v=campus-117&rev=171';
+import {FIRST_PERSON_FOOD_FITS} from './first-person-packet-grips112.js?v=campus-114&rev=171';
 import * as T from './vendor/three.module.js';
 import {createFingerRig,handFrame} from './hand-motion.js?v=campus-117';
 import {WHOLE_PALM_PROFILES} from './whole-palm-profiles54.js?v=campus-112';
@@ -22,8 +22,21 @@ export function createWholePalmGrip(hand,side){
  const profileFor=kind=>profiles[kind]||null;
  return {
   fit:profileFor,palmUp,
-  apply(kind,weight=1){const fit=profileFor(kind);if(!fit)return false;
-   for(const [finger,angles]of Object.entries(fit.profile)){const chain=chains[finger];for(const [i,d]of chain.digits.entries()){const target=d.rest.clone().multiply(Q().setFromAxisAngle(d.axis,angles[i]));if(i===0){target.multiply(Q().setFromAxisAngle(chain.spread,angles[3]||0));if(finger==='Thumb')target.multiply(Q().setFromAxisAngle(chain.opposition,angles[4]||0));}d.bone.quaternion.slerp(target,weight);}}
+  apply(kind,weight=1,closure=1){
+   const fit=profileFor(kind);
+   if(!fit)return false;
+   for(const [finger,closed] of Object.entries(fit.profile)){
+    const chain=chains[finger],open=closure<1&&fit.openProfile?.[finger];
+    const angle=i=>open?T.MathUtils.lerp(open[i]||0,closed[i]||0,closure):(closed[i]||0);
+    for(const [i,digit] of chain.digits.entries()){
+     const target=digit.rest.clone().multiply(Q().setFromAxisAngle(digit.axis,angle(i)));
+     if(i===0){
+      target.multiply(Q().setFromAxisAngle(chain.spread,angle(3)));
+      if(finger==='Thumb')target.multiply(Q().setFromAxisAngle(chain.opposition,angle(4)));
+     }
+     digit.bone.quaternion.slerp(target,weight);
+    }
+   }
    return true;
   }
  };
