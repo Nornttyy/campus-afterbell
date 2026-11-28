@@ -4,7 +4,7 @@ import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94&rev=173';
 import {toiletBowl} from './map-activities77.js?v=campus-117&rev=173';
 import {activityHandTargets} from './map-activity-pose77.js?v=campus-117&rev=173';
 import {handFrame} from './hand-motion.js?v=campus-117';
-import {setWasteModel} from './game-actors.js?v=campus-117&rev=176';
+import {setWasteModel} from './game-actors.js?v=campus-117&rev=177';
 const handRigs=new WeakMap();
 function frameQuaternion(along,dorsal){const y=along.clone().normalize(),z=dorsal.clone().addScaledVector(y,-dorsal.dot(y)).normalize(),x=new T.Vector3().crossVectors(y,z);return new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));}
 export function createMapActivityView(scene){

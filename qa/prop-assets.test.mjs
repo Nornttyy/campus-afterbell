@@ -135,3 +135,26 @@ test('opened food keeps its source UVs and contains an actual cavity below the r
   assert.equal(meshes(second)[0].geometry,meshes(holder)[0].geometry);
  }
 });
+
+test('the cola wall uses the same Chinese can label on both sides and retains the original lid',async()=>{
+ await loadPropAssets({drink:CLASSROOM_PROP_SOURCES.drink},{loader:assetLoader});
+ const full=createDeskItem('drink'),empty=createDeskItem('foodWaste');setWasteModel(empty,'drink');
+ const body=meshes(full)[0];
+ assert.equal(body.material[1].name,'可口可乐罐身');
+ assert.equal(body.material[0],meshes(clonePropAsset('drink'))[0].material);
+ assert.ok(meshes(empty).some(m=>[].concat(m.material).some(mat=>mat.name==='可口可乐罐身')));
+ const {index,groups,attributes}=body.geometry,p=attributes.position,uv=attributes.uv;
+ const wall=groups.find(g=>g.materialIndex===1);assert.ok(wall.count>0);
+ for(let i=wall.start;i<wall.start+wall.count;i+=3){
+  const u=[0,1,2].map(k=>uv.getX(index.getX(i+k)));
+  assert.ok(Math.max(...u)-Math.min(...u)<.5,'distorted print at the label seam');
+ }
+ const center=bounds(full).getCenter(V());
+ for(const side of [-1,1]){
+  const hit=new T.Raycaster(V(center.x,center.y,side),V(0,0,-side)).intersectObject(full)[0];
+  assert.equal(hit.face.materialIndex,1);
+  const distance=Math.abs(hit.uv.x-(side===1?.25:.75));
+  assert.ok(Math.abs(distance-Math.round(distance))<.025,'center of the logo should face the camera');
+ }
+ assert.ok(p.count>0);
+});
