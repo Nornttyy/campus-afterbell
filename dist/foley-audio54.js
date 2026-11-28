@@ -144,7 +144,9 @@ export function playCampusFoley(audio,kind,intensity=1){
    }
   }
   const source=context.createBufferSource(),gain=context.createGain();
-  source.buffer=buffer;gain.gain.value=volume;source.connect(gain);gain.connect(output);
+  // The recorded finishing bite has a quiet master. Add 6 dB only to that sample.
+  const recordingGain=kind==='food-complete'&&buffer===state.buffers.get(id)?2:1;
+  source.buffer=buffer;gain.gain.value=volume*recordingGain;source.connect(gain);gain.connect(output);
   source.onended=()=>{source.disconnect();gain.disconnect();state.active--;};
   state.active++;source.start(context.currentTime);
  }

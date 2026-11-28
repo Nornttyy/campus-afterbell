@@ -36,8 +36,8 @@ test('stationary, paused, seated, stunned, hidden, teleport and map-change state
 test('teacher footstep contact counts depend on distance instead of rendering frame rate',()=>{
  for(const hz of[30,60,120]){const track=createTeacherFootsteps(),s=stepState();s.role='teacher';track.sample(s);let count=0;for(let i=0;i<hz*2;i++){s.player.x=6.5*(i+1)/(hz*2);if(track.sample(s))count++;}assert.equal(count,5);}
 });
-test('gum pop and phone alerts are global at identical gain, including remote teachers',()=>{
- for(const type of['gum-pop','phone-notification'])for(const listener of[{id:0,x:0,z:0},{id:9,x:1000,z:-1000},{id:-1,x:30,z:25}])assert.deepEqual(soundForEvent({type,studentId:0,x:0,z:0},listener),{kind:type,gain:.8});
+test('finishing food, gum pop and phone alerts are global at identical gain, including remote teachers',()=>{
+ for(const type of['food-complete','gum-pop','phone-notification'])for(const listener of[{id:0,x:0,z:0},{id:9,x:1000,z:-1000},{id:-1,x:30,z:25}])assert.deepEqual(soundForEvent({type,studentId:0,x:0,z:0},listener),{kind:type,gain:.8});
 });
 test('chewing, drinking, inflation and computer effects are private regardless of proximity or recipient mistakes',()=>{
  for(const type of['use-crunch','use-gulp','gum-inflate','snake-food','snake-failed','valorant-watch']){
@@ -46,8 +46,8 @@ test('chewing, drinking, inflation and computer effects are private regardless o
   assert.equal(soundForEvent({...event,recipientId:3},owner),null);
  }
 });
-test('food completion, burp and chalk remain positional; unrelated score events do not duplicate sounds',()=>{
- for(const type of['food-complete','drink-complete','burp','chalk-throw','chalk-hit']){
+test('drink completion, burp and chalk remain positional; unrelated score events do not duplicate sounds',()=>{
+ for(const type of['drink-complete','burp','chalk-throw','chalk-hit']){
   const event={type,x:0,z:0};const near=soundForEvent(event,{id:-1,x:0,z:0}),far=soundForEvent(event,{id:-1,x:8,z:0});assert.ok(near.gain>far.gain);assert.equal(soundForEvent(event,{id:-1,x:14,z:0}),null);
  }
  for(const type of['complete','gum-score','bubble-score','class-started'])assert.equal(soundForEvent({type,studentId:0},{id:0,x:0,z:0}),null);
@@ -69,8 +69,8 @@ test('room snapshots route private cues to their owner while phone and gum event
  const room=new CampusRoom({code:'690071',seed:73}),teacher=room.join({rolePreference:'teacher'}),pupil=room.join({}),peer=room.join({});room.begin(teacher);for(let n=0;n<301;n++)room.tick(.1);
  for(const m of[teacher,pupil,peer])room.snapshot(m);
  const id=pupil.studentId;for(const type of['use-crunch','use-gulp','gum-inflate','snake-failed'])room.sim._events.push({type,studentId:id,recipientId:id});
- for(const type of['phone-notification','gum-pop'])room.sim._events.push({type,studentId:id,x:0,z:0});room.tick(1/60);
- for(const m of[teacher,pupil,peer]){const s=room.snapshot(m),events=s.events.filter(e=>['use-crunch','use-gulp','gum-inflate','snake-failed','phone-notification','gum-pop'].includes(e.type));assert.equal(events.length,m===pupil?6:2);assert.equal(events.filter(e=>e.type==='gum-pop').length,1);assert.equal(events.filter(e=>e.type==='phone-notification').length,1);assert.equal(room.snapshot(m).events.length,0);}
+ for(const type of['phone-notification','gum-pop','food-complete'])room.sim._events.push({type,studentId:id,x:0,z:0});room.tick(1/60);
+ for(const m of[teacher,pupil,peer]){const s=room.snapshot(m),events=s.events.filter(e=>['use-crunch','use-gulp','gum-inflate','snake-failed','phone-notification','gum-pop','food-complete'].includes(e.type));assert.equal(events.length,m===pupil?7:3);const meals=events.filter(e=>e.type==='food-complete');assert.equal(meals.length,1);assert.deepEqual(soundForEvent(meals[0],{id:s.player.id,x:100,z:100}),{kind:'food-complete',gain:.8});assert.equal(events.filter(e=>e.type==='gum-pop').length,1);assert.equal(events.filter(e=>e.type==='phone-notification').length,1);assert.equal(room.snapshot(m).events.length,0);}
 });
 test('using a real phone or popping gum emits one located global cue and a distant teacher also receives its sound trace',()=>{
  for(const [action,seconds,eventType]of[['phone',3.05,'phone-notification'],['gum',6.05,'gum-pop']]){

@@ -19,7 +19,7 @@ test('only public eating, drinking, pop or burp produce teacher direction cues',
  assert.equal(audibleCue({type:'food-complete',x:1,z:2,audience:'self'}),false);assert.equal(audibleCue({type:'food-complete',x:1,z:2,recipientId:3}),false);
  assert.equal(relativeSoundBearing({x:0,z:1},{x:0,z:0,yaw:0}),0);assert.equal(relativeSoundBearing({x:1,z:0},{x:0,z:0,yaw:0}),Math.PI/2);
  assert.ok(audibleCue({type:'food-complete',x:13.9,z:0},{x:0,z:0}));
- for(const x of[14,100])assert.equal(audibleCue({type:'food-complete',x,z:0},{x:0,z:0}),false,'inaudible distant events must not reveal direction');
+ for(const x of[14,100]){assert.ok(audibleCue({type:'food-complete',x,z:0},{x:0,z:0}));assert.equal(audibleCue({type:'drink-complete',x,z:0},{x:0,z:0}),false);}
 });
 test('backwards and diagonal backwards use sixty percent speed, forward/sideways stay unchanged',()=>{
  for(const yaw of[0,Math.PI/2,Math.PI*7]){const actor={yaw},x=Math.sin(yaw),z=Math.cos(yaw);assert.equal(movementScale(actor,{x,z}),1);assert.equal(movementScale(actor,{x:-x,z:-z}),.6);assert.equal(movementScale(actor,{x:z,z:-x}),1);}
