@@ -18,7 +18,7 @@ import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-94&rev=173';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=157';
 import {FURNITURE_SOURCES67,loadFurniture67} from './furniture-assets67.js?v=campus-99';
-import {assetsForOpenMaps,playableCampusMap} from './campus-destinations.js?v=campus-117&rev=174';
+import {assetsForOpenMaps,playableCampusMap} from './campus-destinations.js?v=campus-117&rev=179';
 import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-117&rev=169';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
 import {advanceDeskDrawer,drawerHandTarget,DESK_DRAWER_TRAVEL,DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=174';
@@ -37,7 +37,7 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-111';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork,prepareEntryArtwork} from './campus-artwork.js?v=campus-93&rev=158';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=174';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=179';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117&rev=174';
 import {createRoomVariants} from './room-variants.js?v=campus-117&rev=178';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';

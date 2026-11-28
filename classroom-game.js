@@ -1,5 +1,5 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=174';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=179';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83&rev=173';
@@ -10,7 +10,7 @@ import {createSessionUI} from './session-ui.js?v=campus-117&radio=2&rev=165';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=175';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=179';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -190,10 +190,10 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
 
   }}
   function playInteractionChanges(s){
-    const next={drawer:s.drawer.open,book:s.player.bookRaised,pen:s.player.penTaken,writing:s.player.penWriting,seated:s.player.seated};
+    const next={drawer:s.drawer.open,pen:s.player.penTaken,seated:s.player.seated};
     const previous=lastInteractionState;lastInteractionState=next;if(!previous)return;
     // Sound follows the accepted state, including remote server acknowledgments.
-    const kind=previous.pen!==next.pen?(next.pen?'pen-pickup':'pen-putdown'):previous.seated!==next.seated?'chair':previous.drawer!==next.drawer?(next.drawer?'drawer-open':'drawer-close'):previous.book!==next.book?(next.book?'book-open':'book-close'):next.pen&&previous.writing!==next.writing?(next.writing?'pen-write':'pen-twirl'):null;
+    const kind=previous.pen!==next.pen?(next.pen?'pen-pickup':'pen-putdown'):previous.seated!==next.seated?'chair':previous.drawer!==next.drawer?(next.drawer?'drawer-open':'drawer-close'):null;
     if(kind)audio.effect?.(kind,.6);
   }
   function playFootsteps(s){const gain=teacherFootsteps.sample(s);if(gain>.002)audio.effect?.('step',gain);}

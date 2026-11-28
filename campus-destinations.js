@@ -1,7 +1,7 @@
 import {isCampusMap,mapKind,CAMPUS_MAPS} from './classroom-layout.js?v=campus-117&rev=174';
 
 // Keep the authored floor numbers so reopening a destination does not move any other map.
-export const OPEN_CAMPUS_MAPS=CAMPUS_MAPS;
+export const OPEN_CAMPUS_MAPS=Object.freeze(CAMPUS_MAPS.filter(map=>map!=='hotpot'));
 
 export function playableCampusMap(map){
   if(!isCampusMap(map))return null;
