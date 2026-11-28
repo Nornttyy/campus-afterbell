@@ -1,3 +1,4 @@
+import {POOL_RADIO} from './pool-layout.js?v=campus-117&rev=180';
 import {radioBeats} from './radio-beats156.js?v=campus-117&rev=156';
 import {BUS,onBus} from './bus-layout86.js?v=campus-94&rev=154';
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=157';
@@ -35,6 +36,7 @@ export function broadcastScale(beat){
  return {height,width:1-.025*Math.max(0,-beat)};
 }
 export function radioAnchor(map){
+ if(map==='pool')return POOL_RADIO;
  if(map==='bus')return {x:11.023,y:BUS.low+1.36,z:-14.49,yaw:-Math.PI/2};
  if(map==='playground')return PLAYGROUND_LAYOUT.speaker;
  return null;

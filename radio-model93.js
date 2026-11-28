@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {radioAnchor} from './campus-radio93.js?v=campus-117&rev=165';
+import {radioAnchor} from './campus-radio93.js?v=campus-117&rev=180';
 export function mountSchoolRadio(map,parent,{box,rounded,mat,texture,bakeStatic}){
  const a=radioAnchor(map),root=new T.Group();root.name='pa-'+map;root.position.set(a.x,a.y,a.z);root.rotation.y=a.yaw;parent.add(root);
  const enamel=mat('#bfc9bd'),metal=mat('#72847e',{metalness:.28,roughness:.64}),grille=mat('#354342');

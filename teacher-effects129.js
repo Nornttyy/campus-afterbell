@@ -1,10 +1,10 @@
 import * as T from './vendor/three.module.js';
-import {attacks} from './teacher-attacks129.js?v=campus-117&rev=174';
+import {attacks} from './teacher-attacks129.js?v=campus-117&rev=180';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
 
 import {cloneCharacter} from './clone-character57.js?v=campus-83';
-import {JUMP_SPEED,JUMP_GRAVITY} from './actor-jump90.js?v=campus-117&rev=174';
+import {JUMP_SPEED,JUMP_GRAVITY} from './actor-jump90.js?v=campus-117&rev=180';
 let template;
 
 function restRig(model){

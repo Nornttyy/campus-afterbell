@@ -1,10 +1,11 @@
+import {POOL_SEATS} from './pool-layout.js?v=campus-117&rev=180';
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=157';
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94&rev=173';
 // Plunging shares the requested interaction duration with food and rescue.
 export const PLUNGE_SECONDS=INTERACTION_SECONDS;
 export const barById=id=>PLAYGROUND_LAYOUT.bars.find(b=>b.id===id);
-export const toiletBowl=id=>{const s=TOILET_STALLS.find(s=>s.id===id);return s?{x:s.x-.18,z:s.z-.48,y:.43}:null;};
+export const toiletBowl=(id,map='toilet')=>{if(map==='pool'){const s=POOL_SEATS[id];return s?.surface==='toilet'?{x:s.x,z:s.z,y:.43}:null;}const s=TOILET_STALLS.find(s=>s.id===id);return s?{x:s.x-.18,z:s.z-.48,y:.43}:null;};
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export function activitySnapshot(a){return a.mapActivity?{...a.mapActivity}:null;}
 export function releaseMapActivity(round,a=round.player){
@@ -22,14 +23,14 @@ export function startMapActivity(round,kind,id,p=round.player){
   target=b;stand={x:b.x-.45,z:b.z};
   if(distance(p,b)>1.55||!round._clearWallSegment(p,stand))return false;
  }else{
-  if(round.map!=='toilet'||!Number.isInteger(id)||!round.toiletClogs[id])return false;
-  target=toiletBowl(id);if(!target||round.students.some(a=>a!==p&&a.seated&&a.seatId===id)||round.toiletDoors[id]<.85)return false;
+  if(!['toilet','pool'].includes(round.map)||!Number.isInteger(id)||!round.toiletClogs[id])return false;
+  target=toiletBowl(id,round.map);if(!target||round.students.some(a=>a!==p&&a.seated&&a.seatId===id)||round.toiletDoors[id]<.85)return false;
   stand={x:target.x,z:target.z+.65};
   if(distance(p,target)>1.45||!round._clearWallSegment(p,stand))return false;
  }
  if(round._blocked(stand.x,stand.z,.18)||round.students.some(a=>a!==p&&a.visible!==false&&!a.seated&&distance(a,stand)<.36))return false;
  p.x=stand.x;p.z=stand.z;p.yaw=kind==='hang'?Math.PI/2:Math.PI;p.pitch=kind==='hang'?-.35:.55;
- p.mapActivity={kind,id,age:0,progress:0,bodyYaw:p.yaw};p.mood=kind==='hang'?'hanging':'plunging';p.holding=false;if(p===round.player){round.holding=false;round._movement={x:0,z:0};}return true;
+ p.mapActivity={kind,id,...(round.map==='pool'?{map:round.map}:{}),age:0,progress:0,bodyYaw:p.yaw};p.mood=kind==='hang'?'hanging':'plunging';p.holding=false;if(p===round.player){round.holding=false;round._movement={x:0,z:0};}return true;
 }
 export function advanceMapActivities(round,dt){
  for(const p of round.students){const a=p.mapActivity;if(!a)continue;
