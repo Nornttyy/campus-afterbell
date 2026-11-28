@@ -25,7 +25,7 @@ function fixture(yaw=0,kind='burger'){
  const settle=open=>{state.drawer.open=open;for(let n=0;n<90;n++)variants.updateDrawers(state,DT);scene.updateMatrixWorld(true);};
  const origin=station.localToWorld(V(0,1.43,-.78)),ray=new T.Raycaster();
  const cast=()=>{scene.updateMatrixWorld(true);const centre=new T.Box3().setFromObject(object,true).getCenter(V());ray.set(origin,centre.sub(origin).normalize());return pickDrawerItem(ray,[target],[variants.group]);};
- return{scene,variants,drawer,station,slot,object,target,state,ray,origin,settle,cast,dispose(){variants.dispose();const materials=new Set();scene.traverse(o=>{o.geometry?.dispose();if(o.material)materials.add(o.material);});for(const m of materials)m.dispose();}};
+ return{scene,variants,drawer,station,slot,object,target,state,ray,origin,settle,cast,dispose(){variants.dispose();const materials=new Set();scene.traverse(o=>{o.geometry?.dispose();if(o.material)for(const material of [].concat(o.material))materials.add(material);});for(const m of materials)m.dispose();}};
 }
 function quiet(map='computer',seed=73){const round=new ClassroomRound({map,seed,target:10000});round.start();round.player.pitch=1.20;round._advanceTeacher=()=>{};round._perceive=()=>{};for(const actor of round.students)actor._decisionAt=Infinity;return round;}
 function key(round,target,code){const intent=interactionIntent(round.snapshot(),target,code);return intent?round[intent.method](...intent.args):false;}
