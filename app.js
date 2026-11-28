@@ -197,7 +197,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=175'),import('./classroom-game.js?v=campus-117&radio=2&rev=175')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=176'),import('./classroom-game.js?v=campus-117&radio=2&rev=175')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true,onProgress:(fraction,label)=>loadStep(38+Math.round(55*fraction),label)});
       if(disposed){prepared.dispose();return null;}

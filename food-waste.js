@@ -4,17 +4,22 @@ import * as T from './vendor/three.module.js';
 // shell carry the lining color, so the original printed label stays outside.
 const cuts={snack:.78,chips:.79,noodles:.79,drink:.87,burger:.14,lunch:.35};
 const lining={snack:0xbca77f,chips:0xafb4b1,noodles:0xc0aa86,drink:0xb9bfbe,lunch:0xadb7b5,burger:0xe1b577};
-function shellMaterial(original,kind){
+function shellMaterial(original,kind,rim,height){
  const material=original.clone(),color=new T.Color(lining[kind]);
  material.side=T.DoubleSide;
  material.onBeforeCompile=shader=>{
   shader.uniforms.wasteLining={value:color};
-  shader.fragmentShader='uniform vec3 wasteLining;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nif (!gl_FrontFacing) diffuseColor = vec4(wasteLining, 1.0);');
+  shader.uniforms.wasteRim={value:rim};
+  shader.uniforms.wasteHeight={value:height};
+  shader.vertexShader='varying float wasteDepth;\nuniform float wasteRim, wasteHeight;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nwasteDepth = clamp((wasteRim - position.y) / wasteHeight, 0.0, 1.0);');
+  shader.fragmentShader='uniform vec3 wasteLining;\nvarying float wasteDepth;\n'+shader.fragmentShader
+   .replace('#include <color_fragment>','#include <color_fragment>\nif (!gl_FrontFacing) diffuseColor = vec4(wasteLining * mix(1.0, 0.19, smoothstep(0.0, 0.85, wasteDepth)), 1.0);')
+   .replace('#include <normal_fragment_maps>','if (gl_FrontFacing) {\n#include <normal_fragment_maps>\n}');
  };
  material.customProgramCacheKey=()=>'opened-food-lining';
  return material;
 }
-function trimMesh(mesh,limit,kind){
+function trimMesh(mesh,limit,kind,height){
  const surface=mesh.geometry.clone().applyMatrix4(mesh.matrixWorld);
  if(!surface.attributes.normal)surface.computeVertexNormals();
  const fields=['position','normal','uv','color'].filter(key=>surface.attributes[key]);
@@ -45,7 +50,7 @@ function trimMesh(mesh,limit,kind){
  surface.dispose();
  if(!buffer.position.length)return null;
  for(const key of fields)clipped.setAttribute(key,new T.Float32BufferAttribute(buffer[key],mesh.geometry.attributes[key]?.itemSize??3));
- const materials=Array.isArray(mesh.material)?mesh.material.map(m=>shellMaterial(m,kind)):shellMaterial(mesh.material,kind);
+ const materials=Array.isArray(mesh.material)?mesh.material.map(m=>shellMaterial(m,kind,limit,height)):shellMaterial(mesh.material,kind,limit,height);
  const result=new T.Mesh(clipped,materials);
  result.castShadow=mesh.castShadow;result.receiveShadow=mesh.receiveShadow;
  return result;
@@ -54,6 +59,6 @@ export function openFoodShell(source,kind){
  source.updateMatrixWorld(true);
  const bounds=new T.Box3().setFromObject(source,true),limit=T.MathUtils.lerp(bounds.min.y,bounds.max.y,cuts[kind]);
  const group=new T.Group();
- source.traverse(mesh=>{if(mesh.isMesh){const piece=trimMesh(mesh,limit,kind);if(piece)group.add(piece);}});
+ source.traverse(mesh=>{if(mesh.isMesh){const piece=trimMesh(mesh,limit,kind,limit-bounds.min.y);if(piece)group.add(piece);}});
  return group;
 }
