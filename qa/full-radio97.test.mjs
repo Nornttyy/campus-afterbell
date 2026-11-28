@@ -27,7 +27,7 @@ test('late joins, local mute, return to the march and the shared beat follow the
  const a=fixture(),b=fixture();
  for(const f of [a,b]){
   f.ui.update(state());assert.ok(f.audio.src.endsWith('field-march.m4a'));assert.equal(f.audio.currentTime,16);
-  f.ui.update(state(station,19));assert.ok(f.audio.src.endsWith(station.track+'.m4a'));assert.equal(f.audio.currentTime,9);
+  f.ui.update(state(station,19));assert.ok(new URL(f.audio.src).pathname.endsWith(station.track+'.m4a'));assert.equal(f.audio.currentTime,9);
   f.mute(true);assert.equal(f.audio.paused,true);f.ui.update(state(station,42));f.mute(false);assert.equal(f.audio.currentTime,32);
   f.ui.update(state(null));assert.ok(f.audio.src.endsWith('field-march.m4a'));
   f.ui.update({...state(),map:'bus'});assert.equal(f.audio.src,undefined);f.ui.dispose();
@@ -38,5 +38,22 @@ test('late joins, local mute, return to the march and the shared beat follow the
   assert.ok(Math.abs(broadcastLift(s)-sign*.015)<1e-8);
   assert.ok(Math.sign(1-height)===sign&&Math.sign(width-1)===sign);
   assert.ok(Math.abs(height*width*width-1)<1e-8);
+ }
+});
+
+test('both maps directly play the same two complete recordings on a fresh client',async()=>{
+ const settings=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');
+ assert.doesNotMatch(settings,/radio-import|radio-library118/);
+ for(const map of ['playground','bus']){
+  const f=fixture();
+  for(const song of RADIO_SONGS){
+   f.ui.update({...state({...station,track:song.id}),map});
+   const src=new URL(f.audio.src);
+   assert.ok(src.pathname.endsWith('/assets/audio/'+song.id+'.m4a'));
+   assert.equal(f.audio.paused,false);
+   const file=await readFile(src);
+   assert.ok(file.length>4_000_000);
+  }
+  f.ui.dispose();
  }
 });

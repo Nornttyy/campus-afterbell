@@ -2,8 +2,8 @@ import {BUS,onBus} from './bus-layout86.js?v=campus-94&rev=154';
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=154';
 
 export const RADIO_SONGS=Object.freeze([
- {id:'track-window',title:'雨停的车窗',bpm:96,bars:32},
- {id:'track-weekend',title:'周五放学后',bpm:116,bars:32}
+ {id:'track-window',title:'雨爱（司凤版）',bpm:96,bars:32},
+ {id:'track-weekend',title:'朋友的酒（DJ 版）',bpm:116,bars:32}
 ].map(Object.freeze));
 export const EXERCISE_SONG=Object.freeze({id:'field-march',title:'操场进行曲',bpm:120,bars:32});
 export const radioSong=id=>[EXERCISE_SONG,...RADIO_SONGS].find(s=>s.id===id);
