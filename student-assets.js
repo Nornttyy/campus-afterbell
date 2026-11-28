@@ -176,7 +176,7 @@ export async function loadStudentAssets({corridorEntry=false}={}){
  }
  const variants=Object.keys(STUDENT_ASSETS);
  const [hands]=await Promise.all([
-  Promise.all(['ponytail-hand-left-v1','ponytail-hand-right-v1','teacher-hand-left-v1','teacher-hand-right-v1'].map(load)),
+  Promise.all(['ponytail-hand-left-v2','ponytail-hand-right-v2','teacher-hand-left-v1','teacher-hand-right-v1'].map(load)),
   Promise.all((corridorEntry?['boy']:variants).map(prepare))
  ]);
  return {prepare,has:variant=>Boolean(sources[variant]),prepareAll:()=>Promise.all(variants.map(prepare)),
@@ -458,7 +458,7 @@ export function createRiggedPalm(gltf,side,scale=1,role='student'){
  const bones={};let mesh;
  model.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig[:_]?/,'')]=o;if(o.isMesh){if(!mesh||o.geometry.attributes.position.count>mesh.geometry.attributes.position.count)mesh=o;o.castShadow=false;o.frustumCulled=false;}});
  for(const bone of Object.values(bones))bone.quaternion.normalize();
- if(role==='student')model.traverse(o=>{if(o.isMesh)useStudentHandSkin(o,side);});
+ if(role==='student'&&!gltf.parser?.json?.asset?.extras?.characters40?.continuousWrist)model.traverse(o=>{if(o.isMesh)useStudentHandSkin(o,side);});
  useCharacterBaseColor(model);
  group.updateMatrixWorld(true);const prefix=side<0?'Left':'Right',rig=createFingerRig(group,bones,prefix),rest=new Map();
  for(const b of Object.values(bones))rest.set(b,b.quaternion.clone());
