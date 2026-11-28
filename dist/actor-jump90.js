@@ -1,4 +1,4 @@
-import {floorHeight,jumpHeadroom} from './classroom-layout.js?v=campus-117&rev=173';
+import {floorHeight,jumpHeadroom} from './classroom-layout.js?v=campus-117&rev=174';
 
 // Local tuning. The original's launch speed and gravity have not been measured.
 export const JUMP_SPEED=4.6, JUMP_GRAVITY=17;

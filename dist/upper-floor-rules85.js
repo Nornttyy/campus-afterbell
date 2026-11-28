@@ -1,5 +1,5 @@
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
-import {mealPortion,mealInReach,examCardNumber,QUESTION_COUNT} from './upper-floors85.js?v=campus-92&rev=128';
+import {mealPortion,mealInReach,examCardNumber,QUESTION_COUNT} from './upper-floors85.js?v=campus-92&rev=174';
 export function takeMeal(round,id){
  const p=round.player,portion=mealPortion(id,round._sessionElapsed);
  if(round.map!=='cafeteria'||!round._classInputAllowed()||p.id<0||round._restrained(p)||p._drawnSlot!==null||!mealInReach(p,portion)||!round._clearWallSegment(p,portion)||round.mealsTaken[id]===portion.lap)return false;

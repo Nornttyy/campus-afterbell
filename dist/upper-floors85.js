@@ -3,14 +3,14 @@
 export const SERVING_BELTS=Object.freeze([-2.84,2.84].map((x,id)=>Object.freeze({id,x,minZ:-8.30,maxZ:5.35,width:.96,top:1.055})));
 export const SERVING_SOLIDS=Object.freeze(SERVING_BELTS.map(b=>Object.freeze({id:'serving-counter-'+b.id,minX:b.x-b.width/2,maxX:b.x+b.width/2,minZ:b.minZ,maxZ:b.maxZ,minY:0,maxY:b.top})));
 export const CAFETERIA_SEATS=Object.freeze([-6.95,-4.28,-1.61,1.06,3.73].flatMap((deskZ,row)=>[-4.08,-1.60,1.60,4.08].map((deskX,col)=>Object.freeze({id:row*4+col,row,col,deskX,deskZ,x:deskX,z:deskZ-.78,yaw:0,map:'cafeteria',pattern:'counter-rows'}))));
-export const SERVING_MENU=Object.freeze(['burger','drink','snack','banana','chickenBucket','layerCake']);
+export const SERVING_MENU=Object.freeze(['burger','drink','snack','banana']);
 export const MEAL_COUNT=10;
 export function mealPortion(id,time=0){
  if(!Number.isInteger(id)||id<0||id>=MEAL_COUNT)return null;
  const count=MEAL_COUNT/2,belt=SERVING_BELTS[Math.floor(id/count)],slot=id%count,span=belt.maxZ-belt.minZ-.42;
  const travel=slot*span/count+Math.max(0,time)*.53,lap=Math.floor(travel/span),offset=travel-lap*span;
- const dish=SERVING_MENU[(id+lap)%SERVING_MENU.length],action=dish==='chickenBucket'||dish==='layerCake'?'burger':dish;
- return {id,lap,action,dish,x:belt.x,y:belt.top+.012,z:belt.id?belt.maxZ-.21-offset:belt.minZ+.21+offset,edge:Math.min(offset,span-offset)};
+ const dish=SERVING_MENU[(id+lap)%SERVING_MENU.length];
+ return {id,lap,action:dish,dish,x:belt.x,y:belt.top+.012,z:belt.id?belt.maxZ-.21-offset:belt.minZ+.21+offset,edge:Math.min(offset,span-offset)};
 }
 export function mealInReach(p,portion){return !!portion&&Math.hypot(p.x-portion.x,p.z-portion.z)<1.72;}
 export const EXAM_QUESTIONS=Object.freeze([

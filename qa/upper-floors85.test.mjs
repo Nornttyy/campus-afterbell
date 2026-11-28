@@ -84,12 +84,12 @@ test('a finished paper awards its completion bonus once and the desk supplies or
  assert.equal(r.score,31);assert.equal(r.snapshot().exam.complete,true);assert.equal(r.setDrawerOpen(true),true);assert.equal(r.setExamMode('card',0),false);assert.equal(r.snapshot().drawer.slots.length,3);assert.equal(r.takeSlot(0),true);
 });
 
-test('the chicken bucket and layer cake keep the same appearance on the belt and in inventory',async()=>{
- const {createServingDish}=await import('../dist/game-actors.js');
+test('the serving belts dispense available foods with matching inventory',async()=>{
+ const {createDeskItem}=await import('../dist/game-actors.js');
  const r=createSoloRound({map:'cafeteria',seed:73});r.start();
- for(const [id,dish]of [[4,'chickenBucket'],[5,'layerCake']]){
+ for(const [id,dish]of [[4,'burger'],[5,'drink']]){
   const p=mealPortion(id,r._sessionElapsed);assert.equal(p.dish,dish);
-  const mesh=createServingDish(dish);assert.equal(mesh.name,dish);let triangles=0;
+  const mesh=createDeskItem(dish);assert.ok(mesh.isObject3D);let triangles=0;
   mesh.traverse(o=>{if(o.isMesh)triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;});assert.ok(triangles>0&&triangles<=8000);
   Object.assign(r.player,{seated:false,x:p.x+.8,z:p.z});assert.equal(r.takeMeal(id),true);assert.equal(r.snapshot().drawer.source.dish,dish);
   r.setLook(0,1.20);assert.equal(r.hold(true),true);r.step(2.05);assert.equal(r.snapshot().drawer.drawnSlot,null);

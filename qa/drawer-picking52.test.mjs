@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
-import {CLASSROOM_PROP_SOURCES,loadPropAssets,restDeskItem} from '../dist/prop-assets.js?v=campus-83';
+import {CLASSROOM_PROP_SOURCES,loadPropAssets,restDeskItem,clonePropAsset} from '../dist/prop-assets.js?v=campus-83';
 import {createDeskItem} from '../dist/game-actors.js?v=campus-84';
 import {createDrawerPickTarget,pickDrawerItem} from '../dist/drawer-picking.js';
 import {ClassroomRound} from '../dist/classroom-rules.js';
@@ -14,7 +14,7 @@ function fixture({kind='garlic',yaw=0,open=true}={}){
  scene.position.set(2,0,-3);scene.rotation.y=yaw;scene.add(body,host);host.position.z=open?-.24:0;host.add(drawer);
  for(let slot=0;slot<3;slot++){
   const group=new T.Group();group.position.set((slot-1)*.28,.680,-.16);host.add(group);
-  const object=createDeskItem(kind);object.rotation.set(kind==='burger'?0:-Math.PI/2,0,(slot===1?.04:slot===0?-.07:.08)+(object.userData.propAsset&&kind!=='burger'?Math.PI:0));restDeskItem(object,.659-group.position.y);group.add(object);items.push(object);targets.push(createDrawerPickTarget(object,slot));
+  const object=kind==='garlic'?clonePropAsset(kind):createDeskItem(kind);object.rotation.set(kind==='burger'?0:-Math.PI/2,0,(slot===1?.04:slot===0?-.07:.08)+(object.userData.propAsset&&kind!=='burger'?Math.PI:0));restDeskItem(object,.659-group.position.y);group.add(object);items.push(object);targets.push(createDrawerPickTarget(object,slot));
  }
  scene.updateMatrixWorld(true);
  const origin=scene.localToWorld(V(0,1.43,-.78)),ray=new T.Raycaster();

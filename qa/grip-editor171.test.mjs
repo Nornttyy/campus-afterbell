@@ -1,12 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
-import {DESK_ITEM_KINDS} from '../dist/game-actors.js';
+import {DESK_ITEM_KINDS,createDeskItem} from '../dist/game-actors.js';
 import {GRIP_ITEMS,gripKey,gripSides,newHandGrip,validateGripSet,createGripLayer,applyGripEdits,savedGrip} from '../dist/item-grips.js';
 
 test('every carried desk item and serving variant resolves to its own editable grip',()=>{
   for(const name of DESK_ITEM_KINDS)assert.ok(GRIP_ITEMS[gripKey(name)],name);
-  for(const food of ['layerCake','chickenBucket'])assert.equal(gripKey('burger',food),food);
+  const hand={left:newHandGrip()},items={drink:hand};
+  for(const food of ['layerCake','chickenBucket','wrapper','garlic']){
+    assert.equal(GRIP_ITEMS[food],undefined);assert.throws(()=>createDeskItem(food),RangeError);items[food]=hand;
+  }
+  assert.deepEqual(validateGripSet({version:1,items}).items,{drink:hand});
   for(const type of ['hotpotPlate','hotpotBite'])assert.ok(GRIP_ITEMS[gripKey(type,'lotus')]);
   assert.deepEqual(gripSides('book'),['left','right']);assert.deepEqual(gripSides('pen'),['right']);
 });
@@ -35,7 +39,7 @@ test('saved grip follows carrying and drinking on the live skin and leaves the e
   const {loadGeometry}=await import('./gltf-geometry.mjs');
   const {createDeskHands}=await import('../dist/game-actors.js');
   const {createRiggedPalm}=await import('../dist/student-assets.js');
-  const {applyGripEdits}=await import('../dist/item-grips.js?v=campus-117&rev=172');
+  const {applyGripEdits}=await import('../dist/item-grips.js?v=campus-117&rev=174');
   const models=await Promise.all(['left','right'].map(s=>loadGeometry('ponytail-hand-'+s+'-v2.glb')));
   const factory=(sign,scale)=>createRiggedPalm(models[sign<0?0:1],sign,scale);
   const stock=createDeskHands({createHand:factory,gripForItem:()=>null}),game=createDeskHands({createHand:factory});

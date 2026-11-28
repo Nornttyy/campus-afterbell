@@ -1,5 +1,5 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=173';
-import {actorEyePosition} from './classroom-layout.js?v=campus-117&rev=173';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=174';
+import {actorEyePosition} from './classroom-layout.js?v=campus-117&rev=174';
 import {PLAYGROUND_LAYOUT,vendingPoint} from './playground-layout70.js?v=campus-117&rev=157';
 
 const foods=['snack','drink','burger','noodles','chips','gum'];
@@ -18,7 +18,7 @@ export function nextSnack(round){
 const footprints={
  snack:[119,25,209],chips:[126,72,174],noodles:[124,41,169],drink:[88,88,132],
  burger:[155,141,155],banana:[130,55,121],garlic:[61,60,68],gum:[130,17,55],
- lunch:[220,54,160],hotpotPlate:[220,25,220],hotpotBite:[65,13,44],wrapper:[128,30,145],
+ lunch:[220,54,160],hotpotPlate:[220,25,220],hotpotBite:[65,13,44],foodWaste:[128,30,145],
  pen:[20,24,175],phone:[112,19,208],smoke:[91,88,201],flash:[105,94,211],
  ink:[86,98,125],bananaPeel:[153,145,116]
 };

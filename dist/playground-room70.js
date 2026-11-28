@@ -1,7 +1,7 @@
-import {OFFICE,CORRIDOR,CLASSROOM} from './classroom-layout.js?v=campus-117&rev=173';
+import {OFFICE,CORRIDOR,CLASSROOM} from './classroom-layout.js?v=campus-117&rev=174';
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
-import {createDeskItem} from './game-actors.js?v=campus-117&rev=172';
+import {createDeskItem} from './game-actors.js?v=campus-117&rev=174';
 import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=157';
 export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-117&rev=157';
 

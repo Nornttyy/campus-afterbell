@@ -53,7 +53,7 @@ for(const file of filenames)test(`${file}: shipping GLB has static metre-scale m
 
 test('imported prop clones share immutable GPU resources but keep independent transforms and userdata',async()=>{
  const result=await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:assetLoader});assert.deepEqual(new Set(result.loaded),new Set(Object.keys(propFiles)));assert.deepEqual(result.failed,[]);
- for(const kind of Object.keys(propFiles)){
+ for(const kind of DESK_ITEM_KINDS.filter(k=>Object.hasOwn(propFiles,k))){
   const a=createDeskItem(kind),b=createDeskItem(kind);assert.ok(a.userData.propAsset?.includes(propFiles[kind]));assert.notEqual(a,b);
   const am=meshes(a),bm=meshes(b);assert.equal(am.length,bm.length);for(let i=0;i<am.length;i++){assert.notEqual(am[i],bm[i]);assert.equal(am[i].geometry,bm[i].geometry);assert.equal(am[i].material,bm[i].material);}
   const original=bounds(b).clone();a.position.set(3,2,1);a.rotation.set(.4,.6,.8);a.userData.contactFit.center[0]+=1;
@@ -66,7 +66,7 @@ test('source prop proportions survive contact fitting and animated palm attachme
  await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:assetLoader});
  const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
  const h=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});let time=0;
- for(const kind of Object.keys(propFiles)){
+ for(const kind of DESK_ITEM_KINDS.filter(k=>Object.hasOwn(propFiles,k))){
   const prop=h.group.getObjectsByProperty('type','Group').find(o=>o.userData.propAsset?.includes('/'+propFiles[kind]));assert.ok(prop,kind+' missing in held view');
   const saved=localSnapshots(prop),hand=h.getHand('left').group.getObjectByName('mixamorigLeftHand');let relative=null;
   for(let i=0;i<140;i++){

@@ -81,15 +81,15 @@ test('28 restroom stalls seat 20 individual classmates with independent doors an
  for(const s of r.seats)assert.equal(blocked(s.exitX,s.exitZ,.20,c),false);
 });
 
-test('restroom snacks leave a wrapper; flushing a phone or wrapper rolls for a clog and never scores twice',()=>{
+test('restroom snacks leave food scraps; flushing a phone or scraps rolls for a clog and never scores twice',()=>{
  for(const [item,roll,clogs] of [['snack',.049999,true],['phone',.05,false]]){
   const r=createSoloRound({map:'toilet',seed:6});r.start();const p=r.player,id=p.seatId;r._perceive=()=>{};
   p._slots[0].action=item;r.setDrawerOpen(true);r.takeSlot(0);r.setLook(p.yaw,1.20);
-  if(item==='snack'){r.hold(true);r.step(2.05);assert.equal(p._drawnSlot,null);const trash=[...r.groundItems.values()].find(t=>t.action==='wrapper');assert.ok(trash);assert.ok(r.takeGroundItem(trash.id));assert.equal(r.snapshot().selected,'wrapper');assert.equal(r.hold(true),false);}
+  if(item==='snack'){r.hold(true);r.step(2.05);assert.equal(p._drawnSlot,null);const trash=[...r.groundItems.values()].find(t=>t.action==='foodWaste');assert.ok(trash);assert.ok(r.takeGroundItem(trash.id));assert.equal(r.snapshot().selected,'foodWaste');assert.equal(r.hold(true),false);}
   const score=r.score;assert.equal(r.dropIntoToilet((id+1)%r.seats.length),false);
   r._drawerRoll=()=>roll;assert.equal(r.dropIntoToilet(id),true);assert.equal(r.toiletClogs[id],clogs);
   assert.equal(r.dropIntoToilet(id),false);assert.equal(r._events.filter(e=>e.type==='toilet-flush'&&e.toiletId===id).length,1);assert.equal(r.snapshot().drawer.drawnSlot,null);assert.equal(r.score,score);
-  assert.equal(r.snapshot().toiletFlushes[id].item,item==='snack'?'wrapper':'phone');
+  assert.equal(r.snapshot().toiletFlushes[id].item,item==='snack'?'foodWaste':'phone');
  }
 });
 
@@ -106,7 +106,7 @@ test('finishing food in a cubicle drops one retrievable piece of waste while gum
   const items=[...round.groundItems.values()];
   assert.equal(items.length,kind==='gum'?0:1,kind);
   if(items.length){
-   assert.equal(items[0].action,'wrapper');
+   assert.equal(items[0].action,'foodWaste');
    assert.ok(round.takeGroundItem(items[0].id),kind);
    assert.equal(round.takeGroundItem(items[0].id),false);
   }

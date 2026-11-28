@@ -1,16 +1,16 @@
 import {VisibleGroup} from './visible-group158.js?v=campus-117&rev=158';
-import {mountCooler} from './field-fixtures116.js?v=campus-117&rev=173';
+import {mountCooler} from './field-fixtures116.js?v=campus-117&rev=174';
 import {mountSchoolRadio} from './radio-model93.js?v=campus-117&rev=165';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=173';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=174';
 import {createToiletRoom} from './toilet-room70.js?v=campus-99&rev=173';
 import {createDormRoom} from './dorm-room70.js?v=campus-95&rev=127';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-117&rev=173';
-import {createHotpotRoom} from './hotpot-room70.js?v=campus-117&rev=173';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-117&rev=174';
+import {createHotpotRoom} from './hotpot-room70.js?v=campus-117&rev=174';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-99';
 import * as T from './vendor/three.module.js';
-import {advanceDeskDrawer} from './drawer-hand-target58.js?v=campus-117&rev=173';
-import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-117&rev=173';
-import {SEATS,MAX_CAMPUS_SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-117&rev=173';
+import {advanceDeskDrawer} from './drawer-hand-target58.js?v=campus-117&rev=174';
+import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-117&rev=174';
+import {SEATS,MAX_CAMPUS_SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-117&rev=174';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,batchHardware,boardInk,finishes={},menus=null,drawerRecords=null,screenContent=null,officeScreens=new Map()}){
  const upper=createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords,finishes});

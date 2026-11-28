@@ -12,7 +12,7 @@ const V=(...a)=>new T.Vector3(...a),Q=()=>new T.Quaternion(),DT=1/60;
 const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
 await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:{loadAsync:url=>loadGeometry(url.split('/').pop())}});
 const make=()=>createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});
-const names={snack:'snack-packet',drink:'red-drink-can',burger:'layered-burger',banana:'curved-banana',garlic:'garlic-clove',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox'};
+const names={snack:'snack-packet',drink:'red-drink-can',burger:'layered-burger',banana:'curved-banana',gum:'bubblegum-wrapper',lunch:'teacher-lunchbox'};
 
 for(const [action,name]of Object.entries(names))test(`${action}: complete 3-second real-skin eating keeps the low carry grip, bobs and returns with a rigid wrist grip`,()=>{
  const h=make(),prop=h.group.getObjectByName(name),hand=h.getHand('left'),wrist=hand.group.getObjectByName('mixamorigLeftHand'),middle=hand.group.getObjectByName('mixamorigLeftHandMiddle2');

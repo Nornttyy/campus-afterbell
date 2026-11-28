@@ -1,9 +1,9 @@
-import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=173';
+import {DESK_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=174';
 import * as T from './vendor/three.module.js';
-import {createServingDish} from './game-actors.js?v=campus-117&rev=172';
-import {PARTITIONS,CLASSROOM,CORRIDOR,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=173';
+import {createDeskItem} from './game-actors.js?v=campus-117&rev=174';
+import {PARTITIONS,CLASSROOM,CORRIDOR,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=174';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
-import {SERVING_BELTS,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92&rev=128';
+import {SERVING_BELTS,MEAL_COUNT,mealPortion,EXAM_QUESTIONS} from './upper-floors85.js?v=campus-92&rev=174';
 
 const paperWidth=.89,paperDepth=.60;
 const paperFont='"PingFang SC","Microsoft YaHei",sans-serif';
@@ -169,7 +169,7 @@ export function createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRec
      if(!dishPool.has(p.dish))dishPool.set(p.dish,[]);
      let model=dishPool.get(p.dish).pop();
      if(!model){
-      model=createServingDish(p.dish);
+      model=createDeskItem(p.dish);
       if(p.dish==='drink')model.rotation.x=-Math.PI/2;
       if(p.dish==='snack')model.rotation.x=-Math.PI*.45;
       restDeskItem(model,-.012);
