@@ -2,7 +2,7 @@ import {checkFoodScore} from './food-award156.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CampusRoom} from '../dist/room-simulation.js';
-import {createSoloRound} from '../dist/solo-round.js';
+import {createSoloRound,SoloStudentRound,SoloTeacherRound} from '../dist/solo-round.js';
 import {CAMPUS_MAPS,campusFloor,actorEyeHeight,blocked,createSeatLayout,createLayoutContext,enclosureVolumes,detentionForMap} from '../dist/classroom-layout.js';
 import {HOTPOT_RECIPES} from '../dist/hotpot-rules94.js';
 import {createDeskHands} from '../dist/game-actors.js';
@@ -29,7 +29,7 @@ test('the visible post shafts block players and chalk in each classroom, includi
 });
 test('drawing, clicking to add ingredients, cooking and eating are separate physical actions in both plans',()=>{
  for(const seed of [6,73]){
-  const r=createSoloRound({map:'hotpot',seed});r.start();r._perceive=()=>{};
+  const r=new SoloStudentRound({map:'hotpot',seed});r.start();r._perceive=()=>{};
   const p=r.player,pot=r.hotpots[r.seats[p.seatId].tableId];
   r.setDrawerOpen(true);assert.equal(r.takeSlot(0),true);const dish=r.snapshot().drawer.source.dish;assert.ok(HOTPOT_RECIPES[dish]);lookAtPot(r,p,pot);p.yaw+=Math.PI;assert.equal(r.hold(true),false);r.step(1);r.hold(false);
   assert.equal(pot.pieces.length,0);assert.equal(r.snapshot().actionProgress,0);
@@ -63,7 +63,7 @@ test('both cooking items have a visible stable first-person grip when seated and
 });
 
 test('teacher practice opponents cook and eat from their table without changing the teacher hands',()=>{
- const r=createSoloRound({map:'hotpot',role:'teacher',seed:73});r.start();r._localRisk=()=>0;
+ const r=new SoloTeacherRound({map:'hotpot',role:'teacher',seed:73});r.start();r._localRisk=()=>0;
  const student=r.students.find(a=>a.isTeammate),pot=r.hotpots[r.seats[student.seatId].tableId];
  for(const a of r.students)if(a!==student){a.isTeammate=false;a._slots=[];}
  student._decisionAt=0;student._restUntil=0;student._speed=1;student._profile.distraction=0;
@@ -71,7 +71,7 @@ test('teacher practice opponents cook and eat from their table without changing 
  for(let t=0;t<46&&student.completed.hotpotBite===0;t++)r.step(1);
  assert.ok(student.completed.hotpotPlate>0);assert.ok(student.completed.hotpotBite>0);
  assert.ok(student._earnedPoints>0);assert.equal(r.selected,held);
- const solo=createSoloRound({map:'hotpot',seed:73});solo.start();solo.step(25);assert.ok(solo.hotpots.every(p=>!p.pieces.length));assert.equal(solo.score,0);
+ const solo=new SoloStudentRound({map:'hotpot',seed:73});solo.start();solo.step(25);assert.ok(solo.hotpots.every(p=>!p.pieces.length));assert.equal(solo.score,0);
 });
 
 test('28 restroom stalls seat 20 individual classmates with independent doors and room for passing',()=>{

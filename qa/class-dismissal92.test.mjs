@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSoloRound} from '../dist/solo-round.js';
+import {SoloStudentRound} from '../dist/solo-round.js';
 import {CORRIDOR} from '../dist/classroom-layout.js';
 import {CampusRoom} from '../server/room-simulation.js';
 const hall=p=>p.x>=CORRIDOR.minX&&p.x<=CORRIDOR.maxX&&p.z>=CORRIDOR.minZ&&p.z<=CORRIDOR.maxZ;
 const pose=s=>[s.x,s.z,s.yaw,s.mood,s.visible,s.seated];
 for(const map of ['classroom','night','tiered','computer','hotpot','playground','bus'])test(map+' holds the final pose then returns automatically at five seconds',()=>{
- const r=createSoloRound({seed:243,role:'student',map});r.start();r._finish('lost','timeout');
+ const r=new SoloStudentRound({seed:243,role:'student',map});r.start();r._finish('lost','timeout');
  const before=r.students.map(pose);r.step(4.98);
  assert.equal(r.status,'lost');assert.deepEqual(r.students.map(pose),before);
  r.step(.02);assert.equal(r.stage,'gathering');assert.ok(hall(r.player));

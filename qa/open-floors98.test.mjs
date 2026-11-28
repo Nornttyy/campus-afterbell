@@ -13,11 +13,11 @@ import {FURNITURE_SOURCES67} from '../dist/furniture-assets67.js';
 
 const reopened=['cafeteria','exam','toilet','dorm'];
 const board=p=>Object.assign(p,{x:LIFT.x,z:LIFT.z,seated:false});
-test('only the ten numbered destinations can be selected for a room',()=>{
- assert.deepEqual(OPEN_CAMPUS_MAPS,CAMPUS_MAPS);assert.equal(OPEN_CAMPUS_MAPS.length,10);assert.equal(playableCampusMap('bus'),null);
+test('hotpot is archived and other destinations keep their floor numbers',()=>{
+ assert.deepEqual(OPEN_CAMPUS_MAPS,CAMPUS_MAPS.filter(m=>m!=='hotpot'));assert.equal(campusFloor('hotpot'),7);assert.equal(campusFloor('dorm'),8);assert.equal(playableCampusMap('hotpot'),null);assert.equal(playableCampusMap('bus'),null);
  assert.equal(playableCampusMap('missing'),null);assert.equal(playableCampusMap('tiered8'),'tiered');
  for(const map of OPEN_CAMPUS_MAPS){const r=CampusRoom.forPlay({map,code:'980098'});assert.equal(r.sim.map,map);assert.equal(r.floor,campusFloor(map));}
- for(const assets of [CAMPUS_SURFACE_SOURCES,CAMPUS_ARTWORK_SOURCES,FURNITURE_SOURCES67])assert.deepEqual(assetsForOpenMaps(assets),Object.fromEntries(Object.entries(assets).filter(([key])=>key!=='upholstery')));
+ for(const assets of [CAMPUS_SURFACE_SOURCES,CAMPUS_ARTWORK_SOURCES,FURNITURE_SOURCES67])assert.deepEqual(assetsForOpenMaps(assets),Object.fromEntries(Object.entries(assets).filter(([key])=>!['upholstery','broth','hotpotMenus','hotpotVegetables'].includes(key))));
 });
 test('solo lift takes both roles to the reopened floors',()=>{
  for(const role of ['student','teacher'])for(const map of reopened){
@@ -37,4 +37,11 @@ test('peer hosted rooms and client snapshots accept every reopened map',()=>{
    for(const member of host.clients.values())assert.equal(host.room.snapshot(member).map,'classroom');
   }finally{host.close();}
  }
+});
+
+test('closed hotpot cannot be entered through a saved selection, a room request or a lift',()=>{
+ assert.equal(createSoloRound({map:'hotpot'}).map,'classroom');
+ assert.equal(CampusRoom.forPlay({map:'hotpot'}).map,'classroom');
+ const solo=createSoloRound();solo.start({gathering:true});board(solo.player);
+ assert.equal(solo.travelFloor('hotpot'),false);assert.equal(solo.elevator.used,false);
 });

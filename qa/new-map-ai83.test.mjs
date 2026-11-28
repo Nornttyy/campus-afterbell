@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound,canSee} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
-import {createSoloRound} from '../dist/solo-round.js';
+import {SoloStudentRound} from '../dist/solo-round.js';
 import {inspectionPoints} from '../dist/new-map-ai83.js';
 import {PLAYGROUND_LAYOUT} from '../dist/playground-layout70.js';
 import {HOTPOT_SEATS,HOTPOT_SCREENS} from '../dist/hotpot-layout70.js';
@@ -10,7 +10,7 @@ import {TOILET_STALLS} from '../dist/toilet-layout70.js';
 import {NORMAL_WALK_SPEEDS,TEACHER_RUN_SPEED} from '../dist/movement55.js';
 import {CampusRoom} from '../server/room-simulation.js';
 const ticks=(r,seconds)=>{for(let i=0;i<seconds*10;i++)r.step(.1);};
-function quiet(map){const r=createSoloRound({map,target:10000});r.start();return r;}
+function quiet(map){const r=new SoloStudentRound({map,target:10000});r.start();return r;}
 function face(a,b){return {...a,yaw:Math.atan2(b.x-a.x,b.z-a.z),fov:180,viewRange:50};}
 
 test('playground opponents actually walk to food sources, leave them and consume; decoys exercise without scoring',()=>{

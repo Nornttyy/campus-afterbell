@@ -1,7 +1,7 @@
 import {RULE_FIELDS,validTuning,tuningForm,readTuning} from './round-tuning93.js?v=campus-117';
 import {setupControlSettings} from './control-settings64.js?v=campus-93';
 import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-83&rev=158';
-import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-101&rev=173';
+import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-101&rev=179';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -42,7 +42,7 @@ class MenuAudio {
   }
   get muted(){return settings.muted||settings.sfx===0;}
   apply(){if(!this.context)return;this.fx.gain.setTargetAtTime(settings.muted?0:settings.sfx/100*.55,this.context.currentTime,.025);}
-  click(kind='tap'){if(this.context&&!settings.muted)playCampusFoley(this,['open','back'].includes(kind)?kind:'tap');}
+  click(){if(this.context&&!settings.muted)playCampusFoley(this,'tap');}
   effect(kind,volume=1){if(this.context&&!settings.muted)playCampusFoley(this,kind,volume);}
   async pause(){if(this.context?.state==='running')try{await this.context.suspend();}catch{}}
   dispose(){this.context?.close();}
@@ -59,11 +59,11 @@ function randomStudent(){const names=Object.keys(characterNames);return names[Ma
 const controlSettings=setupControlSettings();
 function openSheet(id,button){
   if(game?.active)return;for(const open of $$('dialog[open]'))open.close();openingButton=button;const dialog=$(id);
-  dialog.showModal();audio.click('open');
+  dialog.showModal();
 }
 for(const [button,id] of [['#open-settings','#settings-dialog']])$(button).addEventListener('click',()=>openSheet(id,$(button)));
 for(const dialog of $$('#settings-dialog, #room-dialog')){
-  dialog.querySelectorAll('.close').forEach(button=>button.addEventListener('click',()=>{audio.click('back');dialog.close();}));
+  dialog.querySelectorAll('.close').forEach(button=>button.addEventListener('click',()=>dialog.close()));
   dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
   dialog.addEventListener('close',()=>{if(!game?.active)openingButton?.focus({preventScroll:true});});
 }
@@ -157,7 +157,7 @@ $('#room-enter').addEventListener('click',async()=>{
     const prepared=ensureWorld();
     prepared.then(world=>{if(!world)connection.abort();});
     entryCharacter=randomStudent();
-    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-117&rev=175');
+    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-117&rev=179');
     const online=await connectCampusRoom({code,name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina,tuning:roundOptions.tuning},signal:connection.signal,onRetry:()=>{if(roomConnecting===connection)button.textContent='正在重连…';},onError:e=>toast(typeof e==='string'?e:e.message)});
     let released=false;
     const release=()=>{if(!released){released=true;online.leave();}};
@@ -178,7 +178,7 @@ $('#room-enter').addEventListener('click',async()=>{
 document.addEventListener('keydown',e=>{if(e.repeat)return;if(e.key==='Enter'&&!$('dialog[open]')&&!game?.active&&!["BUTTON","INPUT","SELECT"].includes(document.activeElement?.tagName)){e.preventDefault();startSolo();}});
 document.addEventListener('pointerdown',()=>audio.start(),{passive:true});
 document.addEventListener('keydown',()=>audio.start());
-document.addEventListener('click',e=>{if(e.target.closest('button'))audio.click();});
+document.addEventListener('click',e=>{if(e.target.closest('button')&&!e.target.closest('#touch-controls'))audio.click();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)audio.pause();else if(audio.started)audio.start();});
 applySettings();
 
@@ -197,7 +197,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=178'),import('./classroom-game.js?v=campus-117&radio=2&rev=175')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=179'),import('./classroom-game.js?v=campus-117&radio=2&rev=179')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true,onProgress:(fraction,label)=>loadStep(38+Math.round(55*fraction),label)});
       if(disposed){prepared.dispose();return null;}

@@ -87,3 +87,13 @@ test('bells and the five confirmations use real, distinct files even if the firs
  playCampusFoley(bus,'phone-notification',.8);assert.equal(ctx.sources.at(-1).buffer.recordedBytes,(await readFile(new URL('phone-finish157.wav',origin))).length);
  await warmCampusFoley(bus);assert.ok([...calls.values()].every(n=>n===1));
 });
+
+test('menu click decodes the supplied recording and reuses it for subsequent clicks',async t=>{
+ const ctx=new AudioContextFake();ctx.state='running';const audio={context:ctx,fx:ctx.createGain()};
+ const wav=await readFile(new URL('../dist/assets/audio/menu-click179.wav',import.meta.url));
+ const decoded={duration:(wav.length-44)/48000};
+ ctx.decodeAudioData=async bytes=>{assert.deepEqual(Buffer.from(bytes),wav);return decoded;};
+ let requests=0;t.mock.method(globalThis,'fetch',async url=>{assert.equal(new URL(url).pathname.split('/').at(-1),'menu-click179.wav');requests++;return new Response(wav);});
+ playCampusFoley(audio,'tap');await new Promise(resolve=>setImmediate(resolve));ctx.currentTime+=.3;playCampusFoley(audio,'tap');
+ assert.equal(requests,1);assert.deepEqual(ctx.sources.map(source=>source.buffer),[decoded,decoded]);
+});

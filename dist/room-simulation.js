@@ -12,8 +12,8 @@ const newMemberId=()=>globalThis.crypto.randomUUID?.()??randomToken();
 import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=175';
 import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=175';
 import * as Layout from './classroom-layout.js?v=campus-117&rev=174';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=174';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=174';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=179';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=179';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
