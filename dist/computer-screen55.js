@@ -48,7 +48,6 @@ export function createComputerScreenContent(){
   if(wallpaper)c.drawImage(wallpaper,0,0,W,H);
   else{c.fillStyle='#4386c6';c.fillRect(0,0,W,H);}
   COMPUTER_APPS.forEach((app,i)=>{const {x,y}=desktopTile(i);if(selected===i){c.fillStyle='rgba(204,230,245,.30)';c.fillRect(x-9,y-9,131,119);c.strokeStyle='#d8ecf2';c.lineWidth=2;c.strokeRect(x-9,y-9,131,119);}const ix=x+31;if(app==='miner'||app==='tetris')arcadeIcon(c,app,ix,y,54);else if(app==='snake')snakeIcon(c,ix,y,54);else if(icons[app])c.drawImage(icons[app],ix,y,54,54);else{c.fillStyle=app==='valorant'?'#ed5061':app==='photoshop'?'#153c57':'#e9eeef';c.fillRect(ix,y,54,54);}c.shadowColor='#29444f';c.shadowBlur=3;label(c,names[app],x+57,y+81,15,'#ffffff','center');c.shadowBlur=0;});
-  c.fillStyle='#dce5df';c.fillRect(0,H-30,W,30);label(c,'开始',16,H-9,15,'#324b50');label(c,'14:30',W-20,H-9,15,'#324b50','right');
  });return entry.material;}
  function editor(app){const entry=surface(app);draw(entry,app,c=>{
   c.fillStyle='#202124';c.fillRect(0,0,W,H);const image=screenshots[app];if(!image)return;
