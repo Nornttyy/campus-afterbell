@@ -1,4 +1,4 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=157';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=167';
 import {enclosureVolumes,OFFICE_SOLIDS,floorTiles,floorHeight,actorEyePosition as effectEye,actorBodyVolume,mapKind} from './classroom-layout.js?v=campus-117&rev=157';
 
 // Local reconstruction parameters, not measured single-projectile durations.

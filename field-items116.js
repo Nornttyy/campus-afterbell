@@ -1,4 +1,4 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=157';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=167';
 import {actorEyePosition} from './classroom-layout.js?v=campus-117&rev=157';
 import {PLAYGROUND_LAYOUT,vendingPoint} from './playground-layout70.js?v=campus-117&rev=157';
 
