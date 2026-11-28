@@ -1,7 +1,7 @@
 import {RULE_FIELDS,validTuning,tuningForm,readTuning} from './round-tuning93.js?v=campus-117';
 import {setupControlSettings} from './control-settings64.js?v=campus-93';
 import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-83';
-import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-101';
+import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-101&rev=148';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
