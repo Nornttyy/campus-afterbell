@@ -41,13 +41,13 @@ test('production menu and classroom share one URL per physical module',async()=>
 test('multiplayer worker and authoritative rules use the current release cache key',async()=>{
   const {graph,revision}=await productionGraph();
   const client=await readFile(new URL('../dist/peer-room79.js',import.meta.url),'utf8');
-  const roomRevision=revision+'&rev=157';
+  const roomRevision=revision+'&rev=165';
   assert.ok(client.includes(`new URL('./peer-room-worker79.js?v=${roomRevision}'`));
   const chain={
     'peer-room-worker79.js':['peer-room-host79.js'],
     'peer-room-host79.js':['room-simulation.js'],
     'room-simulation.js':['classroom-rules.js','teacher-rules.js'],
-    'classroom-rules.js':['classroom-layout.js'],
+    'classroom-rules.js':['new-map-ai83.js'],
   };
   for(const [file,dependencies]of Object.entries(chain)){
     const source=await readFile(new URL('../dist/'+file,import.meta.url),'utf8');

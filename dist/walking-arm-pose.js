@@ -14,7 +14,7 @@ export function createWalkingArmPose(group,bones){
  }
  return {
   restore(){for(const [bone,q] of saved)bone.quaternion.copy(q);saved.clear();},
-  apply({weight=0,seated=false,crawling=false,restraint='free',mood='resting',carrying=false,walkTime=0,cycleDuration=1,teacher=false,jumpHeight=0}={}){
+  apply({run=0,weight=0,seated=false,crawling=false,restraint='free',mood='resting',carrying=false,walkTime=0,cycleDuration=1,teacher=false,jumpHeight=0}={}){
    if(seated||crawling||restraint!=='free'||mood==='rescuing'||(weight<.00001&&jumpHeight<=0))return;
    group.updateMatrixWorld(true);
    group.getWorldQuaternion(character);
@@ -33,6 +33,15 @@ export function createWalkingArmPose(group,bones){
    const blend=T.MathUtils.clamp(weight,0,1),angle=degrees*Math.PI/180*blend;
    const phase=walkTime/Math.max(.001,cycleDuration)*Math.PI*2;
    for(const [side,sign]of [['Left',1],['Right',-1]]){
+    const step=Math.cos(phase)*sign;
+    if(run>0){
+     rotate(bones[side+'UpLeg'],1,0,0,-.28*step*run*blend);
+     rotate(bones[side+'Leg'],1,0,0,.44*Math.max(0,-step)*run*blend);
+     if(!carrying||side==='Right'){
+      rotate(bones[side+'Arm'],1,0,0,.28*step*run*blend);
+      rotate(bones[side+'ForeArm'],1,0,0,-.55*run*blend);
+     }
+    }
     // The working hand keeps its prop contact; only the other arm swings.
     if(carrying&&side==='Left')continue;
     const ph=phase+(side==='Right'?Math.PI:0);

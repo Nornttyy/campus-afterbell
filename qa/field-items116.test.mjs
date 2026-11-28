@@ -11,15 +11,30 @@ function field(){
  Object.assign(r.player,{x:PLAYGROUND_LAYOUT.track.cx,z:PLAYGROUND_LAYOUT.track.cz,seated:false});
  return r;
 }
-test('a pile stands on each actual package and falls back to the field after its base is picked up',()=>{
+test('loose items slide off cans and off unsupported edges, while a flat lid supports a centred packet',()=>{
  const r=field(),p=r.player;
- const drop=(action,y)=>Object.assign(spawnLoose(r,p,action),{x:p.x,z:p.z,y,vx:0,vy:0,vz:0});
- const run=()=>{for(let i=0;i<160;i++)advanceLoose(r,1/60);};
- const base=drop('burger',.65);run();const packet=drop('gum',.75);run();const top=drop('phone',.85);run();
- assert.ok(base.settled&&packet.settled&&top.settled);
- assert.ok(Math.abs(packet.y-base.y-.141)<.001);assert.ok(Math.abs(top.y-packet.y-.017)<.001);
- assert.ok(takeLoose(r,base.id));run();
- assert.ok(Math.abs(packet.y-base.y)<.001);assert.ok(Math.abs(top.y-packet.y-.017)<.001);
+ const drop=(action,dx=0)=>Object.assign(spawnLoose(r,p,action),{x:p.x+dx,z:p.z,y:1.2,vx:0,vy:0,vz:0});
+ const settle=()=>{for(let i=0;i<210;i++)advanceLoose(r,1/60);};
+ const base=drop('lunch');settle();const gum=drop('gum');settle();
+ assert.equal(gum.supportId,base.id);assert.ok(Math.abs(gum.y-base.y-.054)<.001);
+ assert.ok(takeLoose(r,base.id));settle();
+ assert.equal(gum.supportId,undefined);assert.ok(Math.abs(gum.y-base.y)<.001);
+ const can=drop('drink',1);settle();const next=drop('drink',1);settle();
+ assert.ok(next.settled&&Math.hypot(next.x-can.x,next.z-can.z)>.08);
+ assert.ok(Math.abs(next.y-can.y)<.001);
+ const lunch=drop('lunch',-1);settle();const edge=drop('gum',-.89);settle();
+ assert.ok(edge.settled&&Math.abs(edge.y-lunch.y)<.001);
+});
+test('repeated drops at the same spot spread on the ground instead of building a tower',()=>{
+ const r=field(),p=r.player,items=[];
+ for(let n=0;n<22;n++){
+  items.push(Object.assign(spawnLoose(r,p,['drink','burger','snack','gum'][n%4]),{x:p.x,z:p.z,y:1.3,vx:0,vy:0,vz:0}));
+  for(let i=0;i<75;i++)advanceLoose(r,1/60);
+ }
+ for(let i=0;i<300;i++)advanceLoose(r,1/60);
+ assert.equal(r.groundItems.size,22);assert.ok(items.every(i=>i.settled));
+ const floor=Math.min(...items.map(i=>i.y));
+ assert.ok(items.every(i=>i.y-floor<.06));
 });
 test('two seconds on the vending switch always dispenses a new collectible, even beyond thirty on the floor',()=>{
  const r=field(),v=PLAYGROUND_LAYOUT.vending[0];Object.assign(r.player,{x:v.x+1.16,z:v.z});

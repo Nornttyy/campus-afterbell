@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createRiggedStudent,STUDENT_ASSETS} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
-import {ClassroomRound,AI_WALK_SPEEDS} from '../dist/classroom-rules.js';
+import {normalWalkSpeed} from '../dist/movement55.js';
+import {ClassroomRound} from '../dist/classroom-rules.js';
 import {TeacherRound} from '../dist/teacher-rules.js';
 import {blocked} from '../dist/classroom-layout.js';
 
@@ -22,13 +23,13 @@ for(const [variant,{file}]of Object.entries(STUDENT_ASSETS))test(`${variant}: re
  }finally{actor.dispose();}
 });
 
-test('expanded playground: the whole AI queue reaches clear assembly positions before 30 seconds at normal speed',()=>{
+test('expanded playground: pupils move independently at the correct surface speed after the bell',()=>{
  for(const Round of [ClassroomRound,TeacherRound]){
   const r=new Round({map:'playground'});r.start({gathering:true});r.startBell();
   const actors=r.students.filter(s=>!s.isPlayer),last=new Map(actors.map(s=>[s.id,{x:s.x,z:s.z}]));
   for(let i=0;i<1800;i++){
    r.step(1/60);
-   for(const s of actors){const before=last.get(s.id);assert.ok(Math.hypot(s.x-before.x,s.z-before.z)<=AI_WALK_SPEEDS.student/60+1e-7,'arrival accelerated or teleported');if(s.visible&&i%30===0)assert.equal(blocked(s.x,s.z,.18,r.layout),false);last.set(s.id,{x:s.x,z:s.z});}
+   for(const s of actors){const before=last.get(s.id);assert.ok(Math.hypot(s.x-before.x,s.z-before.z)<=normalWalkSpeed({...s,...before},'playground')/60+1e-7,'arrival accelerated or teleported');if(s.visible&&i%30===0)assert.equal(blocked(s.x,s.z,.18,r.layout),false);last.set(s.id,{x:s.x,z:s.z});}
   }
   assert.equal(r._seatingRoutes.size,0);assert.ok(actors.every(s=>s.visible&&!s.seated));
  }

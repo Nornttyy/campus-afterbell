@@ -34,12 +34,19 @@ test('late joins, local mute, return to the march and the shared beat follow the
   f.ui.update(state(null));assert.ok(new URL(f.audio.src).pathname.endsWith('field-march.m4a'));
   f.ui.update({...state(),map:'bus'});assert.equal(f.audio.src,undefined);f.ui.dispose();
  }
- assert.equal(broadcastLift(state()),0);assert.equal(broadcastLift(state(station,10)),0);for(const [index,sign] of [[0,1],[1,-1],[2,1]]){
-  const s=state(station,10+radioBeats[station.track].beats[index]/1000);
-  const {height,width}=broadcastScale(broadcastBeat(s));
-  assert.ok(Math.abs(broadcastLift(s)-sign*.015)<1e-8);
-  assert.ok(Math.sign(1-height)===sign&&Math.sign(width-1)===sign);
-  assert.ok(Math.abs(height*width*width-1)<1e-8);
+ assert.equal(broadcastLift(state()),0);assert.equal(broadcastLift(state(station,10)),0);for(const track of RADIO_SONGS){
+  const beats=radioBeats[track.id].beats;
+  for(const index of [1,2,125,beats.length-2]){
+   const actual=phase=>state({...station,track:track.id},10+(beats[index]+(beats[index+1]-beats[index])*phase)/1000);
+   for(let i=0;i<=40;i++){
+    const scale=broadcastScale(broadcastBeat(actual(i/40)));
+    assert.ok(scale.width<=1&&scale.width>=.975);
+    if(scale.height<=1)assert.equal(scale.width,1);
+   }
+   assert.ok(Math.abs(broadcastLift(actual(0))-.015)<1e-8);
+   assert.ok(Math.abs(broadcastLift(actual(.5))+.015)<1e-8);
+   assert.ok(Math.abs(broadcastLift(actual(1))-.015)<1e-8);
+  }
  }
 });
 
