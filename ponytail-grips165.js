@@ -23,7 +23,7 @@ export const ponytailGrips = {
     },
   },
   burger: {
-    position: [0.002805, 0.095185, -0.127145],
+    position: [-0.026297, 0.091016, -0.090703],
     rotation: [-3.034712, -0.624469, -1.66779],
     profile: {
       Index: [1.473863, 0.486067, 0.35805, 0.367611],
@@ -34,7 +34,7 @@ export const ponytailGrips = {
     },
   },
   chips: {
-    position: [0.006548, 0.140971, -0.082998],
+    position: [0.011439, 0.13463, -0.07708],
     rotation: [3.141592, 0, -1.570796],
     profile: {
       Index: [0.548862, 0.814507, 0.31, -0.85],
@@ -45,7 +45,7 @@ export const ponytailGrips = {
     },
   },
   drink: {
-    position: [-0.008745, 0.111935, -0.101687],
+    position: [-0.042259, 0.106017, -0.083148],
     rotation: [-3.141593, 0, -1.570796],
     profile: {
       Index: [0.1, 0.950367, 1.203231, 0.231327],
@@ -78,7 +78,7 @@ export const ponytailGrips = {
     },
   },
   gum: {
-    position: [0.009662, 0.108696, -0.088164],
+    position: [-0.003925, 0.038044, -0.070048],
     rotation: [3.141592, 0, -1.570796],
     profile: {
       Index: [0.632747, 0.973865, 0.656076, 0.121656],
@@ -89,7 +89,7 @@ export const ponytailGrips = {
     },
   },
   hotpotBite: {
-    position: [0.541201, 0.121308, -0.163584],
+    position: [0.072441, 0.03206, -0.019534],
     rotation: [2.022623, -0.097427, 2.482074],
     profile: {
       Index: [0.152436, 0.31, 0.31, -0.85],
@@ -100,7 +100,7 @@ export const ponytailGrips = {
     },
   },
   hotpotPlate: {
-    position: [0.514765, 0.134925, -0.177557],
+    position: [0.072768, 0.098322, -0.010799],
     rotation: [1.783733, 0.098946, 2.319125],
     profile: {
       Index: [0.1, 0.31, 0.31, -0.85],
@@ -133,7 +133,7 @@ export const ponytailGrips = {
     },
   },
   noodles: {
-    position: [0.082702, 0.127221, -0.077874],
+    position: [0.0949, 0.104576, -0.065676],
     rotation: [3.141592, 0, -1.570796],
     profile: {
       Index: [0.1, 1.5, 1.4, -0.470107],
@@ -166,7 +166,7 @@ export const ponytailGrips = {
     },
   },
   snack: {
-    position: [0.012512, 0.113047, -0.07971],
+    position: [0.055628, 0.098554, -0.054831],
     rotation: [3.141592, 0, -1.570796],
     profile: {
       Index: [0.127351, 0.617612, 1.4, -0.376451],

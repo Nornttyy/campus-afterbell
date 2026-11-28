@@ -1,4 +1,4 @@
-import {ponytailGrips} from './ponytail-grips165.js?v=campus-117&rev=165';
+import {ponytailGrips} from './ponytail-grips165.js?v=campus-117&rev=170';
 import {FIRST_PERSON_FOOD_FITS} from './first-person-packet-grips112.js?v=campus-114&rev=164';
 import * as T from './vendor/three.module.js';
 import {createFingerRig,handFrame} from './hand-motion.js?v=campus-117';

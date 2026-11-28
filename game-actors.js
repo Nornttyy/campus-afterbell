@@ -11,7 +11,7 @@ import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
 import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-117&rev=161';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117&rev=165';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117&rev=170';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
