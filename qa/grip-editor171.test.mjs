@@ -39,7 +39,7 @@ test('saved grip follows carrying and drinking on the live skin and leaves the e
   const {loadGeometry}=await import('./gltf-geometry.mjs');
   const {createDeskHands}=await import('../dist/game-actors.js');
   const {createRiggedPalm}=await import('../dist/student-assets.js');
-  const {applyGripEdits}=await import('../dist/item-grips.js?v=campus-117&rev=174');
+  const {applyGripEdits}=await import('../dist/item-grips.js?v=campus-117&rev=175');
   const models=await Promise.all(['left','right'].map(s=>loadGeometry('ponytail-hand-'+s+'-v2.glb')));
   const factory=(sign,scale)=>createRiggedPalm(models[sign<0?0:1],sign,scale);
   const stock=createDeskHands({createHand:factory,gripForItem:()=>null}),game=createDeskHands({createHand:factory});

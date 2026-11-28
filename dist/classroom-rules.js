@@ -1,4 +1,4 @@
-import {advanceLoose,dropLoose,takeLoose,takeCooler,setCoolerOpen,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=174';
+import {advanceLoose,dropLoose,takeLoose,takeCooler,setCoolerOpen,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=175';
 import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=174';
 import {RADIO_SONGS,radioSong,radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=165';
 import {expandTuning} from './round-tuning93.js?v=campus-117';
@@ -44,7 +44,7 @@ export const EATING_PITCH=Object.freeze({enter:DRAWER_LOOK_PITCH,leave:DRAWER_LO
 export const START_BELL=START_BELL_POSITION;
 export const CLASS_START_TIMING=Object.freeze({seating:30,classDuration:600,firstArrival:.15,arrivalSpacing:.36});
 export const CLASSROOM_ACTIONS = Object.freeze({
-  foodWaste:Object.freeze({duration:INTERACTION_SECONDS,points:0,risk:0,noise:0,label:'食物残渣'}),
+  foodWaste:Object.freeze({duration:INTERACTION_SECONDS,points:0,risk:0,noise:0,label:'食物垃圾'}),
   hotpotPlate:Object.freeze({duration:INTERACTION_SECONDS,points:0,risk:.8,noise:.18,label:'下食材'}),
   hotpotBite:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.7,label:'吃涮菜'}),
   snack:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.85,label:'偷吃零食'}),
@@ -563,7 +563,7 @@ export class ClassroomRound{
     const ownsSeat=actor.seated&&actor.seatId===id&&!actor._officeChair;
     if(!ownsSeat&&(actor.seated||Math.abs(actor.x-seat.x)>.82||actor.z<seat.z-.38||actor.z>seat.z+1.43||!this._clearWallSegment(actor,seat)))return false;
     if(actor.pitch<.32)return false;
-    this.toiletFlushes[id]={end:this.elapsed+1,item:slot.action};
+    this.toiletFlushes[id]={end:this.elapsed+1,item:slot.action,...(slot.action==='foodWaste'?{dish:slot.dish}: {})};
     this.toiletClogs[id]=this._drawerRoll()<.05;
     this._events.push({type:'toilet-flush',studentId:actor.id,toiletId:id,x:seat.x,z:seat.z});
     delete slot.heldBy;slot.action=null;slot.progress=0;slot.readyAt=this.elapsed+this.tuning.deskRefill;
@@ -1091,7 +1091,7 @@ export class ClassroomRound{
     if(actor.isPlayer){this.completed[kind]++;this.holding=false;}
     if(kind==='bananaPeel')this._throwPeel(actor,charge);else if(action.instantThrow)this._throwProjectile(actor,kind,1);
     if(this.map==='toilet'&&FOOD_ACTIONS.includes(kind)){
-      const trash=spawnLoose(this,actor,'foodWaste',null);
+      const trash=spawnLoose(this,actor,'foodWaste',kind);
       const seat=actor.seated&&!actor._officeChair&&this.seats[actor.seatId];
       if(seat){Object.assign(trash,{x:seat.x,y:.65,z:seat.z+.51,vx:0,vy:0,vz:.25});}
       actor.action=null;this._finishHeldItem(actor);

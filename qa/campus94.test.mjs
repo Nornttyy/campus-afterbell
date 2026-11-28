@@ -94,7 +94,7 @@ test('restroom snacks leave food scraps; flushing a phone or scraps rolls for a 
 });
 
 test('finishing food in a cubicle drops one retrievable piece of waste while gum leaves none',()=>{
- for(const kind of ['snack','chips','noodles','drink','burger','banana','lunch','gum']){
+ for(const kind of ['snack','chips','noodles','drink','burger','banana','lunch','hotpotBite','gum']){
   const round=createSoloRound({map:'toilet',seed:6});
   round.start();
   const player=round.player,slot=player._slots[0];
@@ -107,8 +107,14 @@ test('finishing food in a cubicle drops one retrievable piece of waste while gum
   assert.equal(items.length,kind==='gum'?0:1,kind);
   if(items.length){
    assert.equal(items[0].action,'foodWaste');
+   assert.equal(round.snapshot().groundItems[0].dish,kind);
    assert.ok(round.takeGroundItem(items[0].id),kind);
+   assert.equal(round.snapshot().drawer.source.dish,kind);
+   assert.equal(round.snapshot().player.heldDish,kind);
    assert.equal(round.takeGroundItem(items[0].id),false);
+   round.setLook(player.yaw,1.20);
+   assert.ok(round.dropIntoToilet(player.seatId));
+   assert.equal(round.snapshot().toiletFlushes[player.seatId].dish,kind);
   }
  }
 });

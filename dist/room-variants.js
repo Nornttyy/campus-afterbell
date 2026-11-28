@@ -1,10 +1,10 @@
 import {VisibleGroup} from './visible-group158.js?v=campus-117&rev=158';
-import {mountCooler} from './field-fixtures116.js?v=campus-117&rev=174';
+import {mountCooler} from './field-fixtures116.js?v=campus-117&rev=175';
 import {mountSchoolRadio} from './radio-model93.js?v=campus-117&rev=165';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=174';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=175';
 import {createToiletRoom} from './toilet-room70.js?v=campus-99&rev=173';
 import {createDormRoom} from './dorm-room70.js?v=campus-95&rev=127';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-117&rev=174';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-117&rev=175';
 import {createHotpotRoom} from './hotpot-room70.js?v=campus-117&rev=174';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-99';
 import * as T from './vendor/three.module.js';

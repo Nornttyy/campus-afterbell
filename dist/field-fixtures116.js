@@ -1,11 +1,12 @@
 import * as T from './vendor/three.module.js';
-import {COOLER,coolerPoint} from './field-items116.js?v=campus-117&rev=174';
-import {createDeskItem} from './game-actors.js?v=campus-117&rev=174';
+import {COOLER,coolerPoint} from './field-items116.js?v=campus-117&rev=175';
+import {createDeskItem,setWasteModel} from './game-actors.js?v=campus-117&rev=175';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {setDish} from './hotpot-food94.js?v=campus-94';
 
 function stockModel(kind,dish){
  const mesh=createDeskItem(kind);
+ if(kind==='foodWaste'){setWasteModel(mesh,dish);kind=dish==='banana'?'bananaPeel':mesh.userData.wasteKind;}
  if(mesh.userData.foodStyle&&dish)setDish(mesh,dish);
  if(['gum','chips','noodles'].includes(kind))mesh.rotation.x=Math.PI/2;
  else if(!['burger','lunch','hotpotPlate','hotpotBite'].includes(kind))mesh.rotation.x=-Math.PI/2;

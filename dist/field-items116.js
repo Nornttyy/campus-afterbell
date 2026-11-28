@@ -22,7 +22,9 @@ const footprints={
  pen:[20,24,175],phone:[112,19,208],smoke:[91,88,201],flash:[105,94,211],
  ink:[86,98,125],bananaPeel:[153,145,116]
 };
-function extent(item){return footprints[item.action]||footprints.snack;}
+const wasteFootprints={snack:[119,25,163],chips:[126,72,138],noodles:[124,41,134],drink:[88,88,121],
+ burger:[155,20,155],banana:footprints.bananaPeel,lunch:[220,19,160],hotpotBite:footprints.hotpotPlate};
+function extent(item){return item.action==='foodWaste'?(wasteFootprints[item.dish]||wasteFootprints.chips):(footprints[item.action]||footprints.snack);}
 function overlap(a,b){
  const [aw,,ad]=extent(a),[bw,,bd]=extent(b),ay=a.yaw||0,by=b.yaw||0;
  const dx=b.x-a.x,dz=b.z-a.z,cs=Math.abs(Math.cos(ay-by)),sn=Math.abs(Math.sin(ay-by));
@@ -58,7 +60,7 @@ export function canPick(round,p,point){
 }
 function equip(round,p,action,dish){
  p._slots=[{id:0,action,dish,readyAt:Infinity,progress:0,temporary:true,heldBy:p.id}];
- p._selectedSlot=p._drawnSlot=0;p._heldSource={loose:true};p._drawerOpen=false;
+ p._selectedSlot=p._drawnSlot=0;p._heldSource={loose:true,...(dish?{dish}:{})};p._drawerOpen=false;
  p.action=action;p.progress=0;p.holding=false;p._usingOfficeStock=false;
  if(p===round.player){round.selected=action;round.holding=false;}
 }

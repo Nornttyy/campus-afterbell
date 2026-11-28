@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import * as T from '../dist/vendor/three.module.js';
 import {loadGeometry} from './gltf-geometry.mjs';
 import {CLASSROOM_PROP_SOURCES,loadPropAssets,clonePropAsset,propContact,restDeskItem} from '../dist/prop-assets.js?v=campus-83';
-import {createDeskItem,createDeskHands,DESK_ITEM_KINDS} from '../dist/game-actors.js?v=campus-84';
+import {createDeskItem,createDeskHands,setWasteModel,DESK_ITEM_KINDS} from '../dist/game-actors.js?v=campus-84';
 import {createRiggedPalm} from '../dist/student-assets.js';
 
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
@@ -116,4 +116,22 @@ test('one broken replacement falls back without invalidating existing props or o
  const result=await loadPropAssets({snack:'./missing.glb',drink:CLASSROOM_PROP_SOURCES.drink},{loader:assetLoader});assert.deepEqual(result.loaded,['drink']);assert.equal(result.failed.length,1);assert.equal(result.failed[0].kind,'snack');assert.equal(clonePropAsset('snack'),null);
  assert.ok(!createDeskItem('snack').userData.propAsset,'failed replacement stays active');assert.ok(createDeskItem('drink').userData.propAsset);assert.ok(previous.userData.propAsset);assertUnchanged(saved);
  const reload=await loadPropAssets({snack:CLASSROOM_PROP_SOURCES.snack},{loader:assetLoader});assert.deepEqual(reload.failed,[]);
+});
+
+test('opened food keeps its source UVs and contains an actual cavity below the rim',async()=>{
+ await loadPropAssets(CLASSROOM_PROP_SOURCES,{loader:assetLoader});
+ const holder=createDeskItem('foodWaste');
+ for(const kind of ['snack','chips','noodles','drink','lunch','burger']){
+  const full=createDeskItem(kind),before=localSnapshots(full);
+  setWasteModel(holder,kind);
+  const box=bounds(holder),size=box.getSize(V()),center=box.getCenter(V());
+  const ray=new T.Raycaster(V(center.x,box.max.y+.1,center.z),V(0,-1,0));
+  const floor=ray.intersectObject(holder)[0];
+  assert.ok(floor&&box.max.y-floor.point.y>size.y*.65,kind+' still sealed or missing bottom');
+  assert.ok(size.y<bounds(full).getSize(V()).y,kind+' lid still present');
+  for(const mesh of meshes(holder))assert.equal(mesh.geometry.attributes.uv?.count,mesh.geometry.attributes.position.count,kind);
+  assertUnchanged(before);
+  const second=createDeskItem('foodWaste');setWasteModel(second,kind);
+  assert.equal(meshes(second)[0].geometry,meshes(holder)[0].geometry);
+ }
 });
