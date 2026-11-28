@@ -648,12 +648,7 @@ export function createDeskHands({createHand}={}){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
       for(let i=0;i<2;i++){
         const pose=animationPose[i?'right':'left'],hand=arms[i].hand,target=v(...pose.position).applyMatrix4(inv),rotation=new THREE.Quaternion().setFromEuler(new THREE.Euler(...pose.rotation,'XYZ'));
-        // Tip the backs of the two upright hands slightly toward the light.
-        // Keeping them exactly edge-on hid all three fingers behind the index.
-        const relaxed=animationPose.originalUpright&&!pose.fingers?1-ease(pose.curl,0,.38):0;
-        if(relaxed)rotation.multiply(new THREE.Quaternion().setFromAxisAngle(v(0,1,0),(i?-1:1)*.91*relaxed));
         hand.group.position.lerp(target,weight);hand.group.quaternion.slerp(invQ.clone().multiply(rotation),weight);articulation[i].applyAuthoredFingers(pose,weight);
-        if(relaxed)hand.relaxUpright?.(weight*relaxed);
       }
       group.updateMatrixWorld(true);
     }

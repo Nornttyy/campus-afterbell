@@ -106,34 +106,25 @@ test('no custom data preserves original paths and custom animation cannot overri
  const runtime=createHandAnimationRuntime({storage:storage(),eventTarget:null}),a=make(),b=make();for(let i=0;i<100;i++){const s={seated:false,movement:1,freeLook:true,crawlBlend:i/100,walkPhase:i/8};a.update(i*DT,s);b.update(i*DT,{...s,animationPose:runtime.sample(s,i*DT)});}sameSkin(skin(a),skin(b));runtime.dispose();
 });
 
-test('stock standing wrists alternate with distance and an edited walk keeps its authored positions',()=>{
- for(const role of ['teacher','student']){
-  const local=storage(),options={storage:local,eventTarget:null,fallbackDocument:PUBLISHED_HAND_ANIMATIONS};
-  const runtime=createHandAnimationRuntime(options),state={role,movement:1,walkPhase:0};
+test('all six published clips play at editor time and match the editor hand meshes in game',()=>{
+ for(const [id,clip] of Object.entries(PUBLISHED_HAND_ANIMATIONS.clips)){
+  const teacher=id.startsWith('teacher'),editor=make(teacher),game=make(teacher);
+  const runtime=createHandAnimationRuntime({storage:storage(),eventTarget:null,fallbackDocument:PUBLISHED_HAND_ANIMATIONS});
+  const state={role:teacher?'teacher':'student',movement:id.endsWith('idle')?0:1,crouched:id.includes('crawl'),seated:false,freeLook:true};
   runtime.sample(state,0);
-  const first=runtime.sample(state,.2);
-  state.walkPhase=Math.PI/.82;
-  const opposite=runtime.sample(state,.3),stationary=runtime.sample(state,.6);
-  assert.ok(first.right.position[2]<opposite.right.position[2]);
-  assert.ok(first.left.position[1]<opposite.left.position[1]);
-  assert.deepEqual(opposite.left.position,stationary.left.position);
-  state.walkPhase=(2*Math.PI-1e-6)/.82;
-  const end=runtime.sample(state,.7);
-  for(const side of ['left','right']){
-   assert.ok(Q().fromArray(first[side].quaternion).angleTo(Q().fromArray(end[side].quaternion))<.001);
+  for(const t of [.2,.7,1.3,clip.duration+1.4]){
+   const pose=runtime.sample({...state,walkPhase:t*25},t);
+   assert.equal(pose.clipId,id);
+   const expected=sampleHandAnimationClip(clip,t%clip.duration);
+   for(const side of ['left','right']){
+    assert.ok(V().fromArray(pose[side].position).distanceTo(V().fromArray(expected[side].position))<1e-9);
+    assert.ok(Q().fromArray(pose[side].quaternion).angleTo(Q().fromArray(expected[side].quaternion))<1e-6);
+   }
+   if(pose.weight<1)continue;
+   game.update(t,{...state,animationPose:pose});
+   editor.update(t,{...state,animationPose:expected});
+   sameSkin(skin(game),skin(editor),1e-6);
   }
-  state.movement=.02;
-  const slowing=runtime.sample(state,.8);
-  const rest=PUBLISHED_HAND_ANIMATIONS.clips[role+'-idle'].keyframes[0].left;
-  const idleWrist=Q().setFromEuler(new T.Euler(...rest.rotation));
-  assert.ok(idleWrist.angleTo(Q().fromArray(slowing.left.quaternion))<.04);
-
   runtime.dispose();
-  const custom=clone(PUBLISHED_HAND_ANIMATIONS),clip=custom.clips[role+'-walk'];
-  for(const key of clip.keyframes)key.left.position=[-.4,-.2,-.6];
-  saveHandAnimations(custom,local);
-  const edited=createHandAnimationRuntime(options);edited.sample(state,0);
-  assert.deepEqual(edited.sample(state,.2).left.position,[-.4,-.2,-.6]);
-  edited.dispose();
  }
 });

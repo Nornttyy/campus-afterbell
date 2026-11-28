@@ -6,11 +6,11 @@ import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
 import {createReferenceHUD} from './reference-hud54.js?v=campus-111';
 import {interactionIntent} from './interaction-intent54.js?v=campus-117&rev=119';
-import {createSessionUI} from './session-ui.js?v=campus-117&radio=2';
+import {createSessionUI} from './session-ui.js?v=campus-117&radio=2&rev=147';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=128';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=147';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -112,8 +112,9 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     }
   }
   const session=sessionFactory({root:ui,commands:{computerStick,skill:()=>{if(canInput())round.teacherSkill?.();},silent:()=>audio.muted===true,bell:settings=>{if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;return round.startBell?.(round.network?settings:undefined);},mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{round.setFixtureUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
-  function chooseRole(choice){
-    const role=choice==='doubao'?'teacher':choice,variant=choice==='doubao'?'doubao':'male';
+  function chooseRole(role){
+    if(role!=='student'&&role!=='teacher')return false;
+    const variant='male';
     if(round.network)return round.setPreference?.(role,undefined,variant);
     const next=switchSoloRole(round,role);if(!next)return false;
     if(role==='teacher')next.teacher.variant=variant;round=next;resetDrawerLook();if(externalRound)externalRound=next;options={...options,role,map:next.map,...next.snapshot().settings};

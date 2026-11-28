@@ -30,12 +30,12 @@ test('eraser is a separate ballistic projectile with a 15 second cooldown',()=>{
  const r=lesson('male');assert.ok(r.teacherSkill());const p=r.chalks[0];assert.equal(p.kind,'eraser');
  flight(r,.2);assert.ok(p.z>0);assert.ok(p.vy<1.3);r._sessionElapsed=14.99;assert.equal(r.teacherSkill(),false);r._sessionElapsed=15;assert.ok(r.teacherSkill());
 });
-test('room selects the locker preference and shares skill cooldown, projectile and attack with the other client',()=>{
+test('room maps an unavailable teacher preference to the male teacher and synchronizes the eraser',()=>{
  const room=new CampusRoom({code:'123456'}),a=room.join({}),b=room.join({});
  room.command(a,'setPreference',[{rolePreference:'teacher',teacherVariant:'doubao'}]);room.begin(a);
  for(let i=0;i<301;i++)room.tick(.1);
  assert.equal(a.role,'teacher');assert.ok(room.command(a,'teacherSkill'));assert.equal(room.command(a,'teacherSkill'),false);
- const state=room.snapshot(b);assert.equal(state.teacher.variant,'doubao');assert.equal(state.teacher.attackKind,'vertical');assert.equal(state.teacher.skillCooldown,20);assert.ok(state.chalks.some(c=>c.kind==='vertical'));
+ const state=room.snapshot(b);assert.equal(state.teacher.variant,'male');assert.equal(state.teacher.attackKind,'eraser');assert.equal(state.teacher.skillCooldown,15);assert.ok(state.chalks.some(c=>c.kind==='eraser'));
 });
 
 test('upright blade moves straight, fades on the near wall and cannot hit during the fade',()=>{
