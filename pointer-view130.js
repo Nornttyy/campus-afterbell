@@ -9,7 +9,7 @@ import {attacks} from './teacher-attacks129.js';
 // In this grip mesh the wrist lies off the shaft's local X axis. Clock the whole
 // grip so the palm is on edge and the cuff extends back toward the player.
 const uprightPalmRoll=-63;
-const ready=[.176,-.391,-.50, 1,-6,98,.035];
+const ready=[.176,-.355,-.50, 1,-6,98,.035];
 const horizontal=[
  [-attacks.horizontal.windup,ready],[-.38,[.31,-.17,-.44,50,38,9,.06]],
  [-.18,[.39,-.11,-.46,83,21,20,.18]],
@@ -55,14 +55,14 @@ export function pointerGait(phase,amount,run){
  const lift=(1-Math.cos(2*angle))*.5;
  return {
   x:amount*(.014+run*.007-right*(.018+.022*run)),
-  y:amount*(.024+.008*run+right*(.065+.028*run)+lift*.012),
+  y:amount*(-.012+.008*run+right*(.065+.028*run)+lift*.012),
   z:-amount*(.008+right*(.090+.072*run)),
   yaw:amount*(-1-right*(3+2*run)),
   pitch:amount*(-9-run*2+right*(13+4*run)-Math.sin(angle)*(2+run)),
   roll:amount*(right*(2+2*run)+Math.sin(angle)*2),
   // This mesh is wrist-centred: fingers point along -Z and the thumb edge along +Y.
   leftX:-.219+amount*left*(.017+.013*run),
-  leftY:-.401+amount*(.028+left*(.082+.020*run)+lift*.014),
+  leftY:-.373+amount*(left*(.082+.020*run)+lift*.014),
   leftZ:-.48-amount*left*(.084+.058*run),
   leftPitch:.09+amount*left*(.055+.065*run),
   leftRoll:amount*Math.sin(angle)*(.025+.025*run)
