@@ -1,21 +1,24 @@
-import {actorFloorHeight,clearWallSegment} from './classroom-layout.js?v=campus-117&rev=157';
+import {teacherViewHeight} from './camera-height58.js?v=campus-83';
+import {actorFloorHeight,actorBodyVolume,clearWallSegment} from './classroom-layout.js?v=campus-117&rev=157';
 
 export const attacks=Object.freeze({
   horizontal:{cooldown:2.2,duration:2.2,windup:.78,fade:.75,speed:7,range:2.6,width:1.05,height:.55},
   vertical:{cooldown:20,duration:2.3,windup:.77,fade:.85,speed:8,range:6.2,width:1.18,height:1.35},
-  eraser:{cooldown:15,duration:.5,windup:.16,speed:13,range:15}
+  eraser:{cooldown:15,duration:.5,windup:.16,speed:13,range:15,radius:1.8}
 });
 
-export function castTeacherAttack(round,source,kind){
+export function castTeacherAttack(round,source,kind,aim=null){
   const spec=attacks[kind],now=round._sessionElapsed;
   if(round.paused||round.status!=='playing'||source.captivity==='stunned')return false;
   const primary=kind==='horizontal';
   if(now+1e-8<(primary?round._nextThrow:round.skillReadyAt)||now+1e-8<(round.attackLockedUntil||0))return false;
-  const yaw=source.yaw||0,pitch=source.pitch||0,eraser=kind==='eraser';
+  const eraser=kind==='eraser';
   if(round._writing)round.setWriting(false);
-  const y=actorFloorHeight(source,round.map)+(eraser?1.68:1.08);
+  const y=actorFloorHeight(source,round.map)+(eraser?teacherViewHeight(source):1.08);
+  const yaw=eraser&&aim?Math.atan2(aim.x-source.x,aim.z-source.z):source.yaw||0;
+  const pitch=eraser&&aim?Math.atan2(y-aim.y,Math.hypot(aim.x-source.x,aim.z-source.z)):source.pitch||0;
   round.chalks.push({id:round._chalkId++,kind,x:source.x,y,z:source.z,
-    vx:Math.sin(yaw)*spec.speed*(eraser?Math.cos(pitch):1),vy:eraser?1.3-Math.sin(pitch)*spec.speed:0,
+    vx:Math.sin(yaw)*spec.speed*(eraser?Math.cos(pitch):1),vy:eraser?-Math.sin(pitch)*spec.speed:0,
     vz:Math.cos(yaw)*spec.speed*(eraser?Math.cos(pitch):1),yaw,age:0,windup:spec.windup,
     travelled:0,hitIds:[],throwerId:source.id,originX:source.x,originZ:source.z,busDeck:source.busDeck||0});
   round.teacher.attackKind=kind;round.teacher.attackAt=now;
@@ -59,4 +62,21 @@ export function advanceWave(round,c,dt){
     c.fadeAge=Math.max(0,dt-distance/spec.speed);
     c.dead=c.fadeAge>=spec.fade;
   }
+}
+
+export function eraserImpact(round,c,hit){
+ const {radius,speed}=attacks.eraser;
+ // Trace from just in front of the contact face, so the wall that was hit
+ // protects the far side without masking students on the thrower's side.
+ const origin={x:c.x-c.vx/speed*.003,z:c.z-c.vz/speed*.003,busDeck:c.busDeck};
+ for(const s of round.students){
+  if(s.visible===false||s.caught||s.captivity!=='free'||s.id===c.throwerId)continue;
+  if(round.map==='bus'&&(s.busDeck||0)!==c.busDeck)continue;
+  if(hit.kind==='student'&&s.id===hit.id){round._stun(s);continue;}
+  const box=actorBodyVolume(s,round.map);
+  const gap=(v,min,max)=>Math.max(min-v,0,v-max);
+  if(Math.hypot(gap(c.x,box.minX,box.maxX),gap(c.y,box.minY,box.maxY),gap(c.z,box.minZ,box.maxZ))<=radius&&
+    clearWallSegment(origin,s,round.layout))round._stun(s);
+ }
+ round._events.push({type:'chalk-hit',kind:hit.kind,projectile:'eraser',radius,x:c.x,y:c.y,z:c.z});
 }
