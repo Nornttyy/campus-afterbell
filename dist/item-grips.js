@@ -17,6 +17,7 @@ export const FINGERS={Thumb:'拇指',Index:'食指',Middle:'中指',Pinky:'小�
 const key='campus.itemGrips.v1';
 const zero=()=>[0,0,0];
 export const newHandGrip=()=>({position:zero(),rotation:zero(),joints:{}});
+export const newPropGrip=()=>({position:zero(),rotation:zero(),scale:1});
 export const emptyGripSet=()=>({version:1,items:{}});
 function triple(a,max){
   if(!Array.isArray(a)||a.length!==3||!a.every(n=>Number.isFinite(n)&&Math.abs(n)<=max))throw Error('握姿数值超出范围');
@@ -29,6 +30,10 @@ export function validateGripSet(doc){
     if(!Object.hasOwn(GRIP_ITEMS,id)||!sides||typeof sides!=='object'||Array.isArray(sides))throw Error('未知物品握姿');
     const entry={};out.items[id]=entry;
     for(const [side,pose] of Object.entries(sides)){
+      if(side==='prop'){
+        if(!Number.isFinite(pose?.scale)||pose.scale<.1||pose.scale>5)throw Error('物品比例超出范围');
+        entry.prop={position:triple(pose.position,500),rotation:triple(pose.rotation,180),scale:pose.scale};continue;
+      }
       if(!gripSides(id).includes(side)||!pose?.joints||typeof pose.joints!=='object'||Array.isArray(pose.joints))throw Error('手部数据无效');
       const joints={};
       for(const [bone,angles] of Object.entries(pose.joints)){
@@ -84,4 +89,26 @@ export function createGripLayer(hand,side,lookup=savedGrip){
     }
   }
   return {restore,apply,bone:name=>bones.get(name)};
+}
+
+// Item translation is in millimetres along the unedited item's axes.
+// Parent scale differs between desktop props, palm sockets and classroom meshes.
+export function createPropGripLayer(lookup=savedGrip){
+  let active=null;
+  const position=new Vector3(),rotation=new Quaternion(),scale=new Vector3();
+  const offset=new Vector3(),world=new Vector3(),turn=new Quaternion(),angle=new Euler();
+  function restore(){
+    if(!active)return;
+    active.position.copy(position);active.quaternion.copy(rotation);active.scale.copy(scale);active=null;
+  }
+  function apply(id,prop){
+    restore();const pose=lookup(id)?.prop;if(!pose||!prop?.parent)return;
+    active=prop;position.copy(prop.position);rotation.copy(prop.quaternion);scale.copy(prop.scale);
+    prop.getWorldQuaternion(turn);
+    prop.getWorldPosition(world).add(offset.fromArray(pose.position).multiplyScalar(.001).applyQuaternion(turn));
+    prop.position.copy(prop.parent.worldToLocal(world));
+    prop.quaternion.multiply(turn.setFromEuler(angle.set(...pose.rotation.map(x=>x*Math.PI/180))));
+    prop.scale.multiplyScalar(pose.scale);
+  }
+  return {apply,restore};
 }

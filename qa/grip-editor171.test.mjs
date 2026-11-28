@@ -35,7 +35,7 @@ test('saved grip follows carrying and drinking on the live skin and leaves the e
   const {loadGeometry}=await import('./gltf-geometry.mjs');
   const {createDeskHands}=await import('../dist/game-actors.js');
   const {createRiggedPalm}=await import('../dist/student-assets.js');
-  const {applyGripEdits}=await import('../dist/item-grips.js?v=campus-117&rev=171');
+  const {applyGripEdits}=await import('../dist/item-grips.js?v=campus-117&rev=172');
   const models=await Promise.all(['left','right'].map(s=>loadGeometry('ponytail-hand-'+s+'-v2.glb')));
   const factory=(sign,scale)=>createRiggedPalm(models[sign<0?0:1],sign,scale);
   const stock=createDeskHands({createHand:factory,gripForItem:()=>null}),game=createDeskHands({createHand:factory});
@@ -49,4 +49,14 @@ test('saved grip follows carrying and drinking on the live skin and leaves the e
     assert.ok(expected.angleTo(joint(game).quaternion)<1e-6);
     assert.ok(stock.getProp('drink').position.distanceTo(game.getProp('drink').position)<1e-7);
   }
+});
+
+test('item transforms round-trip independently of hand edits and restore after release',async()=>{
+  const {createPropGripLayer}=await import('../dist/item-grips.js');
+  const data={version:1,items:{drink:{prop:{position:[30,-10,5],rotation:[40,0,15],scale:1.7}}}};
+  assert.deepEqual(validateGripSet(data),data);
+  const parent=new T.Group(),item=new T.Object3D();parent.scale.setScalar(2);parent.rotation.y=.6;parent.add(item);item.rotation.z=.2;
+  const original=item.quaternion.clone(),layer=createPropGripLayer(id=>data.items[id]);
+  for(let i=0;i<3;i++){layer.apply('drink',item);assert.equal(item.scale.x,1.7);assert.ok(Math.abs(item.getWorldPosition(new T.Vector3()).length()-Math.hypot(.030,.010,.005))<1e-8);}
+  layer.restore();assert.ok(item.quaternion.equals(original)&&item.position.length()===0&&item.scale.x===1);
 });

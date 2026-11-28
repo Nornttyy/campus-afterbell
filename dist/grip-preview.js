@@ -1,13 +1,14 @@
+import {endOfJoint,installGripDrag} from './grip-drag.js?v=campus-117&rev=172';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from './vendor/addons/controls/OrbitControls.js';
-import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=171';
-import {createDeskHands} from './game-actors.js?v=campus-117&rev=171';
+import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=172';
+import {createDeskHands} from './game-actors.js?v=campus-117&rev=172';
 import {CLASSROOM_PROP_SOURCES,loadPropAssets} from './prop-assets.js?v=campus-83';
 import {teacherGripProps} from './grip-tools.js?v=campus-117&rev=171';
-import {createGripLayer,gripSides,teacherItem,FINGERS} from './item-grips.js?v=campus-117&rev=171';
+import {createPropGripLayer,createGripLayer,gripSides,teacherItem,FINGERS} from './item-grips.js?v=campus-117&rev=172';
 import {TEXTBOOK,bookSpineHeight} from './study-book58.js?v=campus-110';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=171';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=172';
 import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=171';
 
 const vec=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
@@ -26,7 +27,7 @@ function makeBook(redraw){
   group.position.set(0,bookSpineHeight(readingTilt)-1.43,-TEXTBOOK.seatDistance);group.rotation.set(-readingTilt,Math.PI,0);return group;
 }
 function canvasTexture(w,h,paint){const c=document.createElement('canvas');c.width=w;c.height=h;paint(c.getContext('2d'),w,h);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;return t;}
-export function createGripPreview(canvas,lookup,onPick){
+export function createGripPreview(canvas,lookup,edit){
   const renderer=new T.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.toneMapping=T.NeutralToneMapping;
   const scene=new T.Scene(),camera=new T.PerspectiveCamera(39,1,.002,50),orbit=new OrbitControls(camera,canvas);
   scene.background=new T.Color('#dbe5df');orbit.minDistance=.045;orbit.maxDistance=3;
@@ -34,6 +35,7 @@ export function createGripPreview(canvas,lookup,onPick){
   const loader=new GLTFLoader(),cache=new Map(),nothing=()=>null,isolated=new T.Group();
   const assetReady=loadPropAssets(CLASSROOM_PROP_SOURCES,{loader});
   let id,rig,roleRig,prop,book,exam,activities,fixture,generation=0,visibleSides=[],nodesVisible=true,selection='left:Thumb1',busy=false;
+  const itemLayer=createPropGripLayer(lookup);let tool="finger";
   const dots=new T.Group();scene.add(dots);const pointGeo=new T.SphereGeometry(.003,10,7);
   const marker=(color)=>new T.MeshBasicMaterial({color,depthTest:false,depthWrite:false});
   const normal=marker(0x508579),selected=marker(0xff8937);
@@ -59,12 +61,14 @@ export function createGripPreview(canvas,lookup,onPick){
     for(const side of visibleSides)for(const finger of Object.keys(FINGERS))for(const n of [1,2,3]){
       const joint=finger+n,bone=roleRig.layers[side].bone(joint);if(!bone)continue;
       const active=selection===side+':'+joint,point=new T.Mesh(pointGeo,active?selected:normal);
-      point.userData={side,finger,n};point.renderOrder=active?4:3;point.position.copy(bone.getWorldPosition(vec()));if(active)point.scale.setScalar(1.55);dots.add(point);
+      point.userData={side,finger,n};point.renderOrder=active?4:3;point.position.copy(endOfJoint(roleRig.layers[side],finger,n));if(active)point.scale.setScalar(1.55);dots.add(point);
     }
   }
   function apply(){
     if(!roleRig||busy)return;
+    itemLayer.restore();
     for(const side of visibleSides){const layer=roleRig.layers[side];layer.restore();layer.apply(id,prop);}
+    itemLayer.apply(id,prop);
     scene.updateMatrixWorld(true);markers();draw();
   }
   function center(){
@@ -84,6 +88,7 @@ export function createGripPreview(canvas,lookup,onPick){
     const role=teacherItem(item)?'teacher':'student';if(!cache.has(role))cache.set(role,build(role));
     let next;try{next=await cache.get(role);}catch(err){cache.delete(role);throw err;}
     if(ticket!==generation)return false;
+    itemLayer.restore();
     if(roleRig){for(const layer of Object.values(roleRig.layers))layer.restore();rig.group.visible=false;}
     if(book)book.visible=false;if(fixture){scene.remove(fixture);fixture=null;}
     if(exam)exam.update({player:{},students:[]});
@@ -117,12 +122,8 @@ export function createGripPreview(canvas,lookup,onPick){
     for(const side of ['left','right'])rig.getHand(side).group.parent.visible=visibleSides.includes(side);
     busy=false;apply();center();return true;
   }
-  const ray=new T.Raycaster();let down;
-  canvas.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
-  canvas.addEventListener('pointerup',e=>{
-    if(!down||!nodesVisible||Math.hypot(e.clientX-down[0],e.clientY-down[1])>4)return;
-    const rect=canvas.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-rect.left)/rect.width*2-1,1-(e.clientY-rect.top)/rect.height*2),camera);
-    const hit=ray.intersectObjects(dots.children,false)[0];if(hit)onPick(hit.object.userData);
-  });
-  return {show,apply,center,select(side,joint,visible){selection=side+':'+joint;nodesVisible=visible;markers();draw();}};
+  installGripDrag(canvas,camera,orbit,()=>busy||!prop?null:{dots,prop,layers:roleRig.layers,hands:Object.fromEntries(visibleSides.map(s=>[s,rig.getHand(s).group])),fingerMode:tool==='finger'&&edit.isFinger(),tool:tool==='finger'?'translate':tool,record:lookup(id)},edit);
+  return {show,apply,center,select(side,joint,visible,dragTool){
+    tool=dragTool;selection=side+':'+joint;nodesVisible=visible&&tool==='finger';markers();draw();
+  }};
 }
