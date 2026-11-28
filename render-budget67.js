@@ -3,10 +3,10 @@ export function prefersMobileRendering({coarse=false,hover=true,touchPoints=0}={
  return coarse&&(!hover||touchPoints>1);
 }
 export function initialQuality(saved,mobile=false){
- return ['high','low'].includes(saved)?saved:mobile?'low':'high';
+ return ['high','low'].includes(saved)?saved:'high';
 }
 export function renderPixelRatio({width=1,height=1,dpr=1,quality='high',mobile=false,scale=1}={}){
- const pixels=Math.max(1,width)*Math.max(1,height),budget=mobile?1100000:3600000;
+ const pixels=Math.max(1,width)*Math.max(1,height),budget=3600000;
  const native=Math.max(.5,Number.isFinite(dpr)?dpr:1);
  return Math.max(.35,Math.min(native,quality==='low'?1:1.6,Math.sqrt(budget/pixels))*scale);
 }

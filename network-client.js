@@ -47,7 +47,10 @@ function validActor(actor){return object(actor)&&Number.isInteger(actor.id)&&['x
 function validState(state,room=null){return object(state)&&validRoom(state.room)&&(!room||state.room.code===room.code&&state.room.selfId===room.selfId)&&['student','teacher'].includes(state.role)&&['ready','playing','won','lost'].includes(state.status)&&['gathering','seating','class','dismissal'].includes(state.stage)&&typeof state.map==='string'&&validActor(state.player)&&validActor(state.teacher)&&Array.isArray(state.students)&&state.students.every(validActor)&&object(state.drawer)&&Array.isArray(state.drawer.slots)&&state.drawer.slots.every(s=>object(s)&&Number.isInteger(s.id))&&Array.isArray(state.seats)&&Array.isArray(state.books)&&object(state.completed)&&finite(state.score)&&finite(state.target)&&finite(state.elapsed)&&Number.isSafeInteger(state.sequence)&&Array.isArray(state.events)&&state.events.every(e=>object(e)&&typeof e.type==='string');}
 function validSession(result){return object(result)&&typeof result.token==='string'&&result.token.length>=16&&validRoom(result.room)&&validState(result.state,result.room);}
 export function readEvent(data,type,room,previous){
- let message;try{message=JSON.parse(data);}catch{throw protocolError();}
+ let packet;try{packet=JSON.parse(data);}catch{throw protocolError();}
+ return readRoomPacket(packet,type,room,previous);
+}
+export function readRoomPacket(message,type,room,previous){
  if(type==='patch'){if(!object(message)||!previous||message.baseSequence!==previous.sequence||!Number.isSafeInteger(message.sequence)||message.sequence<message.baseSequence)throw protocolError();try{const next=applyNetworkDelta(previous,message.patch);if(next.sequence!==message.sequence)throw protocolError();message=next;}catch{throw protocolError();}}
  if(type==='state'||type==='patch'){
   if(!validState(message,room))throw protocolError();

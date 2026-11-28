@@ -5,13 +5,15 @@ import * as T from './vendor/three.module.js';
 export function createSmokeEffects(renderer,{width=0,height=0,samples=4,glassInView=null}={}){
   const size=new T.Vector2(),volumeScene=new T.Scene(),screenScene=new T.Scene();
   const screenCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
-  const opaque=new T.WebGLRenderTarget(1,1,{type:T.HalfFloatType,depthBuffer:true});
-  opaque.samples=samples;
+  const colourType=renderer.extensions?.has('EXT_color_buffer_float')===false?T.UnsignedByteType:T.HalfFloatType;
+  const opaque=new T.WebGLRenderTarget(1,1,{type:colourType,depthBuffer:true});
+  const gl=renderer.getContext?.();
+  const supported=gl?.getInternalformatParameter?.(gl.RENDERBUFFER,colourType===T.HalfFloatType?gl.RGBA16F:gl.RGBA8,gl.SAMPLES);
+  opaque.samples=supported?Math.max(0,...Array.from(supported).filter(n=>n<=samples)):samples;
   opaque.depthTexture=new T.DepthTexture(1,1,T.UnsignedIntType);
   // On touch devices visible interior glass needs colour, but no multisample
   // depth resolve or volume pass. The target allocates on its first use.
-  const paneColourType=renderer.extensions?.has('EXT_color_buffer_float')===false?T.UnsignedByteType:T.HalfFloatType;
-  const glassOnly=new T.WebGLRenderTarget(1,1,{type:paneColourType,depthBuffer:true});
+  const glassOnly=new T.WebGLRenderTarget(1,1,{type:colourType,depthBuffer:true});
   glassOnly.depthTexture=new T.DepthTexture(1,1,T.UnsignedIntType);
   const mist=new T.WebGLRenderTarget(1,1,{depthBuffer:false,minFilter:T.LinearFilter,magFilter:T.LinearFilter});
   const data=new Uint8Array(32**3);let seed=17831;
@@ -77,7 +79,9 @@ export function createSmokeEffects(renderer,{width=0,height=0,samples=4,glassInV
     uniforms:{colorMap:{value:opaque.texture},smokeMap:{value:mist.texture},depthMap:{value:opaque.depthTexture},projectionInverse:{value:new T.Matrix4()},projection:{value:new T.Matrix4()},screenSize:{value:new T.Vector2()},smokeActive:{value:0},contactStrength:{value:.52},frostedGlass:{value:false}},
     vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=vec4(position.xy,0.,1.);}',
     fragmentShader:`uniform sampler2D colorMap,smokeMap,depthMap;uniform mat4 projectionInverse,projection;uniform vec2 screenSize;uniform float smokeActive,contactStrength;uniform bool frostedGlass;varying vec2 v;
-      vec3 surface(vec2 uv){float d=texture2D(depthMap,clamp(uv,vec2(.001),vec2(.999))).r;vec4 p=projectionInverse*vec4(uv*2.-1.,d*2.-1.,1.);return p.xyz/p.w;}
+      vec3 surface(vec2 uv){float d=texture2D(depthMap,clamp(uv,vec2(.001),vec2(.999))).r;vec2 xy=(uv*2.-1.)*vec2(projectionInverse[0][0],projectionInverse[1][1])+projectionInverse[3].xy;
+        float w=projectionInverse[2][3]*(d*2.-1.)+projectionInverse[3][3];
+        return vec3(xy,projectionInverse[3][2])/w;}
       float contactShade(){
         if(contactStrength<.001||texture2D(depthMap,v).r>.9999)return 1.;
         vec2 pixel=1./screenSize;vec3 p=surface(v);

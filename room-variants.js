@@ -1,3 +1,4 @@
+import {VisibleGroup} from './visible-group158.js?v=campus-117&rev=158';
 import {mountCooler} from './field-fixtures116.js?v=campus-117&rev=157';
 import {mountSchoolRadio} from './radio-model93.js?v=campus-117&rev=157';
 import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=157';
@@ -23,7 +24,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
  // built once when its elevator is called, or immediately on direct entry.
  const rooms={};
  for(const name of Object.keys(builders)){
-  const root=new T.Group();root.name='floor-'+name;root.visible=false;scene.add(root);
+  const root=new VisibleGroup();root.name='floor-'+name;root.visible=false;scene.add(root);
   rooms[name]={root,view:null};
  }
  function prepareFloor(name){
@@ -33,7 +34,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
  }
  let cooler=null;
  const radioTools={box,rounded,mat,texture,bakeStatic},radios={};
- const group=new T.Group(),screens=new Map(),stations=new Map(),drawers=new Map(),hardwareRoots=[];group.name='computer-lab-workstations';scene.add(group);group.visible=false;
+ const group=new VisibleGroup(),screens=new Map(),stations=new Map(),drawers=new Map(),hardwareRoots=[];group.name='computer-lab-workstations';scene.add(group);group.visible=false;
  let laptop,teacherScreen,screenGeo,cableGeometry,hardwareBatch;
  function buildLab(){
   if(laptop)return;

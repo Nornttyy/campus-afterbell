@@ -1,3 +1,4 @@
+import {gameMeshes} from './game-models158.js?v=campus-117&rev=158';
 import {BufferAttribute} from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 
@@ -89,6 +90,9 @@ export function applyClassShape(model,parts,indices){
 // Original authoring files are also the fallback on older browsers and when
 // delivery data fails. Caller-supplied loaders still receive the original URLs.
 export class CampusModelLoader extends GLTFLoader{
+ constructor(manager,{gameMaterials=false}={}){
+  super(manager);this.gameMaterials=gameMaterials;
+ }
  async loadAsync(url,onProgress){
   const asset=new URL(url,import.meta.url),file=asset.pathname.split('/').pop().replace(/\.glb$/,'');
   const packed=typeof window!=='undefined'&&asset.origin===manifestUrl.origin?loadClassShapes():null;
@@ -102,7 +106,7 @@ export class CampusModelLoader extends GLTFLoader{
    const original=new URL(url,import.meta.url),name=original.pathname.split('/').pop();
    if(original.origin===manifestUrl.origin&&name.endsWith('.glb')){
     try{
-     const files=await catalog(),file=files[name.slice(0,-4)];
+     const key=name.slice(0,-4),file=(this.gameMaterials&&gameMeshes[key])||(await catalog())[key];
      if(file){
       const location=new URL(file,manifestUrl),data=await modelBytes(location.href,onProgress);
       return await this.parseAsync(data,new URL('.',location).href);

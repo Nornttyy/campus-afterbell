@@ -109,3 +109,18 @@ body:not(.playing) #school-radio-player{top:auto;bottom:max(18px,env(safe-area-i
 .exam-inspiration b,.exam-inspiration small{padding:.22em .7em;font:inherit}
 .exam-inspiration b{background:#ffac93;color:white}
 #play-ui[data-input-mode=mobile] .exam-inspiration{bottom:30%}
+
+/* Keep the aiming surface behind independently held thumb controls. */
+#session-ui #touch-look{top:0}
+#session-ui .touch-actions{--pad:min(var(--touch-size),max(46px,15dvh));--gap:min(var(--touch-gap),2.5dvh);grid-template-columns:repeat(2,var(--pad));gap:var(--gap);pointer-events:none}
+#session-ui .touch-actions button{width:var(--pad);height:var(--pad);font-size:clamp(14px,3.8dvh,18px);line-height:1.1}
+#session-ui .touch-actions #touch-jump{right:calc(100% + var(--gap))}
+#session-ui [data-left-handed=true] #touch-jump{left:calc(100% + var(--gap));right:auto}
+#session-ui #touch-use{outline:2px solid #fff9;outline-offset:2px}
+#session-ui #touch-emote{top:calc(env(safe-area-inset-top,0px) + 66px);right:calc(env(safe-area-inset-right,0px) + var(--touch-edge));min-height:44px}
+#session-ui [data-left-handed=true] #touch-emote{left:calc(env(safe-area-inset-left,0px) + var(--touch-edge));right:auto}
+#session-ui #touch-stick{width:clamp(84px,calc(var(--touch-size)*1.65),32dvh);height:clamp(84px,calc(var(--touch-size)*1.65),32dvh)}
+#session-ui #touch-stick i{width:45%;height:45%}
+
+#session-ui .touch-actions #touch-skill{position:static;grid-column:1;grid-row:3;justify-self:center}
+#session-ui .touch-actions #touch-skill[hidden]{display:none}
