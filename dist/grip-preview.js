@@ -1,15 +1,16 @@
+import {prepareDeskProps} from './prepare-desk-props.js?v=campus-117&rev=178';
 import {endOfJoint,installGripDrag} from './grip-drag.js?v=campus-117&rev=172';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from './vendor/addons/controls/OrbitControls.js';
-import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=177';
-import {createDeskHands} from './game-actors.js?v=campus-117&rev=177';
-import {CLASSROOM_PROP_SOURCES,loadPropAssets} from './prop-assets.js?v=campus-83';
+import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=178';
+import {createDeskHands} from './game-actors.js?v=campus-117&rev=178';
+import {CLASSROOM_PROP_SOURCES} from './prop-assets.js?v=campus-83';
 import {teacherGripProps} from './grip-tools.js?v=campus-117&rev=171';
 import {createPropGripLayer,createGripLayer,gripSides,teacherItem,FINGERS} from './item-grips.js?v=campus-117&rev=175';
 import {TEXTBOOK,bookSpineHeight} from './study-book58.js?v=campus-110';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=177';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=177';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=178';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=178';
 
 const vec=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 function makeBook(redraw){
@@ -33,7 +34,7 @@ export function createGripPreview(canvas,lookup,edit){
   scene.background=new T.Color('#dbe5df');orbit.minDistance=.045;orbit.maxDistance=3;
   scene.add(new T.HemisphereLight(0xffffff,0xb3b2a2,2.05));const sun=new T.DirectionalLight(0xfff6e7,2);sun.position.set(-3,5,4);scene.add(sun);
   const loader=new GLTFLoader(),cache=new Map(),nothing=()=>null,isolated=new T.Group();
-  const assetReady=loadPropAssets(Object.fromEntries(Object.entries(CLASSROOM_PROP_SOURCES).filter(([kind])=>kind!=='garlic')),{loader});
+  const assetReady=prepareDeskProps(Object.fromEntries(Object.entries(CLASSROOM_PROP_SOURCES).filter(([kind])=>kind!=='garlic')),{loader});
   let id,rig,roleRig,prop,book,exam,activities,fixture,generation=0,visibleSides=[],nodesVisible=true,selection='left:Thumb1',busy=false;
   const itemLayer=createPropGripLayer(lookup);let tool="finger";
   const dots=new T.Group();scene.add(dots);const pointGeo=new T.SphereGeometry(.003,10,7);

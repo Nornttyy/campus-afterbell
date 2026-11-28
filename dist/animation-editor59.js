@@ -1,17 +1,18 @@
+import {prepareDeskProps} from './prepare-desk-props.js?v=campus-117&rev=178';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import * as T from './vendor/three.module.js';
 import {OrbitControls} from './vendor/addons/controls/OrbitControls.js';
 import {TransformControls} from './vendor/addons/controls/TransformControls.js';
-import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=177';
+import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=178';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
-import {createDeskHands} from './game-actors.js?v=campus-117&rev=177';
+import {createDeskHands} from './game-actors.js?v=campus-117&rev=178';
 import {ITEM_HAND_CLIPS,newItemHandClip,createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-111';
 import {loadHandAnimations,saveCurrentHandAnimation,clearHandAnimations} from './hand-animation-runtime59.js?v=campus-117&rev=169';
 import {createAnimationHistory,putAnimationFrame,moveAnimationFrame,retimeAnimationClip,mirrorAnimationHand,completeAnimationDocument} from './animation-editor-state59.js?v=campus-83';
 
 import {prepareAnimationEditorDocument} from './animation-editor-start59.js?v=campus-111';
 
-import {loadPropAssets,CLASSROOM_PROP_SOURCES} from './prop-assets.js?v=campus-83';
+import {CLASSROOM_PROP_SOURCES} from './prop-assets.js?v=campus-83';
 const $=id=>document.getElementById(id),clone=v=>JSON.parse(JSON.stringify(v)),DRAFT='campus.handAnimationDraft.v2',LEGACY_DRAFT='campus.handAnimationDraft.v1',RAD=Math.PI/180;
 let doc=createHandAnimationDocument(),draftError='',draftNotice='';
 try{const current=localStorage.getItem(DRAFT),raw=current||localStorage.getItem(LEGACY_DRAFT);let saved=null;
@@ -97,7 +98,7 @@ async function init(){
  handle=new T.Object3D();scene.add(handle);gizmo=new TransformControls(camera,canvas);gizmo.setSize(.68);gizmo.setSpace('world');scene.add(gizmo.getHelper());gizmo.attach(handle);
  gizmo.addEventListener('mouseDown',()=>{gesture=true;playing=false;});gizmo.addEventListener('dragging-changed',e=>{orbit.enabled=view!=='first'&&!e.value;});gizmo.addEventListener('objectChange',()=>{if(!gesture)return;editHand(h=>{h.position=handle.position.toArray().map(v=>Math.max(-2,Math.min(2,v)));const e=new T.Euler().setFromQuaternion(handle.quaternion,'XYZ');h.rotation=[e.x,e.y,e.z];},{commit:false});});gizmo.addEventListener('mouseUp',()=>{if(gesture){gesture=false;changed();}});
  const loader=new GLTFLoader(),files=['ponytail-hand-left-v1','ponytail-hand-right-v1','teacher-hand-left-v1','teacher-hand-right-v1'],sources=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb`,import.meta.url).href)));
- const itemKeys=['snack','gum','burger','drink'];await loadPropAssets(Object.fromEntries(itemKeys.filter(k=>CLASSROOM_PROP_SOURCES[k]).map(k=>[k,CLASSROOM_PROP_SOURCES[k]])),{loader});
+ const itemKeys=['snack','gum','burger','drink'];await prepareDeskProps(Object.fromEntries(itemKeys.filter(k=>CLASSROOM_PROP_SOURCES[k]).map(k=>[k,CLASSROOM_PROP_SOURCES[k]])),{loader});
  const factory=role=>(side,scale)=>{const h=createRiggedPalm(sources[(role==='teacher'?2:0)+(side<0?0:1)],side,scale,role);if(role==='teacher')h.group.userData.characterRole='teacher';return h;};rigs={student:createDeskHands({createHand:factory('student')}),teacher:createDeskHands({createHand:factory('teacher')})};scene.add(rigs.student.group,rigs.teacher.group);arms=rigs.student;
  const pickRay=new T.Raycaster(),plane=new T.Plane();
  function pointerRay(e){const r=canvas.getBoundingClientRect();pickRay.setFromCamera(new T.Vector2((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2),camera);return pickRay.ray;}

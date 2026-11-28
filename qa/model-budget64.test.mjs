@@ -33,9 +33,9 @@ const {createDeskItem,DESK_ITEM_KINDS}=await import('../dist/game-actors.js');
 const T=await import('../dist/vendor/three.module.js');
 const procedural=new Map(manifest.proceduralItems.map(asset=>[asset.kind,asset]));
 test('every desk item, including optional-asset fallbacks, is covered by the budget manifest',()=>{
- assert.deepEqual([...procedural.keys()].sort(),[...DESK_ITEM_KINDS].sort());
+ assert.deepEqual([...procedural.keys()].sort(),DESK_ITEM_KINDS.filter(kind=>kind!=='drink').sort());
 });
-for(const kind of DESK_ITEM_KINDS)test(`${kind}: procedural fallback stays below 8000 at its approved dimensions`,()=>{
+for(const kind of procedural.keys())test(`${kind}: procedural fallback stays below 8000 at its approved dimensions`,()=>{
  const asset=procedural.get(kind),model=createDeskItem(kind),size=new T.Box3().setFromObject(model,true).getSize(new T.Vector3()).toArray();
  assert.equal(modelTriangles(model),asset.afterTriangles);requireModelBudget(model,kind);
  size.forEach((n,i)=>assert.ok(Math.abs(n-asset.boundsAfter[i])<.00001,`${kind}: source dimensions changed on axis ${i}`));

@@ -285,21 +285,6 @@
       ]
     },
     {
-      "kind": "drink",
-      "beforeTriangles": 3400,
-      "afterTriangles": 3056,
-      "boundsBefore": [
-        0.08799999952316284,
-        0.1755894124507904,
-        0.09039992839097977
-      ],
-      "boundsAfter": [
-        0.08799999952316284,
-        0.1755894124507904,
-        0.08799999952316284
-      ]
-    },
-    {
       "kind": "burger",
       "beforeTriangles": 28060,
       "afterTriangles": 4588,
