@@ -43,10 +43,11 @@ test('ordinary playground pupils enter the track, sustain a run and follow the o
  assert.ok(fast/samples>.9,'failed to run at track pace: '+fast+'/'+samples);
 });
 
-test('standing wrists stay at body height and both palms use the authored idle angle',async()=>{
- const {Vector3,Euler,Quaternion}=await import('../dist/vendor/three.module.js');
+test('standing first-person wrists and palms align to the visible bodies for both roles',async()=>{
+ const {Vector3}=await import('../dist/vendor/three.module.js');
  const {createRiggedStudent,STUDENT_ASSETS}=await import('../dist/student-assets.js');
  const {createRiggedTeacher}=await import('../dist/imported-actors.js');
+ const {handFrame}=await import('../dist/hand-motion.js');
  const {firstPersonEyeHeight}=await import('../dist/first-person-view.js');
  const {createHandAnimationRuntime}=await import('../dist/hand-animation-runtime59.js');
  const {PUBLISHED_HAND_ANIMATIONS}=await import('../dist/published-hand-animations61.js');
@@ -69,10 +70,8 @@ test('standing wrists stay at body height and both palms use the authored idle a
    const bones={};hands.getHand(side.toLowerCase()).group.traverse(o=>{if(o.isBone)bones[o.name.replace(/^mixamorig[:_]?/,'')]=o;});
    const target=toView(body.bones[side+'Hand'].getWorldPosition(new Vector3()));target.y-=firstPersonEyeHeight(state,role);
    assert.ok(target.distanceTo(bones[side+'Hand'].getWorldPosition(new Vector3()))<.025,character+' wrist '+side);
-   const key=side.toLowerCase();
-   const authored=PUBLISHED_HAND_ANIMATIONS.clips[role+'-idle'].keyframes[0][key].rotation;
-   const actual=hands.getHand(key).group.getWorldQuaternion(new Quaternion());
-   assert.ok(actual.angleTo(new Quaternion().setFromEuler(new Euler(...authored)))<.00001,character+' '+side+' palm');
+   const frame=handFrame(bones,side),outside=handFrame(body.bones,side);
+   for(const axis of ['along','normal'])assert.ok(frame[axis].dot(toView(outside[axis]))>.985,character+' '+side+' '+axis);
   }
   animation.dispose();body.dispose?.();
  }
