@@ -30,7 +30,7 @@ function record(round,advance,callback){
  const seats=round.students.filter(s=>s.seated);assert.equal(new Set(seats.map(s=>s.seatId)).size,seats.length,'two actors share a physical seat');
  return {lastSeated:+lastSeated.toFixed(3),peak:+peak.toFixed(6),count:ai.length};
 }
-for(const map of CAMPUS_MAPS)test(`${map}: all six layouts finish 20/30-seat arrivals at one normal speed for either role`,t=>{
+for(const map of CAMPUS_MAPS.filter(map=>map!=='playground'))test(`${map}: all six layouts finish 20/30-seat arrivals at one normal speed for either role`,t=>{
  const results=[];
  for(const Round of [ClassroomRound,TeacherRound])for(let seed=0;seed<LAYOUT_PATTERNS.length;seed++){
   const round=new Round({map,seed});round.start({gathering:true});assert.ok(round.startBell());

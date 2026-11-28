@@ -1,3 +1,4 @@
+import {checkFoodScore} from './food-award156.mjs';
 import {interactionIntent} from '../dist/interaction-intent54.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,7 +19,7 @@ test('all eight modes initialize finite actor snapshots; legacy saved map names 
  for(const map of ['classroom','night','tiered','computer','hotpot','toilet','dorm','playground','computer7','tiered8']){const r=quiet(map),s=r.step(.05);assert.equal(s.map,map);assert.ok(s.students.length>=12);assert.ok(Number.isFinite(s.player.supportHeight+s.player.eyeHeight));assert.equal(s.drawer.slots.length,map==='playground'?0:map.startsWith('computer')?1:map==='dorm'?2:3);}
 });
 for(const map of ['toilet','dorm'])test(`${map}: actual cabinet pickup, use, consumption and local refill preserve a single shared stock`,()=>{
- const r=quiet(map),p=r.player,seatId=p.seatId;assert.equal(r.toggleBook(),false);assert.equal(r.takePen(),false);food(r);const stock=p._slots,slot=stock[0];r.step(.25);const before=r.snapshot()[map==='toilet'?'toiletCabinets':'dormCabinets'][seatId];assert.ok(before>0&&before<1);r.pause();r.step(3);assert.equal(r.snapshot()[map==='toilet'?'toiletCabinets':'dormCabinets'][seatId],before);r.pause(false);r.hold(true);r.step(3);assert.equal(r.score,1);assert.equal(slot.action,null);assert.equal(p._drawnSlot,null);assert.equal(r.classSlotsBySeat.get(seatId),stock);r.step(3);assert.ok(slot.action);assert.equal(stock.length,map==='dorm'?2:3);assert.ok(r.snapshot().books.every(b=>!b.raised&&b.amount===0));
+ const r=quiet(map),p=r.player,seatId=p.seatId;assert.equal(r.toggleBook(),false);assert.equal(r.takePen(),false);food(r);const stock=p._slots,slot=stock[0];r.step(.25);const before=r.snapshot()[map==='toilet'?'toiletCabinets':'dormCabinets'][seatId];assert.ok(before>0&&before<1);r.pause();r.step(3);assert.equal(r.snapshot()[map==='toilet'?'toiletCabinets':'dormCabinets'][seatId],before);r.pause(false);r.hold(true);r.step(3);checkFoodScore(r.score,'burger');assert.equal(slot.action,null);assert.equal(p._drawnSlot,null);assert.equal(r.classSlotsBySeat.get(seatId),stock);r.step(3);assert.ok(slot.action);assert.equal(stock.length,map==='dorm'?2:3);assert.ok(r.snapshot().books.every(b=>!b.raised&&b.amount===0));
 });
 
 test('toilet door is independent of food cabinet, has real reach, and must open before leaving or sitting',()=>{
@@ -99,7 +100,7 @@ test('vending cancels on early release, keeps every drop and scores on eating',(
  assert.ok(r.setFixtureUse(v.id));r.step(1.9);r.setFixtureUse(null);r.step(.3);assert.equal(r.groundItems.size,0);
  for(let i=0;i<4;i++){assert.ok(r.setFixtureUse(v.id));r.step(2);}
  assert.equal(r.snapshot().groundItems.length,4);assert.equal(r.score,0);
- const item=r.snapshot().groundItems[0];Object.assign(p,{x:item.x,z:item.z});assert.ok(r.takeGroundItem(item.id));assert.ok(r.hold(true));r.setLook(0,1.20);r.step(2.1);assert.equal(r.score,1);
+ const item=r.snapshot().groundItems[0];Object.assign(p,{x:item.x,z:item.z});assert.ok(r.takeGroundItem(item.id));assert.ok(r.hold(true));r.setLook(0,1.20);r.step(2.1);checkFoodScore(r.score,item.action);
 });
 
 test('hotpot chalk hits all four rotated books and the actual full pot, with no phantom outdoor desktop',()=>{

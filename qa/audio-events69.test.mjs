@@ -84,14 +84,14 @@ test('using a real phone or popping gum emits one located global cue and a dista
 });
 
 test('two seconds of eating emit five evenly spaced private chewing sounds',()=>{
- for(const hz of [30,60]){
+ for(const action of ['snack','drink'])for(const hz of [30,60]){
   const r=createSoloRound({map:'classroom',seed:73,target:160});r.start();
-  const p=r.player;Object.assign(p._slots[0],{action:'snack',progress:0,readyAt:0});
+  const p=r.player;Object.assign(p._slots[0],{action,progress:0,readyAt:0});
   r.setDrawerOpen(true);r.takeSlot(0);r.setLook(p.yaw,1.20);r.hold(true);
   const times=[];
   for(let i=1;i<=hz*2;i++){
    r.step(1/hz);
-   for(const e of r.drainEvents())if(e.type==='use-crunch'&&e.studentId===p.id){times.push(i/hz);assert.equal(e.recipientId,p.id);}
+   for(const e of r.drainEvents())if(e.type===(action==='drink'?'use-gulp':'use-crunch')&&e.studentId===p.id){times.push(i/hz);assert.equal(e.recipientId,p.id);}
   }
   assert.equal(times.length,5);
   for(let i=1;i<5;i++)assert.ok(Math.abs(times[i]-times[i-1]-.4)<1e-7);

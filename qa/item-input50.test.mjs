@@ -1,3 +1,4 @@
+import {checkFoodScore} from './food-award156.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createClassroomGame} from '../dist/classroom-game.js';
@@ -83,7 +84,7 @@ test('teacher production left click requires but does not consume stamina and ke
 
 
 test('production mouse release clears a partly eaten meal, raised head pauses, and low head resumes only while held',()=>{
- const f=fixture();try{f.take('burger');f.round.setLook(0,0);f.mouse(true);f.advance(1);assert.equal(f.rendered.actionProgress,0);assert.equal(f.rendered.player.eating,false);f.round.setLook(0,1.20);f.advance(1);assert.ok(f.rendered.actionProgress>.30);f.round.setLook(0,.1);const before=f.round.snapshot().actionProgress;f.advance(.5);assert.equal(f.rendered.actionProgress,before);f.mouse(false);assert.equal(f.round.snapshot().actionProgress,0);f.round.setLook(0,1.20);f.mouse(true);f.advance(3);assert.equal(f.round.score,1);f.mouse(false);assert.equal(f.sounds.filter(([kind])=>kind==='food-complete').length,1);assert.equal(f.worldEffects.filter(e=>e.type==='food-complete').length,1);}finally{f.close();}
+ const f=fixture();try{f.take('burger');f.round.setLook(0,0);f.mouse(true);f.advance(1);assert.equal(f.rendered.actionProgress,0);assert.equal(f.rendered.player.eating,false);f.round.setLook(0,1.20);f.advance(1);assert.ok(f.rendered.actionProgress>.30);f.round.setLook(0,.1);const before=f.round.snapshot().actionProgress;f.advance(.5);assert.equal(f.rendered.actionProgress,before);f.mouse(false);assert.equal(f.round.snapshot().actionProgress,0);f.round.setLook(0,1.20);f.mouse(true);f.advance(3);checkFoodScore(f.round.score,'burger');f.mouse(false);assert.equal(f.sounds.filter(([kind])=>kind==='food-complete').length,1);assert.equal(f.worldEffects.filter(e=>e.type==='food-complete').length,1);}finally{f.close();}
 });
 test('WASD, Enter and the touch stick operate a focused monitor without moving the player',()=>{
  const f=fixture({map:'computer'});try{
@@ -103,7 +104,7 @@ test('production audio dispatch keeps private chewing local and world sound mark
 
 
 test('unverified score, capture, AI observation and interaction messages never become gameplay subtitles',()=>{
- const f=fixture();try{const p=f.round.player;f.take('burger');f.mouse(true);f.advance(2);f.mouse(false);assert.equal(f.round.score,1);assert.ok(!f.element('#round-feedback').textContent,'food score stays in the score HUD');
+ const f=fixture();try{const p=f.round.player;f.take('burger');f.mouse(true);f.advance(2);f.mouse(false);checkFoodScore(f.round.score,'burger');assert.ok(!f.element('#round-feedback').textContent,'food score stays in the score HUD');
   for(const event of [{type:'observation',public:true,text:'老师已认出你'}, {type:'elevator-denied',message:'等待其他玩家'}, {type:'rear-door-blocked'}, {type:'gum-score',studentId:p.id,points:2}, {type:'snake-food',studentId:p.id,points:1}, {type:'stunned',studentId:p.id}, {type:'grabbed',studentId:p.id}, {type:'bound',studentId:p.id}, {type:'rescued',studentId:p.id}, {type:'correct-capture'}, {type:'wrong-grab'}]){f.round._events.push(event);f.advance(.02);assert.ok(!f.element('#round-feedback').textContent,event.type+' must not add a student subtitle');}
   assert.ok(f.sounds.some(([type])=>type==='food-complete'),'removing subtitles must retain public food audio');
  }finally{f.close();}

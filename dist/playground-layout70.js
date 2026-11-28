@@ -28,10 +28,11 @@ export function createPlaygroundLayout(options={}){
  const boardZ=cz+stageDepth/2+2.20;
  const board=Object.freeze({id:'playground-teacher-board',x:cx,z:boardZ,y:1.40,width:3.8,height:1.46,yaw:Math.PI,writePosition:Object.freeze({x:cx,z:boardZ-.79,y:0,yaw:0})});
  const vending=Array.from({length:3},(_,i)=>Object.freeze({id:'playground-vending-'+i,x:minX+.52,z:cz-straightHalf*.72+i*straightHalf*.72,yaw:Math.PI/2,width:1.04,height:1.86,depth:.64}));
- const notices=[{x:cx+innerRadius-.18,z:cz-1.4,yaw:Math.PI/2},{x:cx-innerRadius+.18,z:cz+1.6,yaw:-Math.PI/2}].map((p,i)=>Object.freeze({...p,id:'playground-notice-'+i,width:3.9,height:1.16}));
+ const cooler=Object.freeze({x:vending[0].x+.29,z:(vending[0].z+vending[1].z)/2,yaw:vending[0].yaw});
+ const notices=[{x:cx+innerRadius-.18,z:cz-1.4,yaw:Math.PI/2},{x:cx-innerRadius+.18,z:cz+1.6,yaw:-Math.PI/2}].map((p,i)=>Object.freeze({...p,id:'playground-notice-'+i,width:5.6,height:1.16}));
  for(const [i,v] of vending.entries())notices.push(Object.freeze({
-  id:'playground-vending-notice-'+i,x:v.x+1.24,z:v.z+.62,
-  yaw:v.yaw,width:2.55,height:1.10
+  id:'playground-vending-notice-'+i,x:v.x+3.15,z:v.z+.62,
+  yaw:v.yaw,width:4.85,height:1.10
  }));
  const bars=[];
  const speaker=Object.freeze({x:cx,z:cz-straightHalf*.50,y:1.18,poleHeight:5.1,yaw:0});
@@ -51,7 +52,7 @@ export function createPlaygroundLayout(options={}){
   ...steps.map(s=>volume(s.id,s.x-s.width/2,s.x+s.width/2,s.z-s.depth/2,s.z+s.depth/2,s.bottom,s.top,{walkable:true,kind:'step'})),
   ...posts.map(p=>volume('playground-post-'+p.id,p.x-p.radius,p.x+p.radius,p.z-p.radius,p.z+p.radius,p.y,p.y+p.height,{kind:'post'})),
   ...vending.map(v=>volume(v.id,v.x-v.depth/2,v.x+v.depth/2,v.z-v.width/2,v.z+v.width/2,0,v.height,{kind:'vending'})),
-  volume('ice-cream-cart',vending[0].x-.075,vending[0].x+.655,vending[0].z-3.55,vending[0].z-2.05,.22,.91),
+  volume('ice-cream-cart',cooler.x-.365,cooler.x+.365,cooler.z-.75,cooler.z+.75,.22,.97),
   ...notices.flatMap(n=>[
    volume(n.id,n.x-.06,n.x+.06,n.z-n.width/2-.06,n.z+n.width/2+.06,1.62-(n.height+.12)/2,2.47,{kind:'notice',crawlUnder:true}),
    ...[-1,1].map(side=>{
@@ -60,7 +61,7 @@ export function createPlaygroundLayout(options={}){
    })
   ])
  ];
- return Object.freeze({bounds:Object.freeze({minX,maxX,minZ,maxZ,width,length}),speaker,rearEntrance,track,steps:Object.freeze(steps),posts:Object.freeze(posts),board,bars:Object.freeze(bars),vending:Object.freeze(vending),notices:Object.freeze(notices),colliders:Object.freeze(colliders),entrance:Object.freeze({x:maxX,z:entranceZ,minZ:entranceMin,maxZ:entranceMax,width:entranceWidth,yaw:-Math.PI/2}),connector:Object.freeze({minX:maxX,maxX:maxX+.20,minZ:entranceMin,maxZ:entranceMax}),evidence:'reference-ratio reconstruction from 0300/0310/0340; exact dimensions unmeasured'});
+ return Object.freeze({cooler,bounds:Object.freeze({minX,maxX,minZ,maxZ,width,length}),speaker,rearEntrance,track,steps:Object.freeze(steps),posts:Object.freeze(posts),board,bars:Object.freeze(bars),vending:Object.freeze(vending),notices:Object.freeze(notices),colliders:Object.freeze(colliders),entrance:Object.freeze({x:maxX,z:entranceZ,minZ:entranceMin,maxZ:entranceMax,width:entranceWidth,yaw:-Math.PI/2}),connector:Object.freeze({minX:maxX,maxX:maxX+.20,minZ:entranceMin,maxZ:entranceMax}),evidence:'reference-ratio reconstruction from 0300/0310/0340; exact dimensions unmeasured'});
 }
 // Shared points on the front of the cabinet, in metres. Picking and reach
 // checks use the same points for every orientation of the cabinet.

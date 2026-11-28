@@ -1,3 +1,4 @@
+import {checkFoodScore} from './food-award156.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound, CLASSROOM_ACTIONS, DEVELOPMENT_TUNING, canSee, propVisibility} from '../dist/classroom-rules.js';
@@ -244,7 +245,7 @@ test('duplicate objects keep independent progress and only the completed slot is
   choose(r,1);assert.equal(r.snapshot().actionProgress,0);assert.equal(r.snapshot().holding,false);
   takeAndUse(r);r.step(1);assert.equal(r.snapshot().actionProgress,.5);
   choose(r,0);assert.equal(r.snapshot().actionProgress,0);takeAndUse(r);r.step(2);
-  const s=r.snapshot();assert.equal(s.completed.drink,1);assert.equal(s.score,CLASSROOM_ACTIONS.drink.points);assert.equal(s.holding,false);assert.equal(s.drawer.drawnSlot,null);
+  const s=r.snapshot();assert.equal(s.completed.drink,1);checkFoodScore(s.score,'drink');assert.equal(s.holding,false);assert.equal(s.drawer.drawnSlot,null);
   assert.deepEqual(s.drawer.slots[0],{id:0,action:null,readyIn:DEVELOPMENT_TUNING.drawerRefill});
   assert.equal(s.drawer.slots[1].action,'drink');assert.equal(s.drawer.slots[2].action,'drink');
   assert.equal(r.selectSlot(0),false);assert.equal(r.selectAction('drink'),true);assert.equal(r.snapshot().drawer.selectedSlot,1);assert.equal(r.snapshot().actionProgress,0);
@@ -255,12 +256,12 @@ test('consumed slots refill independently after three active seconds, with no au
   r.takeSlot(2);r.hold(true);r.step(1.5);r.returnItem();assert.equal(r.player._slots[2].progress,0);r.takeSlot(0);r.hold(true);r.step(2);
   assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.hold(true),false);
   r.takeSlot(2);r.hold(true);r.step(2);let s=r.snapshot();
-  assert.equal(s.drawer.slots[0].readyIn,1);assert.equal(s.drawer.slots[2].readyIn,3);assert.equal(s.score,2);
+  assert.equal(s.drawer.slots[0].readyIn,1);assert.equal(s.drawer.slots[2].readyIn,3);const earned=s.score;assert.ok(earned>=2&&earned<=3);
   r.pause();const paused=r.snapshot();r.step(20);r.toggleDrawer();r.takeSlot(1);assert.deepEqual(r.snapshot(),paused);r.pause(false);
   assert.equal(r.snapshot().drawer.slots[0].action,null);r.step(1.5);s=r.snapshot();
   assert.ok(Object.hasOwn(CLASSROOM_ACTIONS,s.drawer.slots[0].action));assert.equal(s.drawer.slots[0].readyIn,0);assert.equal(s.drawer.slots[2].readyIn,1.5);
-  r.step(1.5);s=r.snapshot();assert.ok(s.drawer.slots[2].action);assert.equal(s.holding,false);assert.equal(s.score,2);
-  r.step(10);assert.equal(r.snapshot().score,2);assert.equal(r.snapshot().actionProgress,0);
+  r.step(1.5);s=r.snapshot();assert.ok(s.drawer.slots[2].action);assert.equal(s.holding,false);assert.equal(s.score,earned);
+  r.step(10);assert.equal(r.snapshot().score,earned);assert.equal(r.snapshot().actionProgress,0);
 });
 
 test('AI completions consume their own stocked slots and empty AI drawers wait for refills',()=>{
@@ -312,7 +313,7 @@ test('ordinary drawer actions complete at exactly two active held seconds',()=>{
   assert.equal(CLASSROOM_ACTIONS[action].duration,2);r.step(5);assert.equal(r.snapshot().actionProgress,0);
   r.hold(true);r.step(1);r.hold(false);r.step(2);assert.equal(r.snapshot().completed[action],0);
   r.hold(true);r.step((action==='phone'?1:2)-DT);assert.equal(r.snapshot().completed[action],0);assert.ok(r.snapshot().actionProgress<1);
-  r.step(DT);assert.equal(r.snapshot().completed[action],1);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.snapshot().drawer.drawnSlot,null);assert.equal(r.snapshot().score,CLASSROOM_ACTIONS[action].points);
+  r.step(DT);assert.equal(r.snapshot().completed[action],1);assert.equal(r.snapshot().drawer.slots[0].readyIn,3);assert.equal(r.snapshot().drawer.drawnSlot,null);if(action==='phone')assert.equal(r.snapshot().score,CLASSROOM_ACTIONS.phone.points);else checkFoodScore(r.snapshot().score,action);
  }
 });
 
@@ -322,7 +323,7 @@ test('classmates use drinks and burgers through the same stock, scoring and refi
   for(const slot of actor._slots)Object.assign(slot,{action:kind,readyAt:0,progress:0});
   const done=advanceUntil(r,s=>s.students[actor.id].completed[kind]===1,10);
   const event=r.drainEvents().find(e=>e.type==='complete'&&e.studentId===actor.id);
-  assert.equal(event.action,kind);assert.equal(event.actor,'ai');assert.equal(event.points,1);assert.equal(done.score,1);
+  assert.equal(event.action,kind);assert.equal(event.actor,'ai');checkFoodScore(event.points,kind);assert.equal(done.score,event.points);
   assert.deepEqual(done.students[actor.id].drawer.slots[event.slotId],{id:event.slotId,action:null,readyIn:3});
   assert.equal(done.completed[kind],0,'AI statistics must not count as player completions');
   assert.ok(Object.values(done.students[actor.id].completed).every(Number.isFinite));

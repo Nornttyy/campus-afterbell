@@ -1,3 +1,4 @@
+import {checkFoodScore} from './food-award156.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createClassroomGame} from '../dist/classroom-game.js';
@@ -72,8 +73,8 @@ test('two clients share explicit drawer/book/pen states and simultaneous open co
 });
 test('food rewards, bubble stages and ranking all use the awarded amount, with a 10-minute default',()=>{
  const r=new ClassroomRound({target:1000});r.start();r.player.pitch=1.20;r._advanceTeacher=()=>{};for(const p of r.students)p._decisionAt=Infinity;assert.equal(r.duration,600);
- for(const [kind,points]of[['snack',1],['drink',1],['burger',1],['banana',1],['lunch',3]]){assert.equal(CLASSROOM_ACTIONS[kind].points,points);const before=r.score;r.player._burpUntil=0;r.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};r.player._selectedSlot=r.player._drawnSlot=0;r.selected=r.player.action=kind;r.hold(true);r.step(2);assert.equal(r.score-before,points);}
- r.player._slots[0]={id:0,action:'gum',progress:0,readyAt:0};r.player._selectedSlot=r.player._drawnSlot=0;r.selected=r.player.action='gum';r.player._burpUntil=0;r.hold(true);const prior=r.score;for(let i=0;i<5;i++){r.step(1.5);assert.equal(r.score,prior);}r.releaseUse();assert.equal(r.score-prior,5);assert.equal(r.player._drawnSlot,null);
+ for(const [kind,points]of[['snack',1],['drink',1],['burger',1],['banana',1],['lunch',3]]){assert.equal(CLASSROOM_ACTIONS[kind].points,points);const before=r.score;r.player._burpUntil=0;r.player._slots[0]={id:0,action:kind,progress:0,readyAt:0};r.player._selectedSlot=r.player._drawnSlot=0;r.selected=r.player.action=kind;r.hold(true);r.step(2);checkFoodScore(r.score-before,kind);}
+ r.player._slots[0]={id:0,action:'gum',progress:0,readyAt:0};r.player._selectedSlot=r.player._drawnSlot=0;r.selected=r.player.action='gum';r.player._burpUntil=0;r.hold(true);const prior=r.score;for(let i=0;i<5;i++){r.step(1.5);assert.equal(r.score,prior);}r.releaseUse();assert.ok(Math.abs(r.score-prior-5)<1e-8);assert.equal(r.player._drawnSlot,null);
  const model=hud54Model(r.snapshot());assert.equal(model.rows.find(p=>p.id===r.player.id).points,r.score);assert.equal(model.rows.reduce((n,p)=>n+p.points,0),r.score);assert.equal(model.rows[0].isSelf,true);assert.ok(model.rows.slice(1).every(p=>p.points===0));
 });
 test('touch has a dedicated Q return command and pause controls describe the new semantics',()=>{

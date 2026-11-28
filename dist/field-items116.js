@@ -1,10 +1,9 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=154';
-import {actorEyePosition} from './classroom-layout.js?v=campus-117&rev=154';
-import {PLAYGROUND_LAYOUT,vendingPoint} from './playground-layout70.js?v=campus-117&rev=154';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=156';
+import {actorEyePosition} from './classroom-layout.js?v=campus-117&rev=156';
+import {PLAYGROUND_LAYOUT,vendingPoint} from './playground-layout70.js?v=campus-117&rev=156';
 
 const foods=['snack','drink','burger','noodles','chips','gum'];
-const machine=PLAYGROUND_LAYOUT.vending[0];
-export const COOLER=Object.freeze({x:machine.x+.29,z:machine.z-2.8,yaw:machine.yaw});
+export const COOLER=PLAYGROUND_LAYOUT.cooler;
 export function coolerPoint(i){
  return {x:COOLER.x+.10,y:.96,z:COOLER.z+(i-1)*.39};
 }
@@ -60,8 +59,12 @@ export function takeLoose(round,id,p=round.player){
  }
  return true;
 }
+export function setCoolerOpen(round,open){
+ if(typeof open!=='boolean'||round.map!=='playground'||!canPick(round,round.player,coolerPoint(1)))return false;
+ round.coolerOpen=open;return true;
+}
 export function takeCooler(round,id){
- if(round.map!=='playground'||!Number.isInteger(id)||id<0||id>2||!canPick(round,round.player,coolerPoint(id)))return false;
+ if(round.map!=='playground'||!round.coolerOpen||!Number.isInteger(id)||id<0||id>2||!canPick(round,round.player,coolerPoint(id)))return false;
  const slot=round.coolerSlots[id];if(!slot.action)return false;
  equip(round,round.player,slot.action,null);slot.action=null;slot.readyAt=round._sessionElapsed+3;return true;
 }

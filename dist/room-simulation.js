@@ -2,24 +2,24 @@ import {actorEmote} from './social-actions93.js?v=campus-93';
 import {nextStudentAppearance} from './class-dismissal92.js?v=campus-102';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-92&rev=128';
-import {reachesSchoolDoor} from './door-interaction54.js?v=campus-117&rev=154';
+import {reachesSchoolDoor} from './door-interaction54.js?v=campus-117&rev=156';
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {validComputerPlayback} from './computer-rules55.js?v=campus-96';
 import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-117';
-import {movementScale,normalWalkSpeed} from './movement55.js?v=campus-117&rev=154';
+import {movementScale,normalWalkSpeed} from './movement55.js?v=campus-117&rev=156';
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
 const newMemberId=()=>globalThis.crypto.randomUUID?.()??randomToken();
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=154';
-import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=154';
-import * as Layout from './classroom-layout.js?v=campus-117&rev=154';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=154';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=154';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=156';
+import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=156';
+import * as Layout from './classroom-layout.js?v=campus-117&rev=156';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=156';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=156';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
 const cleanName=value=>String(value||'同学').replace(/[\u0000-\u001f<>]/g,'').slice(0,16)||'同学';
 const CONTEXT=['player','selected','holding','_movement','_rescueId','_rescueProgress','completed'];
-const studentCommands=new Set(['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
+const studentCommands=new Set(['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','setCoolerOpen','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamCopy','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
 const teacherCommands=new Set(['changeRadio','setEmote','jump','setSprint','toggleToiletDoor','toggleDormDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','teacherSkill','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
 const scoringEvents=new Set(['complete','gum-score','bubble-score','snake-food','valorant-watch','arcade-score','exam-answer']);
 const teacherFeedbackEvents=new Set(['wrong-grab','correct-capture','stamina-low']);
@@ -230,10 +230,11 @@ export class CampusRoom{
   if(command==='setComputerPlayback'&&!validComputerPlayback(args[0]))throw new RoomError(400,'无效播放状态');
   if(['setMovement','setLook'].includes(command)&&!args.slice(0,2).every(finite))throw new RoomError(400,'无效坐标');
   if(command==='setMovement'&&args.some(n=>Math.abs(n)>1.001))throw new RoomError(400,'无效移动');
-  if(['hold','setCrouch','setSprint','setWriting','setDrawerOpen','setBookRaised','setOfficeDrawerOpen'].includes(command)&&typeof args[0]!=='boolean')throw new RoomError(400,'无效状态');
+  if(['setCoolerOpen','hold','setCrouch','setSprint','setWriting','setDrawerOpen','setBookRaised','setOfficeDrawerOpen'].includes(command)&&typeof args[0]!=='boolean')throw new RoomError(400,'无效状态');
   if(command==='dropIntoToilet'&&(args.length!==1||!Number.isInteger(args[0])||this.sim.map!=='toilet'||!this.sim.seats[args[0]]))throw new RoomError(400,'无效隔间');
   if(command==='takeCookedPiece'&&(!Number.isInteger(args[0])||!this.sim.hotpots[args[0]]||!Number.isSafeInteger(args[1])||args[1]<0))throw new RoomError(400,'无效涮菜');
   if(command==='takeMeal'&&(!Number.isInteger(args[0])||args[0]<0||args[0]>=MEAL_COUNT))throw new RoomError(400,'无效餐位');
+  if(command==='setExamCopy'&&args[0]!==null&&(!Number.isInteger(args[0])||!this.sim.students[args[0]]))throw new RoomError(400,'无效同学');
   if(command==='setExamMode'&&(!['paper','card','close'].includes(args[0])||args[0]==='card'&&![0,1].includes(args[1])))throw new RoomError(400,'无效试卷操作');
   if(command==='setExamUse'&&args[0]!==null&&(!Number.isInteger(args[0])||args[0]<-1||args[0]>=QUESTION_COUNT))throw new RoomError(400,'无效题号');
   if(['takeSlot','selectSlot'].includes(command)&&(!Number.isInteger(args[0])||args[0]<0||args[0]>3||!member.context.player._slots[args[0]]))throw new RoomError(400,'无效物品位置');
@@ -310,7 +311,7 @@ export class CampusRoom{
   state.events=this.events.filter(e=>(e.recipientId==null||e.recipientId===selfId)&&(e.networkSequence||0)>member.lastSequence&&(member.role!=='teacher'||!scoringEvents.has(e.type))&&(member.role==='teacher'||!teacherFeedbackEvents.has(e.type))).map(e=>({...e,...(e.actor!==undefined?{actor:e.studentId===selfId?'player':e.actor==='player'?'peer':e.actor}:{})}));
   member.lastSequence=this.sequence;state.sequence=this.sequence;return state;
  }
- disconnect(member){this.sim.fixtureUses.delete(member.context.player);if(member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim._radioNextAt=Infinity;this.withMember(member,sim=>{if(sim.player._examMode)sim.setExamMode('close');ClassroomRound.prototype.hold.call(sim,false);ClassroomRound.prototype.setComputerPlayback.call(sim,{playing:false,visible:false,mediaTime:0});ClassroomRound.prototype.setRescue.call(sim,null);});member.connected=false;this._syncFieldPopulation();member.context._movement={x:0,z:0};member.context.holding=false;member.context.player.holding=false;member.lastSeen=Date.now();}
+ disconnect(member){this.sim.fixtureUses.delete(member.context.player);if(member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim._radioNextAt=Infinity;this.withMember(member,sim=>{sim.setExamUse(null);if(sim.player._examMode)sim.setExamMode('close');ClassroomRound.prototype.hold.call(sim,false);ClassroomRound.prototype.setComputerPlayback.call(sim,{playing:false,visible:false,mediaTime:0});ClassroomRound.prototype.setRescue.call(sim,null);});member.connected=false;this._syncFieldPopulation();member.context._movement={x:0,z:0};member.context.holding=false;member.context.player.holding=false;member.lastSeen=Date.now();}
  reconnect(member){
   if(!member.connected&&member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim._radioNextAt=this.sim._sessionElapsed+1;
   member.connected=true;this._syncFieldPopulation();member.lastSeen=Date.now();
@@ -335,6 +336,6 @@ export class RoomError extends Error{constructor(status,message){super(message);
 
 // Base helpers call other public helpers through this; dispatch those too so
 // a student's hold/take flow does not hit TeacherRound's intentional no-ops.
-for(const name of ['hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer']){
+for(const name of ['hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','setCoolerOpen','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamCopy','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer']){
  SharedRound.prototype[name]=function(...args){const proto=this.player?.id===-1?TeacherRound.prototype:ClassroomRound.prototype;return proto[name]?.apply(this,args);};
 }

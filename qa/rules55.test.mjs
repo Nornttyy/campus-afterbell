@@ -1,3 +1,4 @@
+import {checkFoodScore} from './food-award156.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound,FOOD_ACTIONS,START_BELL,CLASS_START_TIMING} from '../dist/classroom-rules.js';
@@ -13,7 +14,7 @@ test('food requires lowered head with hysteresis; release resets, raised head al
  const r=quiet();take(r,'burger');r.player.pitch=0;r.hold(true);tick(r,1);assert.equal(r.player._slots[0].progress,0);assert.equal(r.snapshot().player.eating,false);
  r.setLook(0,1.20);tick(r,1);const first=r.snapshot().actionProgress;assert.ok(first>.49&&first<.51);assert.equal(r.snapshot().player.eating,true);
  r.setLook(0,1.16);tick(r,.2);assert.ok(r.snapshot().actionProgress>first);r.setLook(0,.2);const paused=r.snapshot().actionProgress;tick(r,.5);assert.equal(r.snapshot().actionProgress,paused);assert.equal(r.snapshot().player.eating,false);
- r.releaseUse();assert.equal(r.snapshot().actionProgress,0);r.setLook(0,1.20);r.hold(true);tick(r,3);assert.equal(r.score,1);assert.equal(r.player._drawnSlot,null);r.releaseUse();assert.equal(r.score,1);assert.equal(r.drainEvents().filter(e=>e.type==='food-complete').length,1);
+ r.releaseUse();assert.equal(r.snapshot().actionProgress,0);r.setLook(0,1.20);r.hold(true);tick(r,3);const earned=r.score;checkFoodScore(earned,'burger');assert.equal(r.player._drawnSlot,null);r.releaseUse();assert.equal(r.score,earned);assert.equal(r.drainEvents().filter(e=>e.type==='food-complete').length,1);
 });
 test('all foods reset use and private sounds on release; throws and pen are unaffected by low-head rule',()=>{
  for(const kind of FOOD_ACTIONS){const r=quiet();take(r,kind);r.hold(true);tick(r,.9);assert.ok(r.player._useElapsed>.8);r.hold(false);assert.equal(r.snapshot().actionProgress,0);assert.equal(r.player._useElapsed,0);r.drainEvents();r.setLook(0,0);r.hold(true);tick(r,1);assert.equal(r.drainEvents().filter(e=>e.type.startsWith('use-')).length,0);assert.equal(r.score,0);}

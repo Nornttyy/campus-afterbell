@@ -1,5 +1,5 @@
-import {createPointerView} from './pointer-view130.js?v=146&rev=154';
-import {mountDoubao,teacherProjectiles} from './teacher-effects129.js?v=136&rev=154';
+import {createPointerView} from './pointer-view130.js?v=146&rev=156';
+import {mountDoubao,teacherProjectiles} from './teacher-effects129.js?v=136&rev=156';
 import {createPlayerNames} from './player-names119.js';
 import {createDeskHandShadows} from './desk-hand-shadows108.js?v=campus-108';
 import {makeSchoolChair} from './school-furniture91.js?v=campus-108';
@@ -7,17 +7,17 @@ import {TEXTBOOK,bookAngle,bookSpineHeight,setDeskBookReach,BOOK_PAPER_FACE,BOOK
 import {setDish} from './hotpot-food94.js?v=campus-94';
 import {CampusModelLoader} from './model-delivery93.js?v=campus-111';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
-import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=154';
-import {broadcastBeat,broadcastLift,broadcastScale,reachesRadio} from './campus-radio93.js?v=campus-117&rev=154';
+import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=156';
+import {broadcastBeat,broadcastLift,broadcastScale,reachesRadio} from './campus-radio93.js?v=campus-117&rev=156';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {paperQuestion} from './upper-floor-view85.js?v=campus-117&rev=154';
+
 import {toiletDoorReach} from './toilet-layout70.js?v=campus-94';
-import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=154';
+import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=156';
 import {FURNITURE_SOURCES67,loadFurniture67} from './furniture-assets67.js?v=campus-99';
-import {assetsForOpenMaps,playableCampusMap} from './campus-destinations.js?v=campus-117&rev=154';
+import {assetsForOpenMaps,playableCampusMap} from './campus-destinations.js?v=campus-117&rev=156';
 import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-117&rev=147';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
-import {advanceDeskDrawer,drawerHandTarget,DESK_DRAWER_TRAVEL,DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=154';
+import {advanceDeskDrawer,drawerHandTarget,DESK_DRAWER_TRAVEL,DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=156';
 import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-92';
 import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-83';
 import {gameplayFov} from './view-tuning55.js?v=campus-83';
@@ -25,32 +25,32 @@ import {setCharacterNight,setCharacterClassroomDay} from './character-materials.
 import {createStaminaVision} from './stamina-vision55.js?v=campus-83';
 import {createSoundCues} from './sound-cue55.js?v=campus-83&rev=150';
 import {createChalkPowder} from './chalk-powder55.js?v=campus-83';
-import {createSurveillanceView} from './surveillance-view54.js?v=campus-117&rev=154';
+import {createSurveillanceView} from './surveillance-view54.js?v=campus-117&rev=156';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=135&rev=154';
+import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=135&rev=156';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
 import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-83';
 import {createItemEffects50} from './item-effects50.js?v=campus-111';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork} from './campus-artwork.js?v=campus-93';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=154';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117&rev=154';
-import {createRoomVariants} from './room-variants.js?v=campus-117&rev=154';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=156';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117&rev=156';
+import {createRoomVariants} from './room-variants.js?v=campus-117&rev=156';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
 import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96&rev=153';
 import * as THREE from './vendor/three.module.js';
 import {CAMPUS_SURFACE_SOURCES,loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-108';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88&rev=123';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=154';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=156';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
 import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-117';
-import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=154';
+import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=156';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=154';
-import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,updateSpecialFurnitureCollisions,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-117&rev=154';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=156';
+import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,updateSpecialFurnitureCollisions,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-117&rev=156';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
 
@@ -838,12 +838,12 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   }
   const campusTargets=campus.getTargets();
   const isObjectVisible=object=>{for(let n=object;n;n=n.parent)if(!n.visible&&!n.userData.rigidInstanceSource)return false;return true;};
-  const campusTargetObject=(kind,id)=>kind==='ground-item'?looseItems.get(id):kind==='cooler-item'?variants.coolerTarget(id):kind==='toilet-bowl'?variants.toilet.seats.get(id)?.mouth:kind==='radio'?variants.radioTarget(mapVariant):variants.upper.target(kind,id,gameplay)||(kind==='sports-bar'||kind==='plunger'?mapActivityView.target(kind,id):kind==='rear-door'?campusTargets.doors.find(d=>d.id===(id||'rear'))?.object:kind==='office-desk'?campusTargets.officeDesks.find(d=>d.id===(id||OFFICE_DESK.id))?.object:kind==='office-chair'?campusTargets.officeChairs.find(c=>c.id===(id||OFFICE_CHAIR.id))?.object:kind==='locker'?campusTargets.lockers.find(l=>l.id===id)?.object||campusTargets.lockers[0]?.object:kind==='dorm-door'?variants.dorm.doors.get(id)?.target:kind==='toilet-door'?variants.toilet.doors.get(id)?.target:kind==='bed'?variants.dorm.beds.get(id)?.target:kind==='vending'?variants.vendingTargets.get(id)?.button:kind==='vending-food'?variants.vendingTargets.get(id)?.pickup:kind==='chair'?variants.seatTarget(id)||chairTargets.get(id):kind==='pen'?deskPens.get(id):null);
+  const campusTargetObject=(kind,id)=>kind==='cooler-lid'?variants.coolerLid():kind==='ground-item'?looseItems.get(id):kind==='cooler-item'?variants.coolerTarget(id):kind==='toilet-bowl'?variants.toilet.seats.get(id)?.mouth:kind==='radio'?variants.radioTarget(mapVariant):variants.upper.target(kind,id,gameplay)||(kind==='sports-bar'||kind==='plunger'?mapActivityView.target(kind,id):kind==='rear-door'?campusTargets.doors.find(d=>d.id===(id||'rear'))?.object:kind==='office-desk'?campusTargets.officeDesks.find(d=>d.id===(id||OFFICE_DESK.id))?.object:kind==='office-chair'?campusTargets.officeChairs.find(c=>c.id===(id||OFFICE_CHAIR.id))?.object:kind==='locker'?campusTargets.lockers.find(l=>l.id===id)?.object||campusTargets.lockers[0]?.object:kind==='dorm-door'?variants.dorm.doors.get(id)?.target:kind==='toilet-door'?variants.toilet.doors.get(id)?.target:kind==='bed'?variants.dorm.beds.get(id)?.target:kind==='vending'?variants.vendingTargets.get(id)?.button:kind==='vending-food'?variants.vendingTargets.get(id)?.pickup:kind==='chair'?variants.seatTarget(id)||chairTargets.get(id):kind==='pen'?deskPens.get(id):null);
   function getInteraction(){
     if(!gameplay||gameplay.paused||gameplay.status!=='playing'||gameplay.player.caught||gameplay.elevator?.phase==='travel')return null;
     const player=gameplay.player,preClass=gameplay.stage&&gameplay.stage!=='class';
     const ownStall=mapKind(mapVariant)==='toilet'&&player.seated&&!player.officeChair&&Number.isInteger(player.seatId);
-    const previousFar=itemRay.far;itemRay.far=Math.min(previousFar,ownStall?toiletDoorReach(player,player.seatId):2.5);
+    const previousFar=itemRay.far;itemRay.far=Math.min(previousFar,ownStall?toiletDoorReach(player,player.seatId):gameplay.exam?4.5:2.5);
     try{
     camera.updateMatrixWorld(true);itemRay.setFromCamera(neutralPointer,camera);
     const candidates=[];
@@ -863,13 +863,18 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     }
     if(mapVariant==='cafeteria'||mapVariant==='exam')for(const entry of variants.upper.targets(gameplay)){
       if(entry.kind!=='exam-question'){add(entry.object,{kind:entry.kind,id:entry.id});continue;}
-      entry.object.updateWorldMatrix(true,false);const hit=itemRay.intersectObject(entry.object)[0];
-      const id=hit?.uv?paperQuestion(hit.uv.x,hit.uv.y):null;
-      if(id!=null)candidates.push({object:entry.object,hit,result:{kind:entry.kind,id}});
+      add(entry.object,{kind:'exam-question',id:gameplay.exam.hint});
+    }
+    if(gameplay.exam&&player.seated&&gameplay.exam.mode!=='card'&&gameplay.exam.copies<2&&gameplay.drawer.drawnSlot==null){
+      for(const s of gameplay.students){
+        if(s.id===player.id||!s.seated||!s.examWritten||!(s.examWritten&~gameplay.exam.answered)||Math.hypot(s.x-player.x,s.z-player.z)>4.5)continue;
+        add(pupilRecords[s.id]?.actor?.group,{kind:'exam-copy',id:s.id},4.5);
+      }
     }
     if(gameplay.role!=='teacher'&&gameplay.drawer?.drawnSlot==null){
       for(const item of gameplay.groundItems||[])if(Math.hypot(item.x-player.x,item.z-player.z)<2.55)add(looseItems.get(item.id),{kind:'ground-item',id:item.id},2.5);
-      if(mapVariant==='playground')gameplay.coolerSlots?.forEach((action,i)=>{if(action)add(variants.coolerTarget(i),{kind:'cooler-item',id:i},2.5);});
+      if(mapVariant==='playground')add(variants.coolerLid(),{kind:'cooler-lid'},2.5);
+      if(mapVariant==='playground'&&gameplay.coolerOpen)gameplay.coolerSlots?.forEach((action,i)=>{if(action)add(variants.coolerTarget(i),{kind:'cooler-item',id:i},2.5);});
     }
     if(!preClass&&reachesRadio(mapVariant,player))add(variants.radioTarget(mapVariant),{kind:'radio'},2.46);
     const activeLift=campus.liftPanel;

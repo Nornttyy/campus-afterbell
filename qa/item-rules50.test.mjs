@@ -1,3 +1,4 @@
+import {checkFoodScore} from './food-award156.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ClassroomRound,CLASSROOM_ACTIONS,START_BELL,CLASS_START_TIMING} from '../dist/classroom-rules.js';
@@ -25,7 +26,7 @@ test('bound bubble caps at four cycles and attaches only when another head touch
  const x=victim.x+=.2;r.step(DT);assert.equal(r.bubbles[0].x,x);
 });
 test('banana takes two seconds and returns one peel, whose floor trap stuns once',()=>{
- const r=quiet();stock(r,'banana');r.hold(true);r.step(2-DT);assert.equal(r.player._slots[0].action,'banana');r.step(DT);assert.equal(r.player._slots[0].action,'bananaPeel');assert.equal(r.player._drawnSlot,0);assert.equal(r.score,1);
+ const r=quiet();stock(r,'banana');r.hold(true);r.step(2-DT);assert.equal(r.player._slots[0].action,'banana');r.step(DT);assert.equal(r.player._slots[0].action,'bananaPeel');assert.equal(r.player._drawnSlot,0);checkFoodScore(r.score,'banana');
  assert.equal(r.hold(true),true);assert.equal(r.releaseUse(),false);assert.equal(r.peels.length,1);const peel=r.peels[0];Object.assign(peel,{x:r.player.x,z:r.player.z,y:.075,armed:true,settled:true});r.step(DT);
  assert.equal(r.player.captivity,'stunned');assert.equal(r.player.seated,false);assert.ok(r.snapshot().player.stunLeft>3.9);assert.equal(r.peels.length,0);r.step(4);assert.equal(r.player.captivity,'free');
 });

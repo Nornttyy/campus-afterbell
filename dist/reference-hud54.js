@@ -19,28 +19,46 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
  const summary=make('div','result-summary'),scoreBox=result.querySelector('.result-number'),caughtBox=make('div','result-number');
  const caught=make('strong'),caughtLabel=make('span',null,'被捕人数');caught.id='result-caught';caughtBox.append(caught,caughtLabel);summary.append(scoreBox,caughtBox);result.insertBefore(summary,$('#result-detail'));
  const table=make('div','result-ranking');table.setAttribute('aria-label','本局成绩');result.insertBefore(table,$('#retry-game'));
- let lastRank='',lastHeld='',lastPrompt='';
- const row=(p,i,teacher=false)=>{const n=make('div',teacher?'rank-row teacher-result':'rank-row');n.dataset.self=String(p.isSelf);n.append(make('span','rank-place',teacher?'师':i+1),make('span','rank-name',p.name),make('strong','rank-points',teacher?'抓捕 '+p.points:'+'+p.points));return n;};
+ const gains=make('div','score-gains'),inspiration=make('aside','exam-inspiration');
+ $('#round-target').parentNode.append(gains);root.append(inspiration);
+ let lastRank='',lastHeld='',lastPrompt='',previousScore=null,previousRound=null,lastHints='';
+ const row=(p,i,teacher=false)=>{const n=make('div',teacher?'rank-row teacher-result':'rank-row');n.dataset.self=String(p.isSelf);n.append(make('span','rank-place',teacher?'师':i+1),make('span','rank-name',p.name),make('strong','rank-points',teacher?'抓捕 '+p.points:'+'+Math.floor(p.points+1e-8)));return n;};
  function keyLine(key,label){const prefs=bindings();key=touchMode()?({'E':'交互','Q':'返回','鼠标':'使用'}[key]||key):key==='E'?keyLabel(prefs.keys.interact):key==='Q'?keyLabel(prefs.keys.return):key==='鼠标'?keyLabel(prefs.keys.use):key;const line=make('span','input-line');line.append(make('kbd',key==='鼠标左键'?'mouse-key':'',key),make('span',null,label));return line;}
  return{
   update(s){
    const mobile=touchMode(),key=bindings().keys,move=[key.forward,key.left,key.back,key.right].map(keyLabel).join(' / '),use=keyLabel(key.use),e=keyLabel(key.interact),q=keyLabel(key.return);
    $('#student-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n交互拿取或坐下，返回放回或起身\n长按使用 · 点爬行切换姿势':`${move} 移动 · 鼠标转向\n${e} 拿取 / 打开 / 坐下\n${q} 放回 / 关闭 / 起身\n拿笔后 ${e} 切换转笔和写字\n长按 ${use} 使用 · 点击投掷\n按住 ${e} 解救 · ${keyLabel(key.crawl)} 爬行 · ${keyLabel(key.jump)} 跳跃\n机房方向键控制电脑\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
    $('#teacher-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n点奔跑切换速度 · 使用普攻 · 技能键释放老师技能\n交互抓住或绑住同学，返回放下':`${move} 移动 · 按住 ${keyLabel(key.crawl)} 奔跑 · 鼠标转向 · ${keyLabel(key.jump)} 跳跃\n${use} 普攻 · ${keyLabel(key.skill)} 老师技能 · ${e} 抓住眩晕同学\n木桩前 ${e} 绑住 · ${q} 放下\n黑板前按住 ${e} 写字\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
+   const roundKey=s.seed+'-'+s.map;
+   if(previousRound===roundKey&&previousScore!=null&&s.score>previousScore+1e-7){
+    const gain=make('b','score-gain','+'+Number((s.score-previousScore).toFixed(2)));
+    gains.append(gain);gain.addEventListener('animationend',()=>gain.remove(),{once:true});
+    while(gains.children.length>4)gains.firstChild.remove();
+   }
+   previousRound=roundKey;previousScore=s.status==='playing'?s.score:null;
+   const hints=s.exam?.hints||[],hintText=hints.map(h=>h.question+':'+h.seconds.toFixed(1)).join(',');
+   if(lastHints!==hintText){lastHints=hintText;inspiration.replaceChildren(...hints.map(h=>{
+    const line=make('div');line.append(make('b',null,'第'+(h.question+1)+'题灵感'),make('small',null,h.seconds.toFixed(1)+'s'));return line;
+   }));}
    const model=hud54Model(s),signature=JSON.stringify(model.rows);ranking.hidden=s.stage!=='class';
-   if(signature!==lastRank){lastRank=signature;rankList.replaceChildren(...model.rows.map((p,i)=>{const li=make('li');li.dataset.self=String(p.isSelf);li.append(make('span','rank-place',i+1),make('span','rank-name',p.name),make('strong','rank-points',p.points));return li;}));}
+   if(signature!==lastRank){lastRank=signature;rankList.replaceChildren(...model.rows.map((p,i)=>{const li=make('li');li.dataset.self=String(p.isSelf);li.append(make('span','rank-place',i+1),make('span','rank-name',p.name),make('strong','rank-points',Math.floor(p.points+1e-8)));return li;}));}
    const p=s.player,carrying=s.drawer.drawnSlot!=null,pen=carrying&&s.selected==='pen',reading=p.seated&&p.bookRaised&&!carrying;
-   const heldKey=JSON.stringify([carrying,reading,s.selected,p.penWriting,p.caught,p.seated,s.paused,mobile,bindings().keys]);
-   if(heldKey!==lastHeld){lastHeld=heldKey;held.replaceChildren();held.hidden=!(carrying||reading)||p.caught||s.paused;if(!held.hidden){if(pen)held.append(keyLine('E',p.penWriting?'转笔':'写字'));else if(!reading)held.append(keyLine('鼠标',s.selected==='bananaPeel'?'松开投掷':['smoke','flash','ink'].includes(s.selected)?'投掷':'使用'));held.append(keyLine('Q','放回'));}}
+   const heldKey=JSON.stringify([carrying,reading,s.selected,p.penWriting,p.caught,p.seated,s.paused,s.role,s.map,p.crouched,mobile,bindings().keys]);
+   if(heldKey!==lastHeld){lastHeld=heldKey;held.replaceChildren();held.hidden=p.caught||s.paused;if(!held.hidden){
+    if(!p.seated){
+     held.append(keyLine(keyLabel(key.jump),'跳跃'),keyLine(keyLabel(key.crawl),s.role==='teacher'?'奔跑':p.crouched?'起身':'趴下'));
+    }
+    if(s.role==='teacher')held.append(keyLine('鼠标',s.teacher.variant==='doubao'?'横劈':'扔粉笔'));
+    if(carrying||reading){if(pen)held.append(keyLine('E',p.penWriting?'转笔':'写字'));else if(!reading)held.append(keyLine('鼠标',s.selected==='bananaPeel'?'松开投掷':['smoke','flash','ink'].includes(s.selected)?'投掷':'使用'));held.append(keyLine('Q','放回'));}}}
    const prompt=$('#interaction-prompt'),text=prompt.textContent;
    if(reading&&text.includes('放下书本')){prompt.replaceChildren();prompt.hidden=true;return;}
    {lastPrompt=text;const match=text.match(/^(.*?)([EQ]) (.*)$/);if(match){prompt.replaceChildren();if(match[1])prompt.append(make('span',null,match[1]));prompt.append(keyLine(match[2],match[3]));}}
   },
   finish(s){
    const m=hud54Model(s),title=$('#result-title');title.replaceChildren(make('span','winner-team',m.winner),make('span','winner-victory','胜利'));result.dataset.winner=m.winner==='学生'?'student':'teacher';
-   $('#result-score').textContent=Number(m.score.toFixed(1))+' / '+m.target;$('#result-goal').textContent='捣蛋度';caught.textContent=m.caught+' / '+m.total;$('#result-detail').textContent=m.reason;
+   $('#result-score').textContent=Math.floor(m.score+1e-8)+' / '+m.target;$('#result-goal').textContent='捣蛋度';caught.textContent=m.caught+' / '+m.total;$('#result-detail').textContent=m.reason;
    table.replaceChildren(row({name:m.teacherName,points:m.caught},0,true),...m.rows.map((p,i)=>row(p,i)));
   },
-  dispose(){ranking.remove();held.remove();settings.remove();}
+  dispose(){ranking.remove();held.remove();gains.remove();inspiration.remove();settings.remove();}
  };
 }

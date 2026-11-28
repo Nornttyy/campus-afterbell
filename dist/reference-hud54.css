@@ -100,3 +100,12 @@ body:not(.playing) #school-radio-player{top:auto;bottom:max(18px,env(safe-area-i
 
 #touch-skill{position:absolute;right:var(--touch-edge,22px);top:33%;min-width:48px;min-height:38px;touch-action:manipulation}
 [data-left-handed=true] #touch-skill{left:var(--touch-edge,22px);right:auto}
+
+.score-gains{display:inline-grid;margin-left:.55em;color:#ff8f24;pointer-events:none}
+.score-gain{grid-area:1/1;font:inherit;animation:score-rise 1s ease-out both}
+@keyframes score-rise{0%{opacity:0;transform:translateY(.38em) scale(.85)}15%{opacity:1;transform:scale(1.13)}70%{opacity:1}100%{opacity:0;transform:translateY(-1.15em)}}
+.exam-inspiration{position:absolute;left:2%;bottom:max(3%,env(safe-area-inset-bottom));display:grid;gap:.3em;pointer-events:none;font-size:clamp(14px,1.45vw,24px)}
+.exam-inspiration div{display:flex;border-radius:.35em;overflow:hidden;color:#634a38;background:#fff5e7}
+.exam-inspiration b,.exam-inspiration small{padding:.22em .7em;font:inherit}
+.exam-inspiration b{background:#ffac93;color:white}
+#play-ui[data-input-mode=mobile] .exam-inspiration{bottom:30%}

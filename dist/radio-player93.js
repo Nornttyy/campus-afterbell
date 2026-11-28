@@ -1,11 +1,11 @@
-import {radioSong,EXERCISE_SONG} from './campus-radio93.js?v=campus-117&rev=154';
+import {radioSong,EXERCISE_SONG,setRadioClock} from './campus-radio93.js?v=campus-117&rev=156';
 export function createRadioUI(doc,muted){
  const audio=doc.createElement('audio');audio.preload='none';audio.loop=true;audio.volume=.54;
  let key='',song=null,age=0,active=false,pending=false,blocked=false,epoch=0;
  function select(id){
   audio.pause();pending=blocked=false;
   const src=new URL('./assets/audio/'+id+'.m4a',import.meta.url);
-  if(id!==EXERCISE_SONG.id)src.searchParams.set('audio','155');
+  src.searchParams.set('audio',id===EXERCISE_SONG.id?'156':'155');
   audio.src=src.href;play();
  }
  function play(){
@@ -17,14 +17,14 @@ export function createRadioUI(doc,muted){
   Promise.resolve(audio.play()).catch(()=>{if(epoch===run)blocked=true;}).finally(()=>{if(epoch===run)pending=false;});
  }
  function retry(){blocked=false;play();}
- function reset(){epoch++;song=null;key='';active=pending=blocked=false;audio.pause();audio.removeAttribute('src');audio.load();}
+ function reset(){setRadioClock(null);epoch++;song=null;key='';active=pending=blocked=false;audio.pause();audio.removeAttribute('src');audio.load();}
  doc.addEventListener('pointerdown',retry);doc.addEventListener('keydown',retry);doc.addEventListener('campus-audio-settings',retry);audio.addEventListener('loadedmetadata',play);
  return {update(s){
-  const live=s?.status==='playing'&&s.stage==='class',r=live?s.radio:null;
+  const live=s?.status==='playing'&&(s.stage==='class'||s.stage==='seating'&&s.map==='playground'),r=live?s.radio:null;
   const next=live&&(r?radioSong(r.track):s.map==='playground'?EXERCISE_SONG:null);
   if(!next){if(song)reset();return;}
   const id=next.id+'-'+(r?.activation||0);
-  age=Math.max(0,s.sceneElapsed-(r?.startedAt??s.sceneElapsed-s.elapsed));active=!s.paused||!!s.network;
-  if(key!==id){epoch++;key=id;song=next;select(song.id);}else play();
+  age=Math.max(0,s.sceneElapsed-(r?.startedAt??s.fieldMarchAt??s.sceneElapsed-s.elapsed));active=!s.paused||!!s.network;
+  if(key!==id){epoch++;key=id;song=next;select(song.id);setRadioClock(audio,song.id,r?.startedAt);}else play();
  },reset,dispose(){doc.removeEventListener('pointerdown',retry);doc.removeEventListener('keydown',retry);doc.removeEventListener('campus-audio-settings',retry);audio.removeEventListener('loadedmetadata',play);reset();}};
 }

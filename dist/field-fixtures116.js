@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {COOLER,coolerPoint} from './field-items116.js?v=campus-117&rev=154';
+import {COOLER,coolerPoint} from './field-items116.js?v=campus-117&rev=156';
 import {createDeskItem} from './game-actors.js?v=campus-117';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {setDish} from './hotpot-food94.js?v=campus-94';
@@ -55,10 +55,16 @@ export function mountCooler(parent,{box,rounded,mat,texture,bakeStatic}){
  });
  box(mat('#fff',{map:sign}),[0,.55,.369],[1.25,.38,.008],null,root);
  bakeStatic(root);
+ const lid=new T.Group();lid.position.set(0,.975,-.36);root.add(lid);
+ rounded(enamel,[0,.05,.36],[1.53,.10,.75],.035,null,lid);
+ box(steel,[0,.125,.62],[.32,.05,.05],null,lid);
  const slots=Array.from({length:3},(_,i)=>{const r=new T.Group(),p=coolerPoint(i);r.position.set(p.x,p.y,p.z);parent.add(r);return r;});
  const templates=new Map();
- return {slots,update(kinds=[]){
-  slots.forEach((r,i)=>{const k=kinds[i]||null;if(r.userData.kind===k)return;r.userData.kind=k;r.clear();r.visible=!!k;if(!k)return;
+ return {slots,lid,update(kinds=[],open=false,dt=0){
+  const target=open?-1.36:0;
+  lid.rotation.x=T.MathUtils.damp(lid.rotation.x,target,11,dt);
+
+  slots.forEach((r,i)=>{const k=open&&lid.rotation.x<-.75?kinds[i]||null:null;if(r.userData.kind===k)return;r.userData.kind=k;r.clear();r.visible=!!k;if(!k)return;
    if(!templates.has(k))templates.set(k,stockModel(k,null));r.add(templates.get(k).clone(true));});
  }};
 }

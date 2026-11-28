@@ -1,16 +1,16 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=154';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=156';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83&rev=150';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
-import {createReferenceHUD} from './reference-hud54.js?v=campus-111';
-import {interactionIntent} from './interaction-intent54.js?v=campus-117&rev=154';
-import {createSessionUI} from './session-ui.js?v=campus-117&radio=2&rev=155';
+import {createReferenceHUD} from './reference-hud54.js?v=campus-111&rev=156';
+import {interactionIntent} from './interaction-intent54.js?v=campus-117&rev=156';
+import {createSessionUI} from './session-ui.js?v=campus-117&radio=2&rev=156';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=154';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=156';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -35,7 +35,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     if(playing!==lastVideoPlaying||playing&&now-lastVideoReport>=250){round.setComputerPlayback?.({playing,visible,mediaTime:Number.isFinite(mediaTime)&&mediaTime>=0?mediaTime:0});lastVideoPlaying=playing;lastVideoReport=now;}
   }
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-  function release(){if(round.snapshot().fixtureUse)round.setFixtureUse?.(null);if(round.player?._examMode||round.map==='exam'&&round.snapshot().exam?.mode)round.setExamUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();stopVideoWatching();inputs.clear();round.hold(false);round.setRescue(null);round.setWriting?.(false);round.setDoorUse?.(false);}
+  function release(){if(round.snapshot().fixtureUse)round.setFixtureUse?.(null);if(round.map==='exam')round.setExamUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();stopVideoWatching();inputs.clear();round.hold(false);round.setRescue(null);round.setWriting?.(false);round.setDoorUse?.(false);}
   function setPosture(value){return round.player.id===-1?round.setSprint?.(value):round.setCrouch(value);}
   function stopMovement(){keys.clear();physicalKeys.clear();round.setMovement(0,0);setPosture(false);dragLook=false;}
   function unlock(){if(document.pointerLockElement===canvas)document.exitPointerLock();}
@@ -195,10 +195,11 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     const lessonTime=$('#lesson-time');if(lessonTime){lessonTime.hidden=beforeClass;lessonTime.textContent='距离下课 '+formatTime(s.timeLeft||0);}
     const staminaTeacher=(s.stage==='gathering'?(s.lobbyRole||s.role):s.role)==='teacher';
     const stamina=$('#teacher-stamina');if(stamina){stamina.hidden=!staminaTeacher;stamina.dataset.low=String(s.teacher.stamina<25);$('#stamina-number').textContent=Math.ceil(s.teacher.stamina??100)+'%';$('#stamina-fill').style.height=(s.teacher.stamina??100)+'%';stamina.dataset.writing=String(Boolean(s.teacher.writing));}
-    ui.dataset.stamina=String(s.teacher.stamina??'');ui.dataset.writing=String(Boolean(s.teacher.writing));$('#round-score').textContent=Number(s.score.toFixed(1));$('#round-target').textContent='/ '+s.target;
+    ui.dataset.stamina=String(s.teacher.stamina??'');ui.dataset.writing=String(Boolean(s.teacher.writing));$('#round-score').textContent=Math.floor(s.score+1e-8);$('#round-target').textContent='/ '+s.target;
     $('#score-fill').style.width=clamp(s.score/s.target*100,0,100)+'%';
     ui.dataset.role=s.role;ui.dataset.map=s.map;
     const drawer=s.drawer,carrying=drawer.drawnSlot!==null,target=scene.getInteraction?.(),hover=target?.kind==='item'?target.slot:null;
+    if(s.exam?.using&&(s.exam.copyTarget!=null?(target?.kind!=='exam-copy'||target.id!==s.exam.copyTarget):s.exam.mode==='paper'&&target?.kind!=='exam-question'))round.setExamUse?.(null);
     if(s.fixtureUse&&(s.fixtureUse.id==='radio'?target?.kind!=='radio':target?.kind!=='vending'||target.id!==s.fixtureUse.id))round.setFixtureUse?.(null);
     ui.dataset.examReading=String(s.exam?.mode==='card');ui.dataset.drawerOpen=String(drawer.open);ui.dataset.selectedSlot=String(drawer.selectedSlot);ui.dataset.carrying=String(carrying);
     const openIntent=interactionIntent(s,target,'E'),closeIntent=interactionIntent(s,target,'Q');session.setActionLabels?.(openIntent,closeIntent);
@@ -212,8 +213,9 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     else if(target?.kind==='surveillance'&&!openIntent){const wait=Math.ceil(s.surveillance?.unlockIn||s.surveillance?.cooldown||0);actionText=wait>0?'监控 · '+formatTime(wait):'监控已用完';}
     else if(p.captivity==='bound')actionText=p.bubble?.blowing?'松手吹出泡泡':'按住左键吹泡泡';
     else if(p.captivity==='stunned'||p.stunLeft>0)actionText='';
+    else if(target?.kind==='exam-copy')actionText='按住左键 抄一道答案';
     else if(s.exam?.mode==='card')actionText='按住左键 看答案 · Q 放回';
-    else if(s.exam?.mode==='paper')actionText=s.exam.hint!=null?'第 '+(s.exam.hint+1)+' 题灵感 '+s.exam.seconds+'秒 · 按住左键答题':'Q 放下红笔';
+    else if(s.exam?.mode==='paper')actionText=s.exam.hint!=null?'对准试卷 · 按住左键答题':'Q 放下红笔';
     else if(target?.kind==='toilet-bowl'&&target.blocked)actionText=s.toiletClogs[target.id]?'马桶堵塞':'正在冲水';
     else if(target?.kind==='hotpot'&&s.selected==='hotpotPlate'&&drawer.drawnSlot!=null)actionText='点击 下食材';
     else if(target?.kind==='hotpot'&&target.cooking&&drawer.drawnSlot==null)actionText='正在煮';
@@ -283,6 +285,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   }
   function pause(value=true){if(!active||finished)return;release();stopMovement();round.pause(value);if(value){unlock();if(!pauseDialog.open)pauseDialog.showModal();}else{if(pauseDialog.open)pauseDialog.close();lock();}render(round.snapshot());}
   const canInput=()=>active&&!resultDialog.open&&!session.modal&&!round.paused&&(round.status==='playing'||finished&&continued);
+  let copyingExam=false;
   function hold(id,value){if(!canInput())return;
     const state=round.snapshot();
     if((state.lobbyRole||state.role)==='teacher'){if(value)round.throwChalk();processEvents();render(round.snapshot());return;}
@@ -292,6 +295,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
       return;
     }
     const exam=round.snapshot().exam;
+    const copy=scene.getInteraction?.();
+    if(exam&&((value&&copy?.kind==='exam-copy')||(!value&&(copyingExam||exam.copyTarget!=null)))){copyingExam=value;round.setExamCopy?.(value?copy.id:null);return;}
     if(exam?.mode){
       const target=scene.getInteraction?.();
       const question=exam.mode==='card'?-1:target?.kind==='exam-question'?target.id:null;

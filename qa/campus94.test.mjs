@@ -1,3 +1,4 @@
+import {checkFoodScore} from './food-award156.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CampusRoom} from '../dist/room-simulation.js';
@@ -36,7 +37,7 @@ test('drawing, clicking to add ingredients, cooking and eating are separate phys
   lookAtPot(r,p,pot);assert.equal(r.hold(true),true);assert.equal(r.hold(true),false);assert.equal(pot.pieces.length,HOTPOT_RECIPES[dish]);assert.equal(r.score,0);
   const id=pot.pieces[0].id;assert.equal(r.takeCookedPiece(pot.id,id),false);r.step(9.8);assert.equal(r.takeCookedPiece(pot.id,id),false);r.step(.25);
   assert.equal(r.takeCookedPiece(pot.id,id),true);assert.equal(r.returnItem(),true);assert.equal(r.takeCookedPiece(pot.id,id),true);
-  p.pitch=0;r.hold(true);r.step(2.1);assert.equal(r.score,0);p.pitch=1.20;r.step(2.1);assert.equal(r.score,1);assert.equal(r.takeCookedPiece(pot.id,id),false);
+  p.pitch=0;r.hold(true);r.step(2.1);assert.equal(r.score,0);p.pitch=1.20;r.step(2.1);checkFoodScore(r.score,'hotpotBite');assert.equal(r.takeCookedPiece(pot.id,id),false);
  }
 });
 test('two guests share one pot, cannot take raw food or double-claim the last piece',()=>{

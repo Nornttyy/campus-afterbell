@@ -1,3 +1,4 @@
+import {radioBeats} from '../dist/radio-beats156.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRadioUI} from '../dist/radio-player93.js';
@@ -26,14 +27,15 @@ test('public tracks are bundled AAC recordings with a marching default',async()=
 test('late joins, local mute, return to the march and the shared beat follow the room clock',()=>{
  const a=fixture(),b=fixture();
  for(const f of [a,b]){
-  f.ui.update(state());assert.ok(f.audio.src.endsWith('field-march.m4a'));assert.equal(f.audio.currentTime,16);
+  f.ui.update({...state(),stage:'seating',fieldMarchAt:3});assert.equal(f.audio.currentTime,16);
+  f.ui.update(state());assert.ok(new URL(f.audio.src).pathname.endsWith('field-march.m4a'));assert.equal(f.audio.currentTime,16);
   f.ui.update(state(station,19));assert.ok(new URL(f.audio.src).pathname.endsWith(station.track+'.m4a'));assert.equal(f.audio.currentTime,9);
   f.mute(true);assert.equal(f.audio.paused,true);f.ui.update(state(station,42));f.mute(false);assert.equal(f.audio.currentTime,32);
-  f.ui.update(state(null));assert.ok(f.audio.src.endsWith('field-march.m4a'));
+  f.ui.update(state(null));assert.ok(new URL(f.audio.src).pathname.endsWith('field-march.m4a'));
   f.ui.update({...state(),map:'bus'});assert.equal(f.audio.src,undefined);f.ui.dispose();
  }
- assert.equal(broadcastLift(state()),0);assert.equal(broadcastLift(state(station,10)),0);for(const [fraction,sign] of [[.25,1],[.75,-1]]){
-  const s=state(station,10+fraction*60/RADIO_SONGS[0].bpm);
+ assert.equal(broadcastLift(state()),0);assert.equal(broadcastLift(state(station,10)),0);for(const [fraction,sign] of [[0,1],[.34,-1]]){
+  const s=state(station,10+(radioBeats[station.track].beats[1]+(radioBeats[station.track].beats[2]-radioBeats[station.track].beats[1])*fraction)/1000);
   const {height,width}=broadcastScale(broadcastBeat(s));
   assert.ok(Math.abs(broadcastLift(s)-sign*.015)<1e-8);
   assert.ok(Math.sign(1-height)===sign&&Math.sign(width-1)===sign);

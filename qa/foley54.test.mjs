@@ -79,6 +79,7 @@ test('bells and the five confirmations use real, distinct files even if the firs
  assert.equal(food.buffer,drink.buffer);
  playCampusFoley(bus,'use-crunch',.38);
  const chew=ctx.sources.at(-1);
+ playCampusFoley(bus,'use-gulp',.38);assert.equal(ctx.sources.at(-1).buffer,chew.buffer);
  assert.notEqual(chew.buffer,food.buffer);
  assert.equal(chew.buffer.recordedBytes,(await readFile(new URL('chew151.wav',origin))).length);
  assert.equal(ctx.gains.at(-1).gain.value,.38*1.15);assert.equal(ctx.sources.at(-1).playbackRate.value,1.10);
