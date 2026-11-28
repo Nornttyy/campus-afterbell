@@ -228,7 +228,7 @@ export const ponytailGrips = {
       Ring: [0.1, 0.31, 0.362964, 0.85],
     },
   },
-  wrapper: {
+  foodWaste: {
     position: [0.072243, 0.019392, -0.12865],
     rotation: [-0.068748, 0.898253, 0.023106],
     profile: {

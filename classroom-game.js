@@ -1,16 +1,16 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=173';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=174';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83&rev=173';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
-import {createReferenceHUD} from './reference-hud54.js?v=campus-111&rev=173';
+import {createReferenceHUD} from './reference-hud54.js?v=campus-111&rev=174';
 import {interactionIntent} from './interaction-intent54.js?v=campus-117&rev=165';
 import {createSessionUI} from './session-ui.js?v=campus-117&radio=2&rev=165';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=173';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=174';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.
@@ -22,7 +22,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
   const refreshControls=event=>{release();stopMovement();controls=event?.detail||readControls();};
   window.addEventListener('campus-controls-change',refreshControls);
   const referenceHUD=createReferenceHUD({document,root:ui,bindings:()=>controls,touchMode:()=>session.touch});
-  const labels={wrapper:'零食包装',hotpotPlate:'食材盘',hotpotBite:'涮菜',snack:'辣条',chips:'没事薯片',noodles:'小困熊干脆面',drink:'饮料',burger:'汉堡',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡堂',banana:'香蕉',bananaPeel:'香蕉皮',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set(),physicalKeys=new Map();
+  const labels={foodWaste:'食物残渣',hotpotPlate:'食材盘',hotpotBite:'涮菜',snack:'辣条',chips:'没事薯片',noodles:'小困熊干脆面',drink:'饮料',burger:'汉堡',phone:'手机',smoke:'烟雾弹',flash:'闪光弹',ink:'墨水瓶',computer:'电脑',gum:'泡泡堂',banana:'香蕉',bananaPeel:'香蕉皮',lunch:'便当',pen:'笔'},keys=new Set(),inputs=new Set(),physicalKeys=new Map();
   const vision=canvas.parentElement&&document.createElement?createVisionEffects(canvas.parentElement):null;
   let active=false,finished=false,continued=false,raf=0,last=0,lastHud=0,lastEffect=0;
   const teacherFootsteps=createTeacherFootsteps();
@@ -238,7 +238,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     else if(drawer.drawnSlot!=null&&s.selected==='hotpotBite')actionText='低头按住左键 食用';
     else if(openIntent)actionText=(openIntent.hold?'按住 ':'')+'E '+openIntent.label+(target?.kind==='item'?' '+(dishLabels[drawer.slots[target.slot]?.dish]||labels[drawer.slots[target.slot]?.action]||''):'');
     else if(closeIntent)actionText=(closeIntent.hold?'按住 ':'')+'Q '+closeIntent.label;
-    else if(s.selected==='wrapper'&&drawer.drawnSlot!=null)actionText='对准马桶';
+    else if(s.selected==='foodWaste'&&drawer.drawnSlot!=null)actionText='对准马桶';
     else if(drawer.drawnSlot!=null&&drawer.canReturn===false)actionText=drawer.source?.meal!=null?'低头按住左键食用':'Q 放下物品';
     else if(p.burpReadyLeft>0)actionText='左键 打嗝 · '+Math.ceil(p.burpReadyLeft);
     else if(teacher){const female=s.teacher.variant==='doubao',skill=female?'竖劈':'黑板擦',wait=Math.ceil(s.teacher.skillCooldown||0);
