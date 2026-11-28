@@ -1,33 +1,33 @@
-import {advanceLoose,dropLoose,takeLoose,takeCooler,setCoolerOpen,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=156';
-import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=156';
-import {RADIO_SONGS,radioSong,radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=156';
+import {advanceLoose,dropLoose,takeLoose,takeCooler,setCoolerOpen,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=157';
+import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=157';
+import {RADIO_SONGS,radioSong,radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=157';
 import {expandTuning} from './round-tuning93.js?v=campus-117';
 import {SOCIAL_ACTIONS,canEmote,actorEmote} from './social-actions93.js?v=campus-93';
 import {RESULT_SECONDS,nextStudentAppearance} from './class-dismissal92.js?v=campus-102';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=156';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=157';
 import {takeMeal,canReturnMeal,examMode,examUse,copyExam,examSnapshot,advanceExams} from './upper-floor-rules85.js?v=campus-117&rev=156';
-import {advancePlaygroundPupil,inspectionPoints,startFieldWalkers,walkFieldBeforeClass} from './new-map-ai83.js?v=campus-117&rev=156';
+import {advancePlaygroundPupil,inspectionPoints,startFieldWalkers,walkFieldBeforeClass} from './new-map-ai83.js?v=campus-117&rev=157';
 import {DORM_ROOMS,DORM_REST_VIEW,dormDoorPose,dormDoorSolids,dormRoomPoint} from './dorm-layout70.js?v=campus-95&rev=127';
-import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-117&rev=156';
+import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-117&rev=157';
 import {TOILET_STALLS,TOILET_DOOR,toiletDoorPose,toiletDoorSolids,toiletDoorReach} from './toilet-layout70.js?v=campus-94';
-import {playgroundForPlayers,PLAYGROUND_LAYOUT,vendingPoint,canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=156';
+import {playgroundForPlayers,PLAYGROUND_LAYOUT,vendingPoint,canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=157';
 import {floatingBubblePosition,bubbleTouchesHead} from './bubble-flight69.js?v=campus-83';
-import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-117&rev=156';
+import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-117&rev=157';
 import {ordinaryStudyState} from './npc-study58.js?v=campus-117&rev=121';
-import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-117&rev=156';
-import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-117&rev=156';
+import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-117&rev=157';
+import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-117&rev=157';
 import {INTERACTION_SECONDS,ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-117';
 import {validRoundSettings,chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-117';
 import {advanceBoard} from './board-lesson93.js?v=campus-93';
 import {createArcade,advanceArcade,arcadeInput,arcadeSnapshot} from './classroom-arcade93.js?v=campus-93';
 import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,withinComputerReach,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-96';
-import {smokeEnvelope} from './smoke-physics.js?v=campus-117&rev=156';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {createThrowableProjectile,stepThrowableProjectile,effectEye,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-117&rev=156';
+import {smokeEnvelope} from './smoke-physics.js?v=campus-117&rev=157';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
+import {createThrowableProjectile,stepThrowableProjectile,effectEye,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-117&rev=157';
 import {BUS} from './bus-layout86.js?v=campus-94&rev=154';
 import {coachDistanceAt,COACH_BRAKE_SECONDS} from './excursion-journey91.js?v=campus-93';
-import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, lecternForMap, turnedClass, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorEyePosition, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-117&rev=156';
+import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, lecternForMap, turnedClass, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorEyePosition, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-117&rev=157';
 
 /** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:NORMAL_WALK_SPEEDS.student, teacherWalkSpeed:NORMAL_WALK_SPEEDS.teacher, crouchSpeed:CRAWL_TUNING.speed, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
@@ -39,7 +39,7 @@ export const RESCUE_DURATION=INTERACTION_SECONDS;
 // belong to another pupil, so this action awards no points without more evidence.
 export const BUBBLE_TUNING=Object.freeze({duration:6,cycle:ITEM50_TUNING.gumCycleSeconds,cooldown:10,pointsPerSecond:0,maxPoints:10,lifetime:6});
 export const FOOD_ACTIONS=Object.freeze(['snack','noodles','chips','drink','burger','banana','lunch','hotpotBite']);
-import {DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=156';
+import {DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=157';
 export const EATING_PITCH=Object.freeze({enter:DRAWER_LOOK_PITCH,leave:DRAWER_LOOK_PITCH-.035});
 export const START_BELL=START_BELL_POSITION;
 export const CLASS_START_TIMING=Object.freeze({seating:30,classDuration:600,firstArrival:.15,arrivalSpacing:.36});
@@ -50,7 +50,7 @@ export const CLASSROOM_ACTIONS = Object.freeze({
   snack:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.85,label:'偷吃零食'}),
   noodles:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.85,label:'吃干脆面'}),
   chips:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.85,label:'吃薯片'}),
-  phone:Object.freeze({duration:INTERACTION_SECONDS,points:3.5,risk:1.3,noise:.12,label:'玩手机'}),
+  phone:Object.freeze({duration:INTERACTION_SECONDS,points:1.8,maxPoints:2.5,risk:1.3,noise:.12,label:'玩手机'}),
   drink:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1,noise:.55,label:'喝饮料'}),
   burger:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1.1,noise:.75,label:'吃汉堡'}),
   computer:Object.freeze({duration:INTERACTION_SECONDS,points:1,risk:1.15,noise:.35,label:'玩贪吃蛇'}),
@@ -152,7 +152,7 @@ export function chalkHit(a,b,students,books,map,layout=null,throwerId=null){
   return nearest;
 }
 
-import {attacks,castTeacherAttack,advanceWave} from './teacher-attacks129.js?v=campus-117&rev=156';
+import {attacks,castTeacherAttack,advanceWave} from './teacher-attacks129.js?v=campus-117&rev=157';
 export class ClassroomRound{
   constructor({seed=73,duration=600,target=DEVELOPMENT_TUNING.target,map='classroom',chalkStamina=false,tuning}={}){
     this.tuning=expandTuning(tuning);this.customTuning=tuning?{...tuning}:null;
@@ -1074,8 +1074,11 @@ export class ClassroomRound{
   }
   _foodAward(kind){
     if(this.tuning.foodPoints!==1)return this.tuning.foodPoints;
-    const base=['drink','noodles'].includes(kind)?1.5:1;
-    return base+Math.floor(this._random()*51)/100;
+    if(kind==='drink')return this._awardBetween(1.5,2);
+    return this._awardBetween(1,['snack','chips','noodles'].includes(kind)?1.8:1.5);
+  }
+  _awardBetween(min,max){
+    return (Math.round(min*100)+Math.floor(this._random()*(Math.round((max-min)*100)+1)))/100;
   }
   _completeAction(actor,slot){
     const kind=slot.action,action=CLASSROOM_ACTIONS[kind],charge=slot.progress;
@@ -1092,7 +1095,7 @@ export class ClassroomRound{
       actor._selectedSlot=actor._drawnSlot=0;actor._heldSource={leftover:true};
       actor._drawerOpen=false;actor.action='wrapper';if(actor===this.player)this.selected='wrapper';
     }else if(kind!=='banana')this._finishHeldItem(actor);
-    const value=kind==='gum'?actor._bubbleAwarded||0:kind==='lunch'?this.tuning.lunchPoints:FOOD_ACTIONS.includes(kind)?this._foodAward(kind):action.points;
+    const value=kind==='gum'?actor._bubbleAwarded||0:kind==='lunch'?this.tuning.lunchPoints:FOOD_ACTIONS.includes(kind)?this._foodAward(kind):action.maxPoints?this._awardBetween(action.points,action.maxPoints):action.points;
     if(kind==='gum')this._cancelBubble(actor,true);
     const points=Math.min(value,this.target-this.score);this._creditScore(actor,points);
     this._events.push({type:'complete',actor:actor.isPlayer||actor.networkHuman?'player':'ai',studentId:actor.id,speaker:actor.name,action:kind,slotId:slot.id,points,score:this.score});

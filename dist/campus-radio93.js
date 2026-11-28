@@ -1,6 +1,6 @@
 import {radioBeats} from './radio-beats156.js?v=campus-117&rev=156';
 import {BUS,onBus} from './bus-layout86.js?v=campus-94&rev=154';
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=156';
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=157';
 
 export const RADIO_SONGS=Object.freeze([
  {id:'track-window',title:'雨爱（司凤版）',bpm:162,bars:32},
@@ -22,14 +22,17 @@ export function broadcastBeat(state){
  const ms=(age%grid.duration)*1000,beats=grid.beats;
  let lo=0,hi=beats.length;
  while(lo<hi){const mid=(lo+hi)>>>1;if(beats[mid]<=ms)lo=mid+1;else hi=mid;}
- if(!lo)return 0;
- const start=beats[lo-1],end=beats[lo]??(grid.duration*1000+beats[0]),phase=(ms-start)/(end-start);
- // Compress on impact, rebound briskly, then settle before the next impact.
- return phase<.34?Math.cos(Math.PI*phase/.34):phase<.72?-.5*(1+Math.cos(Math.PI*(phase-.34)/.38)):.5*(1-Math.cos(Math.PI*(phase-.72)/.28));
+ // Alternate the low and high poses on successive recorded beats. Ease to
+ // zero velocity at each extremum, even when the live tempo changes.
+ const i=lo-1;
+ const from=i<0?0:i%2?-1:1,to=lo===beats.length?0:lo%2?-1:1;
+ const start=beats[i]??0,end=beats[lo]??grid.duration*1000;
+ const phase=(ms-start)/(end-start);
+ return from+(to-from)*(.5-.5*Math.cos(Math.PI*phase));
 }
 export function broadcastLift(state){return .015*broadcastBeat(state);}
 export function broadcastScale(beat){
- const height=1-.102*beat;
+ const height=1-.15*beat;
  return {height,width:1/Math.sqrt(height)};
 }
 export function radioAnchor(map){

@@ -84,5 +84,6 @@ test('bells and the five confirmations use real, distinct files even if the firs
  assert.equal(chew.buffer.recordedBytes,(await readFile(new URL('chew151.wav',origin))).length);
  assert.equal(ctx.gains.at(-1).gain.value,.38*1.15);assert.equal(ctx.sources.at(-1).playbackRate.value,1.10);
  assert.equal(drink.buffer.recordedBytes,(await readFile(new URL('food-finish148.wav',origin))).length);
+ playCampusFoley(bus,'phone-notification',.8);assert.equal(ctx.sources.at(-1).buffer.recordedBytes,(await readFile(new URL('phone-finish157.wav',origin))).length);
  await warmCampusFoley(bus);assert.ok([...calls.values()].every(n=>n===1));
 });

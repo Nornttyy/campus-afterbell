@@ -1,9 +1,9 @@
-import {OFFICE} from './classroom-layout.js?v=campus-117&rev=156';
+import {OFFICE,CORRIDOR,CLASSROOM} from './classroom-layout.js?v=campus-117&rev=157';
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
-import {createDeskItem} from './game-actors.js?v=campus-117';
-import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=156';
-export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-117&rev=156';
+import {createDeskItem} from './game-actors.js?v=campus-117&rev=157';
+import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=157';
+export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-117&rev=157';
 
 // The reference has an OPEN sports ground, not desks standing on a green floor.
 // The track, platform and vending machines share their placement with the rules.
@@ -116,13 +116,13 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
   const uv=surface.attributes.uv,pad=4/960;
   for(let i=0;i<uv.count;i++)uv.setXY(i,pad+uv.getX(i)*(1-2*pad),(2-band)/3+pad+uv.getY(i)*(1/3-2*pad));
  }
- function uprightBoard(x,z,yaw,width,height,material){
+ function uprightBoard({x,z,yaw,width,height,centerY,postHeight},material){
   const root=new T.Group();root.position.set(x,0,z);root.rotation.y=yaw;root.updateMatrixWorld(true);
   const pt=(a,b,c)=>new T.Vector3(a,b,c).applyMatrix4(root.matrixWorld).toArray();
-  for(const xx of[-width/2+.08,width/2-.08])box(steel,pt(xx,1.12,0),[.07,2.24,.07]);
-  box(frame,pt(0,1.62,0),[width+.12,height+.12,.12],[0,yaw,0]);
-  box(cap,pt(0,1.62+height/2+.095,.01),[width+.40,.08,.64],[0,yaw,0]);
-  return panel(material,pt(0,1.62,.067),width,height,yaw);
+  for(const xx of[-width/2+.08,width/2-.08])box(steel,pt(xx,postHeight/2,0),[.07,postHeight,.07]);
+  box(frame,pt(0,centerY,0),[width+.12,height+.12,.12],[0,yaw,0]);
+  box(cap,pt(0,centerY+height/2+.095,.01),[width+.40,.08,.64],[0,yaw,0]);
+  return panel(material,pt(0,centerY,.067),width,height,yaw);
  }
  const b=layout.bounds,t=layout.track;
  // All seams share the same coordinates as the pure collider layout.
@@ -142,8 +142,17 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  const wallSections=layout.colliders.filter(c=>c.id.includes('-wall'));
  // The office exterior already closes this length of the east boundary.
  const visibleWalls=wallSections.flatMap(w=>{
-  if(!w.id.startsWith('playground-east')||w.maxZ<=OFFICE.minZ||w.minZ>=OFFICE.maxZ)return [w];
-  return [{...w,maxZ:OFFICE.minZ},{...w,minZ:OFFICE.maxZ}].filter(part=>part.maxZ>part.minZ);
+  if(!w.id.startsWith('playground-east'))return [w];
+  // The staff room and the corridor extension both expose a wall at x=7.2.
+  // End the field enclosure at those faces, including the end-wall thickness.
+  let parts=[w];
+  for(const [lo,hi] of [[OFFICE.minZ-.20,CORRIDOR.minZ],[CORRIDOR.minZ-.20,CLASSROOM.minZ-.20]]){
+   parts=parts.flatMap(p=>p.maxZ<=lo||p.minZ>=hi?[p]:
+    [{...p,maxZ:lo},{...p,minZ:hi}].filter(s=>s.minZ<s.maxZ));
+  }
+  // Ahead of the corridor windows, let the field-side finish sit proud of
+  // the shared plaster piers. Keep the physical openings at their anchors.
+  return parts.map(part=>({...part,minX:part.minX-.045}));
  });
  for(const w of visibleWalls){
   box(wall,[(w.minX+w.maxX)/2,1.04,(w.minZ+w.maxZ)/2],[w.maxX-w.minX,2.08,w.maxZ-w.minZ]);
@@ -199,7 +208,7 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  const campaigns=mat('#ffffff',{map:ownTexture(paintedTexture('campaigns')),roughness:.85});
  const sportsPoster=mat('#ffffff',{map:ownTexture(paintedTexture('sports')),roughness:.85});
  for(const [i,n]of layout.notices.entries()){
-  const face=uprightBoard(n.x,n.z,n.yaw,n.width,n.height,i===0?sportsPoster:campaigns);
+  const face=uprightBoard(n,i===0?sportsPoster:campaigns);
   if(i>0)setPrintBand(face,(i-1)%3);
  }
  const sportsBanner=mat('#ffffff',{map:ownTexture(paintedTexture('track-banner')),roughness:.85});
@@ -207,7 +216,10 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  panel(sportsBanner,[b.minX+.023,1.30,bannerZ],4.55,1.35,Math.PI/2);
  for(let i=0;i<12;i++){
   const z=b.minZ+3.2+i*(b.length-6.4)/11;
-  if([layout.entrance,layout.rearEntrance].every(g=>z+1.7<g.minZ||z-1.7>g.maxZ))setPrintBand(panel(campaigns,[b.maxX-.011,1.30,z],3.4,1.34,-Math.PI/2),i%3);
+  if([layout.entrance,layout.rearEntrance].every(g=>z+1.7<g.minZ||z-1.7>g.maxZ)){
+   const wallX=visibleWalls.some(w=>w.id.startsWith('playground-east')&&z+1.7>w.minZ&&z-1.7<w.maxZ)?b.maxX-.045:b.maxX;
+   setPrintBand(panel(campaigns,[wallX-.014,1.30,z],3.4,1.34,-Math.PI/2),i%3);
+  }
   if(Math.abs(z+1.1-bannerZ)>3.9)setPrintBand(panel(campaigns,[b.minX+.011,1.30,z+1.1],3.2,1.34,Math.PI/2),(i+1)%3);
  }
  panel(sportsPoster,[t.cx,1.30,b.minZ+.011],5.4,1.8,0);

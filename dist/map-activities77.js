@@ -1,4 +1,4 @@
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=156';
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=157';
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94';
 // Plunging shares the requested interaction duration with food and rescue.

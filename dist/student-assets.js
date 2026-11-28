@@ -12,9 +12,9 @@ import {createCapturePose} from './capture-poses.js?v=campus-83';
 import {createToiletSeatPose} from './toilet-seat78.js?v=campus-117';
 import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-117&rev=154';
 import {createBedPose} from './bed-pose78.js?v=campus-117';
-import {createMapActivityPose} from './map-activity-pose77.js?v=campus-117&rev=156';
+import {createMapActivityPose} from './map-activity-pose77.js?v=campus-117&rev=157';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=157';
 import {propContact} from './prop-assets.js?v=campus-83';
 import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-113';
@@ -26,7 +26,7 @@ import {createSchoolPen,SCHOOL_PEN,createPenFingerContact,penTwirlQuaternion} fr
 import {createStudentFaceShape} from './student-face-shape75.js?v=campus-83';
 import {createStudentEyes} from './student-eyes56.js?v=campus-109&rev=119';
 import {createStudyBook,writingPageY} from './study-book58.js?v=campus-110';
-import {normalWalkCycleRate} from './movement55.js?v=campus-117&rev=156';
+import {normalWalkCycleRate} from './movement55.js?v=campus-117&rev=157';
 import {writingStroke,thirdPersonPenTime} from './study-motion64.js?v=campus-108';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 export const STUDENT_ASSETS=Object.freeze({
@@ -157,7 +157,7 @@ function sculptSweptHair(model){
  });
 }
 export async function loadStudentAssets(){
- const loader=new GLTFLoader(),variants=Object.keys(STUDENT_ASSETS),files=[...variants.map(v=>STUDENT_ASSETS[v].file),'hand-left-v3','hand-right-v3','teacher-hand-left-v1','teacher-hand-right-v1'];
+ const loader=new GLTFLoader(),variants=Object.keys(STUDENT_ASSETS),files=[...variants.map(v=>STUDENT_ASSETS[v].file),'ponytail-hand-left-v1','ponytail-hand-right-v1','teacher-hand-left-v1','teacher-hand-right-v1'];
  const loaded=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=mesh-64`,import.meta.url).href)));
  variants.forEach((variant,i)=>{
   if(variant==='ponytail')sculptFringe(loaded[i].scene);

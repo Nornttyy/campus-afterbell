@@ -72,7 +72,7 @@ test('editor exposes both crawl states, shares the low viewpoint and stays pause
  const [html,script]=await Promise.all(['animation-editor.html','animation-editor59.js'].map(p=>readFile(new URL('../dist/'+p,import.meta.url),'utf8')));
  assert.match(html,/data-clip="student-crawl-idle"[^>]*>.*?学生爬行待机/);
  assert.match(html,/data-clip="student-crawl"[^>]*>.*?学生爬行移动/);
- assert.match(script,/crawl=clipId\.startsWith\('student-crawl'\),eye=crawl\?\.65/);
+ assert.match(script,/crawl=clipId\.startsWith\('student-crawl'\),eye=crawl\?CRAWL_TUNING\.eyeHeight/);
  assert.match(script,/playing=false/);assert.match(script,/DRAFT='campus\.handAnimationDraft\.v2'/);
  assert.match(script,/LEGACY_DRAFT='campus\.handAnimationDraft\.v1'/);
 });

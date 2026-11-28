@@ -60,6 +60,9 @@ test('students can crawl through the entire open span but not through its posts'
  const layout=createLayoutContext([],{map:'playground'}),n=PLAYGROUND_LAYOUT.notices[0];
  const cross=(z,crouched)=>moveInRoom({x:n.x-.5,z,crouched},1,0,.18,layout).x;
  assert.ok(n.width>3.5&&PLAYGROUND_LAYOUT.speaker.poleHeight>5);
+ const panel=PLAYGROUND_LAYOUT.colliders.find(c=>c.id===n.id);
+ assert.ok(Math.abs(panel.minY-(n.centerY-(n.height+.12)/2))<1e-8);
+ assert.ok(Math.abs(panel.minY-.94)<1e-7);
  assert.ok(cross(n.z,false)<n.x);
  assert.ok(cross(n.z,true)>n.x+.48);
  assert.ok(cross(n.z+n.width/2-.08,true)<n.x);

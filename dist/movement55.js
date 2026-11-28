@@ -1,4 +1,4 @@
-import {onRunningTrack} from './playground-layout70.js?v=campus-117&rev=156';
+import {onRunningTrack} from './playground-layout70.js?v=campus-117&rev=157';
 export const BACKWARD_SPEED_RATIO=.6;
 // One normal pace per role, shared by humans and AI. Arrival deadlines never
 // change these values. Carrying a pupil preserves the teacher's normal pace.

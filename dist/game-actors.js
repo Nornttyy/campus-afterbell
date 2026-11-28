@@ -8,7 +8,7 @@ import {writingStroke} from './study-motion64.js?v=campus-108';
 import {createSchoolPen,SCHOOL_PEN,penTwirlQuaternion} from './pen-motion.js?v=campus-117';
 import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
 import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-117';
 import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117';

@@ -1,4 +1,4 @@
-import {actorFloorHeight,clearWallSegment} from './classroom-layout.js?v=campus-117&rev=156';
+import {actorFloorHeight,clearWallSegment} from './classroom-layout.js?v=campus-117&rev=157';
 
 export const attacks=Object.freeze({
   horizontal:{cooldown:2.2,duration:2.2,windup:.78,fade:.75,speed:7,range:2.6,width:1.05,height:.55},

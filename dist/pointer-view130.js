@@ -2,7 +2,7 @@ import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
 import {sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-111';
-import {attacks} from './teacher-attacks129.js?v=campus-117&rev=156';
+import {attacks} from './teacher-attacks129.js?v=campus-117&rev=157';
 
 // Camera-local handle position, shaft yaw and elevation, grip roll, tip bend.
 // The zero-time contact key coincides with the authority releasing its wave.

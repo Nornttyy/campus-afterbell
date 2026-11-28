@@ -1,6 +1,6 @@
-import {radioSong,EXERCISE_SONG,setRadioClock} from './campus-radio93.js?v=campus-117&rev=156';
+import {radioSong,EXERCISE_SONG,setRadioClock} from './campus-radio93.js?v=campus-117&rev=157';
 export function createRadioUI(doc,muted){
- const audio=doc.createElement('audio');audio.preload='none';audio.loop=true;audio.volume=.54;
+ const audio=doc.createElement('audio');audio.preload='none';audio.loop=true;audio.volume=.38;
  let key='',song=null,age=0,active=false,pending=false,blocked=false,epoch=0;
  function select(id){
   audio.pause();pending=blocked=false;

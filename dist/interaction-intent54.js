@@ -1,5 +1,5 @@
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=156';
+import {radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=157';
 // A key resolves to ONE explicit action. In particular, returning a pen must
 // never fall through to opening the drawer underneath the crosshair.
 const intent=(method,args,label,hold=false)=>({method,args,label,hold});
