@@ -1,3 +1,4 @@
+import {ponytailGrips} from './ponytail-grips165.js?v=campus-117&rev=165';
 import {FIRST_PERSON_FOOD_FITS} from './first-person-packet-grips112.js?v=campus-114&rev=164';
 import * as T from './vendor/three.module.js';
 import {createFingerRig,handFrame} from './hand-motion.js?v=campus-117';
@@ -14,7 +15,11 @@ export function createWholePalmGrip(hand,side){
  const local=hand.group.getWorldQuaternion(Q()).invert();
  const axes=(y,z)=>{const up=y.clone().normalize(),back=z.clone().addScaledVector(up,-z.dot(up)).normalize();return Q().setFromRotationMatrix(new T.Matrix4().makeBasis(V().crossVectors(up,back),up,back));};
  const palmUp=axes(new T.Vector3(.82,.10,-.44),new T.Vector3(-.20,-.78,-.55)).multiply(axes(frame.along,frame.normal).premultiply(local).invert());
- const profileFor=kind=>FIRST_PERSON_FOOD_FITS[kind]||WHOLE_PALM_PROFILES[kind]||null;
+ const profiles={...WHOLE_PALM_PROFILES,...FIRST_PERSON_FOOD_FITS};
+ if(hand.group.userData.ponytailGrip){
+  for(const [kind,fit] of Object.entries(ponytailGrips))profiles[kind]={...profiles[kind],...fit};
+ }
+ const profileFor=kind=>profiles[kind]||null;
  return {
   fit:profileFor,palmUp,
   apply(kind,weight=1){const fit=profileFor(kind);if(!fit)return false;

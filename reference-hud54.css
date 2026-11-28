@@ -128,3 +128,13 @@ body:not(.playing) #school-radio-player{top:auto;bottom:max(18px,env(safe-area-i
 @media (orientation:portrait) {
   #session-ui .touch-actions #touch-jump{position:static;grid-column:2;grid-row:3}
 }
+
+.teacher-skill-meter{display:grid;grid-template-columns:auto auto;align-items:center;column-gap:.55em;row-gap:.18em}
+.teacher-skill-meter[hidden]{display:none}
+.teacher-skill-meter>span:nth-child(2){font-size:.78em}
+.teacher-skill-meter progress{grid-column:1/-1;width:100%;height:.34em;appearance:none;border:0;border-radius:1em;overflow:hidden;background:#33382c99}
+.teacher-skill-meter progress::-webkit-progress-bar{background:#33382c99}
+.teacher-skill-meter progress::-webkit-progress-value{background:#ffe7a0}
+.teacher-skill-meter progress::-moz-progress-bar{background:#ffe7a0}
+#touch-skill::after{content:"";position:absolute;left:12%;right:12%;bottom:8%;height:4px;border-radius:2px;background:linear-gradient(to right,#ffe7a0 var(--skill-ready,100%),#404237aa 0)}
+#session-ui .touch-actions #touch-skill{position:relative;inset:auto}

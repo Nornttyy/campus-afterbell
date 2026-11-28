@@ -34,6 +34,23 @@ function overlap(a,b){
  }
  return true;
 }
+// Only a broad flat face on a world-supported item is a stable second layer.
+const flatTops=new Set(['lunch','phone','gum','hotpotPlate']);
+function stableOn(item,base){
+ if(base.supportId!=null||!flatTops.has(base.action))return false;
+ const [w,,d]=extent(base),[iw,,id]=extent(item),angle=(item.yaw||0)-(base.yaw||0);
+ const c=Math.abs(Math.cos(angle)),s=Math.abs(Math.sin(angle));
+ const dx=item.x-base.x,dz=item.z-base.z,b=base.yaw||0;
+ return Math.abs(dx*Math.cos(b)-dz*Math.sin(b))*2000+(iw*c+id*s)*.55<w
+     &&Math.abs(dx*Math.sin(b)+dz*Math.cos(b))*2000+(id*c+iw*s)*.55<d;
+}
+function slideOff(item,base){
+ const dx=item.x-base.x,dz=item.z-base.z,length=Math.hypot(dx,dz);
+ // Keep lateral momentum across contacts with adjacent packages.
+ // Recomputing the direction at every edge can trap items between two cans.
+ if(item.slideAngle==null)item.slideAngle=length>.005?Math.atan2(dz,dx):(item.id*2.39996+base.id*1.618);
+ item.vx=Math.cos(item.slideAngle)*.82;item.vz=Math.sin(item.slideAngle)*.82;item.vy=0;item.settled=false;
+}
 export function canPick(round,p,point){
  if(!point||round.status!=='playing'||round.paused||p.id<0||p._drawnSlot!=null||round._restrained(p)||p.mapActivity)return false;
  const eye=actorEyePosition(p,round.map);
@@ -49,7 +66,7 @@ export function takeLoose(round,id,p=round.player){
  const body=round.groundItems.get(id);
  if(!body||!canPick(round,p,body))return false;
  round.groundItems.delete(id);
- for(const other of round.groundItems.values())if(other.settled&&other.y>body.y&&overlap(other,body))other.settled=false;
+ for(const other of round.groundItems.values())if(other.supportId===id){other.settled=false;delete other.supportId;}
  equip(round,p,body.action,body.dish);
  if(body.action==='pen'){
   p._penTaken=true;p._penMode='twirling';p._penSeatId=body.penSeatId;
@@ -104,14 +121,23 @@ export function advanceLoose(round,dt){
  for(const item of moving){
   const from=item.y;stepSmokeProjectile(item,dt,round.layout);
   if(from>=item.y){
-   const x=Math.floor(item.x/.35),z=Math.floor(item.z/.35);let support=-Infinity;
+   const x=Math.floor(item.x/.35),z=Math.floor(item.z/.35);let support=null,highest=-Infinity;
    for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)for(const b of bins.get(key(x+dx,z+dz))||[]){
     if(!overlap(item,b))continue;
     const top=b.y+extent(b)[1]/1000;
-    if(from>=top-.008&&item.y<=top)support=Math.max(support,top);
+    if(top>highest&&item.y<=top&&from+extent(item)[1]/1000>=b.y+.001){
+     support=b;highest=top;
+    }
    }
-   if(Number.isFinite(support)){item.y=support;item.vx=item.vy=item.vz=0;item.settled=true;}
+   if(support){
+    if(from>=highest-.009){
+     item.y=highest;
+     if(stableOn(item,support)){
+      item.supportId=support.id;item.vx=item.vy=item.vz=0;item.settled=true;
+     }else slideOff(item,support);
+    }else slideOff(item,support);
+   }
   }
-  if(item.settled)index(item);
+  if(item.settled){delete item.slideAngle;index(item);}
  }
 }

@@ -1,3 +1,4 @@
+import {attacks} from './teacher-attacks129.js?v=campus-117&rev=157';
 import {readControls,keyLabel} from './control-settings64.js?v=campus-93';
 // Presentation consumes authoritative scores; names and points are never
 // invented from an animation or inferred from the number of eaten objects.
@@ -10,6 +11,8 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
  const $=s=>doc.querySelector(s),make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;};
  const ranking=make('aside','live-ranking');ranking.id='live-ranking';ranking.setAttribute('aria-label','实时排名');ranking.append(make('h3',null,'实时排名'));const rankList=make('ol');ranking.append(rankList);root.append(ranking);
  const held=make('div','held-input-hint');held.id='held-input-hint';held.hidden=true;root.append(held);
+ const skill=make('div','teacher-skill-meter'),skillText=make('span'),bar=make('progress');
+ skill.append(skillText,bar);bar.setAttribute('aria-label','老师技能冷却');skill.hidden=true;
  const pause=$('#pause-dialog'),result=$('#result-dialog');pause.classList.add('reference-pause');result.classList.add('reference-result');
  const details=pause.querySelector('.controls-guide');if(details){details.querySelector('summary').textContent='操作说明';pause.append(details);}
  $('#resume-game').textContent='继续游戏';$('#leave-game').textContent='退出游戏';
@@ -43,13 +46,25 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
    const model=hud54Model(s),signature=JSON.stringify(model.rows);ranking.hidden=s.stage!=='class';
    if(signature!==lastRank){lastRank=signature;rankList.replaceChildren(...model.rows.map((p,i)=>{const li=make('li');li.dataset.self=String(p.isSelf);li.append(make('span','rank-place',i+1),make('span','rank-name',p.name),make('strong','rank-points',Math.floor(p.points+1e-8)));return li;}));}
    const p=s.player,carrying=s.drawer.drawnSlot!=null,pen=carrying&&s.selected==='pen',reading=p.seated&&p.bookRaised&&!carrying;
-   const heldKey=JSON.stringify([carrying,reading,s.selected,p.penWriting,p.caught,p.seated,s.paused,s.role,s.map,p.crouched,mobile,bindings().keys]);
+   const heldKey=JSON.stringify([carrying,reading,s.selected,p.penWriting,p.caught,p.seated,s.paused,s.stage,s.teacher?.variant,s.role,s.map,p.crouched,mobile,bindings().keys]);
    if(heldKey!==lastHeld){lastHeld=heldKey;held.replaceChildren();held.hidden=p.caught||s.paused;if(!held.hidden){
     if(!p.seated){
      held.append(keyLine(keyLabel(key.jump),'跳跃'),keyLine(keyLabel(key.crawl),s.role==='teacher'?'奔跑':p.crouched?'起身':'趴下'));
     }
-    if(s.role==='teacher')held.append(keyLine('鼠标',s.teacher.variant==='doubao'?'横劈':'扔粉笔'));
+    if(s.role==='teacher'){
+     held.append(keyLine('鼠标',s.teacher.variant==='doubao'?'横劈':'扔粉笔'));
+     if(s.stage==='class'){skill.replaceChildren(keyLine(keyLabel(key.skill),s.teacher.variant==='doubao'?'竖劈':'黑板擦'),skillText,bar);held.append(skill);}
+    }
     if(carrying||reading){if(pen)held.append(keyLine('E',p.penWriting?'转笔':'写字'));else if(!reading)held.append(keyLine('鼠标',s.selected==='bananaPeel'?'松开投掷':['smoke','flash','ink'].includes(s.selected)?'投掷':'使用'));held.append(keyLine('Q','放回'));}}}
+   skill.hidden=s.role!=='teacher'||s.stage!=='class'||s.status!=='playing';
+   if(!skill.hidden){
+    const duration=attacks[s.teacher.variant==='doubao'?'vertical':'eraser'].cooldown;
+    const remaining=Math.max(0,Math.min(duration,s.teacher.skillCooldown||0));
+    bar.max=duration;bar.value=duration-remaining;
+    skillText.textContent=remaining?Math.ceil(remaining)+'秒':'就绪';
+    const button=$('#touch-skill');
+    if(button){button.style.setProperty('--skill-ready',100*bar.value/duration+'%');}
+   }
    const prompt=$('#interaction-prompt'),text=prompt.textContent;
    if(reading&&text.includes('放下书本')){prompt.replaceChildren();prompt.hidden=true;return;}
    {lastPrompt=text;const match=text.match(/^(.*?)([EQ]) (.*)$/);if(match){prompt.replaceChildren();if(match[1])prompt.append(make('span',null,match[1]));prompt.append(keyLine(match[2],match[3]));}}

@@ -11,7 +11,7 @@ import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
 import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-117&rev=161';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117&rev=164';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117&rev=165';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -581,13 +581,15 @@ export function createDeskHands({createHand}={}){
   function attachToGrip(prop,hand,anchor){hand.updateMatrix();prop.position.copy(anchor.position).applyMatrix4(hand.matrix);prop.quaternion.copy(hand.quaternion).multiply(anchor.rotation);}
   for(const kind of DESK_ITEM_KINDS){const fit=wholeGrips[0].fit(kind);if(fit){grips[kind].position.fromArray(fit.position);grips[kind].rotation.setFromEuler(new THREE.Euler(...fit.rotation));}}
   // Use the printed face of the gum packet with the existing corner grip.
-  grips.gum.rotation.copy(grips.chips.rotation);
+  if(!arms[0].hand.group.userData.ponytailGrip)grips.gum.rotation.copy(grips.chips.rotation);
   const packetPalm=wholeGrips[0].palmUp||carryView(-2.25,.10,-.72);
   const lowHandRotation=new THREE.Quaternion();
   // The wrist enters from the bottom-left corner, leaving the thumb free to
   // reach across the glass while the long fingers support the back.
+  if(!arms[0].hand.group.userData.ponytailGrip){
   grips.phone.rotation.multiply(new THREE.Quaternion().setFromAxisAngle(v(0,0,1),Math.PI-.60));
   grips.phone.position.add(v(-.002,.005,0).applyQuaternion(grips.phone.rotation).divideScalar(arms[0].hand.group.scale.x));
+  }
   const fingerAxis=v(0,1,0);
   for(const kind of Object.keys(eatingMount)){
     const fit=wholeGrips[0].fit(kind);

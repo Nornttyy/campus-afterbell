@@ -10,7 +10,7 @@ import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-11
 import {createCrawlPose} from './crawl-pose.js?v=campus-117';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-113&rev=161';
 import {createStudentHandMotion,createFingerRig,handFrame} from './hand-motion.js?v=campus-117';
-import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-105';
+import {createWalkingArmPose} from './walking-arm-pose.js?v=campus-105&rev=165';
 
 export async function loadTeacherModel(){
   const url=new URL('./assets/models/teacher-v2.glb?v=mesh-64',import.meta.url);

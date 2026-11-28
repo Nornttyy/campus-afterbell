@@ -22,18 +22,17 @@ export function broadcastBeat(state){
  const ms=(age%grid.duration)*1000,beats=grid.beats;
  let lo=0,hi=beats.length;
  while(lo<hi){const mid=(lo+hi)>>>1;if(beats[mid]<=ms)lo=mid+1;else hi=mid;}
- // Alternate the low and high poses on successive recorded beats. Ease to
- // zero velocity at each extremum, even when the live tempo changes.
- const i=lo-1;
- const from=i<0?0:i%2?-1:1,to=lo===beats.length?0:lo%2?-1:1;
- const start=beats[i]??0,end=beats[lo]??grid.duration*1000;
- const phase=(ms-start)/(end-start);
- return from+(to-from)*(.5-.5*Math.cos(Math.PI*phase));
+ // Land on each recorded beat, reaching full extension halfway to the next.
+ // Ease through neutral at both ends so looping and initial playback join cleanly.
+ if(lo===0)return .5-.5*Math.cos(Math.PI*ms/beats[0]);
+ if(lo===beats.length)return .5+.5*Math.cos(Math.PI*(ms-beats[lo-1])/(grid.duration*1000-beats[lo-1]));
+ const phase=(ms-beats[lo-1])/(beats[lo]-beats[lo-1]);
+ return Math.cos(2*Math.PI*phase);
 }
 export function broadcastLift(state){return .015*broadcastBeat(state);}
 export function broadcastScale(beat){
  const height=1-.15*beat;
- return {height,width:1/Math.sqrt(height)};
+ return {height,width:1-.025*Math.max(0,-beat)};
 }
 export function radioAnchor(map){
  if(map==='bus')return {x:11.023,y:BUS.low+1.36,z:-14.49,yaw:-Math.PI/2};

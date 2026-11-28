@@ -2,7 +2,7 @@ import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=157';
 import {DORM_ROOMS,DORM_BUNK_ROWS,dormRoomPoint} from './dorm-layout70.js?v=campus-95&rev=127';
 import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94&rev=154';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94';
-import {NORMAL_WALK_SPEEDS} from './movement55.js?v=campus-117&rev=157';
+import {normalWalkSpeed} from './movement55.js?v=campus-117&rev=157';
 import {releaseMapActivity} from './map-activities77.js?v=campus-117&rev=157';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const vendingApproach=v=>({x:v.x+Math.sin(v.yaw)*.94+Math.cos(v.yaw)*.51,z:v.z+Math.cos(v.yaw)*.94-Math.sin(v.yaw)*.51});
@@ -17,8 +17,28 @@ export function inspectionPoints(map,seats){
  return [];
 }
 function roam(round,a){
- const t=PLAYGROUND_LAYOUT.track,angle=round._range(-Math.PI,Math.PI),r=t.innerRadius+round._range(-1.6,2.7);
- const point={x:t.cx+Math.sin(angle)*r,z:t.cz+Math.cos(angle)*r+(Math.cos(angle)>=0?t.straightHalf:-t.straightHalf)};
+ const t=PLAYGROUND_LAYOUT.track;
+ // Follow the stadium oval in short chords. The random entry and lane keep
+ // pupils independent without sending them across the infield between turns.
+ const r=a._laneRadius??=round._range(t.innerRadius+.36,t.outerRadius-.36);
+ const straight=t.straightHalf*2,arc=Math.PI*r,lap=2*(straight+arc);
+ const d=a._trackDistance??round._range(0,lap);
+ const direction=a._trackDirection??=(round._range(0,1)<.5?-1:1);
+ let x,z;
+ if(d<straight){x=r;z=-t.straightHalf+d;}
+ else if(d<straight+arc){const angle=(d-straight)/r;x=r*Math.cos(angle);z=t.straightHalf+r*Math.sin(angle);}
+ else if(d<2*straight+arc){x=-r;z=t.straightHalf-(d-straight-arc);}
+ else{const angle=(d-2*straight-arc)/r;x=-r*Math.cos(angle);z=-t.straightHalf-r*Math.sin(angle);}
+ a._trackDistance=(d+direction*3.4+lap)%lap;
+ const point={x:t.cx+x,z:t.cz+z};
+ // Grid routing to a point three metres ahead can briefly turn the runner
+ // back toward the nearest grid cell. Use the actual lane chord when clear.
+ const length=distance(a,point),steps=Math.ceil(length/.15);
+ if(length<4.5){
+  let clear=true;
+  for(let i=1;i<=steps;i++)if(round._blocked(a.x+(point.x-a.x)*i/steps,a.z+(point.z-a.z)*i/steps,.2)){clear=false;break;}
+  if(clear){a._outdoorGoal={track:true,point,route:[point]};return true;}
+ }
  return goal(round,a,point,{track:true});
 }
 export function startFieldWalkers(round){
@@ -37,7 +57,7 @@ export function startFieldWalkers(round){
 export function walkFieldBeforeClass(round,a,dt){
  if(a.isPlayer||a.networkHuman||round._restrained(a))return;
  if(!a._outdoorGoal)roam(round,a);
- if(a._outdoorGoal&&round._follow(a,a._outdoorGoal.route,NORMAL_WALK_SPEEDS.student,dt,.2))a._outdoorGoal=null;
+ if(a._outdoorGoal&&round._follow(a,a._outdoorGoal.route,normalWalkSpeed(a,round.map),dt,.2))a._outdoorGoal=null;
  a.mood='walking';
 }
 function stop(a){a.holding=false;a._drawerOpen=false;a._computerActive=false;a.studyBookHeld=false;}
@@ -53,8 +73,9 @@ export function advancePlaygroundPupil(round,a,dt){
  stop(a);
  if(a._outdoorGoal){
   const g=a._outdoorGoal;
-  if(round._follow(a,g.route,NORMAL_WALK_SPEEDS.student,dt,.2)){
+  if(round._follow(a,g.route,normalWalkSpeed(a,round.map),dt,.2)){
    a._outdoorGoal=null;
+   if(g.track&&!a.isTeammate)roam(round,a);
    if(g.vendingId){
     
     if(round._collectVendingFood(a,g.vendingId)){
@@ -82,7 +103,7 @@ export function advancePlaygroundPupil(round,a,dt){
   const machines=[...PLAYGROUND_LAYOUT.vending].sort((x,y)=>cost(x)-cost(y));
   for(const v of machines)if(goal(round,a,vendingApproach(v),{vendingId:v.id}))return true;
  }else{
-  if(round.elapsed>=(a._outdoorAt||0)){a._outdoorAt=round.elapsed+2;roam(round,a);}
+  if(round.elapsed>=(a._outdoorAt||0))a._outdoorAt=roam(round,a)?0:round.elapsed+1;
  }
  a.mood='standing';return true;
 }

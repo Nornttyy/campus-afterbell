@@ -1,11 +1,11 @@
-import {radioSong,EXERCISE_SONG,setRadioClock} from './campus-radio93.js?v=campus-117&rev=157';
+import {radioSong,EXERCISE_SONG,setRadioClock} from './campus-radio93.js?v=campus-117&rev=165';
 export function createRadioUI(doc,muted){
  const audio=doc.createElement('audio');audio.preload='none';audio.loop=true;audio.volume=.38;
  let key='',song=null,age=0,active=false,pending=false,blocked=false,epoch=0;
  function select(id){
   audio.pause();pending=blocked=false;
   const src=new URL('./assets/audio/'+id+'.m4a',import.meta.url);
-  src.searchParams.set('audio',id===EXERCISE_SONG.id?'156':'155');
+  src.searchParams.set('audio',id===EXERCISE_SONG.id?'165':'155');
   audio.src=src.href;play();
  }
  function play(){
