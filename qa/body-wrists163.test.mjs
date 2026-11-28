@@ -33,8 +33,7 @@ for(const character of [...Object.keys(STUDENT_ASSETS), 'teacher']){
     for(const [name,side] of [['LeftHand','left'],['RightHand','right']]){
      const {position,...fingerPose}=posed[side];
      const {position:unused,...source}=authored[side];
-     if(moving)assert.deepEqual(fingerPose,source);
-     else assert.equal(fingerPose.curl,source.curl);
+     assert.deepEqual(fingerPose,source);
      const wrist=actor.bones[name].getWorldPosition(new Vector3());
      outside.push([Math.abs(wrist.x),wrist.y,wrist.z]);
      first.push([Math.abs(position[0]),position[1]+eye,-position[2]]);
