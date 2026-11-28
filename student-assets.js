@@ -14,7 +14,7 @@ import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-117&rev=
 import {createBedPose} from './bed-pose78.js?v=campus-117';
 import {createMapActivityPose} from './map-activity-pose77.js?v=campus-117&rev=157';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=171';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=172';
 import {propContact} from './prop-assets.js?v=campus-83';
 import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111&rev=160';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-113&rev=161';

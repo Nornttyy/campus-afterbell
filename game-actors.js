@@ -1,4 +1,4 @@
-import {createGripLayer,gripKey} from './item-grips.js?v=campus-117&rev=171';
+import {createGripLayer,createPropGripLayer,gripKey} from './item-grips.js?v=campus-117&rev=172';
 import {writingPageY} from './study-book58.js?v=campus-110';
 import {printedPacket,reverseHeldPanels} from './snack-pack111.js?v=campus-113&rev=171';
 import {snackWrapper} from './snack-wrapper94.js?v=campus-94';
@@ -543,7 +543,8 @@ export function createDeskHands({createHand,gripForItem}={}){
   });
   arms.forEach((arm,i)=>{arm.group.name=i?'right-desk-arm':'left-desk-arm';arm.hand.group.name=i?'right-desk-hand':'left-desk-hand';});
   const gripLayers=arms.map((arm,i)=>createGripLayer(arm.hand,i?'right':'left',gripForItem));
-  function applyItemGrip(id,side,prop){gripLayers[side==='right'?1:0].apply(id,prop);}
+  const propLayers=arms.map(()=>createPropGripLayer(gripForItem));
+  function applyItemGrip(id,side,prop){const index=side==='right'?1:0;gripLayers[index].apply(id,prop);if(prop)propLayers[index].apply(id,prop);}
   const articulation=arms.map((arm,i)=>createFirstPersonHandMotion(arm.hand,i?1:-1));
   const supports=arms.map(arm=>createHandSupport(arm.hand));
   const wholeGrips=arms.map((arm,i)=>createWholePalmGrip(arm.hand,i?1:-1));
@@ -618,6 +619,7 @@ export function createDeskHands({createHand,gripForItem}={}){
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
   function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,examPen=null,mealDish=null,bookAmount=0,answerCard=false,trayFood=null,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,coachSeat=null,animationPose=null}={}){
+    for(const layer of propLayers)layer.restore();
     for(const layer of gripLayers)layer.restore();
     // User-authored item clips use the preview camera as their coordinate frame.
     // The fitted finger and prop anchors are the same as in ordinary gameplay.
