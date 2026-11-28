@@ -77,6 +77,7 @@ export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget
     // Fit the editor's metre-long stride to a first-person view. At the front
     // of each step the fingers enter frame; on the return the wrist drops below it.
     const teacher=activeId.startsWith('teacher-'),stride=walking?Math.min(1,state.movement):0;
+    const idleDrop=(teacher?.032:.070)*(1-stride);
     const stridePose=sampled;
     const rest=fallback.clips[teacher?'teacher-idle':'student-idle']?.keyframes[0];
     if(walking&&rest){
@@ -89,7 +90,7 @@ export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget
      const swing=(2*reach-1)*stride;
      if(walking)hand.curl+=stride*(teacher?.20:.10)*(.6+.4*reach);
      hand.position=[sign*((teacher?.225:.202)-.023*swing),
-      (teacher?-.401:-.358)+(teacher?.089:.066)*swing-.024*stride*(1-swing*swing),
+      (teacher?-.401:-.358)-idleDrop+(teacher?.089:.066)*swing-.024*stride*(1-swing*swing),
       -.52-(teacher?.115:.092)*swing];
     }
    }
