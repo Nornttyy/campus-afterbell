@@ -1,4 +1,4 @@
-import {createPointerView} from './pointer-view130.js?v=144';
+import {createPointerView} from './pointer-view130.js?v=145';
 import {mountDoubao,teacherProjectiles} from './teacher-effects129.js?v=136';
 import {createPlayerNames} from './player-names119.js';
 import {createDeskHandShadows} from './desk-hand-shadows108.js?v=campus-108';
@@ -15,7 +15,7 @@ import {toiletDoorReach} from './toilet-layout70.js?v=campus-94';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117';
 import {FURNITURE_SOURCES67,loadFurniture67} from './furniture-assets67.js?v=campus-99';
 import {assetsForOpenMaps,playableCampusMap} from './campus-destinations.js?v=campus-117&rev=128';
-import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-117&rev=144';
+import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-117&rev=145';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
 import {advanceDeskDrawer,drawerHandTarget,DESK_DRAWER_TRAVEL,DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=128';
 import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-92';
