@@ -1,6 +1,6 @@
 import {teacherViewHeight,STUDENT_VIEW_HEIGHT} from './camera-height58.js?v=campus-83';
-import {TEACHER_RUN_SPEED} from './movement55.js?v=campus-117&rev=156';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
+import {TEACHER_RUN_SPEED} from './movement55.js?v=campus-117&rev=157';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import * as T from './vendor/three.module.js';
 import {setCharacterNight} from './character-materials.js?v=campus-113';
 // Hands follow horizontal body turns, never camera pitch. Seated/restrained
@@ -65,6 +65,7 @@ export function createFirstPersonView(renderer,camera,groups){
   },
   align(player,motion,position,bodyRoll=0){
    anchor.position.copy(position);
+   anchor.position.y-=.035*(motion.crawlBlend||0);
    // Head pitch changes how the hands are seen, not where the arms point.
    // Looking up can therefore take the low hands naturally out of view.
    anchor.rotation.set(0,motion.bodyYaw+Math.PI,bodyRoll,'YXZ');

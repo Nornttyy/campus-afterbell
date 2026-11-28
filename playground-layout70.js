@@ -1,3 +1,4 @@
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 // Observed layout: research70 first-detail 0300/0310/0320/0340/0540/0570.
 // Reconstructed from the track/character/stage ratios in 0300, 0310, 0340
 // with the central platform and freestanding board placed along the field axis.
@@ -34,6 +35,12 @@ export function createPlaygroundLayout(options={}){
   id:'playground-vending-notice-'+i,x:v.x+3.15,z:v.z+.62,
   yaw:v.yaw,width:4.85,height:1.10
  }));
+ // Share the same framed panel dimensions with the renderer and collision.
+ for(const [i,notice] of notices.entries()){
+  const bottom=CRAWL_TUNING.bodyMaxY+.02;
+  const centerY=bottom+(notice.height+.12)/2;
+  notices[i]=Object.freeze({...notice,bottom,centerY,postHeight:bottom+notice.height+.12});
+ }
  const bars=[];
  const speaker=Object.freeze({x:cx,z:cz-straightHalf*.50,y:1.18,poleHeight:5.1,yaw:0});
  const colliders=[
@@ -54,10 +61,10 @@ export function createPlaygroundLayout(options={}){
   ...vending.map(v=>volume(v.id,v.x-v.depth/2,v.x+v.depth/2,v.z-v.width/2,v.z+v.width/2,0,v.height,{kind:'vending'})),
   volume('ice-cream-cart',cooler.x-.365,cooler.x+.365,cooler.z-.75,cooler.z+.75,.22,.97),
   ...notices.flatMap(n=>[
-   volume(n.id,n.x-.06,n.x+.06,n.z-n.width/2-.06,n.z+n.width/2+.06,1.62-(n.height+.12)/2,2.47,{kind:'notice',crawlUnder:true}),
+   volume(n.id,n.x-.06,n.x+.06,n.z-n.width/2-.06,n.z+n.width/2+.06,n.bottom,n.postHeight+.08,{kind:'notice',crawlUnder:true}),
    ...[-1,1].map(side=>{
     const z=n.z+side*(n.width/2-.08);
-    return volume(n.id+'-leg-'+side,n.x-.035,n.x+.035,z-.035,z+.035,0,2.24,{kind:'notice-leg'});
+    return volume(n.id+'-leg-'+side,n.x-.035,n.x+.035,z-.035,z+.035,0,n.postHeight,{kind:'notice-leg'});
    })
   ])
  ];

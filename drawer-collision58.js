@@ -1,5 +1,5 @@
-import {DESK_DRAWER_TRAVEL,LAB_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=156';
-import {mapKind,floorHeight,OFFICE_DESKS} from './classroom-layout.js?v=campus-117&rev=156';
+import {DESK_DRAWER_TRAVEL,LAB_DRAWER_TRAVEL} from './drawer-hand-target58.js?v=campus-117&rev=157';
+import {mapKind,floorHeight,OFFICE_DESKS} from './classroom-layout.js?v=campus-117&rev=157';
 // The visible trays extend beyond the desktop when pulled out. These bounds
 // follow that extension; seat spacing and the imported models are unchanged.
 function box(x,z,yaw,minX,maxX,minZ,maxZ,minY,maxY){

@@ -4,9 +4,9 @@ import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-83';
 import {hotpotLayout,diningPlanForSeats} from './hotpot-layout70.js?v=campus-94&rev=154';
 import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-94';
 import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-95&rev=127';
-import {playgroundForPlayers,PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-117&rev=156';
+import {playgroundForPlayers,PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-117&rev=157';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-92';
-import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
+import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 // Elevator operation is enabled; boarding and per-round limits are authoritative.
 export const ELEVATOR_ENABLED=true;
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';

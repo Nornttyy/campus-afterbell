@@ -1,7 +1,7 @@
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import * as T from './vendor/three.module.js';
 
-import {CORRIDOR,PARTITIONS,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=156';
+import {CORRIDOR,PARTITIONS,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=157';
 import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94&rev=154';
 export {HOTPOT_TABLE_SIZE,HOTPOT_TABLE_HEIGHT,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-94&rev=154';
 

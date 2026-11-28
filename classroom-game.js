@@ -1,16 +1,16 @@
 import {COMPUTER_GAMES} from './computer-rules55.js?v=campus-96';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=156';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=157';
 import {DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {dishLabels} from './hotpot-food94.js?v=campus-94';
 import {soundForEvent,createTeacherFootsteps} from './audio-events69.js?v=campus-83&rev=150';
 import {readControls,actionForCode,keyLabel} from './control-settings64.js?v=campus-93';
 import {createReferenceHUD} from './reference-hud54.js?v=campus-111&rev=156';
-import {interactionIntent} from './interaction-intent54.js?v=campus-117&rev=156';
-import {createSessionUI} from './session-ui.js?v=campus-117&radio=2&rev=156';
+import {interactionIntent} from './interaction-intent54.js?v=campus-117&rev=157';
+import {createSessionUI} from './session-ui.js?v=campus-117&radio=2&rev=157';
 import {bindHeldUseInput} from './held-use-input.js?v=campus-83';
 import {createVisionEffects} from './vision-effects.js?v=campus-111';
 
-import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=156';
+import {createSoloRound,switchSoloRole} from './solo-round.js?v=campus-117&rev=157';
 import {referenceNotice} from './reference-notices55.js?v=campus-93';
 
 // Input/UI only. Perception, movement and team results live in rules.

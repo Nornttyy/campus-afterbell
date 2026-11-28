@@ -4,7 +4,7 @@ import {createFacialEffects} from './facial-effects64.js?v=campus-109&rev=119';
 import {requireModelBudget} from './model-budget64.js';
 import {createCapturePose} from './capture-poses.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
-import {normalWalkCycleRate} from './movement55.js?v=campus-117&rev=156';
+import {normalWalkCycleRate} from './movement55.js?v=campus-117&rev=157';
 import {cloneCharacter as cloneSkin} from './clone-character57.js?v=campus-83';
 import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111';
 import {createCrawlPose} from './crawl-pose.js?v=campus-117';
