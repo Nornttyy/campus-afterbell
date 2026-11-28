@@ -6,7 +6,7 @@ import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=162';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {createDeskHands} from './game-actors.js?v=campus-117&rev=161';
 import {ITEM_HAND_CLIPS,newItemHandClip,createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-111';
-import {loadHandAnimations,saveCurrentHandAnimation,clearHandAnimations} from './hand-animation-runtime59.js?v=campus-117';
+import {loadHandAnimations,saveCurrentHandAnimation,clearHandAnimations} from './hand-animation-runtime59.js?v=campus-117&rev=163';
 import {createAnimationHistory,putAnimationFrame,moveAnimationFrame,retimeAnimationClip,mirrorAnimationHand,completeAnimationDocument} from './animation-editor-state59.js?v=campus-83';
 
 import {prepareAnimationEditorDocument} from './animation-editor-start59.js?v=campus-111';
