@@ -165,6 +165,9 @@ $('#room-enter').addEventListener('click',async()=>{
     connection.signal.addEventListener('abort',release,{once:true});
     if(!sceneReady)button.textContent='已连接，正在准备场景…';
     const world=await prepared;
+    if(world&&!connection.signal.aborted){
+      try{await world.prepareEntry?.(online.snapshot());}catch(error){release();throw error;}
+    }
     connection.signal.removeEventListener('abort',release);
     if(!world||disposed||connection.signal.aborted||request!==entryRequest||entryMode!=='online'||!$('#room-dialog').open){release();return;}
     roomConnecting=null;game.setRound(online);$('#room-dialog').close();$('#classroom').hidden=false;
@@ -194,7 +197,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=158'),import('./classroom-game.js?v=campus-117&radio=2&rev=158')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=160'),import('./classroom-game.js?v=campus-117&radio=2&rev=160')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true,onProgress:(fraction,label)=>loadStep(38+Math.round(55*fraction),label)});
       if(disposed){prepared.dispose();return null;}

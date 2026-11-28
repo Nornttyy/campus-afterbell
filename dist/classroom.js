@@ -6,7 +6,7 @@ import {createDeskHandShadows} from './desk-hand-shadows108.js?v=campus-108';
 import {makeSchoolChair} from './school-furniture91.js?v=campus-108';
 import {TEXTBOOK,bookAngle,bookSpineHeight,setDeskBookReach,BOOK_PAPER_FACE,BOOK_COVER_FACE} from './study-book58.js?v=campus-110';
 import {setDish} from './hotpot-food94.js?v=campus-94';
-import {CampusModelLoader} from './model-delivery93.js?v=campus-111&rev=158';
+import {CampusModelLoader} from './model-delivery93.js?v=campus-111&rev=160';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
 import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=157';
 import {broadcastBeat,broadcastLift,broadcastScale,reachesRadio} from './campus-radio93.js?v=campus-117&rev=157';
@@ -47,10 +47,10 @@ import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=1
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
 import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=157';
-import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=158';
+import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=160';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=158';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=160';
 import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,updateSpecialFurnitureCollisions,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-117&rev=157';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
@@ -154,11 +154,12 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   const room=new THREE.Group();scene.add(room);
   const dynamic=new THREE.Group();scene.add(dynamic);
   const surfacesReady=loadCampusSurfaces(assetsForOpenMaps(CAMPUS_SURFACE_SOURCES));
-  const assetLoader={loader:new CampusModelLoader(undefined,{gameMaterials:true})};
+  const corridorEntry=!active&&snapEntry;
+  const assetLoader={loader:new CampusModelLoader(undefined,{gameMaterials:true,stageInventory:corridorEntry})};
   const printSources=assetsForOpenMaps(CAMPUS_ARTWORK_SOURCES);
   const entryPrints=!active&&snapEntry?prepareEntryArtwork(printSources):null;
   const jobs=[
-    loadDeskModel(surfacesReady.then(s=>s.veneer,()=>null)),loadStudentAssets(),surfacesReady,
+    loadDeskModel(surfacesReady.then(s=>s.veneer,()=>null)),loadStudentAssets({corridorEntry}),surfacesReady,
     loadPropAssets(Object.fromEntries(Object.entries(CLASSROOM_PROP_SOURCES).filter(([kind])=>kind!=='garlic')),assetLoader),loadTeacherModel(),
     entryPrints?.ready??loadCampusArtwork(printSources),
     loadFurniture67({...assetLoader,sources:assetsForOpenMaps(FURNITURE_SOURCES67)})
@@ -178,6 +179,16 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   // Build navigation grids during loading, before the first teacher decision.
   walkRoute(BOARD,SEATS[0],.20);walkRoute(BOARD,SEATS[0],.23);
   const importedStudents=studentAsset.value;
+  let classAssetsReady=!corridorEntry;
+  function prepareClassAssets(){
+    return Promise.all([importedStudents.prepareAll(),assetLoader.loader.finishInventory()]).then(()=>{classAssetsReady=true;});
+  }
+  async function prepareEntry(state){
+    if(state.stage!=='gathering'||(state.map&&state.map!=='classroom'))return prepareClassAssets();
+    const appearances=(state.students||[]).filter(s=>s.visible!==false&&s.id!==state.player?.id)
+      .map(s=>s.character).filter(v=>STUDENT_VARIANTS.includes(v));
+    await Promise.all([...new Set(appearances)].map(importedStudents.prepare));
+  }
   canvas.dataset.studentAsset='tripo-characters-40';
   const importedDesk=deskAsset.status==='fulfilled'?deskAsset.value:null;
   if(!importedDesk)console.error('Desk model failed to load',deskAsset.reason);
@@ -766,7 +777,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     for(const record of pupilRecords){
       const id=record.seat.id,student=snapshots.get(id),standing=record.caught||student?.seated===false||Boolean(student?.lying),near=record.group.visible&&(detailed.has(id)||importedStudents),prop=friendProps.get(id);
       for(const actor of record.actors.values())actor.group.visible=false;
-      if(near){
+      if(near&&(record.previewRole==='teacher'||record.previewRole==='doubao'||importedStudents.has(record.variant))){
         const actor=actorFor(record,standing),headLook=captureHeadLook(student,record.group.rotation.y);
         const support=student&&!student.officeChair&&Number.isInteger(student.seatId)?currentSeats.find(seat=>seat.id===student.seatId):null;
         record.actor=actor;actor.setStudyBook?.(support?.hideBook||['computer','toilet','dorm','playground','exam'].includes(mapKind(mapVariant))?null:deskBooks.get(student?.seatId??record.seat.id));actor.group.visible=true;actor.setMood(moodMap[record.currentMood]||'resting');actor.setMotion?.({dish:student?.heldDish,jumpHeight:student?.jumpHeight||0,seatSurface:support?.surface,drawerOpen:student?.drawerOpen??student?.drawer?.open,onBed:Boolean(student?.onBed),lying:Boolean(student?.onBed),mapActivity:student?.mapActivity,inkLeft:student?.inkLeft||0,crawling:Boolean(student?.crouched&&standing),seated:!standing,speed:record.worldMotion.speed,carrying:!(student?.bubble?.kind==='pink'&&student.bubble.blowing)&&(student?.carrying??(student?.drawer?.drawnSlot!=null)),heldAction:student?.bubble?.blowing?null:student?.heldAction,using:Boolean(Object.hasOwn(student||{},'eating')&&['chips','noodles','snack','drink','burger','banana','garlic','lunch'].includes(student?.heldAction||student?.action)?student.eating:student?.holding),penWriting:Boolean(student?.penWriting),penTwirling:Boolean(student?.penTwirling),lookYaw:headLook.yaw,lookPitch:headLook.pitch,restraint:record.motionKind,restraintStartedAt:record.motionAt,throwProgress:student?.progress||0,throwAge:student?.itemThrowAge??Infinity});
@@ -1119,7 +1130,8 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   function setActive(value){
     const next=Boolean(value)&&alive;if(next===renderActive)return;
     renderActive=next;canvas.dataset.renderActive=String(next);cancelAnimationFrame(frame);frame=0;
-    if(next){last=performance.now();resize();frame=requestAnimationFrame(render);entryPrints?.start();}
+    if(next){last=performance.now();resize();frame=requestAnimationFrame(render);entryPrints?.start();
+      if(!classAssetsReady)requestAnimationFrame(()=>{if(alive)prepareClassAssets().catch(error=>console.warn('Class assets pending',error));});}
   }
   setSeats(currentSeats,true);
   canvas.dataset.renderActive=String(renderActive);
@@ -1132,7 +1144,7 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
   }
   onReady?.();
   return {
-    setGameplay,setMap,setSeats,setActive,
+    setGameplay,setMap,setSeats,setActive,prepareEntry,prepareClassAssets,get classAssetsReady(){return classAssetsReady;},
     getRolePreviews,
     getDrawerLookPitch(state){
       const player=state.player,office=player.officeChair?(campus.officeDrawers.get(player.officeDeskId)||campus.officeDrawer):null;
