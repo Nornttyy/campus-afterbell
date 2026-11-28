@@ -1,6 +1,7 @@
 import {createGripLayer,createPropGripLayer,gripKey} from './item-grips.js?v=campus-117&rev=175';
 import {writingPageY} from './study-book58.js?v=campus-110';
 import {printedPacket,reverseHeldPanels} from './snack-pack111.js?v=campus-113&rev=171';
+import {labelColaCan} from './cola-label.js?v=campus-117&rev=177';
 import {openFoodShell} from './food-waste.js?v=campus-117&rev=176';
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import {requireModelBudget} from './model-budget64.js';
@@ -400,23 +401,16 @@ function inkProp(){
 
 function drinkProp(){
   const group=new THREE.Group();group.name='red-drink-can';
-  const red=mat('drinkRed','#db3425',.34,.38),silver=mat('drinkAluminium','#c7d2d5',.27,.82),print=mat('drinkPrint','#fff6de',.5),dark=mat('drinkOpening','#222c30',.6);
+  const silver=mat('drinkAluminium','#c7d2d5',.27,.82),dark=mat('drinkOpening','#222c30',.6);
   const profile=[new THREE.Vector2(0,-.087),new THREE.Vector2(.034,-.087),new THREE.Vector2(.040,-.081),new THREE.Vector2(.044,-.067),new THREE.Vector2(.044,.060),new THREE.Vector2(.039,.077),new THREE.Vector2(.039,.082),new THREE.Vector2(0,.082)];
-  mesh(group,new THREE.LatheGeometry(profile,32),red);
   for(const y of [-.084,.081])mesh(group,new THREE.TorusGeometry(.0375,.0025,6,32),silver,[0,y,0],[1,1,1],[Math.PI/2,0,0]);
   mesh(group,new THREE.CylinderGeometry(.036,.036,.002,32),silver,[0,.082,0]);
   oval(group,dark,[0,.083,.015],[.010,.001,.014]);
   mesh(group,new THREE.TorusGeometry(.009,.0026,6,20),silver,[0,.086,-.005],[.74,1,1.15],[Math.PI/2,0,0]);
-  // A printed curved swoosh sits on the cylinder; no flat card sticks out of it.
-  const position=[],normal=[];
-  for(let i=0;i<28;i++){
-    const a=-.95+i/28*1.9,b=-.95+(i+1)/28*1.9;
-    const point=(angle,edge)=>[Math.sin(angle)*.0445,.018*Math.sin(angle*2)-.012+edge*.008,Math.cos(angle)*.0445];
-    for(const [angle,edge]of [[a,-1],[b,-1],[a,1],[a,1],[b,-1],[b,1]]){position.push(...point(angle,edge));normal.push(Math.sin(angle),0,Math.cos(angle));}
-  }
-  const ribbon=new THREE.BufferGeometry();ribbon.setAttribute('position',new THREE.Float32BufferAttribute(position,3));ribbon.setAttribute('normal',new THREE.Float32BufferAttribute(normal,3));mesh(group,ribbon,print);
-  for(const y of [.037,.047])curve(group,print,[[-.014,y,.043],[0,y+.002,.045],[.014,y,.043]],.0014);
-  batch(group);return group;
+  batch(group);
+  for(const part of group.children)part.userData.canHardware=true;
+  mesh(group,new THREE.LatheGeometry(profile,32),silver);
+  return group;
 }
 
 function burgerProp(){
@@ -495,6 +489,7 @@ export function setWasteModel(holder,sourceKind){
   let shell;
   if(kind==='banana')shell=imported||createDeskItem('bananaPeel');
   else if(kind==='hotpotBite')shell=hotpotFood('plate').children[0].children[0].clone();
+  else if(kind==='drink')shell=openFoodShell(labelColaCan(imported||drinkProp()),kind);
   else shell=openFoodShell(imported?(kind==='snack'?printedPacket(kind,imported):imported):createDeskItem(kind),kind);
   wasteTemplates.set(key,requireModelBudget(shell,'食物垃圾 '+kind));
  }
@@ -512,6 +507,7 @@ const deskItemFactories=Object.freeze({
 export function createDeskItem(action){
   if(!Object.hasOwn(deskItemFactories,action))throw new RangeError(`Unknown desk item: ${action}`);
   const factory=deskItemFactories[action];
+  if(action==='drink')return requireModelBudget(labelColaCan(clonePropAsset(action)||factory()),'道具 可口可乐');
   // The same gate applies to normal GLBs and every offline/error fallback.
   return requireModelBudget(action==='gum'||action==='snack'?printedPacket(action,clonePropAsset(action)||(action==='snack'?factory():null)):action==='pen'?factory():clonePropAsset(action)||factory(),`道具 ${action}`);
 }
