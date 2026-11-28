@@ -104,7 +104,7 @@ test('special interactions and forbidden teacher crawling keep their own animati
 
 test('published defaults are wired into the production scene, not into editor draft loading',async()=>{
  const scene=await readFile(new URL('../dist/classroom.js',import.meta.url),'utf8');
- assert.match(scene,/createHandAnimationRuntime\(\{fallbackDocument:PUBLISHED_HAND_ANIMATIONS\}\)/);
+ assert.match(scene,/createHandAnimationRuntime\(\{fallbackDocument:PUBLISHED_HAND_ANIMATIONS,bodyRelativeStanding:true\}\)/);
  const editor=await readFile(new URL('../dist/animation-editor59.js',import.meta.url),'utf8');
  assert.doesNotMatch(editor,/published-hand-animations61|PUBLISHED_HAND_ANIMATIONS/);
  const r=createHandAnimationRuntime({storage:memory(),fallbackDocument:{invalid:true}});

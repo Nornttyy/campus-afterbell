@@ -1,3 +1,4 @@
+import {STUDENT_VIEW_HEIGHT,TEACHER_VIEW_HEIGHT} from './camera-height58.js?v=campus-83';
 import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-111';
 export const HAND_ANIMATION_STORAGE_KEY='campus.handAnimations.v1';
 export const HAND_ANIMATION_CHANGE_EVENT='campus:hand-animations-changed';
@@ -34,7 +35,34 @@ export function selectHandAnimationClip(state={}){
  if(!moving)return state.crawlBlend>.01?null:teacher?'teacher-idle':'student-idle';
  return teacher?'teacher-walk':'student-walk';
 }
-export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget=defaultEvents(),fadeDuration=.14,fallbackDocument=null}={}){
+// World-space wrist measurements from the standing character rigs (metres).
+// Columns: idle half-width, idle height, walking half-width, walking mid-height.
+const wristPositions={
+ boy:[.20,.66,.29,.69],girl:[.18,.65,.275,.70],
+ glasses:[.20,.66,.31,.71],ponytail:[.15,.61,.27,.66],teacher:[.23,1.04,.23,1.075]
+};
+function placeStandingWrists(pose,id,character){
+ const teacher=id.startsWith('teacher'),walking=id.endsWith('-walk');
+ if(!walking&&!id.endsWith('-idle')||id.includes('crawl'))return;
+ const [idleWidth,idleHeight,walkWidth,walkHeight]=teacher?wristPositions.teacher:
+   wristPositions[Object.hasOwn(wristPositions,character)&&character!=='teacher'?character:'boy'];
+ const eye=teacher?TEACHER_VIEW_HEIGHT:STUDENT_VIEW_HEIGHT;
+ // Convert the authored viewmodel sweep to the distance travelled at the hip.
+ // Keep timing, left/right phase, finger curls and all wrist rotations intact.
+ for(const [key,sign] of [['left',-1],['right',1]]){
+  const p=pose[key].position;
+  if(walking){
+   p[0]+=sign*(walkWidth-(teacher?.29:.33));
+   p[1]=walkHeight-eye+(p[1]+(teacher?.603:.81))*(teacher?.83:.22);
+   p[2]=(teacher?-.09:-.035)+(p[2]+(teacher?.263:.151))*(teacher?.327:.28);
+  }else{
+   p[0]+=sign*(idleWidth-(teacher?.275:.259));
+   p[1]+=idleHeight-eye+(teacher?.468:.489);
+   p[2]+=.62-(teacher?.06:.025);
+  }
+ }
+}
+export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget=defaultEvents(),fadeDuration=.14,fallbackDocument=null,bodyRelativeStanding=false}={}){
  // Published clips are a read-only game default. An explicitly saved local
  // document still owns its entire clip selection; never overwrite drafts.
  const checkedFallback=validateHandAnimationDocument(fallbackDocument),fallback=checkedFallback.ok?checkedFallback.value:null;
@@ -54,6 +82,7 @@ export function createHandAnimationRuntime({storage=defaultStorage(),eventTarget
    if(!activeClip||weight<=0){if(!clip)reset();lastTime=now;return null;}
    const sampleTime=activeClip.loop?clipTime%activeClip.duration:Math.min(clipTime,activeClip.duration);
    let sampled=sampleHandAnimationClip(activeClip,sampleTime);
+   if(bodyRelativeStanding)placeStandingWrists(sampled,activeId,state.character);
    if(transitionPose){const duration=Math.max(.001,fadeDuration);sampled=sampleHandAnimationClip({duration,easing:'smoothstep',keyframes:[{time:0,...transitionPose},{time:duration,...sampled}]},transitionAge);transitionAge+=dt;if(transitionAge>=duration)transitionPose=null;}
    lastPose=sampled;return{...sampled,weight,source:'runtime',clipId:activeId};
   },
