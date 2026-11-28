@@ -5,7 +5,7 @@ import {updateLayoutDoors,campusFloor} from './classroom-layout.js?v=campus-117&
 import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=128';
 
 const elevatorRound=Base=>class extends Base{
- reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();return this.snapshot();}
+ reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();if(this.player.id!==-1&&(this.seed&2))this.teacher.variant='doubao';return this.snapshot();}
  _soloStudents(){
   // A solo pupil is the sole mischievous participant. Other pupils remain
   // ordinary decoys; the teacher practice mode still needs AI opponents.
@@ -42,7 +42,7 @@ const elevatorRound=Base=>class extends Base{
   const map=advanceElevator(this.elevator,step);
   if(map){
    const trip=this.elevator,p=this.player,pose={x:p.x,z:p.z,yaw:p.yaw,pitch:p.pitch,character:p.character,variant:p.variant},seed=this.seed;
-   this.map=map;super.reset(seed);this._soloStudents();super.start({gathering:true});Object.assign(this.player,pose);this.elevator=trip;
+   const teacherVariant=this.teacher.variant;this.map=map;super.reset(seed);this.teacher.variant=teacherVariant;this._soloStudents();super.start({gathering:true});Object.assign(this.player,pose);this.elevator=trip;
    if(this.player.id===-1)Object.assign(this.teacher,{x:pose.x,z:pose.z,yaw:pose.yaw});
    updateLayoutDoors(this.layout,{elevatorClosed:false});this._events.push({type:'elevator-arrived',map});
   }

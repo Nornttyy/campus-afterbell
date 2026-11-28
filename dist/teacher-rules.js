@@ -8,6 +8,7 @@ import {DETENTION,teacherSpawnFor,TEACHER_SPAWN,BOARD,mapKind,OFFICE_CHAIR,clear
 export {chalkHit,segmentBox} from './classroom-rules.js?v=campus-117&rev=128';
 
 import {BOARD_SECONDS} from './board-lesson93.js?v=campus-93';
+import {castTeacherAttack} from './teacher-attacks129.js';
 export class TeacherRound extends ClassroomRound{
   reset(seed){
     this.surveillance=createSurveillance();
@@ -46,7 +47,13 @@ export class TeacherRound extends ClassroomRound{
   returnItem(){return false;} interact(seatId=null){if(this.player.seated)return super.interact();return typeof seatId==='string'&&seatId.endsWith('chair')?this.sitOfficeChair(seatId):false;} startComputer(){return false;}
   _perceive(){} // The human observes. No evidence meter, memory-based aim or auto-capture.
   _hear(){} // Sound cues stay spatial; they must not reveal hidden identity to the UI.
+  teacherSkill(){
+    if(this.stage!=='class'||this._restrained(this.player))return false;
+    return castTeacherAttack(this,this.player,this.teacher.variant==='doubao'?'vertical':'eraser');
+  }
   throwChalk(){
+    if(this.teacher.variant==='doubao')return castTeacherAttack(this,this.player,'horizontal');
+    if(this._sessionElapsed<this.attackLockedUntil)return false;
     if(this.paused||this.status==='ready'||this._sessionElapsed+1e-9<this._nextThrow)return false;
     if(!canThrowWithStamina(this)){if(!this._restrained(this.player))this._events.push({type:'stamina-low'});return false;}
     if(this._writing)this.setWriting(false);

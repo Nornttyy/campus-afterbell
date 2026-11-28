@@ -97,3 +97,7 @@
 body:not(.playing) #school-radio-player{top:auto;bottom:max(18px,env(safe-area-inset-bottom));right:max(15px,env(safe-area-inset-right))}
 
 #play-ui[data-exam-reading="true"] .play-bottom{left:auto;right:3%;top:38%;max-width:25%}
+
+#locker-dialog .locker-choices{grid-template-columns:repeat(3,minmax(0,1fr))}
+#touch-skill{position:absolute;right:var(--touch-edge,22px);top:33%;min-width:48px;min-height:38px;touch-action:manipulation}
+[data-left-handed=true] #touch-skill{left:var(--touch-edge,22px);right:auto}

@@ -182,7 +182,7 @@ export class NetworkRound{
   return{students:this._state.students.map(p=>p.isPlayer?p:blend(a.students?.get(p.id),b.students?.get(p.id))||p),teacher:this._state.role==='teacher'?this._state.teacher:blend(a.state.teacher,b.state.teacher)};
  }
  pause(value=true){this._localPaused=Boolean(value);if(value){this.command('setComputerPlayback',{playing:false,visible:false,mediaTime:0});this.command('setMovement',0,0);this.command('hold',false);this.command(this.player?.id===-1||this._state?.role==='teacher'?'setSprint':'setCrouch',false);this.command('setRescue',null);}return this.snapshot();}
- setPreference(rolePreference,character){return this.command('setPreference',{rolePreference,character});}
+ setPreference(rolePreference,character,teacherVariant){return this.command('setPreference',{rolePreference,character,teacherVariant});}
  travelFloor(map){return this.command('travelFloor',map);}
  async continueAfterClass(){const r=await this._post('/api/command',{name:'continueAfterClass',args:[]});return r.results?.[0]!==false;}
  async rematch(){return this.continueAfterClass();}
@@ -190,7 +190,7 @@ export class NetworkRound{
  async leave(){if(this._closed)return;this._closed=true;this._disconnected();clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this.voice.close();this._controller?.abort();try{await this._post('/api/leave',{});}catch{}}
  dispose(){return this.leave();}
 }
-for(const method of ['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
+for(const method of ['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','teacherSkill','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
  NetworkRound.prototype[method]=function(...args){return this.command(method,...args);};
 }
 

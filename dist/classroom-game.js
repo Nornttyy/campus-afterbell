@@ -111,11 +111,12 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
       repeatAfter=time+115;chooseComputerDirection(next);
     }
   }
-  const session=sessionFactory({root:ui,commands:{computerStick,silent:()=>audio.muted===true,bell:settings=>{if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;return round.startBell?.(round.network?settings:undefined);},mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{round.setFixtureUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
-  function chooseRole(role){
-    if(round.network)return round.setPreference?.(role);
+  const session=sessionFactory({root:ui,commands:{computerStick,skill:()=>{if(canInput())round.teacherSkill?.();},silent:()=>audio.muted===true,bell:settings=>{if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;return round.startBell?.(round.network?settings:undefined);},mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{round.setFixtureUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
+  function chooseRole(choice){
+    const role=choice==='doubao'?'teacher':choice,variant=choice==='doubao'?'doubao':'male';
+    if(round.network)return round.setPreference?.(role,undefined,variant);
     const next=switchSoloRole(round,role);if(!next)return false;
-    round=next;resetDrawerLook();if(externalRound)externalRound=next;options={...options,role,map:next.map,...next.snapshot().settings};
+    if(role==='teacher')next.teacher.variant=variant;round=next;resetDrawerLook();if(externalRound)externalRound=next;options={...options,role,map:next.map,...next.snapshot().settings};
     yaw=next.player.yaw||0;pitch=next.player.pitch||0;lastInteractionState=null;lastTeacher=null;
     $('#student-controls').hidden=role==='teacher';$('#teacher-controls').hidden=role!=='teacher';render(next.snapshot());return true;
   }
@@ -221,7 +222,8 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     else if(s.selected==='wrapper'&&drawer.drawnSlot!=null)actionText='对准马桶';
     else if(drawer.drawnSlot!=null&&drawer.canReturn===false)actionText=drawer.source?.meal!=null?'低头按住左键食用':'Q 放下物品';
     else if(p.burpReadyLeft>0)actionText='左键 打嗝 · '+Math.ceil(p.burpReadyLeft);
-    else if(teacher)actionText='左键 扔粉笔';
+    else if(teacher){const female=s.teacher.variant==='doubao',skill=female?'竖劈':'黑板擦',wait=Math.ceil(s.teacher.skillCooldown||0);
+      actionText='左键 '+(female?'横劈':'扔粉笔')+(s.stage==='class'&&!session.touch?' · '+keyLabel(controls.keys.skill)+' '+skill+(wait?' '+wait+'秒':''):'');}
     if(session.touch)actionText=actionText.replace(/按住 E/g,'按住拿取').replace(/\bE /g,'拿取 · ').replace(/按住 Q/g,'按住返回').replace(/\bQ /g,'返回 · ').replace(/左键/g,'使用');
     if(!session.touch)actionText=actionText.replace(/左键/g,keyLabel(controls.keys.use));
     $('#interaction-prompt').textContent=actionText;$('#interaction-prompt').hidden=!actionText;
@@ -330,7 +332,7 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
     if(action==='emote'&&!e.repeat){e.preventDefault();session.openActions?.();return;}
     if(action==='mic'&&!e.repeat){e.preventDefault();toggleMic();return;}
     if(computerStation!=null||session.computer){const dirs={forward:'up',back:'down',left:'left',right:'right'},direction=dirs[action]||({ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'})[e.code];if(direction){e.preventDefault();chooseComputerDirection(direction);return;}if(e.code==='Enter'||e.code==='NumpadEnter'||action==='use'){e.preventDefault();if(!e.repeat)computerClick(true);}return;}
-    if(action){e.preventDefault();physicalKeys.set(e.code,action);keys.add(action);if(e.repeat)return;if(action==='jump')round.jump();else if(action==='interact')take();else if(action==='return')putBack();else if(action==='use'){lock();hold('keyboard',true);}}
+    if(action){e.preventDefault();physicalKeys.set(e.code,action);keys.add(action);if(e.repeat)return;if(action==='skill'){if(canInput()&&round.snapshot().role==='teacher')round.teacherSkill?.();}else if(action==='jump')round.jump();else if(action==='interact')take();else if(action==='return')putBack();else if(action==='use'){lock();hold('keyboard',true);}}
   });
   document.addEventListener('keyup',e=>{const action=physicalKeys.get(e.code)||actionForCode(e.code,controls);physicalKeys.delete(e.code);if(![...physicalKeys.values()].includes(action))keys.delete(action);if(action==='crawl')setPosture(keys.has('crawl'));if(action==='use')hold('keyboard',false);if(action==='return')round.setDoorUse?.(false);if(action==='interact'){round.setFixtureUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setWriting?.(false);round.setDoorUse?.(false);}});
   window.addEventListener('blur',()=>{

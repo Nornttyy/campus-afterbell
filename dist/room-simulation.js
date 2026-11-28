@@ -20,7 +20,7 @@ const variants=new Set(['boy','girl','glasses','ponytail']);
 const cleanName=value=>String(value||'同学').replace(/[\u0000-\u001f<>]/g,'').slice(0,16)||'同学';
 const CONTEXT=['player','selected','holding','_movement','_rescueId','_rescueProgress','completed'];
 const studentCommands=new Set(['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','interactDoor','setInteraction']);
-const teacherCommands=new Set(['changeRadio','setEmote','jump','setSprint','toggleToiletDoor','toggleDormDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
+const teacherCommands=new Set(['changeRadio','setEmote','jump','setSprint','toggleToiletDoor','toggleDormDoor','setMovement','setLook','setCrouch','hold','releaseUse','deploySurveillance','viewSurveillance','closeSurveillance','teacherSkill','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','interact','setOfficeDrawerOpen','openOfficeDrawer','sitOfficeChair','interactDoor','setInteraction']);
 const scoringEvents=new Set(['complete','gum-score','bubble-score','snake-food','valorant-watch','arcade-score','exam-answer']);
 const teacherFeedbackEvents=new Set(['wrong-grab','correct-capture','stamina-low']);
 function context(actor){return{player:actor,selected:actor.id===-1?'chalk':actor.action||actor._slots?.[0]?.action||'snack',holding:false,_movement:{x:0,z:0},_rescueId:null,_rescueProgress:0,completed:actor.completed||Object.fromEntries(Object.keys(CLASSROOM_ACTIONS).map(k=>[k,0]))};}
@@ -116,7 +116,7 @@ export class CampusRoom{
   actor._slots=Array.from({length:this.sim._deskItemCount()},(_,id)=>this.sim._deskSlot(id));actor._selectedSlot=0;actor.action=actor._slots[0]?.action||'snack';
  }
  findToken(token){return [...this.members.values()].find(m=>m.token===token)||null;}
- preference(member,{rolePreference,character}={}){if(this.sim.stage!=='gathering'||this.sim.status!=='playing'||this.elevator.phase==='travel')throw new RoomError(409,'开始后不能换身份');if(rolePreference!==undefined)member.rolePreference=rolePreference==='teacher'?'teacher':'student';if(variants.has(character)){member.character=character;member.context.player.character=character;member.context.player.variant=character;}this.sequence++;}
+ preference(member,{rolePreference,character,teacherVariant}={}){if(this.sim.stage!=='gathering'||this.sim.status!=='playing'||this.elevator.phase==='travel')throw new RoomError(409,'开始后不能换身份');if(['doubao','male'].includes(teacherVariant))member.teacherVariant=teacherVariant;if(rolePreference!==undefined)member.rolePreference=rolePreference==='teacher'?'teacher':'student';if(variants.has(character)){member.character=character;member.context.player.character=character;member.context.player.variant=character;}this.sequence++;}
  begin(member,settings){
   if(this.elevator.phase==='travel')throw new RoomError(409,'请等电梯到达');
   if(member.id!==this.hostId)throw new RoomError(403,'只有房主可以开始');
@@ -134,7 +134,7 @@ export class CampusRoom{
    if(p===chosen){this._restoreDecoy(this.sim.students[p.studentId]);p.context=this.teacherContext;Object.assign(this.teacherActor,Layout.teacherSpawnFor(this.map),{seated:false,crouched:false});}
    else this.sim._team.add(p.studentId);
   }
-  this.teacherMember=chosen;
+  this.teacherMember=chosen;this.sim.teacher.variant=chosen.teacherVariant||'male';
   for(const key of CONTEXT)this.sim[key]=chosen.context[key];
   const started=ClassroomRound.prototype.startBell.call(this.sim);
   // Human students choose their own chairs and never follow AI arrival routes.
@@ -194,9 +194,9 @@ export class CampusRoom{
   const lobbyTeacher=this.sim.stage==='gathering'&&member.rolePreference==='teacher';
   if(lobbyTeacher&&chalkInput){
    return this.withMember(member,sim=>{
-    const next=sim._nextThrow;sim._nextThrow=member.lobbyNextThrow||0;
+    const next=sim._nextThrow,variant=sim.teacher.variant,lock=sim.attackLockedUntil;sim.attackLockedUntil=member.lobbyLock||0;sim.teacher.variant=member.teacherVariant||'male';sim._nextThrow=member.lobbyNextThrow||0;
     try{return TeacherRound.prototype.throwChalk.call(sim);}
-    finally{member.lobbyNextThrow=sim._nextThrow;sim._nextThrow=next;}
+    finally{member.lobbyLock=sim.attackLockedUntil;sim.attackLockedUntil=lock;sim.teacher.variant=variant;member.lobbyNextThrow=sim._nextThrow;sim._nextThrow=next;}
    });
   }
   if(this.elevator.phase==='travel'&&!['setMovement','setLook','travelFloor'].includes(command))return false;
@@ -221,6 +221,7 @@ export class CampusRoom{
   const allowed=member.role==='teacher'?teacherCommands:studentCommands;if(!allowed.has(command))throw new RoomError(400,'不支持的操作');
   if(!Array.isArray(args)||args.length>3)throw new RoomError(400,'操作参数错误');
   if(command==='changeRadio'&&(!member.connected||args.length!==1))return false;
+  if(command==='teacherSkill'&&args.length!==0)return false;
   if(command==='jump'&&args.length!==0)throw new RoomError(400,'跳跃无需参数');
   if(command==='jump'&&inputSeq>0&&inputSeq<=(member.jumpSequence||0))return false;
   if(command==='setComputerPlayback'&&!validComputerPlayback(args[0]))throw new RoomError(400,'无效播放状态');
@@ -289,9 +290,10 @@ export class CampusRoom{
   state.continued=!!member.continued;state.teamSize=this.sim._team.size;state.network=true;state.floor=this.floor;state.layoutSeed=this.seed;state.room=this.publicRoom(member);
   state.elevator=elevatorSnapshot(this.elevator,[...this.members.values()].map(m=>({player:m.context.player,connected:m.connected})),{stage:state.stage,status:state.status,host:member.id===this.hostId});
   state.lobbyRole=state.stage==='gathering'?member.rolePreference:null;
+  if(state.lobbyRole==='teacher')state.teacher.variant=member.teacherVariant||'male';
   state.inputAck={jump:member.jumpSequence||0,look:member.lookSequence||0,move:member.moveSequence||0,movement:{...member.context._movement}};state.player.name=member.name;state.player.character=member.character;
   const selfId=member.role==='teacher'?-1:member.studentId;
-  state.students=state.students.map(p=>{const actor=this.sim.students[p.id],carrying=actor._drawnSlot!=null&&!this.sim._restrained(actor),heldAction=carrying?actor._slots[actor._drawnSlot]?.action||actor.action:null;return{...p,previewRole:state.stage==='gathering'?[...this.members.values()].find(m=>m.studentId===p.id)?.rolePreference:null,carrying,heldAction,drawerOpen:Boolean(actor._drawerOpen&&!actor._usingOfficeStock),penTaken:Boolean(actor._penTaken||actor._examMode==='paper'),isPlayer:p.id===selfId,isTeammate:this.sim._team.has(p.id)&&p.id!==selfId,networkHuman:Boolean(actor.networkHuman),character:actor.character||actor.variant};});
+  state.students=state.students.map(p=>{const actor=this.sim.students[p.id],carrying=actor._drawnSlot!=null&&!this.sim._restrained(actor),heldAction=carrying?actor._slots[actor._drawnSlot]?.action||actor.action:null;return{...p,previewTeacherVariant:state.stage==='gathering'?[...this.members.values()].find(m=>m.studentId===p.id)?.teacherVariant:null,previewRole:state.stage==='gathering'?[...this.members.values()].find(m=>m.studentId===p.id)?.rolePreference:null,carrying,heldAction,drawerOpen:Boolean(actor._drawerOpen&&!actor._usingOfficeStock),penTaken:Boolean(actor._penTaken||actor._examMode==='paper'),isPlayer:p.id===selfId,isTeammate:this.sim._team.has(p.id)&&p.id!==selfId,networkHuman:Boolean(actor.networkHuman),character:actor.character||actor.variant};});
   if(this.teacherActor._emote)state.teacher.emote=actorEmote(this.teacherActor,state.stage);
   state.teacher.networkHuman=Boolean(this.teacherMember);state.teacher.name=this.teacherMember?.name||'老师';
   state.teacher.seated=Boolean(this.teacherActor.seated);state.teacher.officeChair=Boolean(this.teacherActor._officeChair);state.teacher.officeDeskId=this.teacherActor._officeDeskId||null;

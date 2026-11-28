@@ -3,6 +3,7 @@ import {STUDENT_PROPORTIONS} from '../dist/student-proportions73.js';
 import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from '../dist/first-person-view.js';
+import {pointerGait} from '../dist/pointer-view130.js';
 import {createDeskHands} from '../dist/game-actors.js?v=campus-84';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
@@ -109,4 +110,30 @@ test('the hands stay aligned with the chosen facing seat, and stun lowers the ac
  assert.equal(firstPersonEyeHeight({seated:false,stunLeft:2},'teacher'),1.12);
  assert.equal(firstPersonEyeHeight({seated:false,captivity:'stunned'},'student'),1.05);
  assert.equal(firstPersonEyeHeight({seated:true},'teacher'),1.43*1.20);
+});
+
+test('Doubao swings opposite wrists with each step and extends the arc when sprinting',()=>{
+ const halfStride=Math.PI/.82;
+ const excursion=run=>{
+  const forward=pointerGait(0,1,run),back=pointerGait(halfStride,1,run);
+  assert.ok(forward.z<back.z&&forward.leftZ>back.leftZ);
+  assert.ok(forward.y>back.y&&forward.leftY<back.leftY);
+  assert.ok(forward.pitch>back.pitch);
+  return back.z-forward.z;
+ };
+ assert.ok(excursion(1)>excursion(0)*1.5);
+ const idle=pointerGait(0,0,0),stopped=pointerGait(halfStride,0,1);
+ for(const key of Object.keys(idle))assert.ok(Math.abs(idle[key]-stopped[key])<1e-8,key);
+});
+
+test('a teacher covers the same gait cycle at 4 Hz and 60 Hz while teleports add no steps',()=>{
+ for(const speed of [2.2,3.35]){
+  const run=hz=>{
+   const p={x:0,z:0,seated:false};let m=sampleFirstPersonMotion(null,p,0);
+   for(let i=1;i<=hz;i++){p.z=speed*i/hz;m=sampleFirstPersonMotion(m,p,i/hz);}
+   const warped=sampleFirstPersonMotion(m,{...p,z:p.z+5},1.25);
+   assert.equal(warped.phase,m.phase);return m.phase;
+  };
+  assert.ok(Math.abs(run(4)-run(60))<1e-8);
+ }
 });

@@ -242,6 +242,16 @@ export function fitUniform(model,variant){
    for(let k=0;k<values.length;k++)result.setComponent(attr.count+Math.floor(k/attr.itemSize),k%attr.itemSize,values[k]);
    geometry.setAttribute(name,result);
   }
+  if(variant!=='teacher'){
+   // Apply the same jacket fit to the stitched zipper, badge and original shirt.
+   const positions=geometry.attributes.position,point=new T.Vector3();
+   for(let i=0;i<positions.count;i++){
+    point.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);
+    const torso=T.MathUtils.smoothstep(point.y,.57,.77)*(1-T.MathUtils.smoothstep(point.y,1.08,1.23))*(1-T.MathUtils.smoothstep(Math.abs(point.x),.19,.29));
+    point.x*=1+.09*torso;point.z*=1+.075*torso;point.applyMatrix4(inverse);positions.setXYZ(i,point.x,point.y,point.z);
+   }
+   positions.needsUpdate=true;geometry.computeBoundingSphere();
+  }
   geometry.setIndex([...geometry.index.array,...indices]);geometry.userData.uniformFitted=true;
  });
 }

@@ -1,4 +1,5 @@
 import {teacherViewHeight,STUDENT_VIEW_HEIGHT} from './camera-height58.js?v=campus-83';
+import {TEACHER_RUN_SPEED} from './movement55.js?v=campus-117';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import * as T from './vendor/three.module.js';
 import {setCharacterNight} from './character-materials.js?v=campus-113';
@@ -10,7 +11,10 @@ export function sampleFirstPersonMotion(previous,player,time){
  const reset=!previous||!Number.isFinite(time)||time<previous.time;
  const dt=reset?0:Math.max(0,Math.min(.25,time-previous.time));
  const distance=reset?0:Math.hypot((player.x||0)-previous.x,(player.z||0)-previous.z);
- const travelled=!locked&&dt>0&&distance<.5?distance:0;
+ // A legitimate 250 ms sprint step covers 0.84 m. Reject relocations
+ // against the normal speed envelope while allowing batched network updates.
+ const limit=Math.max(.5,TEACHER_RUN_SPEED*dt+.02);
+ const travelled=!locked&&dt>0&&distance<=limit?distance:0;
  // Physics snapshots arrive at a fixed rate. Smooth measured speed so the
  // intervening render frames do not falsely alternate walking and stopping.
  const rawSpeed=dt>0?Math.min(6,travelled/dt):0;

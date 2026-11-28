@@ -29,7 +29,7 @@ export function createWalkingArmPose(group,bones){
     weight*=1-lift;
    }
    // Allow the free elbow to pass the widest part of each student's jacket.
-   const degrees=teacher?0:group.userData.character==='ponytail'?20:group.userData.character==='glasses'?21:16;
+   const degrees=teacher?0:group.userData.character==='ponytail'?21:group.userData.character==='glasses'?22:17;
    const blend=T.MathUtils.clamp(weight,0,1),angle=degrees*Math.PI/180*blend;
    const phase=walkTime/Math.max(.001,cycleDuration)*Math.PI*2;
    for(const [side,sign]of [['Left',1],['Right',-1]]){
@@ -40,7 +40,7 @@ export function createWalkingArmPose(group,bones){
     // torso the arm can swing closer to the body's direction of travel.
     const travel=Math.cos(ph);
     rotate(bones[side+'Arm'],0,0,1,sign*angle*(1-.14*travel*travel));
-    rotate(bones[side+'Arm'],1,0,0,.24*travel*blend);
+    rotate(bones[side+'Arm'],1,0,0,(teacher?.12:group.userData.character==='glasses'?.25:.18)*travel*blend);
     // The elbow folds as the hand comes forward, then relaxes behind the hip.
     // A delayed wrist follows that arc instead of holding a rigid palm.
     rotate(bones[side+'ForeArm'],1,0,0,-.23*(.5-.5*Math.cos(ph-.43))*blend);

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as T from '../dist/vendor/three.module.js';
 import {createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip,HAND_CLIP_IDS,HAND_ANIMATION_MAX_BYTES} from '../dist/hand-animation-data59.js';
 import {createHandAnimationRuntime,loadHandAnimations,saveHandAnimations,clearHandAnimations,selectHandAnimationClip,HAND_ANIMATION_STORAGE_KEY,HAND_ANIMATION_CHANGE_EVENT} from '../dist/hand-animation-runtime59.js';
+import {PUBLISHED_HAND_ANIMATIONS} from '../dist/published-hand-animations61.js';
 import {createDeskHands} from '../dist/game-actors.js';
 import {createRiggedPalm} from '../dist/student-assets.js';
 import {loadGeometry} from './gltf-geometry.mjs';
@@ -103,4 +104,36 @@ test('no custom data preserves original paths and custom animation cannot overri
  const p=sampleHandAnimationClip(createHandAnimationDocument().clips['student-walk'],.5);
  for(const state of [{seated:true,bookAmount:1},{seated:true,computer:true,typing:true},{seated:false,carrying:true,action:'burger'},{seated:false,caught:true}]){const a=make(),b=make();for(let i=0;i<40;i++){const input={freeLook:true,...state};a.update(i*DT,input);b.update(i*DT,{...input,animationPose:p});}sameSkin(skin(a),skin(b));assert.equal(b.getDebug().authoredAnimation,false);}
  const runtime=createHandAnimationRuntime({storage:storage(),eventTarget:null}),a=make(),b=make();for(let i=0;i<100;i++){const s={seated:false,movement:1,freeLook:true,crawlBlend:i/100,walkPhase:i/8};a.update(i*DT,s);b.update(i*DT,{...s,animationPose:runtime.sample(s,i*DT)});}sameSkin(skin(a),skin(b));runtime.dispose();
+});
+
+test('stock standing wrists alternate with distance and an edited walk keeps its authored positions',()=>{
+ for(const role of ['teacher','student']){
+  const local=storage(),options={storage:local,eventTarget:null,fallbackDocument:PUBLISHED_HAND_ANIMATIONS};
+  const runtime=createHandAnimationRuntime(options),state={role,movement:1,walkPhase:0};
+  runtime.sample(state,0);
+  const first=runtime.sample(state,.2);
+  state.walkPhase=Math.PI/.82;
+  const opposite=runtime.sample(state,.3),stationary=runtime.sample(state,.6);
+  assert.ok(first.right.position[2]<opposite.right.position[2]);
+  assert.ok(first.left.position[1]<opposite.left.position[1]);
+  assert.deepEqual(opposite.left.position,stationary.left.position);
+  state.walkPhase=(2*Math.PI-1e-6)/.82;
+  const end=runtime.sample(state,.7);
+  for(const side of ['left','right']){
+   assert.ok(Q().fromArray(first[side].quaternion).angleTo(Q().fromArray(end[side].quaternion))<.001);
+  }
+  state.movement=.02;
+  const slowing=runtime.sample(state,.8);
+  const rest=PUBLISHED_HAND_ANIMATIONS.clips[role+'-idle'].keyframes[0].left;
+  const idleWrist=Q().setFromEuler(new T.Euler(...rest.rotation));
+  assert.ok(idleWrist.angleTo(Q().fromArray(slowing.left.quaternion))<.04);
+
+  runtime.dispose();
+  const custom=clone(PUBLISHED_HAND_ANIMATIONS),clip=custom.clips[role+'-walk'];
+  for(const key of clip.keyframes)key.left.position=[-.4,-.2,-.6];
+  saveHandAnimations(custom,local);
+  const edited=createHandAnimationRuntime(options);edited.sample(state,0);
+  assert.deepEqual(edited.sample(state,.2).left.position,[-.4,-.2,-.6]);
+  edited.dispose();
+ }
 });
