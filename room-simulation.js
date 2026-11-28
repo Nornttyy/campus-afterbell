@@ -116,7 +116,7 @@ export class CampusRoom{
   actor._slots=Array.from({length:this.sim._deskItemCount()},(_,id)=>this.sim._deskSlot(id));actor._selectedSlot=0;actor.action=actor._slots[0]?.action||'snack';
  }
  findToken(token){return [...this.members.values()].find(m=>m.token===token)||null;}
- preference(member,{rolePreference,character,teacherVariant}={}){if(this.sim.stage!=='gathering'||this.sim.status!=='playing'||this.elevator.phase==='travel')throw new RoomError(409,'开始后不能换身份');if(['doubao','male'].includes(teacherVariant))member.teacherVariant=teacherVariant;if(rolePreference!==undefined)member.rolePreference=rolePreference==='teacher'?'teacher':'student';if(variants.has(character)){member.character=character;member.context.player.character=character;member.context.player.variant=character;}this.sequence++;}
+ preference(member,{rolePreference,character}={}){if(this.sim.stage!=='gathering'||this.sim.status!=='playing'||this.elevator.phase==='travel')throw new RoomError(409,'开始后不能换身份');member.teacherVariant='male';if(rolePreference!==undefined)member.rolePreference=rolePreference==='teacher'?'teacher':'student';if(variants.has(character)){member.character=character;member.context.player.character=character;member.context.player.variant=character;}this.sequence++;}
  begin(member,settings){
   if(this.elevator.phase==='travel')throw new RoomError(409,'请等电梯到达');
   if(member.id!==this.hostId)throw new RoomError(403,'只有房主可以开始');

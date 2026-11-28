@@ -5,7 +5,7 @@ import {updateLayoutDoors,campusFloor} from './classroom-layout.js?v=campus-117&
 import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=128';
 
 const elevatorRound=Base=>class extends Base{
- reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();if(this.player.id!==-1&&(this.seed&2))this.teacher.variant='doubao';return this.snapshot();}
+ reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();this.teacher.variant='male';return this.snapshot();}
  _soloStudents(){
   // A solo pupil is the sole mischievous participant. Other pupils remain
   // ordinary decoys; the teacher practice mode still needs AI opponents.
