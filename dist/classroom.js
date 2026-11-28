@@ -8,7 +8,7 @@ import {TEXTBOOK,bookAngle,bookSpineHeight,setDeskBookReach,BOOK_PAPER_FACE,BOOK
 import {setDish} from './hotpot-food94.js?v=campus-94';
 import {CampusModelLoader} from './model-delivery93.js?v=campus-111&rev=160';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
-import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=157';
+import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=161';
 import {broadcastBeat,broadcastLift,broadcastScale,reachesRadio} from './campus-radio93.js?v=campus-117&rev=157';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 
@@ -22,13 +22,13 @@ import {advanceDeskDrawer,drawerHandTarget,DESK_DRAWER_TRAVEL,DRAWER_LOOK_PITCH}
 import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-92';
 import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-83';
 import {gameplayFov} from './view-tuning55.js?v=campus-83';
-import {setCharacterNight,setCharacterClassroomDay} from './character-materials.js?v=campus-113';
+import {setCharacterNight,setCharacterClassroomDay} from './character-materials.js?v=campus-113&rev=161';
 import {createStaminaVision} from './stamina-vision55.js?v=campus-83';
 import {createSoundCues} from './sound-cue55.js?v=campus-83&rev=150';
 import {createChalkPowder} from './chalk-powder55.js?v=campus-83';
 import {createSurveillanceView} from './surveillance-view54.js?v=campus-117&rev=158';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
-import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=135&rev=157';
+import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=135&rev=161';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
 import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudget} from './render-budget67.js?v=campus-83&rev=158';
 import {createItemEffects50} from './item-effects50.js?v=campus-111';
@@ -36,7 +36,7 @@ import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork,prepareEntryArtwork} from './campus-artwork.js?v=campus-93&rev=158';
 import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=157';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117&rev=157';
-import {createRoomVariants} from './room-variants.js?v=campus-117&rev=158';
+import {createRoomVariants} from './room-variants.js?v=campus-117&rev=161';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
 import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96&rev=153';
 import * as THREE from './vendor/three.module.js';
@@ -46,11 +46,11 @@ import {createItemOutline} from './item-outline.js?v=campus-83';
 import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=157';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
-import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=157';
-import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=160';
+import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=161';
+import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=161';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
-import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=160';
+import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=161';
 import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,updateSpecialFurnitureCollisions,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-117&rev=157';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);

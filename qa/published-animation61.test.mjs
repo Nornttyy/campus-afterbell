@@ -111,15 +111,14 @@ test('published defaults are wired into the production scene, not into editor dr
  assert.equal(settle(r,{movement:0}),null);r.dispose();
 });
 
-test('upright finger relaxation follows only the original student standing and walking clips',()=>{
- const store=memory(),hands=runtime(store);
- assert.ok(settle(hands,{role:'student',movement:0}).originalUpright);
- assert.ok(settle(hands,{role:'student',movement:1}).originalUpright);
- assert.equal(settle(hands,{role:'student',crouched:true,crawlBlend:1}).originalUpright,false);
- assert.equal(settle(hands,{role:'teacher',movement:0}).originalUpright,false);
- const custom=structuredClone(published);custom.clips['student-idle'].keyframes[0].left.rotation[1]+=.08;
+test('editing an idle finger preserves its value and the independent published walk',()=>{
+ const store=memory(),hands=runtime(store),custom=structuredClone(published);
+ const idle=custom.clips['student-idle'].keyframes[0].left;
+ idle.fingers={...idle.fingers,Thumb:.08,Index:.42};
  saveHandAnimations(custom,store);hands.reload();
- assert.equal(settle(hands,{role:'student',movement:0},3).originalUpright,false);
- assert.ok(settle(hands,{role:'student',movement:1},4).originalUpright);
+ const pose=settle(hands,{role:'student',movement:0});
+ assert.equal(pose.left.fingers.Thumb,.08);
+ assert.equal(pose.left.fingers.Index,.42);
+ assert.deepEqual(hands.getDocument().clips['student-walk'],published.clips['student-walk']);
  hands.dispose();
 });

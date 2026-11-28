@@ -2,7 +2,7 @@ import {teacherViewHeight,STUDENT_VIEW_HEIGHT} from './camera-height58.js?v=camp
 import {TEACHER_RUN_SPEED} from './movement55.js?v=campus-117&rev=157';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import * as T from './vendor/three.module.js';
-import {setCharacterNight} from './character-materials.js?v=campus-113';
+import {setCharacterNight} from './character-materials.js?v=campus-113&rev=161';
 // Hands follow horizontal body turns, never camera pitch. Seated/restrained
 // hands keep their body heading while the player looks around.
 export function sampleFirstPersonMotion(previous,player,time){
