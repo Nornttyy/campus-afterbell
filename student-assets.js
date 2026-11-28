@@ -1,4 +1,4 @@
-import {useStudentHandSkin} from './first-person-skin112.js?v=campus-113';
+import {useStudentHandSkin} from './first-person-skin112.js?v=campus-113&rev=161';
 import {fitUniform} from './uniform-detail102.js?v=campus-109';
 import {setDish} from './hotpot-food94.js?v=campus-94';
 import {createStudentSize} from './student-size73.js?v=campus-121&rev=121';
@@ -14,10 +14,10 @@ import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-117&rev=
 import {createBedPose} from './bed-pose78.js?v=campus-117';
 import {createMapActivityPose} from './map-activity-pose77.js?v=campus-117&rev=157';
 import * as T from './vendor/three.module.js';
-import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=157';
+import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=161';
 import {propContact} from './prop-assets.js?v=campus-83';
 import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111&rev=160';
-import {useCharacterBaseColor} from './character-materials.js?v=campus-113';
+import {useCharacterBaseColor} from './character-materials.js?v=campus-113&rev=161';
 import {createCrawlPose} from './crawl-pose.js?v=campus-117';
 import {createStudentGestures} from './student-gestures.js?v=campus-117&rev=121';
 import {createSeatedHandClearance} from './seated-hand-clearance.js?v=campus-83';

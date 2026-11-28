@@ -10,7 +10,7 @@ import {createHandSupport} from './hand-support55.js?v=campus-83';
 import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
-import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-117';
+import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-117&rev=161';
 import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
@@ -637,7 +637,6 @@ export function createDeskHands({createHand}={}){
         arm.hand.setCurl(h.curl);
         if(!i)wholeGrips[0].apply(action,clamp(h.curl/.82,0,1));
         if(h.fingers)for(const [finger,value] of Object.entries(h.fingers))arm.hand.setFingerCurl?.(finger,value);
-        articulation[i].flattenOpenFingers(h);
       }
       for(const [kind,prop] of Object.entries(props))prop.visible=kind===action;
       attachToGrip(props[action],arms[0].hand.group,anchor);group.updateMatrixWorld(true);return;
