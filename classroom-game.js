@@ -111,7 +111,23 @@ export function createClassroomGame({scene,audio,onExit,round:providedRound=null
       repeatAfter=time+115;chooseComputerDirection(next);
     }
   }
-  const session=sessionFactory({root:ui,commands:{computerStick,skill:()=>{if(canInput())round.teacherSkill?.();},silent:()=>audio.muted===true,bell:settings=>{if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;return round.startBell?.(round.network?settings:undefined);},mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{round.setFixtureUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
+  let queuedBell=null;
+  function startClassWhenReady(settings){
+    const requested=round;
+    const ring=()=>{
+      if(!active||round!==requested||round.snapshot().stage!=='gathering')return false;
+      if(!round.network&&settings&&round.configureRound?.(settings)===false)return false;
+      return round.startBell?.(round.network?settings:undefined);
+    };
+    if(scene.classAssetsReady!==false)return ring();
+    if(queuedBell===requested)return false;
+    queuedBell=requested;
+    scene.prepareClassAssets().then(()=>{if(queuedBell===requested)ring();})
+      .catch(error=>console.error('Unable to prepare classroom',error))
+      .finally(()=>{if(queuedBell===requested)queuedBell=null;});
+    return true;
+  }
+  const session=sessionFactory({root:ui,commands:{computerStick,skill:()=>{if(canInput())round.teacherSkill?.();},silent:()=>audio.muted===true,bell:startClassWhenReady,mic:toggleMic,emote:id=>round.setEmote?.(id),configure:settings=>round.configureRound?.(settings),preference:chooseRole,previews:()=>scene.getRolePreviews?.(),suspend:()=>{release();stopMovement();round.pause(true);},resumeLook:()=>{round.pause(false);render(round.snapshot());lock();},unlock,stopComputer:()=>round.stopComputer?.(),app:name=>round.computerApp?.(name),direction:dir=>round.computerSelect?.(dir),look:(dx,dy)=>look(dx,dy),jump:()=>{if(canInput()&&!session.computer)round.jump();},interact:()=>take(),return:()=>putBack(),returnEnd:()=>round.setDoorUse?.(false),interactEnd:()=>{round.setFixtureUse?.(null);if(round.player.mapActivity?.kind==='plunge')round.releaseMapActivity();round.setRescue(null);round.setDoorUse?.(false);round.setWriting?.(false);},hold:value=>hold('touch',value),cancel:()=>release()}});
   function chooseRole(role){
     if(role!=='student'&&role!=='teacher')return false;
     const variant='male';

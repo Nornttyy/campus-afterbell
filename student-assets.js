@@ -16,7 +16,7 @@ import {createMapActivityPose} from './map-activity-pose77.js?v=campus-117&rev=1
 import * as T from './vendor/three.module.js';
 import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=157';
 import {propContact} from './prop-assets.js?v=campus-83';
-import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111&rev=158';
+import {CampusModelLoader as GLTFLoader} from './model-delivery93.js?v=campus-111&rev=160';
 import {useCharacterBaseColor} from './character-materials.js?v=campus-113';
 import {createCrawlPose} from './crawl-pose.js?v=campus-117';
 import {createStudentGestures} from './student-gestures.js?v=campus-117&rev=121';
@@ -156,17 +156,31 @@ function sculptSweptHair(model){
   pos.needsUpdate=true;g.computeBoundingSphere();
  });
 }
-export async function loadStudentAssets(){
- const loader=new GLTFLoader(),variants=Object.keys(STUDENT_ASSETS),files=[...variants.map(v=>STUDENT_ASSETS[v].file),'ponytail-hand-left-v1','ponytail-hand-right-v1','teacher-hand-left-v1','teacher-hand-right-v1'];
- const loaded=await Promise.all(files.map(n=>loader.loadAsync(new URL(`./assets/models/${n}.glb?v=mesh-64`,import.meta.url).href)));
- variants.forEach((variant,i)=>{
-  if(variant==='ponytail')sculptFringe(loaded[i].scene);
-  if(variant==='boy')sculptSweptHair(loaded[i].scene);
-  fitUniform(loaded[i].scene,variant);
- });
- loaded.forEach((asset,i)=>requireModelBudget(asset,files[i]));
- const sources=Object.fromEntries(variants.map((v,i)=>[v,loaded[i]]));
- return {createStudent:(options={})=>{const variant=normalizeStudentVariant(options.variant,options),source=sources[variant];return createRiggedStudent({scene:cloneSkin(source.scene),animations:source.animations},{...options,variant,metric:true,motionProfile:source.parser.json.asset.extras.characters40,asset:STUDENT_ASSETS[variant].file});},createHand:(side,scale)=>createRiggedPalm(loaded[side<0?4:5],side,scale),createTeacherHand:(side,scale)=>{const hand=createRiggedPalm(loaded[side<0?6:7],side,scale,'teacher');hand.group.userData.characterRole='teacher';hand.group.userData.asset=side<0?'teacher-hand-left-v1':'teacher-hand-right-v1';return hand;}};
+export async function loadStudentAssets({corridorEntry=false}={}){
+ const loader=new GLTFLoader(),sources={},pending=new Map();
+ async function load(file){
+  const model=await loader.loadAsync(new URL(`./assets/models/${file}.glb?v=mesh-64`,import.meta.url).href);
+  requireModelBudget(model,file);return model;
+ }
+ function prepare(variant){
+  if(sources[variant])return Promise.resolve(sources[variant]);
+  if(!pending.has(variant)){
+   const job=load(STUDENT_ASSETS[variant].file).then(model=>{
+    if(variant==='ponytail')sculptFringe(model.scene);
+    if(variant==='boy')sculptSweptHair(model.scene);
+    fitUniform(model.scene,variant);sources[variant]=model;return model;
+   }).finally(()=>pending.delete(variant));
+   pending.set(variant,job);
+  }
+  return pending.get(variant);
+ }
+ const variants=Object.keys(STUDENT_ASSETS);
+ const [hands]=await Promise.all([
+  Promise.all(['ponytail-hand-left-v1','ponytail-hand-right-v1','teacher-hand-left-v1','teacher-hand-right-v1'].map(load)),
+  Promise.all((corridorEntry?['boy']:variants).map(prepare))
+ ]);
+ return {prepare,has:variant=>Boolean(sources[variant]),prepareAll:()=>Promise.all(variants.map(prepare)),
+ createStudent:(options={})=>{const variant=normalizeStudentVariant(options.variant,options),source=sources[variant];return createRiggedStudent({scene:cloneSkin(source.scene),animations:source.animations},{...options,variant,metric:true,motionProfile:source.parser.json.asset.extras.characters40,asset:STUDENT_ASSETS[variant].file});},createHand:(side,scale)=>createRiggedPalm(hands[side<0?0:1],side,scale),createTeacherHand:(side,scale)=>{const hand=createRiggedPalm(hands[side<0?2:3],side,scale,'teacher');hand.group.userData.characterRole='teacher';hand.group.userData.asset=side<0?'teacher-hand-left-v1':'teacher-hand-right-v1';return hand;}};
 }
 export function createRiggedStudent(gltf,{seated=true,seed=0,passengerSeed=seed,variant='boy',glasses=false,metric=gltf.parser?.json?.asset?.extras?.characters40?.normalized===true,motionProfile=gltf.parser?.json?.asset?.extras?.characters40||{},asset=null,referenceShape=false}={}){
  variant=normalizeStudentVariant(variant,{glasses});glasses=variant==='glasses';

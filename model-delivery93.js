@@ -1,5 +1,6 @@
 import {gameMeshes} from './game-models158.js?v=campus-117&rev=158';
-import {BufferAttribute} from './vendor/three.module.js';
+import {inventoryPacks} from './inventory-packs160.js?v=campus-117&rev=160';
+import {BufferAttribute,Mesh} from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 
 const manifestUrl=new URL('./assets/stream93/models.json?v=campus-107',import.meta.url);
@@ -90,8 +91,46 @@ export function applyClassShape(model,parts,indices){
 // Original authoring files are also the fallback on older browsers and when
 // delivery data fails. Caller-supplied loaders still receive the original URLs.
 export class CampusModelLoader extends GLTFLoader{
- constructor(manager,{gameMaterials=false}={}){
-  super(manager);this.gameMaterials=gameMaterials;
+ constructor(manager,{gameMaterials=false,stageInventory=false}={}){
+  super(manager);this.gameMaterials=gameMaterials;this.stageInventory=stageInventory;this.pendingFinishes=new Map();
+ }
+ async parsePack(file,onProgress){
+  const location=new URL(file,manifestUrl);
+  return this.parseAsync(await modelBytes(location.href,onProgress),new URL('.',location).href);
+ }
+ async finishInventory(){
+  await Promise.all([...this.pendingFinishes.values()].map(job=>job()));
+ }
+ async inventoryGeometry(key,onProgress){
+  const [geometry,finish]=inventoryPacks[key];
+  const model=await this.parsePack(geometry,onProgress);
+  const bindings=new Map();
+  model.scene.traverse(mesh=>{
+   if(mesh.isMesh)bindings.set(mesh.material,{geometry:mesh.geometry,index:model.parser.associations.get(mesh.material).materials});
+  });
+  let loading;
+  const apply=async()=>{
+   let library,originals;
+   try{
+    library=await this.parsePack(finish);
+    originals=await library.parser.getDependencies('material');
+   }catch(error){
+    // Older caches or an interrupted release can lack a split file.
+    const original=gameMeshes[key]||(await catalog())[key];
+    library=await this.parsePack(original);
+    originals=await library.parser.getDependencies('material');
+   }
+   for(const [shared,binding] of bindings){
+    // Reproduce GLTFLoader's geometry-specific flags and tangent handedness.
+    // Previously constructed hands and drawer copies all share this material.
+    const representative=new Mesh(binding.geometry,originals[binding.index]);
+    library.parser.assignFinalMaterial(representative);
+    shared.copy(representative.material);shared.needsUpdate=true;
+   }
+   this.pendingFinishes.delete(key);
+  };
+  this.pendingFinishes.set(key,()=>loading??=apply().catch(error=>{loading=null;throw error;}));
+  return model;
  }
  async loadAsync(url,onProgress){
   const asset=new URL(url,import.meta.url),file=asset.pathname.split('/').pop().replace(/\.glb$/,'');
@@ -106,7 +145,9 @@ export class CampusModelLoader extends GLTFLoader{
    const original=new URL(url,import.meta.url),name=original.pathname.split('/').pop();
    if(original.origin===manifestUrl.origin&&name.endsWith('.glb')){
     try{
-     const key=name.slice(0,-4),file=(this.gameMaterials&&gameMeshes[key])||(await catalog())[key];
+     const key=name.slice(0,-4);
+     if(this.stageInventory&&inventoryPacks[key])return await this.inventoryGeometry(key,onProgress);
+     const file=(this.gameMaterials&&gameMeshes[key])||(await catalog())[key];
      if(file){
       const location=new URL(file,manifestUrl),data=await modelBytes(location.href,onProgress);
       return await this.parseAsync(data,new URL('.',location).href);
