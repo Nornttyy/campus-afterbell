@@ -1,4 +1,4 @@
-import {FIRST_PERSON_FOOD_FITS} from './first-person-packet-grips112.js?v=campus-114';
+import {FIRST_PERSON_FOOD_FITS} from './first-person-packet-grips112.js?v=campus-114&rev=164';
 import * as T from './vendor/three.module.js';
 import {createFingerRig,handFrame} from './hand-motion.js?v=campus-117';
 import {WHOLE_PALM_PROFILES} from './whole-palm-profiles54.js?v=campus-112';

@@ -91,10 +91,12 @@ test('empty walking hands travel forwards/backwards, rise/fall and rotate contin
  assert.ok(maxJump<.04,'wrist flips discontinuously');
 });
 
-test('only the left hand is visible with a phone, the right returns after putting it down',async()=>{
+test('the free hand swings while carrying the phone and disappears only during phone use',async()=>{
  const [left,right]=await Promise.all(['hand-left-v3.glb','hand-right-v3.glb'].map(loadGeometry));
  const hands=createDeskHands({createHand:(side,scale)=>createRiggedPalm(side<0?left:right,side,scale)});
  for(let i=0;i<180;i++)hands.update(i/60,{action:'phone',carrying:true,seated:false,movement:1,walkPhase:i/60*7});
+ assert.equal(hands.group.getObjectByName('right-desk-arm').visible,true);
+ hands.update(3,{action:'phone',carrying:true,holding:true,seated:false});
  assert.equal(hands.group.getObjectByName('right-desk-arm').visible,false);
  assert.equal(hands.group.getObjectByName('left-desk-arm').visible,true);
  for(let i=180;i<300;i++)hands.update(i/60,{carrying:false,seated:false});

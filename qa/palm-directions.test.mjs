@@ -21,13 +21,13 @@ function assertRigid(a,b,label){
   assert.ok(as.distanceTo(bs)<.00001,`${label}: object changed size`);
 }
 
-test('standing keeps separate snack, phone and smoke wrist orientations',()=>{
+test('standing uses the packet wrist for an unused phone and other carried items',()=>{
   const orientations={};
   for(const action of ['snack','phone','smoke']){
     const actor=makeHands();tick(actor,0,150,{action,carrying:true,holding:false,seated:false});
     orientations[action]=actor.getHand('left').group.quaternion.clone();
   }
-  assert.ok(orientations.snack.angleTo(orientations.phone)>.15,'Standing erased the phone grip');
+  assert.ok(orientations.snack.angleTo(orientations.phone)<.01,'An unused phone should use the packet wrist');
   assert.ok(orientations.snack.angleTo(orientations.smoke)<.01,'Normal carry should use the same palm direction');
 });
 

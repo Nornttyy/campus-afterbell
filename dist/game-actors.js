@@ -11,7 +11,7 @@ import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
 import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-117&rev=161';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117&rev=164';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -580,6 +580,10 @@ export function createDeskHands({createHand}={}){
   for(const action of DESK_ITEM_KINDS){const hand=arms[0].hand;hand.setCurl([...FOOD_ITEM_KINDS,'pen',...THROWABLE_ITEM_KINDS].includes(action)?.80:action==='phone'?.78:.72);let contact=propContact(props[action],gripBack[action]);if(action==='banana'&&props[action].userData.propAsset)contact=fitFirstPersonSurface(props[action],contact);grips[action].position.copy(hand.indexTip()).sub(contact.multiplyScalar(1/hand.group.scale.x).applyQuaternion(grips[action].rotation));}
   function attachToGrip(prop,hand,anchor){hand.updateMatrix();prop.position.copy(anchor.position).applyMatrix4(hand.matrix);prop.quaternion.copy(hand.quaternion).multiply(anchor.rotation);}
   for(const kind of DESK_ITEM_KINDS){const fit=wholeGrips[0].fit(kind);if(fit){grips[kind].position.fromArray(fit.position);grips[kind].rotation.setFromEuler(new THREE.Euler(...fit.rotation));}}
+  // Use the printed face of the gum packet with the existing corner grip.
+  grips.gum.rotation.copy(grips.chips.rotation);
+  const packetPalm=wholeGrips[0].palmUp||carryView(-2.25,.10,-.72);
+  const lowHandRotation=new THREE.Quaternion();
   // The wrist enters from the bottom-left corner, leaving the thumb free to
   // reach across the glass while the long fingers support the back.
   grips.phone.rotation.multiply(new THREE.Quaternion().setFromAxisAngle(v(0,0,1),Math.PI-.60));
@@ -642,7 +646,8 @@ export function createDeskHands({createHand}={}){
       attachToGrip(props[action],arms[0].hand.group,anchor);group.updateMatrixWorld(true);return;
     }
     arms[1].group.visible=true;
-    const authored=isHandAnimationPose(animationPose)&&(!carrying||animationPose.source==='runtime'&&/^(student-(walk|idle|crawl))/.test(animationPose.clipId))&&!seated&&!holding&&!caught&&!computer&&!typing&&!bookAmount;
+    const carryStride=carrying&&animationPose?.source==='runtime'&&/^student-(walk|idle|crawl)/.test(animationPose.clipId);
+    const authored=isHandAnimationPose(animationPose)&&(!carrying||carryStride)&&!seated&&(!holding||carryStride&&FOOD_ITEM_KINDS.includes(action))&&!caught&&!computer&&!typing&&!bookAmount;
     function applyAuthored(weight){
       group.updateMatrix();const inv=group.matrix.clone().invert(),invQ=group.quaternion.clone().invert();
       for(let i=0;i<2;i++){
@@ -674,7 +679,11 @@ export function createDeskHands({createHand}={}){
       }
       servingLook=dish;
     }
-    if(carrying&&(!extension||active!==requested)){active=requested;useTime=0;previousHandPositions=null;previousFood=null;}
+    if(carrying&&(!extension||active!==requested)){
+      active=requested;useTime=foodAge=foodAmount=foodPhase=0;foodWasUsing=false;
+      foodPose.reach=foodPose.bob=foodPose.chewing=0;
+      previousHandPositions=null;previousFood=null;
+    }
     const engaged=carrying&&!caught&&active===requested;
     focus=smooth(focus,engaged&&seated?1:0,dt,7);
     standing=smooth(standing,seated?0:1,dt,9);
@@ -999,7 +1008,7 @@ export function createDeskHands({createHand}={}){
       palm.position.lerp(contact.sub(tip).applyMatrix4(inverse),hold);
       palm.quaternion.slerp(inverseRotation.multiply(q),hold);
     }
-    if(active==='phone'&&extension>.62&&!caught){
+    if(active==='phone'&&extension>.62&&holding&&!caught){
       arms[1].group.visible=false;
       const left=arms[0].hand;
       const phone=props.phone,amount=ease(extension,.62,1),down=THREE.MathUtils.lerp(.77,.24,standing);
@@ -1058,27 +1067,32 @@ export function createDeskHands({createHand}={}){
     if(authored){
       applyAuthored(carrying?1:clamp(Number(animationPose.weight)||0,0,1));
       group.userData.authoredAnimation=true;
-      if(engaged){
-        const left=arms[0].hand;
-        left.setCurl(.76);
-        if(!wholeGrips[0].apply(active))left.opposeThumb(.52,active);
-        attachToGrip(props[active],left.group,grips[active]);
-        arms[1].group.visible=true;
-      }
-    }else if(engaged&&active!=='pen'&&active!=='phone'&&active!=='hotpotPlate'){
-      // One camera-facing palm for pocket items. Finger contacts and prop mounts
-      // remain specific to the shape, and the food stays below the desktop.
-      const left=arms[0].hand,prop=props[active];
-      articulation[0].restore();
+    }
+    const usingPhone=active==='phone'&&holding;
+    const studyPen=active==='pen'&&seated;
+    const pouring=active==='hotpotPlate'&&holding;
+    if(engaged&&!usingPhone&&!studyPen&&!pouring){
+      const left=arms[0].hand,hand=left.group,prop=props[active];
+      const edible=FOOD_ITEM_KINDS.includes(active)&&active!=='wrapper'&&active!=='hotpotPlate';
+      const restY=seated&&deskSurface?(drawerContact?.floor??.659)-eyeHeight-.045:
+        crouched?-.18:seated?-.70:-.90;
+      const bite=edible?foodPose.reach:0,stroke=edible?.77*foodPose.bob:0;
+      const fallbackSwing=!authored&&!seated&&!crouched?movement*Math.sin(walkPhase)*(1-bite):0;
+      const target=v(-.20,restY+.012*bite+stroke+.014*fallbackSwing,-.23+.028*fallbackSwing);
       group.updateMatrix();
-      const inv=group.matrix.clone().invert();
-      left.group.quaternion.copy(group.quaternion).invert().multiply(wholeGrips[0].palmUp||carryView(-2.25,.10,-.72));
-      const bob=eating?.029*Math.sin(progress*Math.PI*6):0;
-      const pos=seated&&deskSurface?v(-.275,(drawerContact?.floor??.659)-eyeHeight+.058+bob,-.205):v(-.22,-.57+bob,-.47);
-      left.group.position.copy(pos.applyMatrix4(inv));
+      // While walking both wrists keep the authored swing. All other carrying
+      // uses one low wrist frame. Only the fitted contacts depend on the item.
+      const weight=authored?bite:1;
+      if(weight>0){
+        hand.position.lerp(target.applyMatrix4(group.matrix.clone().invert()),weight);
+        lowHandRotation.copy(group.quaternion).invert().multiply(packetPalm);
+        hand.quaternion.slerp(lowHandRotation,weight);
+      }
+      if(!authored)articulation[0].restore();
       left.setCurl(.76);
       if(!wholeGrips[0].apply(active))left.opposeThumb(.52,active);
-      attachToGrip(prop,left.group,grips[active]);
+      attachToGrip(prop,hand,grips[active]);
+      arms[1].group.visible=true;
     }
     if(engaged&&throwable){
       group.updateMatrix();
