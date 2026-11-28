@@ -37,7 +37,7 @@ import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=128';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117&rev=128';
 import {createRoomVariants} from './room-variants.js?v=campus-117&rev=128';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
-import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96';
+import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96&rev=152';
 import * as THREE from './vendor/three.module.js';
 import {CAMPUS_SURFACE_SOURCES,loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-108';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88&rev=123';
