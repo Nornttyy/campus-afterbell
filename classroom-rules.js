@@ -152,6 +152,7 @@ export function chalkHit(a,b,students,books,map,layout=null,throwerId=null){
   return nearest;
 }
 
+import {attacks,castTeacherAttack,advanceWave} from './teacher-attacks129.js';
 export class ClassroomRound{
   constructor({seed=73,duration=600,target=DEVELOPMENT_TUNING.target,map='classroom',chalkStamina=false,tuning}={}){
     this.tuning=expandTuning(tuning);this.customTuning=tuning?{...tuning}:null;
@@ -162,10 +163,10 @@ export class ClassroomRound{
   reset(seed){
     if(seed!==undefined)this.seed=seedNumber(seed);this._rng=this.seed;this._drawerRng=(this.seed^0xA341316C)>>>0;this.seats=createSeatLayout(this.seed,null,this.map);this.layout=createLayoutContext(this.seats);this.board=boardForMap(this.map);this.posts=detentionForMap(this.map);this.toiletDoors=Object.fromEntries(mapKind(this.map)==='toilet'?this.seats.map(s=>[s.id,0]):[]);this._toiletDoorTargets={...this.toiletDoors};this.toiletCabinets={};this.dormCabinets={};this.dormDoors=Object.fromEntries(mapKind(this.map)==='dorm'?DORM_ROOMS.map(r=>[r.id,1]):[]);this._dormDoorTargets={...this.dormDoors};this._dormVisits={};this._inspectionVisits={};this._dormNavigation=null;this.toiletClogs={};this.toiletFlushes={};this.officeSlotsByDesk=new Map(OFFICE_DESKS.map(d=>[d.id,[{id:0,action:'lunch',readyAt:0,progress:0}]]));this.officeSlots=this.officeSlotsByDesk.get(OFFICE_DESK.id);
     this.status='ready';this.paused=false;this.elapsed=0;this.duration=this._defaultDuration;this.stage='class';this._stageElapsed=0;this._sessionElapsed=0;this.busDepartureAt=null;this.busBrakeAt=null;this._dismissal=null;this._finalCaught=null;this._finishSceneTime=null;this._preparationLeft=0;this._seatingRoutes=new Map();this._seatingStarts=new Map();this._teacherEntryRoute=null;this._teacherEntryLength=0;this.score=0;this.strikes=0;this.wrongGrabs=0;this.resultReason=null;
-    this.radio=null;this.radioAtFinish=null;this._radioActivation=0;this._radioNextAt=0;this._jumpers=new Map();
+    this.skillReadyAt=0;this.attackLockedUntil=0;this.radio=null;this.radioAtFinish=null;this._radioActivation=0;this._radioNextAt=0;this._jumpers=new Map();
     this.groundItems=new Map();this.fixtureUses=new Map();this.nextGroundId=1;this.coolerSlots=[{action:"drink"},{action:"chips"},{action:"burger"}];this.vendingStock={};this.mealsTaken={};this.hotpots=this.map==='hotpot'?makeCookingRound(this.seats):[];
     this.selected='snack';this.holding=false;this.completed=emptyActionCounts();this._doorUse=false;this._doorProgress=0;this._doorTarget=false;
-    this.smokes=[];this.projectiles=[];this.chalks=[];this.bubbles=[];this.peels=[];this.burps=[];this._novelId=0;this._bubbleId=0;this._pendingAllCaught=false;this._chalkId=0;this._nextCastAt=0;this._events=[];this._accumulator=0;this._movement={x:0,z:0};this._lastObservation=-Infinity;this._smokeId=0;
+    this.smokes=[];this.projectiles=[];this.chalks=[];this.bubbles=[];this.peels=[];this.burps=[];this._novelId=0;this._bubbleId=0;this._pendingAllCaught=false;this._chalkId=0;this._nextCastAt=0;this.aiLastChalkAt=null;this._events=[];this._accumulator=0;this._movement={x:0,z:0};this._lastObservation=-Infinity;this._smokeId=0;
     const fixedRoster=['classroom','night','hotpot','exam','dorm','toilet'].includes(mapKind(this.map));
     const pupilCount=fixedRoster?Math.min(20,this.seats.length):this.seats.length;
     this._team=new Set([PLAYER_SEAT,...FRIEND_SEATS].filter(id=>id<pupilCount));
@@ -803,7 +804,7 @@ export class ClassroomRound{
       posts:this.posts.map(post=>({...post,studentId:this.students.find(s=>s.captivity==='bound'&&s.postId===post.id)?.id??null})),rescue:{id:this._rescueId,progress:this._rescueProgress},rescueAim:this.rescueTarget()?.id??null,
       books:this.books.map(b=>({...b,amount:clean(b.amount)})),
       player:{...capture(p),officeChair:Boolean(p._officeChair),officeDeskId:p._officeDeskId||null,penTaken:Boolean(p._penTaken||p._examMode==='paper'),computerActive:Boolean(p._computerActive),computer:this._computerSnapshot(p),burpReadyLeft:clean(Math.max(0,(p._burpUntil||0)-this.elapsed)),bookRaised:p.seated?Boolean(this.books[p.seatId]?.raised):false,id:p.id,x:clean(p.x),z:clean(p.z),yaw:clean(p.yaw),pitch:clean(p.pitch),seated:p.seated,crouched:p.crouched,caught:p.caught,seatId:p.seatId,seatYaw:p.seatYaw||0},
-      teacher:{...t,stunLeft:clean(Math.max(0,(t._chalkUntil||0)-this.elapsed)),...this._visionSnapshot(t),x:clean(t.x),z:clean(t.z),yaw:clean(t.yaw),phaseTime:clean(t.phaseTime),phaseDuration:clean(t.phaseDuration),castProgress:clean(t.castProgress),attention:clean(t.attention),walkProgress:clean(t.walkProgress),observedIds:[...this._memory.keys()],memory:[...this._memory.values()].map(m=>({id:m.id,evidence:clean(m.evidence),suspicion:clean(m.evidence),noise:clean(m.noise),confirmed:m.confirmed,detained:m.detained,lastSeen:m.lastSeen,lastHeard:m.lastHeard,lastVisit:m.lastVisit,visits:m.visits,x:clean(m.x),z:clean(m.z)}))},
+      teacher:{...t,attackAge:t.attackAt==null?null:Math.max(0,this._sessionElapsed-t.attackAt),skillCooldown:clean(Math.max(0,this.skillReadyAt-this._sessionElapsed)),stunLeft:clean(Math.max(0,(t._chalkUntil||0)-this.elapsed)),...this._visionSnapshot(t),x:clean(t.x),z:clean(t.z),yaw:clean(t.yaw),phaseTime:clean(t.phaseTime),phaseDuration:clean(t.phaseDuration),castProgress:clean(t.castProgress),attention:clean(t.attention),walkProgress:clean(t.walkProgress),observedIds:[...this._memory.keys()],memory:[...this._memory.values()].map(m=>({id:m.id,evidence:clean(m.evidence),suspicion:clean(m.evidence),noise:clean(m.noise),confirmed:m.confirmed,detained:m.detained,lastSeen:m.lastSeen,lastHeard:m.lastHeard,lastVisit:m.lastVisit,visits:m.visits,x:clean(m.x),z:clean(m.z)}))},
       students:this.students.map(s=>({...capture(s),computerActive:Boolean(s._computerActive),computer:this._computerSnapshot(s),bookRaised:s.seated?Boolean(this.books[s.seatId]?.raised):false,id:s.id,officeChair:Boolean(s._officeChair),officeDeskId:s._officeDeskId||null,visible:s.visible!==false,seatYaw:s.seatYaw||0,seatId:s.seatId,x:clean(s.x),z:clean(s.z),yaw:clean(s.yaw),pitch:clean(s.pitch),seated:s.seated,crouched:s.crouched,isPlayer:s.isPlayer,isTeammate:s.isTeammate,caught:s.caught,mood:s.mood,action:s.action,holding:s.holding,drawerOpen:Boolean(s._drawerOpen),studyBookHeld:Boolean(s.studyBookHeld&&s.seated&&!this._restrained(s)),progress:clean(s.progress),name:s.name,personality:s.personality,completed:{...s.completed},...(this._team.has(s.id)?{drawer:this._drawerSnapshot(s)}:{})})),
       peels:this.peels.map(p=>({...p})),burps:this.burps.map(p=>({...p})),chalks:this.chalks.map(c=>({...c})),projectiles:this.projectiles.map(p=>({...p})),bubbles:this.bubbles.map(b=>({...b})),smokes:this.smokes.map(s=>({...s,remaining:clean(s.remaining)}))};
   }
@@ -1335,10 +1336,22 @@ export class ClassroomRound{
     }
     if(!p.route.length&&p.arrivedAt===null){p.arrivedAt=this.elapsed;if(p.intent==='inspect'){this._inspectionVisits[p.checkpointId]=this.elapsed;if(p.roomId)this._dormVisits[p.roomId]=this.elapsed;p.until=this.elapsed+(mapKind(this.map)==='dorm'?6:2.2);if(p.stallId!=null)this._toiletDoorTargets[p.stallId]=true;}if(m){m.lastVisit=clean(this.elapsed);m.visits++;}}
     if(m&&p.arrivedAt!==null&&this.elapsed-p.arrivedAt>2&&p.intent!=='catch'){m.noise=Math.max(0,m.noise-dt*.9);p.until=Math.min(p.until,this.elapsed);}
-    if(!obscured&&p.intent==='catch'&&m&&!m.detained&&!this._cast&&this._turnLeft<=EPS&&this.elapsed>=this._nextCastAt&&canThrowWithStamina(this)){
-      const actor=this.students[m.id];if(distance(t,actor)<3.25&&this._canSee(t,actor,this.smokes)){this._cast={id:actor.id,time:0,aim:{x:actor.x,y:actorFloorHeight(actor,this.map)+(this._onBed(actor)?actorEyeHeight(actor,this.map)-.06:actor.crouched&&!actor.seated?CRAWL_TUNING.aimHeight:actor.seated?1.45:1.55),z:actor.z}};}
+    if(!obscured&&p.intent==='catch'&&m&&!m.detained&&!this._cast&&this._turnLeft<=EPS&&this.elapsed>=this._nextCastAt&&(t.variant==='doubao'||canThrowWithStamina(this))){
+      const castRange=t.variant==='doubao'?(this._sessionElapsed>=this.skillReadyAt?attacks.vertical.range:attacks.horizontal.range):3.25;
+      const actor=this.students[m.id];if(distance(t,actor)<castRange&&this._canSee(t,actor,this.smokes)){this._cast={id:actor.id,time:0,aim:{x:actor.x,y:actorFloorHeight(actor,this.map)+(this._onBed(actor)?actorEyeHeight(actor,this.map)-.06:actor.crouched&&!actor.seated?CRAWL_TUNING.aimHeight:actor.seated?1.45:1.55),z:actor.z}};}
     }
-    if(this._cast){this._cast.time+=dt;t.castProgress=clamp(this._cast.time/DEVELOPMENT_TUNING.chalkWindup,0,1);if(this._cast.time+EPS>=DEVELOPMENT_TUNING.chalkWindup){const id=this._cast.id,origin={x:t.x,y:floorHeight(t.x,t.z,this.map,t.busDeck)+TEACHER_EYE_HEIGHT,z:t.z},aim=this._cast.aim,dx=aim.x-origin.x,dy=aim.y-origin.y,dz=aim.z-origin.z,length=Math.hypot(dx,dy,dz)||1;this.chalks.push({id:this._chalkId++,...origin,vx:dx/length*16,vy:dy/length*16,vz:dz/length*16,age:0});t.stamina=Math.max(0,t.stamina-chalkStaminaCost(this));this._events.push({type:'chalk',studentId:id,targetId:id,x:t.x,z:t.z});this._cast=null;this._nextCastAt=this.elapsed+.9;t.castProgress=0;p.until=0;this._thinkAt=0;}}
+    if(this._cast){
+      const female=t.variant==='doubao', reaching=target&&distance(t,target)<2.6;
+      if(this._sessionElapsed>=this.skillReadyAt&&(female||this.aiLastChalkAt!=null&&this.elapsed-this.aiLastChalkAt<8)){
+        const kind=female?'vertical':'eraser';
+        if(castTeacherAttack(this,t,kind)){this._cast=null;this._nextCastAt=this.elapsed+attacks[kind].duration;}
+        else if(female)this._cast=null;
+      }else if(female){
+        if(reaching)castTeacherAttack(this,t,'horizontal');
+        this._cast=null;this._nextCastAt=this.elapsed+(reaching?attacks.horizontal.cooldown:.2);
+      }
+    }
+    if(this._cast){this._cast.time+=dt;t.castProgress=clamp(this._cast.time/DEVELOPMENT_TUNING.chalkWindup,0,1);if(this._cast.time+EPS>=DEVELOPMENT_TUNING.chalkWindup){const id=this._cast.id,origin={x:t.x,y:floorHeight(t.x,t.z,this.map,t.busDeck)+TEACHER_EYE_HEIGHT,z:t.z},aim=this._cast.aim,dx=aim.x-origin.x,dy=aim.y-origin.y,dz=aim.z-origin.z,length=Math.hypot(dx,dy,dz)||1;this.chalks.push({id:this._chalkId++,...origin,vx:dx/length*16,vy:dy/length*16,vz:dz/length*16,age:0});this.aiLastChalkAt=this.elapsed;t.stamina=Math.max(0,t.stamina-chalkStaminaCost(this));this._events.push({type:'chalk',studentId:id,targetId:id,x:t.x,z:t.z});this._cast=null;this._nextCastAt=this.elapsed+.9;t.castProgress=0;p.until=0;this._thinkAt=0;}}
     const phase=this._turnLeft>EPS?'turning':this._cast?'watching':p.route.length?'patrol':p.intent==='write'&&mapKind(this.map)!=='dorm'?'board':'watching';
     if(t.phase!==phase){t.phase=phase;t.phaseTime=0;}else t.phaseTime+=dt;
     t.warning=phase==='turning';t.phaseDuration=phase==='turning'?.7:this._cast?.7:Math.max(1,p.until-p.since);t.walkProgress=p.routeLength?clamp(1-p.route.reduce((sum,v,i)=>sum+distance(i?p.route[i-1]:t,v),0)/p.routeLength,0,1):0;
@@ -1354,7 +1367,10 @@ export class ClassroomRound{
   }
   _advanceChalk(dt){
     for(const c of this.chalks){
-      const next={x:c.x+c.vx*dt,y:c.y+c.vy*dt,z:c.z+c.vz*dt};c.age+=dt;c.vy-=1.6*dt;
+      let step=dt;
+      if(c.windup>0){const delay=Math.min(c.windup,step);c.windup-=delay;step-=delay;if(step<=0)continue;}
+      if(c.kind==='horizontal'||c.kind==='vertical'){c.age+=step;advanceWave(this,c,step);continue;}
+      const next={x:c.x+c.vx*step,y:c.y+c.vy*step,z:c.z+c.vz*step};c.age+=step;c.vy-=(c.kind==='eraser'?5.8:1.6)*step;
       const hit=chalkHit(c,next,this.students,this.books,this.map,this.layout,c.throwerId);
       if(hit){
         c.x+=(next.x-c.x)*hit.t;c.y+=(next.y-c.y)*hit.t;c.z+=(next.z-c.z)*hit.t;c.dead=true;

@@ -26,7 +26,7 @@ export function createReferenceHUD({document:doc=globalThis.document,root,bindin
   update(s){
    const mobile=touchMode(),key=bindings().keys,move=[key.forward,key.left,key.back,key.right].map(keyLabel).join(' / '),use=keyLabel(key.use),e=keyLabel(key.interact),q=keyLabel(key.return);
    $('#student-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n交互拿取或坐下，返回放回或起身\n长按使用 · 点爬行切换姿势':`${move} 移动 · 鼠标转向\n${e} 拿取 / 打开 / 坐下\n${q} 放回 / 关闭 / 起身\n拿笔后 ${e} 切换转笔和写字\n长按 ${use} 使用 · 点击投掷\n按住 ${e} 解救 · ${keyLabel(key.crawl)} 爬行 · ${keyLabel(key.jump)} 跳跃\n机房方向键控制电脑\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
-   $('#teacher-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n点奔跑切换速度 · 使用投粉笔\n交互抓住或绑住同学，返回放下':`${move} 移动 · 按住 ${keyLabel(key.crawl)} 奔跑 · 鼠标转向 · ${keyLabel(key.jump)} 跳跃\n${use} 投粉笔 · ${e} 抓住眩晕同学\n木桩前 ${e} 绑住 · ${q} 放下\n黑板前按住 ${e} 写字\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
+   $('#teacher-controls').textContent=mobile?'摇杆移动 · 拖动画面转向 · 点跳跃\n点奔跑切换速度 · 使用普攻 · 技能键释放老师技能\n交互抓住或绑住同学，返回放下':`${move} 移动 · 按住 ${keyLabel(key.crawl)} 奔跑 · 鼠标转向 · ${keyLabel(key.jump)} 跳跃\n${use} 普攻 · ${keyLabel(key.skill)} 老师技能 · ${e} 抓住眩晕同学\n木桩前 ${e} 绑住 · ${q} 放下\n黑板前按住 ${e} 写字\n${keyLabel(key.mic)} 麦克风 · ${keyLabel(key.pause)} 暂停`;
    const model=hud54Model(s),signature=JSON.stringify(model.rows);ranking.hidden=s.stage!=='class';
    if(signature!==lastRank){lastRank=signature;rankList.replaceChildren(...model.rows.map((p,i)=>{const li=make('li');li.dataset.self=String(p.isSelf);li.append(make('span','rank-place',i+1),make('span','rank-name',p.name),make('strong','rank-points',p.points));return li;}));}
    const p=s.player,carrying=s.drawer.drawnSlot!=null,pen=carrying&&s.selected==='pen',reading=p.seated&&p.bookRaised&&!carrying;
