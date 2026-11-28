@@ -41,7 +41,8 @@ test('toilet interaction reaches the bowl from inside its cubicle, without cross
  assert.equal(r.interact(seat.id),false,'adjacent cubicle cannot sit through partition');
  Object.assign(p,{x:9,z:4});r._toiletDoorTargets[seat.id]=false;r.step(1);
  Object.assign(p,{x:seat.x,z:seat.z+1.15});
- assert.equal(r.interact(seat.id),false,'closed door still blocks sitting');
+ assert.equal(r.interact(seat.id),'seated','inside the closed cubicle');
+ Object.assign(p,{seated:false,seatId:null,x:seat.exitX,z:seat.exitZ});assert.equal(r.interact(seat.id),false,'outside the closed door');
 });
 
 test('both bunks stay reclined with open eyes, with stable support height and an explicit exit',()=>{

@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {placeFurniture67} from './furniture-assets67.js?v=campus-99';
-import {TOILET_STALL_SIZE,TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-94';
-export * from './toilet-layout70.js?v=campus-94';
+import {TOILET_STALL_SIZE,TOILET_STALLS,TOILET_SEATS,TOILET_SOLIDS,TOILET_DOOR,TOILET_CABINET,toiletCabinetDoorPose,toiletDoorSolids,toiletCabinetDoorSolids} from './toilet-layout70.js?v=campus-94&rev=173';
+export * from './toilet-layout70.js?v=campus-94&rev=173';
 
 function ellipseRing(outerX,outerZ,innerX,innerZ,height){
  const shape=new T.Shape();shape.absellipse(0,0,outerX,outerZ,0,Math.PI*2,false);const hole=new T.Path();hole.absellipse(0,0,innerX,innerZ,0,Math.PI*2,true);shape.holes.push(hole);
@@ -36,6 +36,7 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,batc
  const signGeo=own(new T.PlaneGeometry(.43,.134));
  const posterMap=texture(256,384,(c,w,h)=>{c.fillStyle='#ececdf';c.fillRect(0,0,w,h);c.strokeStyle='#343b36';c.lineWidth=5;c.strokeRect(8,8,w-16,h-16);c.beginPath();c.ellipse(130,130,58,33,0,0,Math.PI*2);c.stroke();c.strokeRect(146,45,42,65);c.beginPath();c.moveTo(92,145);c.lineTo(100,207);c.lineTo(150,207);c.lineTo(163,148);c.stroke();c.strokeStyle='#b73325';c.lineWidth=12;c.beginPath();c.arc(128,125,88,0,Math.PI*2);c.moveTo(66,62);c.lineTo(189,188);c.stroke();c.fillStyle='#252e29';c.font='bold 27px sans-serif';c.textAlign='center';for(const[t,y]of[['请勿往马桶里',278],['丢垃圾',320]])c.fillText(t,w/2,y);});textures.add(posterMap);const posterMat=material('#fff',{map:posterMap,roughness:.85,side:T.DoubleSide}),posterGeo=own(new T.PlaneGeometry(.39,.585));
  const seats=new Map(),cabinets=new Map(),doors=new Map();
+ const seatPick=own(new T.BoxGeometry(.56,.375,.69)),tankPick=own(new T.BoxGeometry(.54,.75,.41));
  const bowlMouth=own(new T.CylinderGeometry(.245,.215,.09,16)),interactionMaterial=new T.MeshBasicMaterial({visible:false});materials.add(interactionMaterial);
  for(const s of TOILET_STALLS){
   const stall=new T.Group();stall.name='toilet-stall-'+s.id;stall.position.set(s.x,0,s.z);fixed.add(stall);
@@ -54,13 +55,14 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,batc
   for(const x of[-.13,.13])box(steel,[x,.485,-.30],[.055,.025,.08],null,fixture);
   rounded(steel,[.23,.84,-.31],[.07,.026,.04],.006,null,fixture);fixture.scale.setScalar(.76);
   }
+  fixture.scale.x*=1.22;fixture.scale.z*=1.22;
   // Non-rendered anchors survive baking; callers raycast/seat against these
   // specific fixture targets rather than an ordinary chair or desktop.
   const seatTarget=new T.Object3D();seatTarget.name='toilet-seat-target-'+s.id;seatTarget.position.set(s.x-.18,.36,s.z-.48);group.add(seatTarget);
   const exitTarget=new T.Object3D();exitTarget.position.set(s.x-.18,0,s.z+1.68);group.add(exitTarget);
-  const pick=render(own(new T.CylinderGeometry(.235,.235,.08,12)),new T.MeshBasicMaterial({visible:false}),[s.x-.18,.36,s.z-.48],group);materials.add(pick.material);pick.name='toilet-seat-pick-'+s.id;pick.userData={animated:true,seatId:s.id,interaction:'sit',kind:'toilet'};
+  const pick=render(seatPick,interactionMaterial,[s.x-.18,.188,s.z-.49],group);render(tankPick,interactionMaterial,[0,.19,-.40],pick);pick.name='toilet-seat-pick-'+s.id;pick.userData={animated:true,seatId:s.id,interaction:'sit',kind:'toilet'};
   const mouth=render(bowlMouth,interactionMaterial,[s.x-.18,.50,s.z-.38],group);
-  mouth.name='toilet-bowl-opening-'+s.id;mouth.castShadow=mouth.receiveShadow=false;
+  mouth.scale.set(1.22,1,1.22);mouth.name='toilet-bowl-opening-'+s.id;mouth.castShadow=mouth.receiveShadow=false;
   seats.set(s.id,{group:stall,toilet:pick,target:pick,fixture,mouth,seatTarget,exitTarget,...TOILET_SEATS[s.id]});
   const hinge=new T.Group();hinge.name='toilet-door-hinge-'+s.id;hinge.position.set(s.x+TOILET_DOOR.hingeX,0,s.z+TOILET_DOOR.hingeZ);group.add(hinge);
   const door=box(panel,[TOILET_DOOR.width/2,TOILET_DOOR.bottom+TOILET_DOOR.height/2,0],[TOILET_DOOR.width,TOILET_DOOR.height,TOILET_DOOR.depth],null,hinge);door.name='toilet-door-'+s.id;door.userData={animated:true,seatId:s.id,doorId:s.id,interaction:'cubicle-door'};
@@ -71,14 +73,14 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,batc
   hinge.traverse(o=>{o.userData.animated=true;});
   Object.assign(hinge.userData,{doorId:s.id,interaction:'cubicle-door'});
   doors.set(s.id,{group:hinge,hinge,panel:door,target:hinge,open:0,openness:0,occupied:false,solids:()=>toiletDoorSolids(s.id,doors.get(s.id).open)});
-  const c=TOILET_CABINET,cabinet=new T.Group();cabinet.name='toilet-cabinet-'+s.id;cabinet.position.set(s.x+c.x,0,s.z+c.z);fixed.add(cabinet);
+  const c=TOILET_CABINET,cabinet=new T.Group();cabinet.name='toilet-cabinet-'+s.id;cabinet.position.set(s.x+c.x,c.bottom-.10,s.z+c.z);cabinet.rotation.y=c.yaw;fixed.add(cabinet);
   box(wood,[0,.66,-.16],[.43,1.12,.028],null,cabinet);
   for(const x of[-.202,.202])box(wood,[x,.66,0],[.026,1.12,.35],null,cabinet);
   for(const y of[.113,.65,1.207])box(y===.65?shelf:wood,[0,y,0],[.405,.026,.35],null,cabinet);
-  const cabinetHinge=new T.Group();cabinetHinge.name='toilet-cabinet-door-hinge-'+s.id;cabinetHinge.position.set(s.x+c.x-c.width/2,0,s.z+c.z+c.depth/2+.012);group.add(cabinetHinge);
+  const cabinetHinge=new T.Group();cabinetHinge.name='toilet-cabinet-door-hinge-'+s.id;const hingePose=toiletCabinetDoorPose(s.id);cabinetHinge.position.set(hingePose.x,c.bottom-.10,hingePose.z);cabinetHinge.rotation.y=hingePose.angle;group.add(cabinetHinge);
   const cabinetDoor=box(wood,[c.width/2,.66,0],[c.width,1.12,.028],null,cabinetHinge);cabinetDoor.userData={seatId:s.id,interaction:'cabinet',animated:true};cabinetDoor.name='toilet-cabinet-door-'+s.id;
   rounded(edge,[.31,.68,.024],[.105,.025,.035],.007,null,cabinetHinge);cabinetHinge.traverse(o=>o.userData.animated=true);
-  const foodAnchor=new T.Group();foodAnchor.name='toilet-food-anchor-'+s.id;foodAnchor.position.set(s.x+c.x,.14,s.z+c.z);group.add(foodAnchor);
+  const foodAnchor=new T.Group();foodAnchor.name='toilet-food-anchor-'+s.id;foodAnchor.position.set(s.x+c.x,c.bottom+.04,s.z+c.z);foodAnchor.rotation.y=c.yaw;group.add(foodAnchor);
   const foodAnchors=[0,.537].map((y,i)=>{const anchor=new T.Object3D();anchor.name='toilet-food-shelf-'+s.id+'-'+i;anchor.position.set(0,y,0);foodAnchor.add(anchor);return anchor;});
   cabinets.set(s.id,{group:cabinet,door:cabinetHinge,panel:cabinetDoor,target:cabinetDoor,foodAnchor,foodAnchors,open:0,openness:0,solids:()=>toiletCabinetDoorSolids(s.id,cabinets.get(s.id).open)});
  }
@@ -97,7 +99,7 @@ export function createToiletRoom({parent,box,rounded,mat,texture,bakeStatic,batc
    if(disposed)return;const people=[...(state.students||[]),...(state.player?[state.player]:[])];const occupied=new Set(people.filter(p=>p.seated&&!p.caught&&!p.officeChair).map(p=>p.seatId));
    let moved=!batchReady;
    for(const[id,d]of doors){const doorState=getState(state.toiletDoors,id);d.open=typeof doorState==='number'?doorState:damp(d.open,doorState?1:0,dt);if(d.open!==d.openness)moved=true;d.openness=d.open;d.hinge.rotation.y=TOILET_DOOR.angle*d.open;const isOccupied=occupied.has(id);if(isOccupied!==d.occupied){d.occupied=isOccupied;d.hinge.traverse(o=>{if(o.name.startsWith('toilet-occupancy-'))o.material=signMaps[Number(isOccupied)];});}}
-   for(const[id,c]of cabinets){const local=state.player?.seated&&state.player.seatId===id&&state.drawer?.open,remote=people.some(p=>p.seated&&p.seatId===id&&(p.drawerOpen??p.drawer?.open));const cabinetState=getState(state.toiletCabinets,id,local||remote);c.open=typeof cabinetState==='number'?cabinetState:damp(c.open,cabinetState?1:0,dt);if(c.open!==c.openness)moved=true;c.openness=c.open;c.door.rotation.y=TOILET_CABINET.doorAngle*c.open;}
+   for(const[id,c]of cabinets){const local=state.player?.seated&&state.player.seatId===id&&state.drawer?.open,remote=people.some(p=>p.seated&&p.seatId===id&&(p.drawerOpen??p.drawer?.open));const cabinetState=getState(state.toiletCabinets,id,local||remote);c.open=typeof cabinetState==='number'?cabinetState:damp(c.open,cabinetState?1:0,dt);if(c.open!==c.openness)moved=true;c.openness=c.open;c.door.rotation.y=toiletCabinetDoorPose(id,c.open).angle;}
    if(batch&&moved&&group.visible){batch.sync();batchReady=true;}
   },
   dynamicSolids(){return[...doors].flatMap(([id,d])=>toiletDoorSolids(id,d.open)).concat([...cabinets].flatMap(([id,c])=>toiletCabinetDoorSolids(id,c.open)));},

@@ -103,7 +103,7 @@ test('projectiles see empty space under hotpot edges and inside open food cupboa
  for(let i=0;i<20;i++)stepSmokeProjectile(under,.008,hotpot);
  assert.equal(under.firstImpact,null);assert.ok(under.z>t.z-1,'a narrow pedestal leaves real air below the tabletop');
  for(const map of['toilet','dorm']){
-  const c=context(map),place=c.seats[0],front=map==='toilet'?place.cabinetZ+.187:place.cabinetZ+.307,y=map==='toilet'?.91:place.cabinetY+.6;
+  const c=context(map),place=c.seats[0],front=map==='toilet'?place.cabinetZ+.187:place.cabinetZ+.307,y=map==='toilet'?1.21:place.cabinetY+.6;
   const yaw=place.cabinetYaw||0,point=d=>({x:place.cabinetX+Math.sin(yaw)*d,y,z:place.cabinetZ+Math.cos(yaw)*d}),a=point(front-place.cabinetZ+.23),b=point(front-place.cabinetZ-.16),key=map==='toilet'?'toiletCabinets':'dormCabinets';
   assert.equal(clearEffectSight(a,b,map,c),false,'closed cabinet door occludes its interior');
   updateSpecialFurnitureCollisions(c,{[key]:{0:1}});assert.equal(clearEffectSight(a,b,map,c),true,'open cupboard interior is hollow');

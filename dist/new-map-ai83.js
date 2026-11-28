@@ -1,9 +1,9 @@
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=157';
 import {DORM_ROOMS,DORM_BUNK_ROWS,dormRoomPoint} from './dorm-layout70.js?v=campus-95&rev=127';
 import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94&rev=154';
-import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94';
+import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94&rev=173';
 import {normalWalkSpeed} from './movement55.js?v=campus-117&rev=157';
-import {releaseMapActivity} from './map-activities77.js?v=campus-117&rev=157';
+import {releaseMapActivity} from './map-activities77.js?v=campus-117&rev=173';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const vendingApproach=v=>({x:v.x+Math.sin(v.yaw)*.94+Math.cos(v.yaw)*.51,z:v.z+Math.cos(v.yaw)*.94-Math.sin(v.yaw)*.51});
 // Locations come from the existing reference-based furnishings. Delays and

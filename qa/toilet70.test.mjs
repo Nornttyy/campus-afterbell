@@ -37,7 +37,7 @@ test('renderer creates hollow toilet fixtures, separate two-level food cabinets,
 test('each cubicle and cabinet animates independently, occupancy indicators update without changing geometry size',()=>{
  const helpers=hotpotHelpers(new T.Group()),room=createToiletRoom(helpers),d=room.doors.get(0),c=room.cabinets.get(1);
  room.update({toiletDoors:{0:true},toiletCabinets:new Map([[1,true]]),students:[{id:'a',seated:true,seatId:0}]},.016);
- assert.ok(d.open>0&&d.open<.2);assert.equal(room.doors.get(1).open,0);assert.ok(c.open>0);assert.equal(room.cabinets.get(0).open,0);assert.equal(d.occupied,true);assert.equal(d.hinge.rotation.y,TOILET_DOOR.angle*d.open);assert.equal(c.door.rotation.y,TOILET_CABINET.doorAngle*c.open);
+ assert.ok(d.open>0&&d.open<.2);assert.equal(room.doors.get(1).open,0);assert.ok(c.open>0);assert.equal(room.cabinets.get(0).open,0);assert.equal(d.occupied,true);assert.equal(d.hinge.rotation.y,TOILET_DOOR.angle*d.open);assert.equal(c.door.rotation.y,TOILET_CABINET.yaw+TOILET_CABINET.doorAngle*c.open);
  for(let i=0;i<70;i++)room.update({toiletDoors:{0:true},toiletCabinets:{1:true}},.016);assert.ok(d.open>.999);assert.equal(d.occupied,false);
  room.update({toiletDoors:{0:false},toiletCabinets:{1:false}},.016);assert.ok(d.open<.999&&d.open>.5);assert.ok(c.open<.999&&c.open>.5);
  assert.equal(room.dynamicSolids().length,TOILET_SEATS.length*24);room.dispose();helpers.dispose();

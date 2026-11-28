@@ -12,7 +12,7 @@ import {createCapturePose} from './capture-poses.js?v=campus-83';
 import {createToiletSeatPose} from './toilet-seat78.js?v=campus-117';
 import {createCoachPassengerPose} from './coach-passenger87.js?v=campus-117&rev=154';
 import {createBedPose} from './bed-pose78.js?v=campus-117';
-import {createMapActivityPose} from './map-activity-pose77.js?v=campus-117&rev=157';
+import {createMapActivityPose} from './map-activity-pose77.js?v=campus-117&rev=173';
 import * as T from './vendor/three.module.js';
 import {createDeskItem,THROWABLE_ITEM_KINDS,FOOD_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=172';
 import {propContact} from './prop-assets.js?v=campus-83';

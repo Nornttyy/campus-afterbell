@@ -1,5 +1,5 @@
 import {GRIP_GROUPS,GRIP_ITEMS,FINGERS,newPropGrip,newHandGrip,readGrips,gripSides,applyGripEdits,validateGripSet} from './item-grips.js?v=campus-117&rev=172';
-import {createGripPreview} from './grip-preview.js?v=campus-117&rev=172';
+import {createGripPreview} from './grip-preview.js?v=campus-117&rev=173';
 
 const $=id=>document.getElementById(id),draftKey='campus.gripDraft.v1';
 let edits={},id='drink',side='left',finger='Thumb',number=1,mode='joints',preview,ready=false;
