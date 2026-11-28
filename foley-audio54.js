@@ -131,22 +131,22 @@ export function playCampusFoley(audio,kind,intensity=1){
  if(state.active>=20||now-(state.last.get(kind)??-100)<minGap)return true;
  state.last.set(kind,now);
  const count=state.counts.get(kind)||0,variant=count%6;state.counts.set(kind,count+1);
- const id=kind==='step'?'step-'+variant:kind==='drink-complete'?'food-complete':kind;
+ const id=kind==='step'?'step-'+variant:kind==='drink-complete'?'food-complete':kind==='use-gulp'?'use-crunch':kind;
  function play(buffer){
   if(state.active>=20||context.state==='closed'||audio.muted)return;
   if(!buffer){
    const key=kind+':'+variant;
    buffer=state.buffers.get(key);
    if(!buffer){
-    const samples=createFoleySamples(kind,{sampleRate:context.sampleRate,variant});
+    const samples=createFoleySamples(id==='use-crunch'?id:kind,{sampleRate:context.sampleRate,variant});
     buffer=context.createBuffer(1,samples.length,context.sampleRate);
     buffer.getChannelData(0).set(samples);state.buffers.set(key,buffer);
    }
   }
   const source=context.createBufferSource(),gain=context.createGain();
   // The recorded finishing bite has a quiet master. Add 6 dB only to that sample.
-  const recordingGain=id==='food-complete'&&buffer===state.buffers.get(id)?2:kind==='use-crunch'?1.15:1;
-  source.buffer=buffer;if(kind==='use-crunch')source.playbackRate.value=1.10;
+  const recordingGain=id==='food-complete'&&buffer===state.buffers.get(id)?2:id==='use-crunch'?1.15:1;
+  source.buffer=buffer;if(id==='use-crunch')source.playbackRate.value=1.10;
   gain.gain.value=volume*recordingGain;source.connect(gain);gain.connect(output);
   source.onended=()=>{source.disconnect();gain.disconnect();state.active--;};
   state.active++;source.start(context.currentTime);
@@ -156,7 +156,7 @@ export function playCampusFoley(audio,kind,intensity=1){
   if(ready)play(ready);
   else{
    const request=loadRecording(context,state,id);
-   if(kind!=='step'&&kind!=='use-crunch')request.then(buffer=>{if(context.state==='running'&&context.currentTime-now<1.5)play(buffer);});
+   if(kind!=='step'&&id!=='use-crunch')request.then(buffer=>{if(context.state==='running'&&context.currentTime-now<1.5)play(buffer);});
   }
  }else play(null);
  return true;

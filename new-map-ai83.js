@@ -1,9 +1,9 @@
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=154';
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=156';
 import {DORM_ROOMS,DORM_BUNK_ROWS,dormRoomPoint} from './dorm-layout70.js?v=campus-95&rev=127';
 import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94&rev=154';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94';
-import {NORMAL_WALK_SPEEDS} from './movement55.js?v=campus-117&rev=154';
-import {releaseMapActivity} from './map-activities77.js?v=campus-117&rev=154';
+import {NORMAL_WALK_SPEEDS} from './movement55.js?v=campus-117&rev=156';
+import {releaseMapActivity} from './map-activities77.js?v=campus-117&rev=156';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const vendingApproach=v=>({x:v.x+Math.sin(v.yaw)*.94+Math.cos(v.yaw)*.51,z:v.z+Math.cos(v.yaw)*.94-Math.sin(v.yaw)*.51});
 // Locations come from the existing reference-based furnishings. Delays and
@@ -16,13 +16,29 @@ export function inspectionPoints(map,seats){
  if(map==='playground')return PLAYGROUND_LAYOUT.vending.map(v=>({...vendingApproach(v),checkpointId:v.id}));
  return [];
 }
-function trackPoint(index){
- const t=PLAYGROUND_LAYOUT.track,angle=(index%12)/12*Math.PI*2,r=t.innerRadius+t.laneWidth*1.4;
- return {x:t.cx+Math.sin(angle)*r,z:t.cz+Math.cos(angle)*r+(Math.cos(angle)>=0?t.straightHalf:-t.straightHalf)};
-}
 function roam(round,a){
- a._trackIndex=(a._trackIndex??a.id)+1;
- return goal(round,a,trackPoint(a._trackIndex),{track:true});
+ const t=PLAYGROUND_LAYOUT.track,angle=round._range(-Math.PI,Math.PI),r=t.innerRadius+round._range(-1.6,2.7);
+ const point={x:t.cx+Math.sin(angle)*r,z:t.cz+Math.cos(angle)*r+(Math.cos(angle)>=0?t.straightHalf:-t.straightHalf)};
+ return goal(round,a,point,{track:true});
+}
+export function startFieldWalkers(round){
+ const occupied=round.students.filter(a=>a.isPlayer||a.networkHuman);
+ for(const a of round.students){
+  if(a.isPlayer||a.networkHuman)continue;
+  const t=PLAYGROUND_LAYOUT.track;
+  for(let tries=0;tries<80;tries++){
+   const x=t.cx+round._range(-13,13),z=t.cz+round._range(-22,22);
+   if(round._blocked(x,z,.24)||occupied.some(o=>Math.hypot(o.x-x,o.z-z)<.9))continue;
+   Object.assign(a,{x,z});break;
+  }
+  Object.assign(a,{seated:false,seatId:null,visible:true,mood:'walking'});occupied.push(a);roam(round,a);
+ }
+}
+export function walkFieldBeforeClass(round,a,dt){
+ if(a.isPlayer||a.networkHuman||round._restrained(a))return;
+ if(!a._outdoorGoal)roam(round,a);
+ if(a._outdoorGoal&&round._follow(a,a._outdoorGoal.route,NORMAL_WALK_SPEEDS.student,dt,.2))a._outdoorGoal=null;
+ a.mood='walking';
 }
 function stop(a){a.holding=false;a._drawerOpen=false;a._computerActive=false;a.studyBookHeld=false;}
 function goal(round,a,point,extra){

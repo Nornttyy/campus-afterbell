@@ -5,12 +5,12 @@ import {cloneFurniture67,placeFurniture67} from './furniture-assets67.js?v=campu
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSnapshot} from './school-door-motion65.js?v=campus-92';
 import * as T from './vendor/three.module.js';
-import {createCampusWallProps} from './campus-wall-props54.js?v=campus-117&rev=154';
-import {buildDesktop55} from './computer-hardware55.js?v=campus-117&rev=154';
+import {createCampusWallProps} from './campus-wall-props54.js?v=campus-117&rev=156';
+import {buildDesktop55} from './computer-hardware55.js?v=campus-117&rev=156';
 import {surfaceHeight,drawBoardSurface,setWallSurfaceUV,addWallContact} from './surface-materials.js?v=campus-108';
-import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117&rev=154';
-import {CLASS_TURN,turnedClass,LIFT_ALCOVE,ALCOVE_ENTRY,ALCOVE_STORAGE,REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117&rev=154';
-import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=154';
+import {createClassroomDaylight} from './classroom-daylight88.js?v=campus-117&rev=156';
+import {CLASS_TURN,turnedClass,LIFT_ALCOVE,ALCOVE_ENTRY,ALCOVE_STORAGE,REAR_CLASS_CABINET,PARTITIONS,DOORS,LECTERN,ELEVATOR_ENABLED,CORRIDOR,campusFloor,CLASSROOM,CEILING_HEIGHT,TIERED_CEILING_HEIGHT,teachingRoomHeight,PODIUM,START_BELL_POSITION,ROLE_LOCKER,mapKind,floorTiles,floorHeight} from './classroom-layout.js?v=campus-117&rev=156';
+import {OPEN_CAMPUS_MAPS} from './campus-destinations.js?v=campus-117&rev=156';
 import {END_ORIGIN,endPoint,officeOffset,officePlan as OFFICE,liftPlan as LIFT,officeDeskPlans as OFFICE_DESKS,officeChairPlans as OFFICE_CHAIRS,officeBoardPlan as OFFICE_BOARD,officeShelfCenters,officeBinPlan} from './campus-ends.js?v=campus-101&rev=127';
 const [OFFICE_DESK]=OFFICE_DESKS,[OFFICE_CHAIR]=OFFICE_CHAIRS;
 // Editable architecture based on the observed classroom/corridor, not a flat photo.

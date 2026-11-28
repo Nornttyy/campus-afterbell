@@ -1,15 +1,15 @@
-import {mountCooler} from './field-fixtures116.js?v=campus-117&rev=154';
-import {mountSchoolRadio} from './radio-model93.js?v=campus-117&rev=154';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=154';
+import {mountCooler} from './field-fixtures116.js?v=campus-117&rev=156';
+import {mountSchoolRadio} from './radio-model93.js?v=campus-117&rev=156';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=156';
 import {createToiletRoom} from './toilet-room70.js?v=campus-99';
 import {createDormRoom} from './dorm-room70.js?v=campus-95&rev=127';
-import {createPlaygroundRoom} from './playground-room70.js?v=campus-117&rev=154';
-import {createHotpotRoom} from './hotpot-room70.js?v=campus-117&rev=154';
+import {createPlaygroundRoom} from './playground-room70.js?v=campus-117&rev=156';
+import {createHotpotRoom} from './hotpot-room70.js?v=campus-117&rev=156';
 import {placeFurniture67,hasComputer67,MONITOR67} from './furniture-assets67.js?v=campus-99';
 import * as T from './vendor/three.module.js';
-import {advanceDeskDrawer} from './drawer-hand-target58.js?v=campus-117&rev=154';
-import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-117&rev=154';
-import {SEATS,MAX_CAMPUS_SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-117&rev=154';
+import {advanceDeskDrawer} from './drawer-hand-target58.js?v=campus-117&rev=156';
+import {buildLaptop55,buildComputerDrawer55} from './computer-hardware55.js?v=campus-117&rev=156';
+import {SEATS,MAX_CAMPUS_SEATS,TEACHER_EYE_HEIGHT,BOARD,LECTERN,LAB_DIVIDER,mapKind,floorHeight} from './classroom-layout.js?v=campus-117&rev=156';
 
 export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,batchHardware,boardInk,finishes={},menus=null,drawerRecords=null,screenContent=null,officeScreens=new Map()}){
  const upper=createUpperFloorView({scene,box,mat,texture,bakeStatic,drawerRecords,finishes});
@@ -99,7 +99,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
  }
  return{group,upper,get hotpot(){return prepareFloor('hotpot');},get toilet(){return prepareFloor('toilet');},get dorm(){return prepareFloor('dorm');},get playground(){return prepareFloor('playground');},
   get vendingTargets(){return prepareFloor('playground').vendingTargets;},
-  coolerTarget:i=>cooler?.slots[i],radioTarget:map=>radios[map],specialRoots:[upper.root,...Object.values(rooms).map(s=>s.root)],
+  coolerLid:()=>cooler?.lid,coolerTarget:i=>cooler?.slots[i],radioTarget:map=>radios[map],specialRoots:[upper.root,...Object.values(rooms).map(s=>s.root)],
   cabinetFor(id){return mapKind(currentMap)==='toilet'?rooms.toilet.view.cabinets.get(id):mapKind(currentMap)==='dorm'?rooms.dorm.view.cabinets.get(id):null;},
   seatTarget(id){return mapKind(currentMap)==='toilet'?rooms.toilet.view.seats.get(id)?.target:mapKind(currentMap)==='dorm'?rooms.dorm.view.beds.get(id)?.target:null;},screens,stations,drawers,hardwareRoots,get teacherScreen(){return teacherScreen;},light,setSeats,updateDrawers,
   setMap(map){
@@ -119,7 +119,7 @@ export function createRoomVariants({scene,box,rounded,mat,texture,bakeStatic,bat
    if(upper.root.visible)upper.update(state,dt);
    const active=rooms[currentMap]?.view;
    if(active){
-    if(currentMap==='playground'){active.update(state?.sceneElapsed??state?.elapsed??0,state?.vendingStock,state?.posts);cooler?.update(state?.coolerSlots);}
+    if(currentMap==='playground'){active.update(state?.sceneElapsed??state?.elapsed??0,state?.vendingStock,state?.posts);cooler?.update(state?.coolerSlots,state?.coolerOpen,dt);}
     else if(currentMap==='hotpot')active.update(state?.elapsed||0,state?.hotpots||[]);
     else active.update(state||{},dt);
    }

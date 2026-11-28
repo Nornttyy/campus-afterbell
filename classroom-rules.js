@@ -1,33 +1,33 @@
-import {advanceLoose,dropLoose,takeLoose,takeCooler,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=154';
-import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=154';
-import {RADIO_SONGS,radioSong,radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=154';
+import {advanceLoose,dropLoose,takeLoose,takeCooler,setCoolerOpen,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=156';
+import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=156';
+import {RADIO_SONGS,radioSong,radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=156';
 import {expandTuning} from './round-tuning93.js?v=campus-117';
 import {SOCIAL_ACTIONS,canEmote,actorEmote} from './social-actions93.js?v=campus-93';
 import {RESULT_SECONDS,nextStudentAppearance} from './class-dismissal92.js?v=campus-102';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=154';
-import {takeMeal,canReturnMeal,examMode,examUse,examSnapshot,advanceExams} from './upper-floor-rules85.js?v=campus-117&rev=128';
-import {advancePlaygroundPupil,inspectionPoints} from './new-map-ai83.js?v=campus-117&rev=154';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=156';
+import {takeMeal,canReturnMeal,examMode,examUse,copyExam,examSnapshot,advanceExams} from './upper-floor-rules85.js?v=campus-117&rev=156';
+import {advancePlaygroundPupil,inspectionPoints,startFieldWalkers,walkFieldBeforeClass} from './new-map-ai83.js?v=campus-117&rev=156';
 import {DORM_ROOMS,DORM_REST_VIEW,dormDoorPose,dormDoorSolids,dormRoomPoint} from './dorm-layout70.js?v=campus-95&rev=127';
-import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-117&rev=154';
+import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-117&rev=156';
 import {TOILET_STALLS,TOILET_DOOR,toiletDoorPose,toiletDoorSolids,toiletDoorReach} from './toilet-layout70.js?v=campus-94';
-import {playgroundForPlayers,PLAYGROUND_LAYOUT,vendingPoint,canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=154';
+import {playgroundForPlayers,PLAYGROUND_LAYOUT,vendingPoint,canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=156';
 import {floatingBubblePosition,bubbleTouchesHead} from './bubble-flight69.js?v=campus-83';
-import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-117&rev=154';
+import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-117&rev=156';
 import {ordinaryStudyState} from './npc-study58.js?v=campus-117&rev=121';
-import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-117&rev=154';
-import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-117&rev=154';
+import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-117&rev=156';
+import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-117&rev=156';
 import {INTERACTION_SECONDS,ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-117';
 import {validRoundSettings,chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-117';
 import {advanceBoard} from './board-lesson93.js?v=campus-93';
 import {createArcade,advanceArcade,arcadeInput,arcadeSnapshot} from './classroom-arcade93.js?v=campus-93';
 import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,withinComputerReach,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-96';
-import {smokeEnvelope} from './smoke-physics.js?v=campus-117&rev=154';
+import {smokeEnvelope} from './smoke-physics.js?v=campus-117&rev=156';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {createThrowableProjectile,stepThrowableProjectile,effectEye,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-117&rev=154';
+import {createThrowableProjectile,stepThrowableProjectile,effectEye,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-117&rev=156';
 import {BUS} from './bus-layout86.js?v=campus-94&rev=154';
 import {coachDistanceAt,COACH_BRAKE_SECONDS} from './excursion-journey91.js?v=campus-93';
-import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, lecternForMap, turnedClass, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorEyePosition, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-117&rev=154';
+import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, lecternForMap, turnedClass, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorEyePosition, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-117&rev=156';
 
 /** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:NORMAL_WALK_SPEEDS.student, teacherWalkSpeed:NORMAL_WALK_SPEEDS.teacher, crouchSpeed:CRAWL_TUNING.speed, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
@@ -39,7 +39,7 @@ export const RESCUE_DURATION=INTERACTION_SECONDS;
 // belong to another pupil, so this action awards no points without more evidence.
 export const BUBBLE_TUNING=Object.freeze({duration:6,cycle:ITEM50_TUNING.gumCycleSeconds,cooldown:10,pointsPerSecond:0,maxPoints:10,lifetime:6});
 export const FOOD_ACTIONS=Object.freeze(['snack','noodles','chips','drink','burger','banana','lunch','hotpotBite']);
-import {DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=154';
+import {DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=156';
 export const EATING_PITCH=Object.freeze({enter:DRAWER_LOOK_PITCH,leave:DRAWER_LOOK_PITCH-.035});
 export const START_BELL=START_BELL_POSITION;
 export const CLASS_START_TIMING=Object.freeze({seating:30,classDuration:600,firstArrival:.15,arrivalSpacing:.36});
@@ -152,7 +152,7 @@ export function chalkHit(a,b,students,books,map,layout=null,throwerId=null){
   return nearest;
 }
 
-import {attacks,castTeacherAttack,advanceWave} from './teacher-attacks129.js?v=campus-117&rev=154';
+import {attacks,castTeacherAttack,advanceWave} from './teacher-attacks129.js?v=campus-117&rev=156';
 export class ClassroomRound{
   constructor({seed=73,duration=600,target=DEVELOPMENT_TUNING.target,map='classroom',chalkStamina=false,tuning}={}){
     this.tuning=expandTuning(tuning);this.customTuning=tuning?{...tuning}:null;
@@ -162,9 +162,9 @@ export class ClassroomRound{
   }
   reset(seed){
     if(seed!==undefined)this.seed=seedNumber(seed);this._rng=this.seed;this._drawerRng=(this.seed^0xA341316C)>>>0;this.seats=createSeatLayout(this.seed,null,this.map);this.layout=createLayoutContext(this.seats);this.board=boardForMap(this.map);this.posts=detentionForMap(this.map);this.toiletDoors=Object.fromEntries(mapKind(this.map)==='toilet'?this.seats.map(s=>[s.id,0]):[]);this._toiletDoorTargets={...this.toiletDoors};this.toiletCabinets={};this.dormCabinets={};this.dormDoors=Object.fromEntries(mapKind(this.map)==='dorm'?DORM_ROOMS.map(r=>[r.id,1]):[]);this._dormDoorTargets={...this.dormDoors};this._dormVisits={};this._inspectionVisits={};this._dormNavigation=null;this.toiletClogs={};this.toiletFlushes={};this.officeSlotsByDesk=new Map(OFFICE_DESKS.map(d=>[d.id,[{id:0,action:'lunch',readyAt:0,progress:0}]]));this.officeSlots=this.officeSlotsByDesk.get(OFFICE_DESK.id);
-    this.status='ready';this.paused=false;this.elapsed=0;this.duration=this._defaultDuration;this.stage='class';this._stageElapsed=0;this._sessionElapsed=0;this.busDepartureAt=null;this.busBrakeAt=null;this._dismissal=null;this._finalCaught=null;this._finishSceneTime=null;this._preparationLeft=0;this._seatingRoutes=new Map();this._seatingStarts=new Map();this._teacherEntryRoute=null;this._teacherEntryLength=0;this.score=0;this.strikes=0;this.wrongGrabs=0;this.resultReason=null;
+    this.status='ready';this.paused=false;this.elapsed=0;this.duration=this._defaultDuration;this.stage='class';this._stageElapsed=0;this._sessionElapsed=0;this.fieldMarchAt=0;this.busDepartureAt=null;this.busBrakeAt=null;this._dismissal=null;this._finalCaught=null;this._finishSceneTime=null;this._preparationLeft=0;this._seatingRoutes=new Map();this._seatingStarts=new Map();this._teacherEntryRoute=null;this._teacherEntryLength=0;this.score=0;this.strikes=0;this.wrongGrabs=0;this.resultReason=null;
     this.skillReadyAt=0;this.attackLockedUntil=0;this.radio=null;this.radioAtFinish=null;this._radioActivation=0;this._radioNextAt=0;this._jumpers=new Map();
-    this.groundItems=new Map();this.fixtureUses=new Map();this.nextGroundId=1;this.coolerSlots=[{action:"drink"},{action:"chips"},{action:"burger"}];this.vendingStock={};this.mealsTaken={};this.hotpots=this.map==='hotpot'?makeCookingRound(this.seats):[];
+    this.groundItems=new Map();this.fixtureUses=new Map();this.nextGroundId=1;this.coolerOpen=false;this.coolerSlots=[{action:"drink"},{action:"chips"},{action:"burger"}];this.vendingStock={};this.mealsTaken={};this.hotpots=this.map==='hotpot'?makeCookingRound(this.seats):[];
     this.selected='snack';this.holding=false;this.completed=emptyActionCounts();this._doorUse=false;this._doorProgress=0;this._doorTarget=false;
     this.smokes=[];this.projectiles=[];this.chalks=[];this.bubbles=[];this.peels=[];this.burps=[];this._novelId=0;this._bubbleId=0;this._pendingAllCaught=false;this._chalkId=0;this._nextCastAt=0;this.aiLastChalkAt=null;this._events=[];this._accumulator=0;this._movement={x:0,z:0};this._lastObservation=-Infinity;this._smokeId=0;
     const fixedRoster=['classroom','night','hotpot','exam','dorm','toilet'].includes(mapKind(this.map));
@@ -313,6 +313,7 @@ export class ClassroomRound{
     if(pen)this._updateStudentMood(this.player);
     return true;
   }
+  setCoolerOpen(open){return setCoolerOpen(this,open);}
   takeCoolerItem(id){return takeCooler(this,id);}
   collectVendingFood(id){
     const item=[...this.groundItems.values()].find(i=>i.origin===id&&Math.hypot(i.x-this.player.x,i.z-this.player.z)<1.8);
@@ -348,7 +349,7 @@ export class ClassroomRound{
     this._doorProgress=Math.min(1,this._doorProgress+dt/INTERACTION_SECONDS);
     if(this._doorProgress+EPS>=1){this.setSchoolDoor(id,this._doorTarget);this.setDoorUse(false);}
   }
-  start(options={}){if(this.status==='ready'){this.status='playing';if(options?.gathering)this._enterGathering();else{if(this.map==='bus')this._departBus();this._observe('round-start',null,'课堂开始，捣乱值由实际行动积累。');}}return this.snapshot();}
+  start(options={}){if(this.status==='ready'){this.status='playing';if(options?.gathering)this._enterGathering();else{if(this.map==='playground')startFieldWalkers(this);if(this.map==='bus')this._departBus();this._observe('round-start',null,'课堂开始，捣乱值由实际行动积累。');}}return this.snapshot();}
   configureRound(settings){if(!validRoundSettings(settings)||this.stage!=='gathering'||this.status!=='playing'||this.elevator?.phase==='travel')return false;this._defaultDuration=this.duration=settings.duration;this.target=settings.target;this.chalkStamina=settings.chalkStamina===true;if(settings.tuning!==undefined){this.tuning=expandTuning(settings.tuning);this.customTuning={...settings.tuning};}return true;}
   returnToGathering(){if(this.status==='playing')return this.snapshot();this.reset();return this.start({gathering:true});}
   _inputAllowed(){return this.status==='playing'&&!this.paused;}
@@ -393,7 +394,8 @@ export class ClassroomRound{
     if(mapKind(this.map)==='dorm')for(const r of DORM_ROOMS)this._dormDoorTargets[r.id]=true;
     if(mapKind(this.map)==='toilet')for(const id of Object.keys(this._toiletDoorTargets))this._toiletDoorTargets[id]=true;
     const entryLayout=createLayoutContext(this.seats,{posts:this.posts,officeLocked:true,toiletDoors:mapKind(this.map)==='toilet'?Object.fromEntries(this.seats.map(s=>[s.id,1])):undefined});
-    const scheduled=arrivals.map(actor=>{
+    if(this.map==='playground'){this.fieldMarchAt=this._sessionElapsed;startFieldWalkers(this);}
+    const scheduled=(this.map==='playground'?[]:arrivals).map(actor=>{
       actor._targetSeatId=actor.homeSeatId??actor.id;
       const route=walkRoute(actor,this._seatApproach(this.seats[actor._targetSeatId]),.2,entryLayout);
       return {actor,route,length:route.reduce((n,p,i)=>n+distance(i?route[i-1]:actor,p),0)};
@@ -452,7 +454,8 @@ export class ClassroomRound{
     if(this.player.id===-1)Object.assign(this.teacher,{...(this.map==='bus'?{busDeck:this.player.busDeck||0}:{}),x:this.player.x,z:this.player.z,yaw:this.player.yaw});
     this._advanceBreakChalk(dt);
     if(this.stage!=='seating')return;
-    this._advanceArrivals(dt);
+    if(this.map==='playground')for(const a of this.students)walkFieldBeforeClass(this,a,dt);
+    else this._advanceArrivals(dt);
     this._preparationLeft=Math.max(0,this._preparationLeft-dt);if(this._preparationLeft<=EPS)this._beginClass();
   }
   _advanceArrivals(dt){
@@ -571,6 +574,7 @@ export class ClassroomRound{
   }
   takeCookedPiece(id,pieceId){return takeCookedPiece(this,id,pieceId);}
   takeMeal(id){return takeMeal(this,id);}
+  setExamCopy(id){return copyExam(this,id);}
   setExamMode(mode,slot){return examMode(this,mode,slot);}
   setExamUse(question){return examUse(this,question);}
   _canReturnItem(actor=this.player){
@@ -813,8 +817,8 @@ export class ClassroomRound{
     for(const key of Object.keys(this.completed))if(!Object.hasOwn(CLASSROOM_ACTIONS,key))delete this.completed[key];
     const p=this.player,t=this.teacher,m=this._memory.get(p.id),selectedSlot=p._slots[p._selectedSlot];
     const actionProgress=p._computerActive?p._computerProgress:selectedSlot?.heldBy!==undefined&&selectedSlot.heldBy!==p.id?0:selectedSlot?.progress||0;
-    const capture=s=>({...(s.character?{character:s.character}:{}),...(s._emote?{emote:actorEmote(s,this.stage)}:{}),...(s.jumpSpeed!=null?{jumpHeight:clean(s.jumpHeight),jumpSpeed:clean(s.jumpSpeed)}:{}),...(this.map==='bus'?{busDeck:s.busDeck||0}:{}),...((this.map==='exam'&&s._examMode==='card')?{readingAnswer:true}:{}),heldDish:s._drawnSlot!=null?s._slots[s._drawnSlot]?.dish:null,sprinting:Boolean(s.id===-1&&s.sprinting&&!s.seated&&!this._restrained(s)),mapActivity:activitySnapshot(s),onBed:this._onBed(s),lying:this._onBed(s),sleeping:false,bedId:this._onBed(s)?s.bedId??s.seatId:null,supportHeight:actorFloorHeight(s,this.map,this.teacher),eyeHeight:actorEyeHeight(s,this.map),...this._visionSnapshot(s.id===-1?t:s),penTaken:Boolean(s._penTaken||s._examMode==='paper'),penSeatId:s._penSeatId??null,penWriting:this._penWriting(s)||s._examMode==='paper'&&s._examUse!=null,penTwirling:this._penTwirling(s),eating:Boolean(s._eating&&s.holding),itemThrowAge:valid(s._lastItemThrowAt)?clean(Math.max(0,this.elapsed-s._lastItemThrowAt)):999,captivity:s.captivity||'free',postId:s.postId??null,stunLeft:clean(Math.max(0,(s._chalkUntil||0)-this.elapsed)),struggleAge:this.elapsed-(s._struggleAt??-100),bubble:this._bubbleSnapshot(s)});
-    return {role:'student',fixtureUse:this.fixtureUses.has(p)?{id:this.fixtureUses.get(p).id,progress:this.fixtureUses.get(p).elapsed/2}:null,groundItems:Array.from(this.groundItems.values(),i=>({id:i.id,action:i.action,dish:i.dish,x:i.x,y:i.y,z:i.z,yaw:i.yaw,spinX:i.spinX,spinZ:i.spinZ,settled:i.settled,...(i.penSeatId!=null?{penSeatId:i.penSeatId}:{})})),...(this.map==='playground'?{coolerSlots:this.coolerSlots.map(v=>v.action)}:{}),...(this.radio?{radio:{...this.radio}}:{}),...(this.radioAtFinish?{radioAtFinish:{...this.radioAtFinish}}:{}),continued:!!this._dismissal?.acknowledged,...(this._dismissal?{actorsFrozenAt:this._finishSceneTime}:{}),...(this.map==='bus'?{busDeparted:!!this.layout.busDeparted,busDepartureAt:this.busDepartureAt,busBrakeAt:this.busBrakeAt,busDistance:clean(coachDistanceAt(this._sessionElapsed,this.busDepartureAt,this.busBrakeAt)),busRouteSeed:this.seed}:{}),...(this.map==='hotpot'?{hotpots:this.hotpots.map(p=>({id:p.id,pieces:p.pieces.map(v=>({...v}))}))}:{}),...(this.map==='cafeteria'?{mealsTaken:{...this.mealsTaken}}:{}),...(this.map==='exam'&&p.id>=0?{exam:examSnapshot(p,this.elapsed)}:{}),...(mapKind(this.map)==='playground'?{vendingStock:{...this.vendingStock}}:{}),toiletClogs:{...this.toiletClogs},...(this.map==='toilet'?{toiletFlushes:{...this.toiletFlushes}}:{}),toiletDoors:{...this.toiletDoors},toiletCabinets:{...this.toiletCabinets},dormCabinets:{...this.dormCabinets},dormDoors:{...this.dormDoors},seats:this.seats.map(s=>({...s})),layoutPattern:this.seats[0]?.pattern,officeDrawers:OFFICE_DESKS.map(d=>({id:d.id,open:[...this.students,this.player].some(a=>a._officeDeskId===d.id&&a._drawerOpen&&a.seated)})),officeDeskOpen:this.students.some(s=>s._usingOfficeStock&&s._drawerOpen)||Boolean(this.player._usingOfficeStock&&this.player._drawerOpen),officeLocked:this.layout.officeLocked,officeDoorClosed:this.layout.officeDoorClosed,frontDoorClosed:this.layout.frontDoorClosed,rearDoorClosed:this.layout.rearDoorClosed,doorMotion:layoutDoorSnapshot(this.layout),map:this.map,status:this.status,paused:this.paused,seed:this.seed,stage:this.stage,stageElapsed:clean(this._stageElapsed),sceneElapsed:clean(this._sessionElapsed),stageTimeLeft:clean(this._preparationLeft),startBell:{...START_BELL},startBellAvailable:this.canStartBell(),elapsed:clean(this.elapsed),timeLeft:Number.isFinite(this.duration)?clean(Math.max(0,this.duration-this.elapsed)):0,timed:Number.isFinite(this.duration),score:this.score,target:this.target,strikes:this.strikes,resultReason:this.resultReason,
+    const capture=s=>({...(this.map==='exam'?{examWritten:s._examAnswers||0}:{}),...(s.character?{character:s.character}:{}),...(s._emote?{emote:actorEmote(s,this.stage)}:{}),...(s.jumpSpeed!=null?{jumpHeight:clean(s.jumpHeight),jumpSpeed:clean(s.jumpSpeed)}:{}),...(this.map==='bus'?{busDeck:s.busDeck||0}:{}),...((this.map==='exam'&&s._examMode==='card')?{readingAnswer:true}:{}),heldDish:s._drawnSlot!=null?s._slots[s._drawnSlot]?.dish:null,sprinting:Boolean(s.id===-1&&s.sprinting&&!s.seated&&!this._restrained(s)),mapActivity:activitySnapshot(s),onBed:this._onBed(s),lying:this._onBed(s),sleeping:false,bedId:this._onBed(s)?s.bedId??s.seatId:null,supportHeight:actorFloorHeight(s,this.map,this.teacher),eyeHeight:actorEyeHeight(s,this.map),...this._visionSnapshot(s.id===-1?t:s),penTaken:Boolean(s._penTaken||s._examMode==='paper'),penSeatId:s._penSeatId??null,penWriting:this._penWriting(s)||s._examMode==='paper'&&s._examUse!=null,penTwirling:this._penTwirling(s),eating:Boolean(s._eating&&s.holding),itemThrowAge:valid(s._lastItemThrowAt)?clean(Math.max(0,this.elapsed-s._lastItemThrowAt)):999,captivity:s.captivity||'free',postId:s.postId??null,stunLeft:clean(Math.max(0,(s._chalkUntil||0)-this.elapsed)),struggleAge:this.elapsed-(s._struggleAt??-100),bubble:this._bubbleSnapshot(s)});
+    return {role:'student',fixtureUse:this.fixtureUses.has(p)?{id:this.fixtureUses.get(p).id,progress:this.fixtureUses.get(p).elapsed/2}:null,groundItems:Array.from(this.groundItems.values(),i=>({id:i.id,action:i.action,dish:i.dish,x:i.x,y:i.y,z:i.z,yaw:i.yaw,spinX:i.spinX,spinZ:i.spinZ,settled:i.settled,...(i.penSeatId!=null?{penSeatId:i.penSeatId}:{})})),...(this.map==='playground'?{fieldMarchAt:this.fieldMarchAt,coolerOpen:this.coolerOpen,coolerSlots:this.coolerSlots.map(v=>v.action)}:{}),...(this.radio?{radio:{...this.radio}}:{}),...(this.radioAtFinish?{radioAtFinish:{...this.radioAtFinish}}:{}),continued:!!this._dismissal?.acknowledged,...(this._dismissal?{actorsFrozenAt:this._finishSceneTime}:{}),...(this.map==='bus'?{busDeparted:!!this.layout.busDeparted,busDepartureAt:this.busDepartureAt,busBrakeAt:this.busBrakeAt,busDistance:clean(coachDistanceAt(this._sessionElapsed,this.busDepartureAt,this.busBrakeAt)),busRouteSeed:this.seed}:{}),...(this.map==='hotpot'?{hotpots:this.hotpots.map(p=>({id:p.id,pieces:p.pieces.map(v=>({...v}))}))}:{}),...(this.map==='cafeteria'?{mealsTaken:{...this.mealsTaken}}:{}),...(this.map==='exam'&&p.id>=0?{exam:examSnapshot(p,this.elapsed)}:{}),...(mapKind(this.map)==='playground'?{vendingStock:{...this.vendingStock}}:{}),toiletClogs:{...this.toiletClogs},...(this.map==='toilet'?{toiletFlushes:{...this.toiletFlushes}}:{}),toiletDoors:{...this.toiletDoors},toiletCabinets:{...this.toiletCabinets},dormCabinets:{...this.dormCabinets},dormDoors:{...this.dormDoors},seats:this.seats.map(s=>({...s})),layoutPattern:this.seats[0]?.pattern,officeDrawers:OFFICE_DESKS.map(d=>({id:d.id,open:[...this.students,this.player].some(a=>a._officeDeskId===d.id&&a._drawerOpen&&a.seated)})),officeDeskOpen:this.students.some(s=>s._usingOfficeStock&&s._drawerOpen)||Boolean(this.player._usingOfficeStock&&this.player._drawerOpen),officeLocked:this.layout.officeLocked,officeDoorClosed:this.layout.officeDoorClosed,frontDoorClosed:this.layout.frontDoorClosed,rearDoorClosed:this.layout.rearDoorClosed,doorMotion:layoutDoorSnapshot(this.layout),map:this.map,status:this.status,paused:this.paused,seed:this.seed,stage:this.stage,stageElapsed:clean(this._stageElapsed),sceneElapsed:clean(this._sessionElapsed),stageTimeLeft:clean(this._preparationLeft),startBell:{...START_BELL},startBellAvailable:this.canStartBell(),elapsed:clean(this.elapsed),timeLeft:Number.isFinite(this.duration)?clean(Math.max(0,this.duration-this.elapsed)):0,timed:Number.isFinite(this.duration),score:this.score,target:this.target,strikes:this.strikes,resultReason:this.resultReason,
       interaction:{kind:this._doorUse?'rear-door':null,doorId:this._doorId||'rear',progress:this._doorProgress||0},leaderboard:this.students.filter(s=>this._team.has(s.id)).map(s=>({id:s.id,name:s.name,points:s._earnedPoints||0,caught:this._finalCaught?this._finalCaught.has(s.id):Boolean(s.caught),isSelf:s===p})).sort((a,b)=>b.points-a.points||a.id-b.id),suspicion:clean(m?.evidence||0),holding:this.holding,selected:this.selected,actionProgress:clean(actionProgress),completed:{...this.completed},drawer:this._drawerSnapshot(p),caughtCount:this._finalCaught?.size??this.students.filter(s=>this._team.has(s.id)&&s.caught).length,teamSize:this._team.size,settings:{duration:this._defaultDuration,target:this.target,chalkStamina:this.chalkStamina,...(this.customTuning?{tuning:this.customTuning}:{})},computerGamingCount:this.students.filter(s=>s._computerActive&&COMPUTER_GAMES.includes(s._computerApp)&&!this._restrained(s)&&withinComputerReach(s,this.seats[s._computerSeatId??s.seatId])).length,
       posts:this.posts.map(post=>({...post,studentId:this.students.find(s=>s.captivity==='bound'&&s.postId===post.id)?.id??null})),rescue:{id:this._rescueId,progress:this._rescueProgress},rescueAim:this.rescueTarget()?.id??null,
       books:this.books.map(b=>({...b,amount:clean(b.amount)})),
@@ -866,7 +870,7 @@ export class ClassroomRound{
     return volumes;
   }
   _mouthBubbleGeometry(actor){
-    const charge=clamp((actor._bubbleElapsed||0)/(actor.captivity==='bound'?BUBBLE_TUNING.duration:ITEM50_TUNING.gumSeconds),0,1),desired=charge>0?.035+.88*charge*charge*(3-2*charge):0;
+    const charge=clamp((actor._bubbleElapsed||0)/(actor.captivity==='bound'?BUBBLE_TUNING.duration:ITEM50_TUNING.gumSeconds),0,1),size=actor.captivity==='bound'?charge:Math.min(1,Math.floor(((actor._bubbleElapsed||0)+EPS)/BUBBLE_TUNING.cycle)/5),desired=charge>0?.035+.88*size*size*(3-2*size):0;
     const mouth={x:actor.x,y:this._bubbleHeadHeight(actor),z:actor.z};
     const center=radius=>({x:mouth.x+Math.sin(actor.yaw)*(.28+radius*1.08),y:mouth.y,z:mouth.z+Math.cos(actor.yaw)*(.28+radius*1.08)});
     if(!desired)return{charge,radius:0,center:center(0)};
@@ -1066,7 +1070,12 @@ export class ClassroomRound{
   _throwSmoke(actor,charge){this._throwProjectile(actor,'smoke',charge);}
   _creditScore(actor,points){
     const awarded=Math.max(0,Math.min(Number(points)||0,this.target-this.score));
-    this.score+=awarded;actor._earnedPoints=(actor._earnedPoints||0)+awarded;return awarded;
+    this.score=Math.round((this.score+awarded)*1e6)/1e6;actor._earnedPoints=Math.round(((actor._earnedPoints||0)+awarded)*1e6)/1e6;return awarded;
+  }
+  _foodAward(kind){
+    if(this.tuning.foodPoints!==1)return this.tuning.foodPoints;
+    const base=['drink','noodles'].includes(kind)?1.5:1;
+    return base+Math.floor(this._random()*51)/100;
   }
   _completeAction(actor,slot){
     const kind=slot.action,action=CLASSROOM_ACTIONS[kind],charge=slot.progress;
@@ -1083,7 +1092,7 @@ export class ClassroomRound{
       actor._selectedSlot=actor._drawnSlot=0;actor._heldSource={leftover:true};
       actor._drawerOpen=false;actor.action='wrapper';if(actor===this.player)this.selected='wrapper';
     }else if(kind!=='banana')this._finishHeldItem(actor);
-    const value=kind==='gum'?actor._bubbleAwarded||0:kind==='lunch'?this.tuning.lunchPoints:FOOD_ACTIONS.includes(kind)?this.tuning.foodPoints:action.points;
+    const value=kind==='gum'?actor._bubbleAwarded||0:kind==='lunch'?this.tuning.lunchPoints:FOOD_ACTIONS.includes(kind)?this._foodAward(kind):action.points;
     if(kind==='gum')this._cancelBubble(actor,true);
     const points=Math.min(value,this.target-this.score);this._creditScore(actor,points);
     this._events.push({type:'complete',actor:actor.isPlayer||actor.networkHuman?'player':'ai',studentId:actor.id,speaker:actor.name,action:kind,slotId:slot.id,points,score:this.score});
@@ -1217,10 +1226,10 @@ export class ClassroomRound{
         s._eating=(s.pitch||0)>=(s._eating?EATING_PITCH.leave:EATING_PITCH.enter);
         if(!s._eating)continue;
         s._useElapsed=(s._useElapsed||0)+dt;
-        const drinking=s.action==='drink',nextSound=s._nextUseSound||(drinking?0:.04);
+        const drinking=s.action==='drink',nextSound=s._nextUseSound||.04;
         if(s._useElapsed+EPS>=nextSound){
           this._events.push({type:drinking?'use-gulp':'use-crunch',studentId:s.id,recipientId:s.id,x:s.x,z:s.z});
-          s._nextUseSound=drinking?s._useElapsed+.8:nextSound+.4;
+          s._nextUseSound=nextSound+.4;
         }
       }else s._eating=false;
       s._noise+=dt*action.noise;if(s._noise>=1){s._noise-=1;this._hear(s,1);}

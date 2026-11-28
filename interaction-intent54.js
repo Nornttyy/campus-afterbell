@@ -1,5 +1,5 @@
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=154';
+import {radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=156';
 // A key resolves to ONE explicit action. In particular, returning a pen must
 // never fall through to opening the drawer underneath the crosshair.
 const intent=(method,args,label,hold=false)=>({method,args,label,hold});
@@ -12,6 +12,10 @@ export function interactionIntent(s,target,key){
   if(power===true&&key==='E')return intent('setFixtureUse',['radio'],'换歌',true);
   if(power===false&&(key==='E'||key==='Q'&&s.teacher?.carriedId==null))return intent('changeRadio',[false],'关闭播音器');
   if(key==='E')return null;
+ }
+ if(target?.kind==='cooler-lid'&&!teacher&&!carrying){
+  if(key==='Q'&&s.coolerOpen)return intent('setCoolerOpen',[false],'合上盖子');
+  if(key==='E'&&!s.coolerOpen)return intent('setCoolerOpen',[true],'掀开盖子');
  }
  if(key==='Q'){
   if(s.exam?.mode)return intent('setExamMode',['close'],s.exam.mode==='card'?'放回答案卡':'放下红笔');

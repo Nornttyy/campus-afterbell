@@ -1,10 +1,10 @@
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=154';
-import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-117&rev=154';
-import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-117&rev=154';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=156';
+import {createLayoutContext,updateLayoutDoors,updateSpecialFurnitureCollisions,moveInRoom} from './classroom-layout.js?v=campus-117&rev=156';
+import {normalWalkSpeed,movementScale} from './movement55.js?v=campus-117&rev=156';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=154';
+import {moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=156';
 import {applyNetworkDelta} from './network-state65.js?v=campus-83';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=154';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=156';
 // Server-authoritative room adapter. No client command can assign scores,
 // positions, inventory, another player's identity or the room's teacher.
 const NO_ROOM_SERVICE='这个地址没有多人房间服务，请先玩单人模式，或填写已部署的联机服务器地址。';
@@ -190,7 +190,7 @@ export class NetworkRound{
  async leave(){if(this._closed)return;this._closed=true;this._disconnected();clearInterval(this._timer);clearTimeout(this._retry);this._retry=null;this.voice.close();this._controller?.abort();try{await this._post('/api/leave',{});}catch{}}
  dispose(){return this.leave();}
 }
-for(const method of ['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','teacherSkill','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
+for(const method of ['changeRadio','setEmote','jump','setMovement','setLook','setCrouch','setSprint','hold','releaseUse','toggleDrawer','toggleBook','startMapActivity','releaseMapActivity','toggleToiletDoor','toggleDormDoor','setFixtureUse','takeGroundItem','dropItem','setCoolerOpen','takeCoolerItem','pressVendingButton','collectVendingFood','takeMeal','dropIntoToilet','takeCookedPiece','setExamCopy','setExamMode','setExamUse','takePlaygroundFood','setDrawerOpen','setBookRaised','setOfficeDrawerOpen','takeSlot','returnItem','interact','startComputer','stopComputer','computerApp','computerSelect','computerConfirm','computerBack','setComputerPlayback','configureRound','snakeDirection','takePen','togglePenMode','openOfficeDrawer','sitOfficeChair','burp','setRescue','selectSlot','selectAction','deploySurveillance','viewSurveillance','closeSurveillance','teacherSkill','throwChalk','grabStudent','bindStudent','dropStudent','releaseBoundStudent','setWriting','startBell','setDoorUse','interactDoor','setInteraction']){
  NetworkRound.prototype[method]=function(...args){return this.command(method,...args);};
 }
 
