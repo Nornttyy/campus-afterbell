@@ -1,7 +1,7 @@
-import {createGripLayer,createPropGripLayer,gripKey} from './item-grips.js?v=campus-117&rev=174';
+import {createGripLayer,createPropGripLayer,gripKey} from './item-grips.js?v=campus-117&rev=175';
 import {writingPageY} from './study-book58.js?v=campus-110';
 import {printedPacket,reverseHeldPanels} from './snack-pack111.js?v=campus-113&rev=171';
-import {foodWaste} from './food-waste.js?v=campus-117&rev=174';
+import {openFoodShell} from './food-waste.js?v=campus-117&rev=175';
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import {requireModelBudget} from './model-budget64.js';
 import {isHandAnimationPose} from './hand-animation-data59.js?v=campus-111';
@@ -485,6 +485,25 @@ export const THROWABLE_ITEM_KINDS=Object.freeze(['smoke','flash','ink','bananaPe
 export const FOOD_ITEM_KINDS=Object.freeze(['snack','chips','noodles','drink','burger','banana','gum','lunch','hotpotPlate','hotpotBite','foodWaste']);
 export const DESK_ITEM_KINDS=Object.freeze([...FOOD_ITEM_KINDS,'pen','phone',...THROWABLE_ITEM_KINDS]);
 
+const wasteTemplates=new Map();
+export function setWasteModel(holder,sourceKind){
+ const kind=['snack','chips','noodles','drink','burger','banana','lunch','hotpotBite'].includes(sourceKind)?sourceKind:'chips';
+ if(holder.userData.wasteKind===kind)return;
+ const imported=clonePropAsset(kind==='banana'?'bananaPeel':kind);
+ const key=imported?.userData.propAsset||kind;
+ if(!wasteTemplates.has(key)){
+  let shell;
+  if(kind==='banana')shell=imported||createDeskItem('bananaPeel');
+  else if(kind==='hotpotBite')shell=hotpotFood('plate').children[0].children[0].clone();
+  else shell=openFoodShell(imported?(kind==='snack'?printedPacket(kind,imported):imported):createDeskItem(kind),kind);
+  wasteTemplates.set(key,requireModelBudget(shell,'食物垃圾 '+kind));
+ }
+ holder.clear();holder.add(wasteTemplates.get(key).clone(true));holder.userData.wasteKind=kind;
+}
+function foodWaste(){
+ const holder=new THREE.Group();holder.name='opened-food-waste';setWasteModel(holder,'chips');return holder;
+}
+
 const deskItemFactories=Object.freeze({
  foodWaste,hotpotPlate:()=>hotpotFood('plate'),hotpotBite:()=>hotpotFood('cooked'),chips:()=>printedPacket('chips'),noodles:()=>printedPacket('noodles'),snack:snackProp,phone:phoneProp,smoke:smokeProp,flash:flashProp,ink:inkProp,
  drink:drinkProp,burger:burgerProp,banana:bananaProp,bananaPeel:()=>bananaProp(true),
@@ -585,6 +604,7 @@ export function createDeskHands({createHand,gripForItem}={}){
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
   function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,examPen=null,mealDish=null,bookAmount=0,answerCard=false,trayFood=null,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,coachSeat=null,animationPose=null}={}){
+    if(action==='foodWaste'&&carrying)setWasteModel(props.foodWaste,mealDish);
     for(const layer of propLayers)layer.restore();
     for(const layer of gripLayers)layer.restore();
     // User-authored item clips use the preview camera as their coordinate frame.

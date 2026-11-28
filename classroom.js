@@ -1,4 +1,4 @@
-import {createPropGripLayer} from './item-grips.js?v=campus-117&rev=174';
+import {createPropGripLayer} from './item-grips.js?v=campus-117&rev=175';
 import {teacherGripProps} from './grip-tools.js?v=campus-117&rev=171';
 import {VisibleGroup} from './visible-group158.js?v=campus-117&rev=158';
 import {createPointerView} from './pointer-view130.js?v=146&rev=174';
@@ -10,7 +10,7 @@ import {TEXTBOOK,bookAngle,bookSpineHeight,setDeskBookReach,BOOK_PAPER_FACE,BOOK
 import {setDish} from './hotpot-food94.js?v=campus-94';
 import {CampusModelLoader} from './model-delivery93.js?v=campus-111&rev=160';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
-import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=174';
+import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=175';
 import {broadcastBeat,broadcastLift,broadcastScale,reachesRadio} from './campus-radio93.js?v=campus-117&rev=165';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 
@@ -38,18 +38,18 @@ import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork,prepareEntryArtwork} from './campus-artwork.js?v=campus-93&rev=158';
 import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=174';
 import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117&rev=174';
-import {createRoomVariants} from './room-variants.js?v=campus-117&rev=174';
+import {createRoomVariants} from './room-variants.js?v=campus-117&rev=175';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
 import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96&rev=153';
 import * as THREE from './vendor/three.module.js';
 import {CAMPUS_SURFACE_SOURCES,loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-108';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88&rev=158';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=174';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=175';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
-import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=174';
-import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=174';
+import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=175';
+import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=175';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
 import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=165';

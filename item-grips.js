@@ -3,7 +3,7 @@ import {dishLabels} from './hotpot-food94.js?v=campus-94';
 
 const groceries={drink:'可乐',chips:'没事薯片',snack:'辣条',noodles:'小困熊干脆面',gum:'泡泡堂',burger:'汉堡',banana:'香蕉',lunch:'便当'};
 const retiredItems=new Set(['chickenBucket','layerCake','wrapper','garlic']);
-const gear={foodWaste:'食物残渣',phone:'手机',pen:'中性笔',book:'语文书',answerCard:'答案卡',flash:'闪光弹',smoke:'烟雾弹',ink:'墨水瓶',bananaPeel:'香蕉皮',plunger:'马桶吸'};
+const gear={foodWaste:'食物垃圾',phone:'手机',pen:'中性笔',book:'语文书',answerCard:'答案卡',flash:'闪光弹',smoke:'烟雾弹',ink:'墨水瓶',bananaPeel:'香蕉皮',plunger:'马桶吸'};
 const tools={chalk:'粉笔',eraser:'黑板擦',torch:'手电筒'};
 const dishes=Object.fromEntries(Object.entries(dishLabels).flatMap(([dish,name])=>[['hotpotPlate-'+dish,name+'盘'],['hotpotBite-'+dish,'涮好的'+name]]));
 export const GRIP_GROUPS={'零食和餐点':groceries,'学生用品':gear,'火锅食材':dishes,'老师用品':tools};

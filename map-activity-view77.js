@@ -4,7 +4,7 @@ import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94&rev=173';
 import {toiletBowl} from './map-activities77.js?v=campus-117&rev=173';
 import {activityHandTargets} from './map-activity-pose77.js?v=campus-117&rev=173';
 import {handFrame} from './hand-motion.js?v=campus-117';
-import {foodWaste} from './food-waste.js?v=campus-117&rev=174';
+import {setWasteModel} from './game-actors.js?v=campus-117&rev=175';
 const handRigs=new WeakMap();
 function frameQuaternion(along,dorsal){const y=along.clone().normalize(),z=dorsal.clone().addScaledVector(y,-dorsal.dot(y)).normalize(),x=new T.Vector3().crossVectors(y,z);return new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x,y,z));}
 export function createMapActivityView(scene){
@@ -16,7 +16,7 @@ export function createMapActivityView(scene){
  const pickHandle=geo(new T.BoxGeometry(.18,.78,.18));
  const handle=geo(new T.CylinderGeometry(.018,.022,.70,12)),cup=geo(new T.LatheGeometry([[.02,.15],[.045,.11],[.07,.085],[.11,.05],[.14,.018],[.145,0],[.126,0],[.10,.036],[.055,.065],[.018,.10]].map(p=>new T.Vector2(...p)),20));
  const mesh=(g,m,parent,x=0,y=0,z=0)=>{const o=new T.Mesh(g,m);o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;parent.add(o);return o;};
- for(const s of TOILET_STALLS){const b=toiletBowl(s.id),g=new T.Group();g.name='toilet-plunger-'+s.id;root.add(g);mesh(cup,rubber,g);mesh(handle,wood,g,0,.49,0);mesh(pickHandle,pickMaterial,g,0,.49,0);const wrapper=new T.Group();wrapper.position.set(b.x,.31,b.z);wrapper.rotation.y=s.id*.9;root.add(wrapper);const scraps=foodWaste();scraps.rotation.x=-Math.PI/2;wrapper.add(scraps);mesh(phoneGeo,phoneCase,wrapper);wrapper.visible=false;wrappers.set(s.id,wrapper);plungers.set(s.id,g);}
+ for(const s of TOILET_STALLS){const b=toiletBowl(s.id),g=new T.Group();g.name='toilet-plunger-'+s.id;root.add(g);mesh(cup,rubber,g);mesh(handle,wood,g,0,.49,0);mesh(pickHandle,pickMaterial,g,0,.49,0);const wrapper=new T.Group();wrapper.position.set(b.x,.31,b.z);wrapper.rotation.y=s.id*.9;root.add(wrapper);const scraps=new T.Group();scraps.rotation.z=.28;wrapper.add(scraps);mesh(phoneGeo,phoneCase,wrapper);wrapper.visible=false;wrappers.set(s.id,wrapper);plungers.set(s.id,g);}
  for(const b of PLAYGROUND_LAYOUT.bars){const object=mesh(geo(new T.BoxGeometry(.13,.13,b.width-.16)),pickMaterial,root,b.x,b.height,b.z);object.name=b.id+'-grip-target';bars.set(b.id,object);}
  let state=null;
  return{
@@ -29,7 +29,7 @@ export function createMapActivityView(scene){
     wrapper.visible=g.visible&&Boolean(s.toiletClogs?.[id]||remaining>0);
     if(wrapper.visible){const progress=remaining>0?1-Math.min(1,remaining):1;
      wrapper.rotation.y=id*.9+progress*5.2;wrapper.position.y=.31+(1-progress)*.17-(s.toiletClogs?.[id]?0:.19*progress)-(actor?.mapActivity?.progress||0)*.035;
-     wrapper.children[0].visible=flush?.item!=='phone';wrapper.children[1].visible=flush?.item==='phone';
+     wrapper.children[0].visible=flush?.item!=='phone';if(wrapper.children[0].visible)setWasteModel(wrapper.children[0],flush?.dish);wrapper.children[1].visible=flush?.item==='phone';
     }
    }
    for(const o of bars.values())o.visible=s?.map==='playground';
