@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#203f38"><title>物品握姿 · 校园</title><link rel="icon" href="data:,"><link rel="stylesheet" href="./grip-editor.css?v=171"></head>
+<body><header><a class="back" href="./index.html">‹ 返回游戏</a><h1>物品握姿</h1><button class="apply" id="apply">应用到本机游戏</button></header>
+<main><section class="stage"><div class="stage-bar"><label for="item">物品</label><select id="item"></select><button id="reset-view">视角归位</button></div>
+<div class="viewport"><canvas id="view" aria-label="物品及握持手的三维预览"></canvas><div id="loading" role="status">正在载入手模…</div></div>
+<div class="caption"><span>拖动旋转 · 滚轮或双指缩放</span><label><input type="checkbox" id="markers" checked> 关节点</label></div></section>
+<aside><div class="row"><h2>调整握法</h2><select id="side" aria-label="调整哪只手"></select></div>
+<div class="tabs" id="mode"><button data-mode="joints" aria-pressed="true">手指</button><button data-mode="position">手掌位置</button><button data-mode="rotation">手掌朝向</button></div>
+<div id="digits"><div id="fingers" class="buttons" aria-label="手指"></div><div id="joints" class="buttons" aria-label="指节"></div></div>
+<p id="axis-help"></p><div id="axes"></div>
+<div class="buttons actions"><button id="undo" disabled>撤销</button><button id="redo" disabled>重做</button><button id="zero">当前调节归零</button></div>
+<div class="files"><button id="export">导出全部握姿</button><label class="file">导入握姿<input type="file" id="import" accept=".json,application/json"></label></div>
+<p id="notice" role="status" aria-live="polite">调整的是物品握姿，游戏会自动播放走路和使用动作。</p></aside></main>
+<script type="module" src="./grip-editor.js?v=campus-117&amp;rev=171"></script></body></html>

@@ -1,4 +1,4 @@
-import {advanceLoose,dropLoose,takeLoose,takeCooler,setCoolerOpen,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=167';
+import {advanceLoose,dropLoose,takeLoose,takeCooler,setCoolerOpen,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=171';
 import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=157';
 import {RADIO_SONGS,radioSong,radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=165';
 import {expandTuning} from './round-tuning93.js?v=campus-117';

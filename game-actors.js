@@ -1,5 +1,6 @@
+import {createGripLayer,gripKey} from './item-grips.js?v=campus-117&rev=171';
 import {writingPageY} from './study-book58.js?v=campus-110';
-import {printedPacket,reverseHeldPanels} from './snack-pack111.js?v=campus-113';
+import {printedPacket,reverseHeldPanels} from './snack-pack111.js?v=campus-113&rev=171';
 import {snackWrapper} from './snack-wrapper94.js?v=campus-94';
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import {requireModelBudget} from './model-budget64.js';
@@ -11,7 +12,7 @@ import * as THREE from './vendor/three.module.js';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import {clonePropAsset,propContact} from './prop-assets.js?v=campus-83';
 import {createFirstPersonHandMotion,sampleFoodGesture,fitFirstPersonSurface,firstPersonBookContacts} from './first-person-hand-motion.js?v=campus-117&rev=161';
-import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117&rev=170';
+import {createWholePalmGrip} from './whole-palm-grip.js?v=campus-117&rev=171';
 export {loadPropAssets} from './prop-assets.js?v=campus-83';
 
 // Independent gameplay actors. Teacher coordinates: ground y=0, front +Z.
@@ -529,7 +530,7 @@ export function createDeskItem(action){
   return requireModelBudget(action==='gum'||action==='snack'?printedPacket(action,clonePropAsset(action)||(action==='snack'?factory():null)):action==='pen'?factory():clonePropAsset(action)||factory(),`道具 ${action}`);
 }
 
-export function createDeskHands({createHand}={}){
+export function createDeskHands({createHand,gripForItem}={}){
   const group=new THREE.Group();group.name='first-person-school-hands';
   // Use the imported hand and short forearm as one continuous source mesh.
   const arms=[-1,1].map(side=>{
@@ -541,6 +542,8 @@ export function createDeskHands({createHand}={}){
     return {group:arm,hand,pose(position,{curl=.15,rx=0,ry=0,rz=0}={}){hand.group.position.copy(position);hand.group.rotation.set(rx,ry,rz);hand.setCurl(curl);}};
   });
   arms.forEach((arm,i)=>{arm.group.name=i?'right-desk-arm':'left-desk-arm';arm.hand.group.name=i?'right-desk-hand':'left-desk-hand';});
+  const gripLayers=arms.map((arm,i)=>createGripLayer(arm.hand,i?'right':'left',gripForItem));
+  function applyItemGrip(id,side,prop){gripLayers[side==='right'?1:0].apply(id,prop);}
   const articulation=arms.map((arm,i)=>createFirstPersonHandMotion(arm.hand,i?1:-1));
   const supports=arms.map(arm=>createHandSupport(arm.hand));
   const wholeGrips=arms.map((arm,i)=>createWholePalmGrip(arm.hand,i?1:-1));
@@ -610,10 +613,12 @@ export function createDeskHands({createHand}={}){
   let lastTime=null,focus=0,extension=0,alertValue=0,standing=0,active='snack',useTime=0,computerBlend=0,using=0,throwCharge=0,releaseCharge=0,wasReleasing=false,foodAge=0,foodAmount=0,foodWasUsing=false,foodPhase=0;
   let lastThrowGrip=null;
   const foodPose={reach:0,bob:0,chewing:0};
+  let pickedUpAt=0;
   let penWriteBlend=0,penAge=0,bookBlend=0,drawerBlend=0,lapBlend=0,lowCarry=0,previousHandPositions=null,previousFood=null;
   const rest=[v(-.18,-.525,-.28),v(.18,-.525,-.28)],drawer=[v(-.23,-.68,-.30),v(.18,-.68,-.30)];
   const ease=(x,a=0,b=1)=>THREE.MathUtils.smoothstep(x,a,b);
-  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,examPen=null,mealDish=null,bookAmount=0,trayFood=null,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,coachSeat=null,animationPose=null}={}){
+  function update(time,{action='snack',holding=false,eating:effectiveEating=null,carrying=holding,progress=0,alert=0,seated=true,crouched=false,caught=false,freeLook=false,viewPitch=.08,throwAge=Infinity,computer=false,typing=false,office=false,movement=0,walkPhase=0,crawlBlend=0,penWriting=false,examPen=null,mealDish=null,bookAmount=0,answerCard=false,trayFood=null,drawer:drawerContact=null,drawerOpen=false,drawerAmount=drawerOpen?1:0,eyeHeight=1.43,deskSurface=true,coachSeat=null,animationPose=null}={}){
+    for(const layer of gripLayers)layer.restore();
     // User-authored item clips use the preview camera as their coordinate frame.
     // The fitted finger and prop anchors are the same as in ordinary gameplay.
     if(animationPose&&animationPose.source!=='runtime'&&(animationPose?.clipId==='student-carry-food'||animationPose?.clipId==='student-eat-food')&&isHandAnimationPose(animationPose)&&FOOD_ITEM_KINDS.includes(action)&&!caught){
@@ -645,7 +650,7 @@ export function createDeskHands({createHand}={}){
         if(h.fingers)for(const [finger,value] of Object.entries(h.fingers))arm.hand.setFingerCurl?.(finger,value);
       }
       for(const [kind,prop] of Object.entries(props))prop.visible=kind===action;
-      attachToGrip(props[action],arms[0].hand.group,anchor);group.updateMatrixWorld(true);return;
+      attachToGrip(props[action],arms[0].hand.group,anchor);applyItemGrip(gripKey(action,mealDish),'left',props[action]);group.updateMatrixWorld(true);return;
     }
     arms[1].group.visible=true;
     const carryStride=carrying&&animationPose?.source==='runtime'&&/^student-(walk|idle|crawl)/.test(animationPose.clipId);
@@ -682,6 +687,7 @@ export function createDeskHands({createHand}={}){
       servingLook=dish;
     }
     if(carrying&&(!extension||active!==requested)){
+      pickedUpAt=time;
       active=requested;useTime=foodAge=foodAmount=foodPhase=0;foodWasUsing=false;
       foodPose.reach=foodPose.bob=foodPose.chewing=0;
       previousHandPositions=null;previousFood=null;
@@ -1107,7 +1113,8 @@ export function createDeskHands({createHand}={}){
       }
       if(!authored)articulation[0].restore();
       left.setCurl(.76);
-      if(!wholeGrips[0].apply(active))left.opposeThumb(.52,active);
+      const fingerClosure=ease(time-pickedUpAt,0,.16);
+      if(!wholeGrips[0].apply(active,1,fingerClosure))left.opposeThumb(.52,active);
       attachToGrip(prop,hand,grips[active]);
       arms[1].group.visible=true;
     }
@@ -1123,8 +1130,11 @@ export function createDeskHands({createHand}={}){
       hand.position.copy(lastThrowGrip.position).lerp(target,t).addScaledVector(v(.055,.08,-.145),stroke).applyMatrix4(group.matrix.clone().invert());
       hand.quaternion.copy(group.quaternion).invert().multiply(lastThrowGrip.rotation.clone().slerp(rotation,t)).multiply(packetAngle.setFromAxisAngle(v(1,0,0),-.64*stroke));
     }else lastThrowGrip=null;
+    if(engaged&&props[active].visible)applyItemGrip(gripKey(active,mealDish),active==='pen'?'right':'left',props[active]);
+    else if(bookBlend>0&&!answerCard)for(const side of ['left','right'])applyItemGrip('book',side);
+
   }
-  update(0);return{group,update,getItemState:()=>({active,visible:props[active].visible,extension}),getExtension:()=>extension,getHand:side=>arms[side==='left'?0:1].hand,getFocus(){return focus;},getDebug(){
+  update(0);return{group,update,applyItemGrip,getProp:kind=>props[kind],getItemState:()=>({active,visible:props[active].visible,extension}),getExtension:()=>extension,getHand:side=>arms[side==='left'?0:1].hand,getFocus(){return focus;},getDebug(){
     const camera=group.userData.viewCamera||(group.parent?.isCamera?group.parent:null),prop=props[active];
     const position=prop.getWorldPosition(v(0,0,0));if(camera)position.project(camera);
     return{palmsOnly:!arms[0].hand.group.userData.shortForearm,idleHandsVisible:extension<.001,focus:Number(focus.toFixed(3)),extension:Number(extension.toFixed(3)),active,visible:prop.visible,propNDC:position.toArray().map(n=>Number(n.toFixed(3))),groupPitch:Number(group.rotation.x.toFixed(3)),foodPhase:Number(foodPhase.toFixed(3)),foodAmount:Number(foodAmount.toFixed(3)),penWriteBlend,penAge,bookBlend,drawerBlend,authoredAnimation:Boolean(group.userData.authoredAnimation),articulation:articulation.map(rig=>rig.diagnostics())};
