@@ -1,7 +1,7 @@
 import {RULE_FIELDS,validTuning,tuningForm,readTuning} from './round-tuning93.js?v=campus-117';
 import {setupControlSettings} from './control-settings64.js?v=campus-93';
 import {prefersMobileRendering,initialQuality} from './render-budget67.js?v=campus-83&rev=158';
-import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-101&rev=157';
+import {playCampusFoley,warmCampusFoley} from './foley-audio54.js?v=campus-101&rev=173';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const KEY = 'campus-afterbell-settings-v1';
@@ -157,7 +157,7 @@ $('#room-enter').addEventListener('click',async()=>{
     const prepared=ensureWorld();
     prepared.then(world=>{if(!world)connection.abort();});
     entryCharacter=randomStudent();
-    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-117&rev=171');
+    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-117&rev=173');
     const online=await connectCampusRoom({code,name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina,tuning:roundOptions.tuning},signal:connection.signal,onRetry:()=>{if(roomConnecting===connection)button.textContent='正在重连…';},onError:e=>toast(typeof e==='string'?e:e.message)});
     let released=false;
     const release=()=>{if(!released){released=true;online.leave();}};
@@ -197,7 +197,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=172'),import('./classroom-game.js?v=campus-117&radio=2&rev=171')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=173'),import('./classroom-game.js?v=campus-117&radio=2&rev=173')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true,onProgress:(fraction,label)=>loadStep(38+Math.round(55*fraction),label)});
       if(disposed){prepared.dispose();return null;}

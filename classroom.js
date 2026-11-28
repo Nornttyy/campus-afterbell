@@ -1,8 +1,8 @@
 import {createPropGripLayer} from './item-grips.js?v=campus-117&rev=172';
 import {teacherGripProps} from './grip-tools.js?v=campus-117&rev=171';
 import {VisibleGroup} from './visible-group158.js?v=campus-117&rev=158';
-import {createPointerView} from './pointer-view130.js?v=146&rev=166';
-import {mountDoubao,teacherProjectiles} from './teacher-effects129.js?v=136&rev=166';
+import {createPointerView} from './pointer-view130.js?v=146&rev=173';
+import {mountDoubao,teacherProjectiles} from './teacher-effects129.js?v=136&rev=173';
 import {createPlayerNames} from './player-names119.js';
 import {createDeskHandShadows} from './desk-hand-shadows108.js?v=campus-108';
 import {makeSchoolChair} from './school-furniture91.js?v=campus-108';
@@ -10,25 +10,25 @@ import {TEXTBOOK,bookAngle,bookSpineHeight,setDeskBookReach,BOOK_PAPER_FACE,BOOK
 import {setDish} from './hotpot-food94.js?v=campus-94';
 import {CampusModelLoader} from './model-delivery93.js?v=campus-111&rev=160';
 import {createSocialPose} from './social-pose93.js?v=campus-93';
-import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=172';
+import {looseItemView} from './field-fixtures116.js?v=campus-117&rev=173';
 import {broadcastBeat,broadcastLift,broadcastScale,reachesRadio} from './campus-radio93.js?v=campus-117&rev=165';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 
-import {toiletDoorReach} from './toilet-layout70.js?v=campus-94';
+import {toiletDoorReach} from './toilet-layout70.js?v=campus-94&rev=173';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=157';
 import {FURNITURE_SOURCES67,loadFurniture67} from './furniture-assets67.js?v=campus-99';
-import {assetsForOpenMaps,playableCampusMap} from './campus-destinations.js?v=campus-117&rev=157';
+import {assetsForOpenMaps,playableCampusMap} from './campus-destinations.js?v=campus-117&rev=173';
 import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-117&rev=169';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
-import {advanceDeskDrawer,drawerHandTarget,DESK_DRAWER_TRAVEL,DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=157';
+import {advanceDeskDrawer,drawerHandTarget,DESK_DRAWER_TRAVEL,DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=173';
 import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-92';
 import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campus-83';
 import {gameplayFov} from './view-tuning55.js?v=campus-83';
 import {setCharacterNight,setCharacterClassroomDay} from './character-materials.js?v=campus-113&rev=161';
 import {createStaminaVision} from './stamina-vision55.js?v=campus-83';
-import {createSoundCues} from './sound-cue55.js?v=campus-83&rev=150';
+import {createSoundCues} from './sound-cue55.js?v=campus-83&rev=173';
 import {createChalkPowder} from './chalk-powder55.js?v=campus-83&rev=166';
-import {createSurveillanceView} from './surveillance-view54.js?v=campus-117&rev=158';
+import {createSurveillanceView} from './surveillance-view54.js?v=campus-117&rev=173';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=135&rev=161';
 import {instanceRigidProps} from './rigid-instances.js?v=campus-83';
@@ -36,24 +36,24 @@ import {prefersMobileRendering,initialQuality,renderPixelRatio,createRenderBudge
 import {createItemEffects50} from './item-effects50.js?v=campus-111';
 import {createBubbleEffects} from './bubble-effects.js?v=campus-111';
 import {CAMPUS_ARTWORK_SOURCES,loadCampusArtwork,prepareEntryArtwork} from './campus-artwork.js?v=campus-93&rev=158';
-import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=157';
-import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117&rev=157';
-import {createRoomVariants} from './room-variants.js?v=campus-117&rev=172';
+import {buildReferenceCampus} from './reference-campus.js?v=campus-117&rev=173';
+import {TEACHER_EYE_HEIGHT} from './classroom-layout.js?v=campus-117&rev=173';
+import {createRoomVariants} from './room-variants.js?v=campus-117&rev=173';
 import {COMPUTER_GAMES,withinComputerReach} from './computer-rules55.js?v=campus-96';
 import {createComputerScreenContent,desktopAppAtUV} from './computer-screen55.js?v=campus-96&rev=153';
 import * as THREE from './vendor/three.module.js';
 import {CAMPUS_SURFACE_SOURCES,loadCampusSurfaces,surfaceHeight,addTerrazzoGrout} from './surface-materials.js?v=campus-108';
 import {createSmokeEffects} from './smoke-effects.js?v=campus-88&rev=158';
 import {createItemOutline} from './item-outline.js?v=campus-83';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=171';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=173';
 import {dormBodyOffset,DORM_REST_VIEW} from './dorm-layout70.js?v=campus-95&rev=127';
 import {createSchoolMaterialFinish} from './school-material-finish77.js?v=campus-93';
 import {createDeskHands,createDeskItem,FOOD_ITEM_KINDS,DESK_ITEM_KINDS,THROWABLE_ITEM_KINDS} from './game-actors.js?v=campus-117&rev=172';
-import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=172';
+import {loadStudentAssets} from './student-assets.js?v=campus-117&rev=173';
 import {loadPropAssets,CLASSROOM_PROP_SOURCES,restDeskItem} from './prop-assets.js?v=campus-83';
 import {createDrawerPickTarget,pickDrawerItem} from './drawer-picking.js?v=campus-83';
 import {loadDeskModel,loadTeacherModel} from './imported-actors.js?v=campus-117&rev=165';
-import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,updateSpecialFurnitureCollisions,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-117&rev=157';
+import {SEATS,MAX_CAMPUS_SEATS,PLAYER_SEAT,FRIEND_SEATS,COVERED_SEATS,BOARD,DETENTION,detentionForMap,floorHeight,actorFloorHeight,LIFT,START_BELL_POSITION,OFFICE_CHAIR,OFFICE_DESK,updateSpecialFurnitureCollisions,createLayoutContext,updateLayoutDoors,mapKind,walkRoute,blocked} from './classroom-layout.js?v=campus-117&rev=173';
 
 export const STUDENT_VARIANTS=Object.freeze(['boy','girl','glasses','ponytail']);
 
@@ -900,7 +900,11 @@ export async function createClassroom(canvas, {onReady,onProgress,active=true,sn
     if(player.seated&&gameplay.role!=='teacher'&&player.penTaken&&!player.officeChair)add(chairTargets.get(player.seatId),{kind:'chair',id:player.seatId},2.15);
     if(!player.seated&&gameplay.role!=='teacher'){
       const occupied=new Set((gameplay.students||[]).filter(p=>p.seated&&!p.caught).map(p=>p.seatId));
-      if(mapKind(mapVariant)!=='playground')for(const [id,chair]of chairTargets)if(!occupied.has(id)&&(mapVariant!=='bus'||currentSeats[id]?.busDeck===(player.busDeck||0)))add(variants.seatTarget(id)||chair,{kind:mapKind(mapVariant)==='dorm'?'bed':'chair',id},2.15);
+      if(mapVariant==='toilet'){
+        for(const [id,fixture] of variants.toilet.seats){
+          if(!occupied.has(id)&&Math.hypot(player.x-fixture.x,player.z-fixture.z)<2.3)add(fixture.target,{kind:'chair',id},2.5);
+        }
+      }else if(mapKind(mapVariant)!=='playground')for(const [id,chair]of chairTargets)if(!occupied.has(id)&&(mapVariant!=='bus'||currentSeats[id]?.busDeck===(player.busDeck||0)))add(variants.seatTarget(id)||chair,{kind:mapKind(mapVariant)==='dorm'?'bed':'chair',id},2.15);
     }
     if(!player.seated&&gameplay.role!=='teacher'&&!player.mapActivity)for(const t of mapActivityView.targets(gameplay))add(t.object,{kind:t.kind,id:t.id},2.4);
     if(gameplay.stage!=='gathering'&&gameplay.stage!=='dismissal'&&mapKind(mapVariant)==='dorm'&&!player.seated)for(const[id,door]of variants.dorm.doors)add(door.target,{kind:'dorm-door',id,open:door.open>.5},2.4);

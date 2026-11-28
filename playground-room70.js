@@ -1,4 +1,4 @@
-import {OFFICE,CORRIDOR,CLASSROOM} from './classroom-layout.js?v=campus-117&rev=157';
+import {OFFICE,CORRIDOR,CLASSROOM} from './classroom-layout.js?v=campus-117&rev=173';
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
 import {createDeskItem} from './game-actors.js?v=campus-117&rev=172';
