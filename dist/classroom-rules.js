@@ -152,7 +152,7 @@ export function chalkHit(a,b,students,books,map,layout=null,throwerId=null){
   return nearest;
 }
 
-import {attacks,castTeacherAttack,advanceWave} from './teacher-attacks129.js?v=campus-117&rev=157';
+import {attacks,castTeacherAttack,advanceWave,eraserImpact} from './teacher-attacks129.js?v=campus-117&rev=166';
 export class ClassroomRound{
   constructor({seed=73,duration=600,target=DEVELOPMENT_TUNING.target,map='classroom',chalkStamina=false,tuning}={}){
     this.tuning=expandTuning(tuning);this.customTuning=tuning?{...tuning}:null;
@@ -1375,7 +1375,7 @@ export class ClassroomRound{
       const female=t.variant==='doubao', reaching=target&&distance(t,target)<2.6;
       if(this._sessionElapsed>=this.skillReadyAt&&(female||this.aiLastChalkAt!=null&&this.elapsed-this.aiLastChalkAt<8)){
         const kind=female?'vertical':'eraser';
-        if(castTeacherAttack(this,t,kind)){this._cast=null;this._nextCastAt=this.elapsed+attacks[kind].duration;}
+        if(castTeacherAttack(this,t,kind,this._cast.aim)){this._cast=null;this._nextCastAt=this.elapsed+attacks[kind].duration;}
         else if(female)this._cast=null;
       }else if(female){
         if(reaching)castTeacherAttack(this,t,'horizontal');
@@ -1401,7 +1401,11 @@ export class ClassroomRound{
       let step=dt;
       if(c.windup>0){const delay=Math.min(c.windup,step);c.windup-=delay;step-=delay;if(step<=0)continue;}
       if(c.kind==='horizontal'||c.kind==='vertical'){c.age+=step;advanceWave(this,c,step);continue;}
-      const next={x:c.x+c.vx*step,y:c.y+c.vy*step,z:c.z+c.vz*step};c.age+=step;c.vy-=(c.kind==='eraser'?5.8:1.6)*step;
+      if(c.kind==='eraser'){
+        this._advanceEraser(c,step);
+        continue;
+      }
+      const next={x:c.x+c.vx*step,y:c.y+c.vy*step,z:c.z+c.vz*step};c.age+=step;c.vy-=1.6*step;
       const hit=chalkHit(c,next,this.students,this.books,this.map,this.layout,c.throwerId);
       if(hit){
         c.x+=(next.x-c.x)*hit.t;c.y+=(next.y-c.y)*hit.t;c.z+=(next.z-c.z)*hit.t;c.dead=true;
@@ -1413,6 +1417,21 @@ export class ClassroomRound{
       if(c.age>1.3||c.y<floorHeight(c.x,c.z,this.map)+.02||Math.abs(c.x)>50||Math.abs(c.z)>50)c.dead=true;
     }
     this.chalks=this.chalks.filter(c=>!c.dead);
+  }
+  _advanceEraser(c,dt){
+    const spec=attacks.eraser,step=Math.min(dt,(spec.range-c.travelled)/spec.speed);
+    const next={x:c.x+c.vx*step,y:c.y+c.vy*step,z:c.z+c.vz*step};
+    let hit=chalkHit(c,next,this.students,this.books,this.map,this.layout,c.throwerId);
+    const floor=floorHeight(next.x,next.z,this.map,c.busDeck);
+    if(c.vy<0&&next.y<=floor){
+      const t=clamp((c.y-floor)/(c.y-next.y),0,1);
+      if(!hit||t<hit.t)hit={kind:'floor',t};
+    }
+    const flight=step*(hit?.t??1);
+    c.age+=flight;c.travelled+=spec.speed*flight;
+    c.x+=c.vx*flight;c.y+=c.vy*flight;c.z+=c.vz*flight;
+    if(hit)eraserImpact(this,c,hit);
+    c.dead=!!hit||c.travelled>=spec.range-1e-8;
   }
   _stopActor(actor){
     releaseMapActivity(this,actor);

@@ -1,6 +1,6 @@
 import {VisibleGroup} from './visible-group158.js?v=campus-117&rev=158';
-import {createPointerView} from './pointer-view130.js?v=146&rev=157';
-import {mountDoubao,teacherProjectiles} from './teacher-effects129.js?v=136&rev=157';
+import {createPointerView} from './pointer-view130.js?v=146&rev=166';
+import {mountDoubao,teacherProjectiles} from './teacher-effects129.js?v=136&rev=166';
 import {createPlayerNames} from './player-names119.js';
 import {createDeskHandShadows} from './desk-hand-shadows108.js?v=campus-108';
 import {makeSchoolChair} from './school-furniture91.js?v=campus-108';
@@ -25,7 +25,7 @@ import {gameplayFov} from './view-tuning55.js?v=campus-83';
 import {setCharacterNight,setCharacterClassroomDay} from './character-materials.js?v=campus-113&rev=161';
 import {createStaminaVision} from './stamina-vision55.js?v=campus-83';
 import {createSoundCues} from './sound-cue55.js?v=campus-83&rev=150';
-import {createChalkPowder} from './chalk-powder55.js?v=campus-83';
+import {createChalkPowder} from './chalk-powder55.js?v=campus-83&rev=166';
 import {createSurveillanceView} from './surveillance-view54.js?v=campus-117&rev=158';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import {createFirstPersonView,sampleFirstPersonMotion,firstPersonEyeHeight} from './first-person-view.js?v=135&rev=161';

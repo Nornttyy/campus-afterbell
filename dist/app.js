@@ -157,7 +157,7 @@ $('#room-enter').addEventListener('click',async()=>{
     const prepared=ensureWorld();
     prepared.then(world=>{if(!world)connection.abort();});
     entryCharacter=randomStudent();
-    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-117&rev=165');
+    const {connectPeerRoom:connectCampusRoom}=await import('./peer-room79.js?v=campus-117&rev=166');
     const online=await connectCampusRoom({code,name:$('#room-name').value.trim()||'同学',character:entryCharacter,rolePreference:roundOptions.role,map:roundOptions.map,maxPlayers:roundOptions.maxPlayers,settings:{duration:roundOptions.duration,target:roundOptions.target,chalkStamina:roundOptions.chalkStamina,tuning:roundOptions.tuning},signal:connection.signal,onRetry:()=>{if(roomConnecting===connection)button.textContent='正在重连…';},onError:e=>toast(typeof e==='string'?e:e.message)});
     let released=false;
     const release=()=>{if(!released){released=true;online.leave();}};
@@ -197,7 +197,7 @@ function ensureWorld(){
   worldPromise=(async()=>{
     let prepared=null;
     try{
-      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=165'),import('./classroom-game.js?v=campus-117&radio=2&rev=165')]);
+      const [module,controller]=await Promise.all([import('./classroom.js?v=campus-117&entry=3&rev=166'),import('./classroom-game.js?v=campus-117&radio=2&rev=166')]);
       if(disposed)return null;
       loadStep(38,'正在加载场景与同学');prepared=await module.createClassroom($('#classroom'),{active:false,snapEntry:true,onProgress:(fraction,label)=>loadStep(38+Math.round(55*fraction),label)});
       if(disposed){prepared.dispose();return null;}

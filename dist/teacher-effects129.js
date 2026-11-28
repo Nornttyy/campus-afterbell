@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {attacks} from './teacher-attacks129.js?v=campus-117&rev=157';
+import {attacks} from './teacher-attacks129.js?v=campus-117&rev=166';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {TEACHER_PROPORTIONS} from './teacher-proportions73.js?v=campus-83';
 

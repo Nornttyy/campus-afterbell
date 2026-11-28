@@ -26,9 +26,9 @@ test('vertical wave reaches further, stops at a wall and uses a 20 second cooldo
  assert.ok(r.teacherSkill());flight(r,1.5);assert.equal(a.captivity,'stunned');assert.equal(b.captivity,'free');
  r._sessionElapsed=19.99;assert.equal(r.teacherSkill(),false);r._sessionElapsed=20;assert.ok(r.teacherSkill());
 });
-test('eraser is a separate ballistic projectile with a 15 second cooldown',()=>{
+test('eraser is a separate skill projectile with a 15 second cooldown',()=>{
  const r=lesson('male');assert.ok(r.teacherSkill());const p=r.chalks[0];assert.equal(p.kind,'eraser');
- flight(r,.2);assert.ok(p.z>0);assert.ok(p.vy<1.3);r._sessionElapsed=14.99;assert.equal(r.teacherSkill(),false);r._sessionElapsed=15;assert.ok(r.teacherSkill());
+ flight(r,.2);assert.ok(p.z>0);assert.equal(Math.abs(p.vy),0);r._sessionElapsed=14.99;assert.equal(r.teacherSkill(),false);r._sessionElapsed=15;assert.ok(r.teacherSkill());
 });
 test('room maps an unavailable teacher preference to the male teacher and synchronizes the eraser',()=>{
  const room=new CampusRoom({code:'123456'}),a=room.join({}),b=room.join({});
@@ -57,4 +57,51 @@ test('Doubao finishes the slower basic swing before another attack can start',()
  const r=lesson('doubao');assert.ok(r.throwChalk());r._sessionElapsed=2.19;
  assert.equal(r.teacherSkill(),false);assert.equal(r.throwChalk(),false);
  r._sessionElapsed=2.20;assert.ok(r.throwChalk());
+});
+
+test('eraser follows the aim at constant speed for level, rising and falling shots',()=>{
+ for(const pitch of [-.25,0,.3]){
+  const r=lesson('male');r.player.pitch=pitch;assert.ok(r.teacherSkill());
+  const c=r.chalks[0],start={...c};flight(r,.36);
+  assert.ok(!c.dead);
+  assert.equal(c.vy,start.vy);assert.ok(Math.abs(Math.hypot(c.vx,c.vy,c.vz)-13)<1e-9);
+  const t=Math.round(.36*60)/60-.16;
+  assert.ok(Math.abs(c.y-start.y+13*Math.sin(pitch)*t)<1e-7);
+  assert.ok(Math.abs(c.z-start.z-13*Math.cos(pitch)*t)<1e-7);
+ }
+});
+test('an eraser impact stuns a cluster once and walls shield the far side',()=>{
+ const r=lesson('male');
+ const wall={minX:-4,maxX:4,minY:0,maxY:4,minZ:2,maxZ:2.1};
+ r.layout.walls=[wall];r.layout.wallVolumes=[wall];r.layout.seats=[];r.layout.postVolumes=[];
+ const near=target(r,1,.8,1.8),second=target(r,2,-1.1,1.7),behind=target(r,3,.2,2.6),far=target(r,4,3.1,1.8);
+ assert.ok(r.teacherSkill());r._advanceChalk(.62);
+ assert.deepEqual([near,second,behind,far].map(a=>a.captivity),['stunned','stunned','free','free']);
+ const impacts=r.drainEvents().filter(e=>e.projectile==='eraser');
+ assert.equal(impacts.length,1);assert.ok(Math.abs(impacts[0].z-2)<1e-8);assert.equal(r.chalks.length,0);
+});
+test('hitting a pupil or the floor also triggers the radius',()=>{
+ for(const ground of [false,true]){
+  const r=lesson('male');r.layout.seats=[];r.layout.postVolumes=[];
+  r.player.pitch=ground?Math.PI/2:.27;
+  const direct=target(r,1,ground?.85:0,ground?0:2),other=target(r,2,1.25,ground?0:2);
+  assert.ok(r.teacherSkill());flight(r,.7);
+  assert.equal(direct.captivity,'stunned');assert.equal(other.captivity,'stunned');
+  assert.equal(r.drainEvents().find(e=>e.projectile==='eraser')?.kind,ground?'floor':'student');
+ }
+});
+
+test('two student clients receive the same eraser impact and their own stun',()=>{
+ const room=new CampusRoom({code:'123456'}),host=room.join({}),one=room.join({}),two=room.join({});
+ room.command(host,'setPreference',[{rolePreference:'teacher'}]);room.begin(host);
+ for(let i=0;i<301;i++)room.tick(.1);
+ Object.assign(host.context.player,{x:0,z:0,yaw:0,pitch:.28,seated:false});
+ for(const [member,x] of [[one,0],[two,1.2]])Object.assign(member.context.player,{x,z:2,seated:false,seatId:null,visible:true});
+ assert.ok(room.command(host,'teacherSkill'));
+ for(let i=0;i<6;i++)room.tick(.1);
+ for(const member of [one,two]){
+  const s=room.snapshot(member);
+  assert.equal(s.player.captivity,'stunned');
+  assert.equal(s.events.filter(e=>e.type==='chalk-hit'&&e.projectile==='eraser').length,1);
+ }
 });
