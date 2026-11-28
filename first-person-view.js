@@ -1,5 +1,5 @@
 import {teacherViewHeight,STUDENT_VIEW_HEIGHT} from './camera-height58.js?v=campus-83';
-import {TEACHER_RUN_SPEED} from './movement55.js?v=campus-117';
+import {TEACHER_RUN_SPEED} from './movement55.js?v=campus-117&rev=154';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 import * as T from './vendor/three.module.js';
 import {setCharacterNight} from './character-materials.js?v=campus-113';

@@ -1,4 +1,4 @@
-import {radioSong,EXERCISE_SONG} from './campus-radio93.js?v=campus-117';
+import {radioSong,EXERCISE_SONG} from './campus-radio93.js?v=campus-117&rev=154';
 import {readRadioRecording} from './radio-library118.js';
 export function createRadioUI(doc,muted){
  const audio=doc.createElement('audio');audio.preload='none';audio.loop=true;audio.volume=.54;

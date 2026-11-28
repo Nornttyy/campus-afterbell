@@ -1,33 +1,33 @@
-import {advanceLoose,dropLoose,takeLoose,takeCooler,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=128';
-import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=128';
-import {RADIO_SONGS,radioSong,radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117';
+import {advanceLoose,dropLoose,takeLoose,takeCooler,nextSnack,spawnLoose} from './field-items116.js?v=campus-117&rev=154';
+import {drawIngredient,makeCookingRound,aimedPot,pourPlate,takeCookedPiece,canReplacePiece} from './hotpot-rules94.js?v=campus-117&rev=154';
+import {RADIO_SONGS,radioSong,radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=154';
 import {expandTuning} from './round-tuning93.js?v=campus-117';
 import {SOCIAL_ACTIONS,canEmote,actorEmote} from './social-actions93.js?v=campus-93';
 import {RESULT_SECONDS,nextStudentAppearance} from './class-dismissal92.js?v=campus-102';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=128';
+import {freeToJump,JUMP_SPEED,jumpBounds,stepJump} from './actor-jump90.js?v=campus-117&rev=154';
 import {takeMeal,canReturnMeal,examMode,examUse,examSnapshot,advanceExams} from './upper-floor-rules85.js?v=campus-117&rev=128';
-import {advancePlaygroundPupil,inspectionPoints} from './new-map-ai83.js?v=campus-117&rev=127';
+import {advancePlaygroundPupil,inspectionPoints} from './new-map-ai83.js?v=campus-117&rev=154';
 import {DORM_ROOMS,DORM_REST_VIEW,dormDoorPose,dormDoorSolids,dormRoomPoint} from './dorm-layout70.js?v=campus-95&rev=127';
-import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-117';
+import {activitySnapshot,startMapActivity,releaseMapActivity,advanceMapActivities} from './map-activities77.js?v=campus-117&rev=154';
 import {TOILET_STALLS,TOILET_DOOR,toiletDoorPose,toiletDoorSolids,toiletDoorReach} from './toilet-layout70.js?v=campus-94';
-import {PLAYGROUND_LAYOUT,PLAYGROUND_BOARD,PLAYGROUND_POSTS,vendingPoint,canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117';
+import {playgroundForPlayers,PLAYGROUND_LAYOUT,vendingPoint,canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=154';
 import {floatingBubblePosition,bubbleTouchesHead} from './bubble-flight69.js?v=campus-83';
-import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-117&rev=128';
+import {syncDrawerCollisions} from './drawer-collision58.js?v=campus-117&rev=154';
 import {ordinaryStudyState} from './npc-study58.js?v=campus-117&rev=121';
-import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-117';
-import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-117&rev=128';
+import {movementScale,spendTeacherMovement,NORMAL_WALK_SPEEDS,normalWalkSpeed} from './movement55.js?v=campus-117&rev=154';
+import {reachesSchoolDoor,schoolDoorSweepBlocked} from './door-interaction54.js?v=campus-117&rev=154';
 import {INTERACTION_SECONDS,ITEM50_TUNING,COMPUTER_DRAWER_FOODS,createSnake,turnSnake,stepSnake,snakeSnapshot} from './item-rules50.js?v=campus-117';
 import {validRoundSettings,chalkStaminaCost,canThrowWithStamina} from './round-settings55.js?v=campus-117';
 import {advanceBoard} from './board-lesson93.js?v=campus-93';
 import {createArcade,advanceArcade,arcadeInput,arcadeSnapshot} from './classroom-arcade93.js?v=campus-93';
 import {COMPUTER_APPS,COMPUTER_GAMES,nextComputerApp,canonicalComputerApp,withinComputerReach,reportComputerPlayback,resetComputerPlayback,advanceComputerPlayback} from './computer-rules55.js?v=campus-96';
-import {smokeEnvelope} from './smoke-physics.js?v=campus-117&rev=128';
+import {smokeEnvelope} from './smoke-physics.js?v=campus-117&rev=154';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
-import {createThrowableProjectile,stepThrowableProjectile,effectEye,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-117&rev=128';
-import {BUS} from './bus-layout86.js?v=campus-94';
+import {createThrowableProjectile,stepThrowableProjectile,effectEye,flashExposure,inkExposure,PROJECTILE_EFFECT_TUNING} from './projectile-effects-rules.js?v=campus-117&rev=154';
+import {BUS} from './bus-layout86.js?v=campus-94&rev=154';
 import {coachDistanceAt,COACH_BRAKE_SECONDS} from './excursion-journey91.js?v=campus-93';
-import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, lecternForMap, turnedClass, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorEyePosition, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-117&rev=128';
+import { ROOM, CORRIDOR, SEATS, createSeatLayout, createLayoutContext, updateLayoutDoors, queueLayoutDoors, advanceLayoutDoors, layoutDoorSnapshot, mapKind, OFFICE_DESK, OFFICE_CHAIR, OFFICE_DESKS, OFFICE_CHAIRS, LIFT, STUDENT_ENTRY, START_BELL_POSITION, PLAYER_SEAT, FRIEND_SEATS, COVERED_SEATS, AISLES, lecternForMap, turnedClass, BOARD, DETENTION, TEACHER_SPAWN, moveInRoom, walkRoute, blocked, chairExit, clearWallSegment, isCampusMap, teacherSpawnFor, TEACHER_EYE_HEIGHT, enclosureVolumes, LECTERN, OFFICE_SOLIDS, floorTiles, floorHeight, actorFloorHeight, actorEyeHeight, actorEyePosition, actorBodyVolume, boardForMap, detentionForMap, orientedVolume, updateSpecialFurnitureCollisions } from './classroom-layout.js?v=campus-117&rev=154';
 
 /** 120 is the goal visible in the supplied video; remaining values are local prototype tuning. */
 export const DEVELOPMENT_TUNING = Object.freeze({ target:120, fov:110, viewRange:9, evidenceRate:38, evidenceDecay:.45, chalkWindup:.7, smokeDuration:7, smokeRadius:1.9, walkSpeed:NORMAL_WALK_SPEEDS.student, teacherWalkSpeed:NORMAL_WALK_SPEEDS.teacher, crouchSpeed:CRAWL_TUNING.speed, teammateRestMin:3, teammateRestMax:7, drawerRefill:3 });
@@ -39,7 +39,7 @@ export const RESCUE_DURATION=INTERACTION_SECONDS;
 // belong to another pupil, so this action awards no points without more evidence.
 export const BUBBLE_TUNING=Object.freeze({duration:6,cycle:ITEM50_TUNING.gumCycleSeconds,cooldown:10,pointsPerSecond:0,maxPoints:10,lifetime:6});
 export const FOOD_ACTIONS=Object.freeze(['snack','noodles','chips','drink','burger','banana','lunch','hotpotBite']);
-import {DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=128';
+import {DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=154';
 export const EATING_PITCH=Object.freeze({enter:DRAWER_LOOK_PITCH,leave:DRAWER_LOOK_PITCH-.035});
 export const START_BELL=START_BELL_POSITION;
 export const CLASS_START_TIMING=Object.freeze({seating:30,classDuration:600,firstArrival:.15,arrivalSpacing:.36});
@@ -152,7 +152,7 @@ export function chalkHit(a,b,students,books,map,layout=null,throwerId=null){
   return nearest;
 }
 
-import {attacks,castTeacherAttack,advanceWave} from './teacher-attacks129.js';
+import {attacks,castTeacherAttack,advanceWave} from './teacher-attacks129.js?v=campus-117&rev=154';
 export class ClassroomRound{
   constructor({seed=73,duration=600,target=DEVELOPMENT_TUNING.target,map='classroom',chalkStamina=false,tuning}={}){
     this.tuning=expandTuning(tuning);this.customTuning=tuning?{...tuning}:null;
@@ -191,6 +191,11 @@ export class ClassroomRound{
     if(mapKind(this.map)==='dorm')Object.assign(this.teacher,{phase:'watching',intent:'scan',pitch:0});
     this._turnLeft=0;this._thinkAt=0;this._lastScan=0;this._writingNeed=.8;this._cast=null;this._rescueId=null;this._rescueProgress=0;this._escortRoute=null;this._escortPost=null;
     return this.snapshot();
+  }
+  setFieldPopulation(count){
+    if(this.map!=='playground')return;
+    this.posts=playgroundForPlayers(count).posts;
+    updateSpecialFurnitureCollisions(this.layout,{posts:this.posts});
   }
   _seatApproach(seat){return Number.isFinite(seat?.exitX)?{...(seat.busDeck!=null?{busDeck:seat.busDeck}:{}),x:seat.exitX,z:seat.exitZ+(seat.surface==='toilet'?1.18:0)}:seat;}
   // The arrival waypoint keeps the shared cross-aisle clear of the door swing.
@@ -387,7 +392,7 @@ export class ClassroomRound{
     // waiting outside can pin the leaf halfway and block every pupil behind.
     if(mapKind(this.map)==='dorm')for(const r of DORM_ROOMS)this._dormDoorTargets[r.id]=true;
     if(mapKind(this.map)==='toilet')for(const id of Object.keys(this._toiletDoorTargets))this._toiletDoorTargets[id]=true;
-    const entryLayout=createLayoutContext(this.seats,{officeLocked:true,toiletDoors:mapKind(this.map)==='toilet'?Object.fromEntries(this.seats.map(s=>[s.id,1])):undefined});
+    const entryLayout=createLayoutContext(this.seats,{posts:this.posts,officeLocked:true,toiletDoors:mapKind(this.map)==='toilet'?Object.fromEntries(this.seats.map(s=>[s.id,1])):undefined});
     const scheduled=arrivals.map(actor=>{
       actor._targetSeatId=actor.homeSeatId??actor.id;
       const route=walkRoute(actor,this._seatApproach(this.seats[actor._targetSeatId]),.2,entryLayout);
@@ -434,7 +439,7 @@ export class ClassroomRound{
     if(this.map==='bus')this._departBus();
     this.stage='class';this._stageElapsed=0;this._preparationLeft=0;this.elapsed=0;this._movement={x:0,z:0};this.teacher._movementFatigue=0;
     if(this.player.id!==-1){
-      this._teacherEntryRoute=walkRoute(this.teacher,this.board,.23,createLayoutContext(this.seats));
+      this._teacherEntryRoute=walkRoute(this.teacher,this.board,.23,createLayoutContext(this.seats,{posts:this.posts}));
       this._teacherEntryLength=this._teacherEntryRoute.reduce((n,p,i)=>n+distance(i?this._teacherEntryRoute[i-1]:this.teacher,p),0);
       Object.assign(this.teacher,{phase:'patrol',intent:'enter',phaseTime:0,phaseDuration:this._teacherEntryLength/AI_WALK_SPEEDS.teacherEntry,targetId:null,looking:false,warning:false,attention:0,walkProgress:0});
       this._cast=null;this._thinkAt=Infinity;
@@ -685,6 +690,11 @@ export class ClassroomRound{
     if(p.id===-1){delete this.teacher.jumpHeight;delete this.teacher.jumpSpeed;}
   }
   _advanceJumps(dt){
+    for(const p of this.students){
+      if(p._standWhenClear&&(!p.crouched||!blocked(p.x,p.z,.18,this.layout,p.busDeck))){
+        p._standWhenClear=false;p.crouched=false;
+      }
+    }
     for(const [p,flight] of this._jumpers){
       const {ground,limit}=jumpBounds(p,this.map);
       if(!freeToJump(p)||!stepJump(flight,dt,ground,limit)){this._endJump(p);continue;}
@@ -738,10 +748,15 @@ export class ClassroomRound{
   setCrouch(value){
     if(typeof value!=='boolean')return false;
     // Releasing a held posture must work even after focus loss or restraint.
-    if(!value){this.player.crouched=false;return true;}
+    if(!value){
+      const p=this.player;
+      p._standWhenClear=Boolean(p.crouched&&!p.seated&&!this._restrained(p)&&blocked(p.x,p.z,.18,this.layout,p.busDeck));
+      p.crouched=p._standWhenClear;
+      return true;
+    }
     if(this.player.id===-1){this.player.crouched=false;return false;}
     if(!this._inputAllowed()||this._restrained()||this.player.seated||this.player.mapActivity||this._jumpers.has(this.player))return false;
-    this.player.crouched=true;return true;
+    this.player._standWhenClear=false;this.player.crouched=true;return true;
   }
   interact(seatId=null){
     if(!this._inputAllowed()||this._restrained()||this.player.mapActivity)return false;
@@ -1202,7 +1217,11 @@ export class ClassroomRound{
         s._eating=(s.pitch||0)>=(s._eating?EATING_PITCH.leave:EATING_PITCH.enter);
         if(!s._eating)continue;
         s._useElapsed=(s._useElapsed||0)+dt;
-        if(s._useElapsed>=(s._nextUseSound||0)){this._events.push({type:s.action==='drink'?'use-gulp':'use-crunch',studentId:s.id,recipientId:s.id,x:s.x,z:s.z});s._nextUseSound=s._useElapsed+.8;}
+        const drinking=s.action==='drink',nextSound=s._nextUseSound||(drinking?0:.04);
+        if(s._useElapsed+EPS>=nextSound){
+          this._events.push({type:drinking?'use-gulp':'use-crunch',studentId:s.id,recipientId:s.id,x:s.x,z:s.z});
+          s._nextUseSound=drinking?s._useElapsed+.8:nextSound+.4;
+        }
       }else s._eating=false;
       s._noise+=dt*action.noise;if(s._noise>=1){s._noise-=1;this._hear(s,1);}
       // Walking with an item stays quiet; actively eating still requires head down.

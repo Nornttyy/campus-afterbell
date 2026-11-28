@@ -1,11 +1,11 @@
 import * as T from './vendor/three.module.js';
 import {mergeGeometries} from './vendor/addons/utils/BufferGeometryUtils.js';
 import {createDeskItem} from './game-actors.js?v=campus-117';
-import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117';
-export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-117';
+import {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight,vendingPoint,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=154';
+export {PLAYGROUND_LAYOUT,createPlaygroundLayout,playgroundFloorHeight} from './playground-layout70.js?v=campus-117&rev=154';
 
 // The reference has an OPEN sports ground, not desks standing on a green floor.
-// The track, bars and vending machines share their placement with the rules.
+// The track, platform and vending machines share their placement with the rules.
 export function playgroundTrackRing(track,outerRadius,innerRadius){
  const positions=[],uv=[],index=[],samples=[];
  for(let half=0;half<2;half++)for(let i=0;i<=48;i++){const a=half*Math.PI+i/48*Math.PI;samples.push({a,z:half===0?track.straightHalf:-track.straightHalf});}
@@ -160,31 +160,33 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  // Gate-frame lintel leaves the complete right-hand corridor opening empty.
  for(const z of[layout.entrance.minZ-.035,layout.entrance.maxZ+.035])box(frame,[b.maxX+.04,1.18,z],[.11,2.36,.07]);
  box(frame,[b.maxX+.04,2.39,layout.entrance.z],[.11,.08,layout.entrance.width+.14]);
+ const platformWhite=mat('#faf9f5',{roughness:.88}),stepEdge=mat('#deded8',{roughness:.84});
  for(const step of layout.steps){
-  box(concrete,[step.x,(step.top+step.bottom)/2,step.z],[step.width,step.top-step.bottom,step.depth]);
-  box(cap,[step.x,step.top-.018,step.z-step.depth/2-.006],[step.width,.036,.026]);
-  box(cap,[step.x,step.top-.018,step.z+step.depth/2+.006],[step.width,.036,.026]);
-  for(let x=step.x-step.width/2+.9;x<step.x+step.width/2;x+=.9)box(cap,[x,step.top+.001,step.z],[.008,.002,step.depth]);
+  box(platformWhite,[step.x,(step.top+step.bottom)/2,step.z],[step.width,step.top-step.bottom,step.depth]);
+  box(stepEdge,[step.x,step.top-.018,step.z-step.depth/2-.006],[step.width,.036,.026]);
+  box(stepEdge,[step.x,step.top-.018,step.z+step.depth/2+.006],[step.width,.036,.026]);
+  for(let x=step.x-step.width/2+.9;x<step.x+step.width/2;x+=.9)box(stepEdge,[x,step.top+.001,step.z],[.008,.002,step.depth]);
  }
- const sportsBlue=mat('#2763b5',{roughness:.46,metalness:.25}),sportsYellow=mat('#f7c437',{roughness:.4,metalness:.32});
- function pipe(a,b,radius,material,sides=12){
-  const av=new T.Vector3(...a),bv=new T.Vector3(...b),delta=bv.clone().sub(av),g=new T.CylinderGeometry(radius,radius,delta.length(),sides);
-  g.applyQuaternion(new T.Quaternion().setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize()));add(g,material,av.add(bv).multiplyScalar(.5).toArray());g.dispose();
- }
- for(const bar of layout.bars){
-  for(const side of[-1,1]){
-   const z=bar.z+side*bar.width/2;
-   pipe([bar.x,.08,z],[bar.x,bar.height+.05,z],bar.radius,sportsBlue);
-   const base=new T.CylinderGeometry(.13,.15,.10,16);add(base,frame,[bar.x,.05,z]);base.dispose();
-   const capGeo=new T.SphereGeometry(bar.radius,12,8);add(capGeo,sportsBlue,[bar.x,bar.height+.05,z]);capGeo.dispose();
+ const poles=new T.InstancedMesh(ownGeo(new T.CylinderGeometry(1,1,1,12)),wood,8);
+ poles.name='playground-capture-posts';poles.castShadow=poles.receiveShadow=true;group.add(poles);
+ let displayedPosts=null;
+ function setPosts(posts){
+  if(displayedPosts?.length===posts.length)return;
+  displayedPosts=posts;poles.count=posts.length;
+  for(const [index,p] of posts.entries()){
+   matrix.makeScale(p.radius,p.height,p.radius).setPosition(p.x,p.y+p.height/2,p.z);
+   poles.setMatrixAt(index,matrix);
   }
-  pipe([bar.x,bar.height,bar.z-bar.width/2],[bar.x,bar.height,bar.z+bar.width/2],.038,sportsYellow);
+  poles.instanceMatrix.needsUpdate=true;poles.computeBoundingBox();poles.computeBoundingSphere();
  }
-
- const postGeo=new T.CylinderGeometry(1,1,1,12,1);
- for(const p of layout.posts){add(postGeo,wood,[p.x,p.y+p.height/2,p.z],[0,0,0],[p.radius,p.height,p.radius]);const capGeo=new T.CircleGeometry(p.radius,12);add(capGeo,wood,[p.x,p.y+p.height+.001,p.z],[-Math.PI/2,0,0]);capGeo.dispose();}
- postGeo.dispose();
- const board=layout.board;box(frame,[board.x,board.y,board.z],[board.width+.10,board.height+.10,.10]);
+ setPosts(layout.posts);
+ const board=layout.board;
+ for(const side of [-1,1]){
+  const x=board.x+side*(board.width/2-.28);
+  box(steel,[x,board.y/2,board.z+.035],[.075,board.y,.075]);
+  box(frame,[x,.035,board.z],[.16,.07,.54]);
+ }
+ box(frame,[board.x,board.y,board.z],[board.width+.10,board.height+.10,.10]);
  panel(chalk,[board.x,board.y,board.z-.056],board.width,board.height,Math.PI);
  if(boardInk){const inkGeo=ownGeo(new T.PlaneGeometry(board.width-.03,board.height-.03)),marks=new T.Mesh(inkGeo,boardInk);
   marks.position.set(board.x,board.y,board.z-.061);marks.rotation.y=Math.PI;marks.castShadow=false;group.add(marks);
@@ -314,8 +316,8 @@ export function createPlaygroundRoom({parent=null,layout=PLAYGROUND_LAYOUT,width
  let disposed=false;
  return{group,layout,vendingTargets,colliders:layout.colliders,posts:layout.posts,board:layout.board,boardTarget,entrance:layout.entrance,
   floorHeight:(x,z)=>playgroundFloorHeight(x,z,layout),
-  update(time,stock={}){if(disposed)return;group.userData.lastUpdate=Number.isFinite(time)?time:0;updateVending(group.userData.lastUpdate,stock);},
-  diagnostics(){let triangles=0,meshes=0;group.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;}});return{meshes,triangles,foodRulesDefined:false,seats:0,width:layout.bounds.width,length:layout.bounds.length,postCount:layout.posts.length,sportsBars:layout.bars.length};},
-  dispose(){if(disposed)return;disposed=true;group.removeFromParent();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();for(const t of textures)t.dispose();group.clear();}
+  update(time,stock={},posts=layout.posts){if(disposed)return;setPosts(posts);group.userData.lastUpdate=Number.isFinite(time)?time:0;updateVending(group.userData.lastUpdate,stock);},
+  diagnostics(){let triangles=0,meshes=0;group.traverse(o=>{if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;}});return{meshes,triangles,foodRulesDefined:false,seats:0,width:layout.bounds.width,length:layout.bounds.length,postCount:poles.count,sportsBars:layout.bars.length};},
+  dispose(){if(disposed)return;disposed=true;poles.dispose();group.removeFromParent();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();for(const t of textures)t.dispose();group.clear();}
  };
 }

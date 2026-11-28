@@ -1,9 +1,9 @@
 import {hotpotFood,setDish} from './hotpot-food94.js?v=campus-94';
 import * as T from './vendor/three.module.js';
 
-import {CORRIDOR,PARTITIONS,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=128';
-import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
-export {HOTPOT_TABLE_SIZE,HOTPOT_TABLE_HEIGHT,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-94';
+import {CORRIDOR,PARTITIONS,ALCOVE_ENTRY} from './classroom-layout.js?v=campus-117&rev=154';
+import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94&rev=154';
+export {HOTPOT_TABLE_SIZE,HOTPOT_TABLE_HEIGHT,HOTPOT_TABLES,HOTPOT_SEATS,HOTPOT_SCREENS,HOTPOT_SOLIDS} from './hotpot-layout70.js?v=campus-94&rev=154';
 
 function chamferedSlab(width,depth,height,cut){
  const x=width/2,z=depth/2,s=new T.Shape();s.moveTo(-x+cut,-z);s.lineTo(x-cut,-z);s.lineTo(x,-z+cut);s.lineTo(x,z-cut);s.lineTo(x-cut,z);s.lineTo(-x+cut,z);s.lineTo(-x,z-cut);s.lineTo(-x,-z+cut);s.closePath();

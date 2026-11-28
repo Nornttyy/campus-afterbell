@@ -1,14 +1,15 @@
-import {ClassroomRound} from './classroom-rules.js?v=campus-117&rev=128';
-import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=128';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=128';
-import {updateLayoutDoors,campusFloor} from './classroom-layout.js?v=campus-117&rev=128';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=128';
+import {ClassroomRound} from './classroom-rules.js?v=campus-117&rev=154';
+import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=154';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=154';
+import {updateLayoutDoors,campusFloor} from './classroom-layout.js?v=campus-117&rev=154';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=154';
 
 const elevatorRound=Base=>class extends Base{
  reset(seed){this.elevator=createElevator();super.reset(seed);this._soloStudents();this.teacher.variant='male';return this.snapshot();}
  _soloStudents(){
   // A solo pupil is the sole mischievous participant. Other pupils remain
   // ordinary decoys; the teacher practice mode still needs AI opponents.
+  this.setFieldPopulation(this.player.id===-1?this._team.size:1);
   if(this.player.id===-1)return;
   this._team=new Set([this.player.id]);
   for(const actor of this.students)if(actor!==this.player){actor.isTeammate=false;actor._profile=null;actor._slots=[];actor.holding=false;actor._drawnSlot=null;}

@@ -9,7 +9,7 @@ function diningLayout(rows,pattern,screenZ){
   function part(name,cx,cz,w,d,low,high){solids.push(volume('hotpot-'+name+'-'+id,cx-w/2,cx+w/2,cz-d/2,cz+d/2,low,high));}
   part('table',x,z,size,size,.819,.875);part('pot',x,z,1.55,1.55,.875,1.16);
   part('foot',x,z,1.416,1.416,.003,.119);part('pedestal',x,z,1.28,1.28,.10,.64);part('cap',x,z,.996,.996,.622,.778);part('support',x,z,.84,.84,.775,.827);
-  walk.push(volume('hotpot-table-footprint-'+id,x-half,x+half,z-half,z+half,0,.875));
+  walk.push({...volume('hotpot-table-footprint-'+id,x-half,x+half,z-half,z+half,0,.875),crawlUnder:true},solids.find(s=>s.id==='hotpot-foot-'+id));
   const corners=[-1,1].map(sign=>sign*(half-.135));
   for(const side of [-1,1])for(const c of corners){
    part('apron-x-'+side+'-'+c,x+c,z+side*(half-.065),.24,.06,.712,.822);
