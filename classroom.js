@@ -16,7 +16,7 @@ import {toiletDoorReach} from './toilet-layout70.js?v=campus-94';
 import {canReachVending,VENDING_FALL_SECONDS} from './playground-layout70.js?v=campus-117&rev=157';
 import {FURNITURE_SOURCES67,loadFurniture67} from './furniture-assets67.js?v=campus-99';
 import {assetsForOpenMaps,playableCampusMap} from './campus-destinations.js?v=campus-117&rev=157';
-import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-117&rev=167';
+import {createHandAnimationRuntime} from './hand-animation-runtime59.js?v=campus-117&rev=168';
 import {PUBLISHED_HAND_ANIMATIONS} from './published-hand-animations61.js?v=campus-83';
 import {advanceDeskDrawer,drawerHandTarget,DESK_DRAWER_TRAVEL,DRAWER_LOOK_PITCH} from './drawer-hand-target58.js?v=campus-117&rev=157';
 import {ROOM_LIGHTING,applyRoomLighting} from './room-lighting58.js?v=campus-92';
