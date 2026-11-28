@@ -1,3 +1,4 @@
+import {Euler,Quaternion} from './vendor/three.module.js';
 import {STUDENT_VIEW_HEIGHT,TEACHER_VIEW_HEIGHT} from './camera-height58.js?v=campus-83';
 import {HAND_ANIMATION_MAX_BYTES,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-111';
 export const HAND_ANIMATION_STORAGE_KEY='campus.handAnimations.v1';
@@ -43,30 +44,31 @@ const wristPositions={
  boy:[.20,.66,.29,.69],girl:[.18,.65,.275,.70],
  glasses:[.20,.66,.31,.71],ponytail:[.15,.61,.27,.66],teacher:[.23,1.04,.23,1.075]
 };
-// Resting wrist locations measured on the displayed bodies, in view space.
-// Only translate the authored idle. Palm angles belong to the animation.
+// Resting wrists and hand-frame corrections measured on both sides of the
+// displayed bodies. Detached view hands have different anatomical axes.
 const idleMounts={
  boy:{
-  left:[-0.20405, -0.87258, -0.02033],
-  right:[0.20424, -0.87657, -0.02162],
+  left:{position:[-0.20405, -0.87258, -0.02033],rotation:[0.68408, 0.03333, -0.02741, -0.72812]},
+  right:{position:[0.20424, -0.87657, -0.02162],rotation:[-0.68408, 0.03334, -0.02741, 0.72812]},
  },
  girl:{
-  left:[-0.18443, -0.87508, -0.02894],
-  right:[0.18469, -0.88063, -0.03074],
+  left:{position:[-0.18443, -0.87508, -0.02894],rotation:[0.68409, 0.03334, -0.02741, -0.72812]},
+  right:{position:[0.18469, -0.88063, -0.03074],rotation:[-0.68408, 0.03334, -0.02741, 0.72812]},
  },
  glasses:{
-  left:[-0.2017, -0.87158, -0.03126],
-  right:[0.20166, -0.87061, -0.03094],
+  left:{position:[-0.2017, -0.87158, -0.03126],rotation:[0.68409, 0.03334, -0.02741, -0.72812]},
+  right:{position:[0.20166, -0.87061, -0.03094],rotation:[-0.68408, 0.03334, -0.02741, 0.72813]},
  },
  ponytail:{
-  left:[-0.14848, -0.92368, -0.02085],
-  right:[0.1487, -0.92839, -0.02238],
+  left:{position:[-0.14848, -0.92368, -0.02085],rotation:[0.68408, 0.03333, -0.02741, -0.72812]},
+  right:{position:[0.1487, -0.92839, -0.02238],rotation:[-0.68408, 0.03333, -0.02741, 0.72812]},
  },
  teacher:{
-  left:[-0.23086, -1.19282, -0.0633],
-  right:[0.23096, -1.19508, -0.06403],
+  left:{position:[-0.23086, -1.19282, -0.0633],rotation:[0.47258, 0.05908, -0.02799, -0.87886]},
+  right:{position:[0.23096, -1.19508, -0.06403],rotation:[-0.47258, 0.05908, -0.02799, 0.87886]},
  },
 };
+const idleEuler=new Euler(),idleRotation=new Quaternion(),mountRotation=new Quaternion();
 function placeStandingWrists(pose,id,character){
  const teacher=id.startsWith('teacher'),walking=id.endsWith('-walk');
  if(!walking&&!id.endsWith('-idle')||id.includes('crawl'))return;
@@ -84,9 +86,13 @@ function placeStandingWrists(pose,id,character){
   }else{
    const mount=(teacher?idleMounts.teacher:idleMounts[character]||idleMounts.boy)[key];
    const authoredX=teacher?.2750647281234655:.2586505367912693;
-   p[0]+=mount[0]-sign*authoredX;
-   p[1]+=mount[1]+(teacher?.4682491411488502:.4890046217712004);
-   p[2]+=mount[2]+.62;
+   p[0]+=mount.position[0]-sign*authoredX;
+   p[1]+=mount.position[1]+(teacher?.4682491411488502:.4890046217712004);
+   p[2]+=mount.position[2]+.62;
+   idleRotation.setFromEuler(idleEuler.fromArray(pose[key].rotation));
+   idleRotation.premultiply(mountRotation.fromArray(mount.rotation).normalize());
+   idleEuler.setFromQuaternion(idleRotation);
+   pose[key].rotation=[idleEuler.x,idleEuler.y,idleEuler.z];
   }
  }
 }
