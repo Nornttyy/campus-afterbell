@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
 import {COOLER,coolerPoint} from './field-items116.js?v=campus-117&rev=167';
-import {createDeskItem} from './game-actors.js?v=campus-117&rev=167';
+import {createDeskItem} from './game-actors.js?v=campus-117&rev=170';
 import {restDeskItem} from './prop-assets.js?v=campus-83';
 import {setDish} from './hotpot-food94.js?v=campus-94';
 

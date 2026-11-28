@@ -16,9 +16,9 @@ test('published student hand grips both sides of the packet throughout a bite',a
  for(const kind of ['chips','snack','noodles']){
   const prop=hands.group.getObjectByName(createDeskItem(kind).name),surface=propSurface(prop);
   for(let i=0;i<100;i++){
-   const eating=i>45;
-   hands.update(i/60,{action:kind,carrying:true,seated:false,freeLook:true,movement:1,walkPhase:i/10,eating,holding:eating});
-   if(i!==40&&i!==95)continue;
+   const eating=i>45&&i<97;
+   hands.update(i/60,{action:kind,carrying:true,seated:false,freeLook:true,movement:1,walkPhase:i/10,eating,holding:eating,progress:eating?(i-45)/52:0});
+   if(![40,46,57,72,95,98].includes(i))continue;
    hands.group.updateMatrixWorld(true);assert.ok(prop.visible);
    const local=prop.matrixWorld.clone().invert().multiply(hand.group.matrixWorld);
    for(const digit of ['Index','Middle','Pinky','Thumb']){
@@ -26,6 +26,26 @@ test('published student hand grips both sides of the packet throughout a bite',a
      .filter(p=>digit==='Thumb'?p.z>0:p.z<0).map(p=>surface.query(p).distance));
     assert.ok(gap<.003,kind+' '+digit+' distance '+gap);
    }
+  }
+ }
+});
+
+test('hotpot food and plates touch the original thumb and index finger',async()=>{
+ const models=await Promise.all(['left','right'].map(s=>loadGeometry('ponytail-hand-'+s+'-v2.glb')));
+ const hands=createDeskHands({createHand:(side,k)=>createRiggedPalm(models[side<0?0:1],side,k)});
+ const hand=hands.getHand('left'),rig=handSamplingRig(hand,{samples:1000});
+ for(const action of ['hotpotBite','hotpotPlate']){
+  const eating=action==='hotpotBite';
+  for(let frame=0;frame<48;frame++){
+   hands.update(frame/60,{action,carrying:true,seated:true,holding:eating,eating,progress:eating?frame/48:0});
+  }
+  hands.group.updateMatrixWorld(true);
+  const food=hands.group.children.find(child=>child.visible&&child.userData.foodStyle);
+  assert.ok(food,action+' must use the visible dish');
+  const surface=propSurface(food),local=food.matrixWorld.clone().invert().multiply(hand.group.matrixWorld);
+  for(const digit of ['Thumb','Index']){
+   const gap=Math.min(...rig.points(digit).filter(p=>p.pad).map(p=>surface.query(p.applyMatrix4(local)).distance));
+   assert.ok(gap<.003,action+' '+digit+' distance '+gap);
   }
  }
 });
