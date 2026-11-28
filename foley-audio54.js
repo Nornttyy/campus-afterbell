@@ -93,7 +93,7 @@ export function createFoleySamples(kind,{sampleRate=24000,variant=0}={}){
 
 const contexts=new WeakMap();
 const recordingFiles={
- 'food-complete':'food-finish148.wav',
+ 'food-complete':'food-finish148.wav','use-crunch':'chew151.wav',
  'school-bell-in':'class-bell-in97.wav','school-bell-out':'class-bell-out96.wav',
  ...Object.fromEntries(Array.from({length:5},(_,i)=>['game-kill-'+(i+1),'game-confirm-'+(i+1)+'-97.wav'])),
  ...Object.fromEntries(Array.from({length:6},(_,i)=>['step-'+i,'teacher-step-'+i+'.wav']))
@@ -155,7 +155,7 @@ export function playCampusFoley(audio,kind,intensity=1){
   if(ready)play(ready);
   else{
    const request=loadRecording(context,state,id);
-   if(kind!=='step')request.then(buffer=>{if(context.state==='running'&&context.currentTime-now<1.5)play(buffer);});
+   if(kind!=='step'&&kind!=='use-crunch')request.then(buffer=>{if(context.state==='running'&&context.currentTime-now<1.5)play(buffer);});
   }
  }else play(null);
  return true;
