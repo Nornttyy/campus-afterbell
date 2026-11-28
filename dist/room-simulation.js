@@ -2,18 +2,18 @@ import {actorEmote} from './social-actions93.js?v=campus-93';
 import {nextStudentAppearance} from './class-dismissal92.js?v=campus-102';
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
 import {MEAL_COUNT,QUESTION_COUNT} from './upper-floors85.js?v=campus-92&rev=128';
-import {reachesSchoolDoor} from './door-interaction54.js?v=campus-117&rev=128';
+import {reachesSchoolDoor} from './door-interaction54.js?v=campus-117&rev=154';
 import {INTERACTION_SECONDS} from './item-rules50.js?v=campus-117';
 import {validComputerPlayback} from './computer-rules55.js?v=campus-96';
 import {DEFAULT_ROUND_SETTINGS,validRoundSettings} from './round-settings55.js?v=campus-117';
-import {movementScale,normalWalkSpeed} from './movement55.js?v=campus-117';
+import {movementScale,normalWalkSpeed} from './movement55.js?v=campus-117&rev=154';
 const randomToken=()=>Array.from(globalThis.crypto.getRandomValues(new Uint8Array(24)),n=>n.toString(16).padStart(2,'0')).join('');
 const newMemberId=()=>globalThis.crypto.randomUUID?.()??randomToken();
-import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=128';
-import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=128';
-import * as Layout from './classroom-layout.js?v=campus-117&rev=128';
-import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=128';
-import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=128';
+import {ClassroomRound,DEVELOPMENT_TUNING,CLASSROOM_ACTIONS,AI_WALK_SPEEDS,RESCUE_DURATION} from './classroom-rules.js?v=campus-117&rev=154';
+import {TeacherRound} from './teacher-rules.js?v=campus-117&rev=154';
+import * as Layout from './classroom-layout.js?v=campus-117&rev=154';
+import {playableCampusMap} from './campus-destinations.js?v=campus-117&rev=154';
+import {createElevator,elevatorSnapshot,departureError,departElevator,advanceElevator,moveElevatorPassenger} from './elevator-session.js?v=campus-117&rev=154';
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const variants=new Set(['boy','girl','glasses','ponytail']);
@@ -96,7 +96,10 @@ export class CampusRoom{
   // classmates are visible decoys, not falsely advertised network players.
   this._initializeStudents();
  }
- _initializeStudents(){this.sim.classSlotsBySeat.clear();this.sim._team=new Set();for(const actor of this.sim.students){actor.isPlayer=false;actor.isTeammate=false;actor.networkHuman=false;actor._profile=null;actor._slots=[];}this._decoyTemplates=this.sim.students.map(actor=>structuredClone(actor));}
+ _syncFieldPopulation(){
+  if(this.map==='playground'&&this.sim.stage==='gathering')this.sim.setFieldPopulation([...this.members.values()].filter(m=>m.connected).length);
+ }
+ _initializeStudents(){this._syncFieldPopulation();this.sim.classSlotsBySeat.clear();this.sim._team=new Set();for(const actor of this.sim.students){actor.isPlayer=false;actor.isTeammate=false;actor.networkHuman=false;actor._profile=null;actor._slots=[];}this._decoyTemplates=this.sim.students.map(actor=>structuredClone(actor));}
  _restoreDecoy(actor){this.sim._endJump(actor);const template=this._decoyTemplates[actor.id];for(const key of Object.keys(actor))delete actor[key];Object.assign(actor,structuredClone(template));}
  withMember(member,fn){
   const sim=this.sim,prior=Object.fromEntries(CONTEXT.map(k=>[k,sim[k]]));
@@ -110,7 +113,7 @@ export class CampusRoom{
   const used=new Set([...this.members.values()].map(m=>m.studentId)),actor=this.sim.students.find(s=>!used.has(s.id));
   if(!actor)throw new RoomError(409,'没有空位');
   const id=newMemberId(),member={id,token:randomToken(),name:cleanName(name),character:variants.has(character)?character:'boy',rolePreference:rolePreference==='teacher'?'teacher':'student',role:'student',studentId:actor.id,connected:true,lastInput:Date.now(),lastSeen:Date.now(),lastSequence:0};
-  this._prepareHuman(member,actor);member.context=context(actor);this.members.set(id,member);if(!this.hostId)this.hostId=id;this.sim._team.add(actor.id);this.updatedAt=Date.now();this.sequence++;return member;
+  this._prepareHuman(member,actor);member.context=context(actor);this.members.set(id,member);this._syncFieldPopulation();if(!this.hostId)this.hostId=id;this.sim._team.add(actor.id);this.updatedAt=Date.now();this.sequence++;return member;
  }
  _prepareHuman(member,actor,i=this.members.size){this._restoreDecoy(actor);Object.assign(actor,{...(this.map==='bus'?{busDeck:0}:{}),visible:true,networkHuman:true,isPlayer:false,isTeammate:false,name:member.name,character:member.character,variant:member.character,_profile:null,_decisionAt:Infinity,_speed:1,seated:false,seatId:null,x:Layout.CORRIDOR.minX+1.86+(i%3)*.66,z:(this.map==='bus'?8.80:Layout.CORRIDOR.maxZ)-2.5-Math.floor(i/3)*.85,yaw:Math.PI,pitch:0,caught:false,captivity:'free',holding:false,_drawnSlot:null,_drawerOpen:false});
   actor._slots=Array.from({length:this.sim._deskItemCount()},(_,id)=>this.sim._deskSlot(id));actor._selectedSlot=0;actor.action=actor._slots[0]?.action||'snack';
@@ -307,10 +310,10 @@ export class CampusRoom{
   state.events=this.events.filter(e=>(e.recipientId==null||e.recipientId===selfId)&&(e.networkSequence||0)>member.lastSequence&&(member.role!=='teacher'||!scoringEvents.has(e.type))&&(member.role==='teacher'||!teacherFeedbackEvents.has(e.type))).map(e=>({...e,...(e.actor!==undefined?{actor:e.studentId===selfId?'player':e.actor==='player'?'peer':e.actor}:{})}));
   member.lastSequence=this.sequence;state.sequence=this.sequence;return state;
  }
- disconnect(member){this.sim.fixtureUses.delete(member.context.player);if(member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim._radioNextAt=Infinity;this.withMember(member,sim=>{if(sim.player._examMode)sim.setExamMode('close');ClassroomRound.prototype.hold.call(sim,false);ClassroomRound.prototype.setComputerPlayback.call(sim,{playing:false,visible:false,mediaTime:0});ClassroomRound.prototype.setRescue.call(sim,null);});member.connected=false;member.context._movement={x:0,z:0};member.context.holding=false;member.context.player.holding=false;member.lastSeen=Date.now();}
+ disconnect(member){this.sim.fixtureUses.delete(member.context.player);if(member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim._radioNextAt=Infinity;this.withMember(member,sim=>{if(sim.player._examMode)sim.setExamMode('close');ClassroomRound.prototype.hold.call(sim,false);ClassroomRound.prototype.setComputerPlayback.call(sim,{playing:false,visible:false,mediaTime:0});ClassroomRound.prototype.setRescue.call(sim,null);});member.connected=false;this._syncFieldPopulation();member.context._movement={x:0,z:0};member.context.holding=false;member.context.player.holding=false;member.lastSeen=Date.now();}
  reconnect(member){
   if(!member.connected&&member.role==='student'&&this.sim.radio?.studentId===member.studentId)this.sim._radioNextAt=this.sim._sessionElapsed+1;
-  member.connected=true;member.lastSeen=Date.now();
+  member.connected=true;this._syncFieldPopulation();member.lastSeen=Date.now();
  }
  leave(member){
   if(!this.members.has(member.id))return;this.disconnect(member);this.members.delete(member.id);

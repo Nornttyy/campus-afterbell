@@ -76,16 +76,16 @@ export const BUS_DECK_SLABS=Object.freeze([
  volume('upper-floor-rear',body.minX,stairs.minX,stairs.minZ,stairs.maxZ,high-.17,high),
  volume('upper-floor-front',stairs.maxX,body.maxX,stairs.minZ,stairs.maxZ,high-.17,high)
 ]);
-const decks=[0,1].map(deck=>[...BUS_WALLS,...BUS_FURNITURE].filter(s=>deck?s.minY>=high:s.minY<high));
+const decks=[0,1].map(deck=>[...BUS_WALLS,...BUS_FURNITURE].filter(s=>!/^(coach-chair-|upper-chair-|driver-seat$)/.test(s.id)&&(deck?s.minY>=high:s.minY<high)));
 const touches=(s,x,z,r)=>x>s.minX-r&&x<s.maxX+r&&z>s.minZ-r&&z<s.maxZ+r;
 function passengerDoorBlocks(context){return !!context.busDeparted||(context.doorMotion?.front?.amount??(context.frontDoorClosed?0:1))<.64;}
-export function busBlocked(x,z,r=.18,deck=0,ctx={}){
+export function busBlocked(x,z,r=.18,deck=0,ctx={},crawling=false){
  if(ctx.busDeparted&&!within(body,x,z,r))return true;
  if(!busFootprint(x,z,r,deck))return true;
  if(!deck&&ctx.elevatorClosed&&x>9.48-r&&x<11.5+r&&Math.abs(z-8.80)<r+.06)return true;
  if(!deck&&ctx.officeLocked&&x>11.03-r&&x<11.20+r&&z>=-13.52-r&&z<=body.maxZ)return true;
  if(!deck&&passengerDoorBlocks(ctx)&&x>9.12-r&&x<10.99+r&&Math.abs(z-body.maxZ)<r+.06)return true;
- return decks[deck===1?1:0].some(s=>touches(s,x,z,r));
+ return decks[deck===1?1:0].some(s=>!(crawling&&s.id.startsWith('upper-table-'))&&touches(s,x,z,r));
 }
 export function busSight(a,b,ctx={}){
  const da=a.busDeck??0,db=b.busDeck??0;
@@ -103,7 +103,7 @@ function transition(x,z,nx,nz,deck){
 export function moveOnBus(pos,dx,dz,r=.18,ctx={}){
  let {x,z}=pos,deck=pos.busDeck===1?1:0;
  const n=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.075));
- for(let i=0;i<n;i++){for(const [a,b]of [[dx/n,0],[0,dz/n]]){if(!a&&!b)continue;const nx=x+a,nz=z+b,d=transition(x,z,nx,nz,deck);if(d>=0&&!busBlocked(nx,nz,r,d,ctx)){x=nx;z=nz;deck=d;}}}return{x,z,busDeck:deck};
+ for(let i=0;i<n;i++){for(const [a,b]of [[dx/n,0],[0,dz/n]]){if(!a&&!b)continue;const nx=x+a,nz=z+b,d=transition(x,z,nx,nz,deck);if(d>=0&&!busBlocked(nx,nz,r,d,ctx,pos.crouched&&pos.id!==-1)){x=nx;z=nz;deck=d;}}}return{x,z,busDeck:deck};
 }
 // A small two-level grid is shared by all arrivals at this door state. The
 // only graph edge between decks lies inside the flight of stairs.

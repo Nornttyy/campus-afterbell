@@ -11,7 +11,7 @@ class AudioContextFake{
  createGain(){const n=new Node();this.gains.push(n);return n;}createBiquadFilter(){return new Node();}
  createDynamicsCompressor(){const n=new Node();for(const k of ['threshold','knee','ratio','attack','release'])n[k]=new Parameter();return n;}
  createBuffer(channels,length,rate){const data=new Float32Array(length);return{getChannelData:()=>data,length,sampleRate:rate};}
- createBufferSource(){const n=new Node();n.start=t=>n.started=t;n.stop=()=>n.stopped=true;this.sources.push(n);return n;}
+ createBufferSource(){const n=new Node();n.playbackRate={value:1};n.start=t=>n.started=t;n.stop=()=>n.stopped=true;this.sources.push(n);return n;}
  async resume(){this.state='running';this.resumeCount++;}async suspend(){this.state='suspended';}async close(){this.state='closed';}
 }
 
@@ -81,7 +81,7 @@ test('bells and the five confirmations use real, distinct files even if the firs
  const chew=ctx.sources.at(-1);
  assert.notEqual(chew.buffer,food.buffer);
  assert.equal(chew.buffer.recordedBytes,(await readFile(new URL('chew151.wav',origin))).length);
- assert.equal(ctx.gains.at(-1).gain.value,.38);
+ assert.equal(ctx.gains.at(-1).gain.value,.38*1.15);assert.equal(ctx.sources.at(-1).playbackRate.value,1.10);
  assert.equal(drink.buffer.recordedBytes,(await readFile(new URL('food-finish148.wav',origin))).length);
  await warmCampusFoley(bus);assert.ok([...calls.values()].every(n=>n===1));
 });

@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {OrbitControls} from './vendor/addons/controls/OrbitControls.js';
 import {TransformControls} from './vendor/addons/controls/TransformControls.js';
-import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=121';
+import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=154';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {createDeskHands} from './game-actors.js?v=campus-117';
 import {ITEM_HAND_CLIPS,newItemHandClip,createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-111';

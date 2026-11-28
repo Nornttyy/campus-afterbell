@@ -1,5 +1,5 @@
 import {canOpenSchoolDoor} from './school-door-motion65.js?v=campus-92';
-import {radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117';
+import {radioPowerFor,reachesRadio} from './campus-radio93.js?v=campus-117&rev=154';
 // A key resolves to ONE explicit action. In particular, returning a pen must
 // never fall through to opening the drawer underneath the crosshair.
 const intent=(method,args,label,hold=false)=>({method,args,label,hold});
@@ -44,7 +44,6 @@ export function interactionIntent(s,target,key){
   if(target?.kind==='exam-paper')return intent('setExamMode',['paper'],'拿起红笔');
   if(target?.kind==='exam-card')return intent('setExamMode',['card',target.id],'拿起答案卡');
  }
- if(target?.kind==='sports-bar'&&!teacher&&!carrying)return intent('startMapActivity',['hang',target.id],'抓住单杠');
  if(target?.kind==='plunger'&&!teacher&&!carrying)return intent('startMapActivity',['plunge',target.id],'疏通',true);
  if(target?.kind==='dorm-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&!target.open?intent('toggleDormDoor',[target.id],'开门'):null;
  if(target?.kind==='toilet-door')return s.stage!=='gathering'&&s.stage!=='dismissal'&&!target.open?intent('toggleToiletDoor',[target.id],'开门'):null;

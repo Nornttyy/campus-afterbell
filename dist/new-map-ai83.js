@@ -1,9 +1,9 @@
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117';
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=154';
 import {DORM_ROOMS,DORM_BUNK_ROWS,dormRoomPoint} from './dorm-layout70.js?v=campus-95&rev=127';
-import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
+import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94&rev=154';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94';
-import {NORMAL_WALK_SPEEDS} from './movement55.js?v=campus-117';
-import {startMapActivity,releaseMapActivity} from './map-activities77.js?v=campus-117';
+import {NORMAL_WALK_SPEEDS} from './movement55.js?v=campus-117&rev=154';
+import {releaseMapActivity} from './map-activities77.js?v=campus-117&rev=154';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const vendingApproach=v=>({x:v.x+Math.sin(v.yaw)*.94+Math.cos(v.yaw)*.51,z:v.z+Math.cos(v.yaw)*.94-Math.sin(v.yaw)*.51});
 // Locations come from the existing reference-based furnishings. Delays and
@@ -13,10 +13,9 @@ export function inspectionPoints(map,seats){
  if(map==='dorm')return DORM_ROOMS.flatMap(r=>DORM_BUNK_ROWS.map((z,i)=>({...dormRoomPoint(r.id,0,z),roomId:r.id,row:i,checkpointId:`bed-${r.id}-${i}`})));
  if(map==='toilet')return TOILET_STALLS.map(s=>({x:s.x,z:s.z+2.90,stallId:s.id,checkpointId:`stall-${s.id}`}));
  if(map==='hotpot')return diningPlanForSeats(seats).tables.map(t=>({x:t.x+t.size/2+.51,z:t.z+t.size/2+.51,tableId:t.id,checkpointId:`table-${t.id}`}));
- if(map==='playground')return [...PLAYGROUND_LAYOUT.vending.map(v=>({...vendingApproach(v),checkpointId:v.id})),...PLAYGROUND_LAYOUT.bars.filter((_,i)=>i%2===0).map(b=>({x:b.x-1.8,z:b.z,checkpointId:b.id}))];
+ if(map==='playground')return PLAYGROUND_LAYOUT.vending.map(v=>({...vendingApproach(v),checkpointId:v.id}));
  return [];
 }
-function freeBar(round,a){return PLAYGROUND_LAYOUT.bars.find(b=>!round.students.some(other=>other!==a&&(other.mapActivity?.id===b.id||other._outdoorGoal?.barId===b.id)));}
 function trackPoint(index){
  const t=PLAYGROUND_LAYOUT.track,angle=(index%12)/12*Math.PI*2,r=t.innerRadius+t.laneWidth*1.4;
  return {x:t.cx+Math.sin(angle)*r,z:t.cz+Math.cos(angle)*r+(Math.cos(angle)>=0?t.straightHalf:-t.straightHalf)};
@@ -40,7 +39,6 @@ export function advancePlaygroundPupil(round,a,dt){
   const g=a._outdoorGoal;
   if(round._follow(a,g.route,NORMAL_WALK_SPEEDS.student,dt,.2)){
    a._outdoorGoal=null;
-   if(g.barId)startMapActivity(round,'hang',g.barId,a);
    if(g.vendingId){
     
     if(round._collectVendingFood(a,g.vendingId)){
@@ -68,8 +66,6 @@ export function advancePlaygroundPupil(round,a,dt){
   const machines=[...PLAYGROUND_LAYOUT.vending].sort((x,y)=>cost(x)-cost(y));
   for(const v of machines)if(goal(round,a,vendingApproach(v),{vendingId:v.id}))return true;
  }else{
-  const bar=freeBar(round,a);
-  if(bar&&goal(round,a,{x:bar.x-.45,z:bar.z},{barId:bar.id}))return true;
   if(round.elapsed>=(a._outdoorAt||0)){a._outdoorAt=round.elapsed+2;roam(round,a);}
  }
  a.mood='standing';return true;

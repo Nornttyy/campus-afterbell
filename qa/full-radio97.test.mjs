@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRadioUI} from '../dist/radio-player93.js';
 import {interactionIntent} from '../dist/interaction-intent54.js';
-import {radioAnchor,broadcastLift,RADIO_SONGS,EXERCISE_SONG} from '../dist/campus-radio93.js';
+import {radioAnchor,broadcastLift,broadcastBeat,broadcastScale,RADIO_SONGS,EXERCISE_SONG} from '../dist/campus-radio93.js';
 import {readFile} from 'node:fs/promises';
 
 const state=(radio=null,time=19)=>({radio,status:'playing',stage:'class',map:'playground',sceneElapsed:time,elapsed:time-3});
@@ -32,5 +32,11 @@ test('late joins, local mute, return to the march and the shared beat follow the
   f.ui.update(state(null));assert.ok(f.audio.src.endsWith('field-march.m4a'));
   f.ui.update({...state(),map:'bus'});assert.equal(f.audio.src,undefined);f.ui.dispose();
  }
- assert.equal(broadcastLift(state()),0);assert.equal(broadcastLift(state(station,10)),0);assert.ok(broadcastLift(state(station,10+30/RADIO_SONGS[0].bpm))>.40);
+ assert.equal(broadcastLift(state()),0);assert.equal(broadcastLift(state(station,10)),0);for(const [fraction,sign] of [[.25,1],[.75,-1]]){
+  const s=state(station,10+fraction*60/RADIO_SONGS[0].bpm);
+  const {height,width}=broadcastScale(broadcastBeat(s));
+  assert.ok(Math.abs(broadcastLift(s)-sign*.015)<1e-8);
+  assert.ok(Math.sign(1-height)===sign&&Math.sign(width-1)===sign);
+  assert.ok(Math.abs(height*width*width-1)<1e-8);
+ }
 });

@@ -1,10 +1,10 @@
-import {BUS,BUS_SEATS,BUS_POSTS,BUS_WALLS,BUS_FURNITURE,BUS_DECK_SLABS,busSight,busBlocked,busFootprint,busFloorHeight,busRoute,moveOnBus} from './bus-layout86.js?v=campus-94';
+import {BUS,BUS_SEATS,BUS_POSTS,BUS_WALLS,BUS_FURNITURE,BUS_DECK_SLABS,busSight,busBlocked,busFootprint,busFloorHeight,busRoute,moveOnBus} from './bus-layout86.js?v=campus-94&rev=154';
 import {SERVING_SOLIDS,CAFETERIA_SEATS} from './upper-floors85.js?v=campus-92&rev=128';
 import {STUDENT_PROPORTIONS} from './student-proportions73.js?v=campus-83';
-import {hotpotLayout,diningPlanForSeats} from './hotpot-layout70.js?v=campus-94';
+import {hotpotLayout,diningPlanForSeats} from './hotpot-layout70.js?v=campus-94&rev=154';
 import {TOILET_SEATS,TOILET_SOLIDS,TOILET_WALK_SOLIDS,TOILET_STALLS,toiletDynamicSolids} from './toilet-layout70.js?v=campus-94';
 import {DORM_SEATS,DORM_SOLIDS,DORM_WALK_SOLIDS,DORM_BOUNDS,DORM_ROOMS,DORM_ROOM_RECTS,DORM_SHELL_SOLIDS,DORM_CORRIDOR_SOLIDS,DORM_CEILINGS,dormDoorSolids,DORM_WATCH,DORM_POSTS,dormCabinetDoorSolids} from './dorm-layout70.js?v=campus-95&rev=127';
-import {PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-117';
+import {playgroundForPlayers,PLAYGROUND_SEATS,PLAYGROUND_LAYOUT,PLAYGROUND_SOLIDS,PLAYGROUND_BOARD,PLAYGROUND_POSTS,playgroundFloorHeight,playgroundWalkable} from './playground-layout70.js?v=campus-117&rev=154';
 import {createSchoolDoorMotion,copySchoolDoorMotion,setSchoolDoorTargets,advanceSchoolDoors,schoolDoorSegments,schoolDoorSnapshot,SCHOOL_DOOR_IDS} from './school-door-motion65.js?v=campus-92';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';
 // Elevator operation is enabled; boarding and per-round limits are authoritative.
@@ -218,8 +218,8 @@ export function enclosureVolumes(map='classroom',context=null){
 export const OFFICE_SOLIDS=Object.freeze([
  ...[
   V(officePlan.minX+.04,officePlan.minX+.71,officeShelfCenters[0]-1.16,officeShelfCenters.at(-1)+1.16,0,2.79),
-  ...officeDeskPlans.map(d=>orientedVolume(d.x,d.z,d.yaw,d.width,d.depth,0,.985)),
-  ...officeDeskPlans.map(d=>{const p=officeOffset(d,-.42,.19);return orientedVolume(p.x,p.z,d.yaw,.66,.08,1.105,1.482);}),
+  ...officeDeskPlans.map(d=>({...orientedVolume(d.x,d.z,d.yaw,d.width,d.depth,0,.985),crawlUnder:true})),
+  ...officeDeskPlans.map(d=>{const p=officeOffset(d,-.42,.19);return {...orientedVolume(p.x,p.z,d.yaw,.66,.08,1.105,1.482),crawlUnder:true};}),
   V(officePlan.maxX-.68,officePlan.maxX-.02,11.075,14.925,0,1.291),
   V(officeBinPlan.x-.165,officeBinPlan.x+.165,officeBinPlan.z-.165,officeBinPlan.z+.165,0,.51),
   V(officeBoardPlan.x-1.35,officeBoardPlan.x+1.35,officeBoardPlan.z-.37,officeBoardPlan.z+.37,0,2.48)
@@ -316,7 +316,7 @@ function labDividers(seats){
 export function deskSolids(seats=SEATS){
  if(seats[0]?.map==='bus')return [];
  if(['hotpot','toilet','dorm','playground'].includes(mapKind(seats[0]?.map)))return [];
- return seats.map(s=>orientedVolume(s.deskX,s.deskZ,s.yaw,mapKind(s.map)==='computer'?1.22:1.20,.85,0,.875));
+ return seats.map(s=>({...orientedVolume(s.deskX,s.deskZ,s.yaw,mapKind(s.map)==='computer'?1.22:1.20,.85,0,.875),crawlUnder:true}));
 }
 export function chairBackSolids(seats=SEATS){if(seats[0]?.map==='bus')return [];const noChairs=['toilet','dorm','playground'].includes(mapKind(seats[0]?.map));return [...(noChairs?[]:seats.map(s=>orientedVolume(s.x-Math.sin(s.yaw||0)*.325,s.z-Math.cos(s.yaw||0)*.325,s.yaw,.562,.114,.42,.99))),...OFFICE_CHAIRS.map(c=>{const back=officeOffset(c,0,-.30);return orientedVolume(back.x,back.z,c.yaw,.70,.12,.45,1.13);})];}
 export const DESKS=Object.freeze(deskSolids());
@@ -337,13 +337,22 @@ function rebuildWalkCollisions(context){
  if(context.map==='bus'){context.walls=BUS_WALLS;context.walkSolids=[...BUS_WALLS,...BUS_FURNITURE];context.routeGrids.clear();context.projectileColliderCache?.clear();return context;}
  const kind=mapKind(context.map),sightFurniture=context.furnitureVolumes.filter(s=>/^dorm-room-door-|^hotpot-screen-|^toilet-(left|right|rear|hinge|latch|door)-/.test(s.id||''));
  context.walls=[...(context._buildingWalls||[]),...sightFurniture];
- context.walkSolids=[...context.desks,...context.chairBacks,...(context._buildingWalls||[]),...context.furnitureWalkSolids,...context.postVolumes,...(['toilet','dorm','playground'].includes(kind)?[]:[lecternForMap(context.map)]),...OFFICE_SOLIDS,...(context.dynamicSolids||[])];
+ context.walkSolids=[...context.desks,...(context._buildingWalls||[]),...context.furnitureWalkSolids,...context.postVolumes,...(['toilet','dorm','playground'].includes(kind)?[]:[lecternForMap(context.map)]),...OFFICE_SOLIDS,...(context.dynamicSolids||[])];
  context.routeGrids.clear();context.projectileColliderCache?.clear();return context;
 }
 // The simulation and renderer share CURRENT numeric openness. This function
 // never advances animation independently or snaps a moving leaf to its target.
 export function updateSpecialFurnitureCollisions(context,state={}){
- const kind=mapKind(context.map),doorKeys=kind==='toilet'?['toiletDoors','toiletCabinets']:kind==='dorm'?['dormCabinets','dormDoors']:[];
+ const kind=mapKind(context.map);
+ if(kind==='playground'){
+  const plan=playgroundForPlayers(state.posts?.length??context.fieldPostCount);
+  if(context.fieldPostCount===plan.posts.length)return false;
+  context.fieldPostCount=plan.posts.length;
+  context.furnitureVolumes=plan.colliders.filter(s=>!s.id.includes('-wall'));
+  context.furnitureWalkSolids=context.furnitureVolumes.filter(s=>!s.walkable);
+  rebuildWalkCollisions(context);return true;
+ }
+ const doorKeys=kind==='toilet'?['toiletDoors','toiletCabinets']:kind==='dorm'?['dormCabinets','dormDoors']:[];
  context._specialFurnitureState??={};for(const key of doorKeys)if(Object.hasOwn(state,key))context._specialFurnitureState[key]=state[key];
  const current=context._specialFurnitureState,ids=kind==='toilet'?TOILET_STALLS:DORM_SEATS;
  const signature=JSON.stringify([kind,...doorKeys.map(key=>(key==='dormDoors'?DORM_ROOMS:ids).map(s=>key==='dormDoors'?(current[key]?.[s.id]??1):furnitureAmount(current[key],s.id)))]);
@@ -419,10 +428,22 @@ function movementStepClear(x,z,nextX,nextZ,radius,context){
   const coordinate=axis==='x'?nextX:nextZ,span=spans[axis];
   return !context.walkSolids.some(d=>inside(d,nextX,nextZ)&&(!dynamic.includes(d)||coordinate<span.min||coordinate>span.max));
 }
+const crawlContexts=new WeakMap();
+function crawlContext(layout){
+ let result=crawlContexts.get(layout.walkSolids);
+ if(!result){
+  result=Object.create(layout);
+  result.walkSolids=layout.walkSolids.filter(s=>!s.crawlUnder&&!layout.dynamicSolids?.includes(s));
+  result.dynamicSolids=[];
+  crawlContexts.set(layout.walkSolids,result);
+ }
+ return result;
+}
 export function moveInRoom(pos,dx,dz,radius=.18,context=defaultLayout){
   // Swept substeps prevent crossing a thin desk when a frame arrives late.
   context??=defaultLayout;
   if(context.map==='bus')return moveOnBus(pos,dx,dz,radius,context);
+  if(pos.crouched&&pos.id!==-1)context=crawlContext(context);
   const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.08));
   let x=pos.x,z=pos.z;
   for(let i=0;i<steps;i++){if(dx&&movementStepClear(x,z,x+dx/steps,z,radius,context))x+=dx/steps;if(dz&&movementStepClear(x,z,x,z+dz/steps,radius,context))z+=dz/steps;}

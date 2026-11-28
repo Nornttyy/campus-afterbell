@@ -9,15 +9,15 @@ const chair=(await loadGeometry('chair-v2.glb')).scene.getObjectByName('ChairBod
 const desk=(await loadGeometry('desk-v2.glb')).scene.getObjectByName('DeskBody');
 function crossesMesh(object,a,b){object.updateWorldMatrix(true,true);const delta=b.clone().sub(a);return new T.Raycaster(a,delta.clone().normalize(),0,delta.length()).intersectObject(object,true).length>0;}
 
-test('movement stops in front of actual Tripo chair backs in both chair orientations',()=>{
+test('movement passes directly through actual Tripo chair backs in both chair orientations',()=>{
  for(const yaw of [0,Math.PI]){
   const s={id:0,x:0,z:0,deskX:0,deskZ:Math.cos(yaw)*.78,yaw},layout=createLayoutContext([s]);
   const mesh=chair.clone(true);mesh.rotation.y=yaw;
   const start={x:0,z:-Math.cos(yaw)*.90},attempt={x:0,z:Math.cos(yaw)*.12};
   assert.equal(crossesMesh(mesh,v(start.x,.85,start.z),v(attempt.x,.85,attempt.z)),true,'the old move crossed real backrest triangles');
   const end=moveInRoom(start,attempt.x-start.x,attempt.z-start.z,.18,layout);
-  assert.equal(crossesMesh(mesh,v(start.x,.85,start.z),v(end.x,.85,end.z)),false);
-  assert.ok(Math.hypot(end.x-attempt.x,end.z-attempt.z)>.4);
+  assert.equal(crossesMesh(mesh,v(start.x,.85,start.z),v(end.x,.85,end.z)),true);
+  assert.ok(Math.hypot(end.x-attempt.x,end.z-attempt.z)<1e-8);
   assert.equal(blocked(s.x,s.z,.20,layout),false,'AI can still approach its sitting anchor from the side');
  }
 });
@@ -38,4 +38,15 @@ test('standing exits each chair beside its mesh, including reversed islands and 
 
 test('computer monitors stop chalk at their visible depth, for front and reversed seats',()=>{
  for(const yaw of [0,Math.PI]){const sign=Math.cos(yaw),s={id:0,x:0,z:-sign*.78,deskX:0,deskZ:0,yaw},ctx=createLayoutContext([s]);const hit=chalkHit({x:0,y:1.22,z:sign*.30},{x:0,y:1.22,z:sign*.10},[],[],'computer',ctx);assert.equal(hit?.kind,'desk');assert.equal(hit?.id,0);assert.ok(hit.t>0&&hit.t<1);}
+});
+
+test('crawling under a desk defers standing until the student exits',()=>{
+ const r=new ClassroomRound({map:'classroom',seed:9});r.start();
+ const s=r.seats[2],p=r.player;
+ Object.assign(p,{seated:false,x:s.deskX,z:s.deskZ,crouched:true});
+ r.setCrouch(false);assert.equal(p.crouched,true);
+ const dx=Math.sin(s.yaw||0),dz=Math.cos(s.yaw||0);
+ const exit=moveInRoom(p,-dx*.78,-dz*.78,.18,r.layout);
+ assert.ok(Math.hypot(exit.x-p.x,exit.z-p.z)>.75);
+ Object.assign(p,exit);r.step(.05);assert.equal(p.crouched,false);
 });

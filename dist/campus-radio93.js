@@ -1,5 +1,5 @@
-import {BUS,onBus} from './bus-layout86.js?v=campus-94';
-import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117';
+import {BUS,onBus} from './bus-layout86.js?v=campus-94&rev=154';
+import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=154';
 
 export const RADIO_SONGS=Object.freeze([
  {id:'track-window',title:'雨停的车窗',bpm:96,bars:32},
@@ -12,11 +12,16 @@ export function radioPowerFor(role,radio){
  if(role==='teacher'&&radio)return false;
  return null;
 }
-export function broadcastLift(state){
+export function broadcastBeat(state){
  const radio=state?.radio;if(!radio)return 0;
  const song=radioSong(radio.track);if(!song)return 0;
  const age=Math.max(0,state.sceneElapsed-radio.startedAt),beat=age*song.bpm/60,phase=beat%1;
- return .42*(4*phase*(1-phase))*Math.min(1,age*8);
+ return Math.sin(2*Math.PI*phase)*Math.min(1,age*8);
+}
+export function broadcastLift(state){return .015*broadcastBeat(state);}
+export function broadcastScale(beat){
+ const height=1-.055*beat;
+ return {height,width:1/Math.sqrt(height)};
 }
 export function radioAnchor(map){
  if(map==='bus')return {x:11.023,y:BUS.low+1.36,z:-14.49,yaw:-Math.PI/2};

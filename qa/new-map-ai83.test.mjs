@@ -25,7 +25,7 @@ test('playground opponents actually walk to food sources, leave them and consume
   }
   const bars=r.students.filter(a=>a.mapActivity).map(a=>a.mapActivity.id);assert.equal(new Set(bars).size,bars.length);
  }
- assert.ok(r.score>0);assert.ok(taken.size>=3);assert.ok(earnedAway);assert.ok(hanging>0&&walking>0);
+ assert.ok(r.score>0);assert.ok(taken.size>=3);assert.ok(earnedAway);assert.ok(hanging===0&&walking>0);
  for(const a of r.students.filter(a=>taken.has(a.id)))assert.ok(Math.hypot(a.x-starts[a.id].x,a.z-starts[a.id].z)>5);
 });
 
