@@ -27,7 +27,7 @@ export function selectHandAnimationClip(state={}){
  if(state.role==='student'&&state.carrying&&!state.seated&&(!state.holding&&!state.eating||state.foodItem)&&!state.caught&&!state.computer&&(!state.captivity||state.captivity==='free')){
   // The working hand layers its bite onto locomotion. Keep the stride clock
   // running for the empty hand, including while a bite is held or cancelled.
-  return selectHandAnimationClip({...state,carrying:false,holding:false,eating:false,drawerOpen:false});
+  return selectHandAnimationClip({...state,carrying:false,holding:false,eating:false,penTwirling:false,drawerOpen:false});
  }
  if(state.foodItem&&state.role==='student'&&state.carrying&&!state.caught&&(!state.captivity||state.captivity==='free')&&!state.computer&&!state.bookAmount)return state.eating?'student-eat-food':'student-carry-food';
  if(blocked(state))return null;

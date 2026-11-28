@@ -50,3 +50,19 @@ test('upward aim reaches a higher apex than level aim and a vertical throw falls
  return {top,range:Math.hypot(start.x-obj.x,start.z-obj.z),impacted:obj.firstImpact!==null};}
  const level=arc(0),up=arc(-Math.PI/2);assert.ok(up.top>level.top+3);assert.ok(up.range<.02);assert.ok(up.impacted);
 });
+
+test('cans dropped against the field wall and into its corner settle on the ground',()=>{
+ for(const z of [PLAYGROUND_LAYOUT.track.cz,PLAYGROUND_LAYOUT.bounds.maxZ-.075]){
+  const round=field(),x=PLAYGROUND_LAYOUT.bounds.maxX-.075;
+  const step=n=>{for(let frame=0;frame<n;frame++)advanceLoose(round,1/60);};
+  for(let i=0;i<16;i++){
+   Object.assign(spawnLoose(round,round.player,'drink'),{x,z,y:1.26,vx:0,vy:0,vz:0});
+   step(90);
+  }
+  step(400);
+  for(const can of round.groundItems.values()){
+   assert.ok(can.settled&&Math.abs(can.y-.075)<.001);
+   assert.ok(can.x<=x+.0001&&can.z<=PLAYGROUND_LAYOUT.bounds.maxZ-.0749);
+  }
+ }
+});

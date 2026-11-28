@@ -70,13 +70,21 @@ export function stepSmokeProjectile(p,dt,layout=null){
     for(const d of tables){
       if(p.x<d.minX-R||p.x>d.maxX+R||p.z<d.minZ-R||p.z>d.maxZ+R||p.y<d.minY-R||p.y>d.maxY+R)continue;
       const faces=[['y',d.maxY+R,1],['y',d.minY-R,-1],['x',d.minX-R,-1],['x',d.maxX+R,1],['z',d.minZ-R,-1],['z',d.maxZ+R,1]];
-      const crossed=faces.filter(([axis,b,sign])=>sign*(before[axis]-b)>=-1e-7);
+      // A body sliding down a wall may already touch its expanded side.
+      // Resolve only entering faces so a tangent wall cannot mask the floor.
+      const outside=faces.filter(([axis,b,sign])=>sign*(before[axis]-b)>=-1e-7);
+      const crossed=outside.filter(([axis,b,sign])=>sign*(p[axis]-before[axis])< -1e-9);
+      if(outside.length&&!crossed.length)continue;
       const [axis,b,sign]=(crossed.length?crossed:faces).sort((a,b)=>Math.abs(p[a[0]]-a[1])-Math.abs(p[b[0]]-b[1]))[0];
       p[axis]=b;normal=[axis==='x'?sign:0,axis==='y'?sign:0,axis==='z'?sign:0];break;
     }
     if(normal){
       const vn=p.vx*normal[0]+p.vy*normal[1]+p.vz*normal[2],impact=Math.abs(vn);
       if(vn<0){
+        if(p.slideAngle!=null&&!normal[1]){
+          const x=Math.cos(p.slideAngle),z=Math.sin(p.slideAngle),into=x*normal[0]+z*normal[2];
+          if(into<0)p.slideAngle=Math.atan2(z-2*into*normal[2],x-2*into*normal[0]);
+        }
         const restitution=impact>.65?.32:0;
         p.vx-=normal[0]*vn*(1+restitution);p.vy-=normal[1]*vn*(1+restitution);p.vz-=normal[2]*vn*(1+restitution);
         if(normal[1]>.5){p.vx*=.55;p.vz*=.55;}
