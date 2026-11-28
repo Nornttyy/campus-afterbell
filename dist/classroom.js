@@ -23,7 +23,7 @@ import {createRolePortraits,teacherLobbyActor} from './role-figures57.js?v=campu
 import {gameplayFov} from './view-tuning55.js?v=campus-83';
 import {setCharacterNight,setCharacterClassroomDay} from './character-materials.js?v=campus-113';
 import {createStaminaVision} from './stamina-vision55.js?v=campus-83';
-import {createSoundCues} from './sound-cue55.js?v=campus-83&rev=149';
+import {createSoundCues} from './sound-cue55.js?v=campus-83&rev=150';
 import {createChalkPowder} from './chalk-powder55.js?v=campus-83';
 import {createSurveillanceView} from './surveillance-view54.js?v=campus-117&rev=128';
 import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83';

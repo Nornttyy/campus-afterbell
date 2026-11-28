@@ -1,4 +1,4 @@
-export const GLOBAL_SOUND_EVENTS=new Set(['food-complete','gum-pop','phone-notification']);
+export const GLOBAL_SOUND_EVENTS=new Set(['food-complete','drink-complete','gum-pop','phone-notification']);
 const privateSounds=new Set(['use-crunch','use-gulp','gum-inflate','snake-food','snake-failed','valorant-watch']);
 const publicSounds=new Set(['food-complete','drink-complete','gum-pop','phone-notification','burp','chalk','chalk-throw','chalk-hit']);
 export function soundForEvent(event, player) {

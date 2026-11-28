@@ -131,7 +131,7 @@ export function playCampusFoley(audio,kind,intensity=1){
  if(state.active>=20||now-(state.last.get(kind)??-100)<minGap)return true;
  state.last.set(kind,now);
  const count=state.counts.get(kind)||0,variant=count%6;state.counts.set(kind,count+1);
- const id=kind==='step'?'step-'+variant:kind;
+ const id=kind==='step'?'step-'+variant:kind==='drink-complete'?'food-complete':kind;
  function play(buffer){
   if(state.active>=20||context.state==='closed'||audio.muted)return;
   if(!buffer){
@@ -145,7 +145,7 @@ export function playCampusFoley(audio,kind,intensity=1){
   }
   const source=context.createBufferSource(),gain=context.createGain();
   // The recorded finishing bite has a quiet master. Add 6 dB only to that sample.
-  const recordingGain=kind==='food-complete'&&buffer===state.buffers.get(id)?2:1;
+  const recordingGain=id==='food-complete'&&buffer===state.buffers.get(id)?2:1;
   source.buffer=buffer;gain.gain.value=volume*recordingGain;source.connect(gain);gain.connect(output);
   source.onended=()=>{source.disconnect();gain.disconnect();state.active--;};
   state.active++;source.start(context.currentTime);

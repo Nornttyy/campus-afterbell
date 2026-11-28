@@ -37,7 +37,7 @@ test('teacher footstep contact counts depend on distance instead of rendering fr
  for(const hz of[30,60,120]){const track=createTeacherFootsteps(),s=stepState();s.role='teacher';track.sample(s);let count=0;for(let i=0;i<hz*2;i++){s.player.x=6.5*(i+1)/(hz*2);if(track.sample(s))count++;}assert.equal(count,5);}
 });
 test('finishing food, gum pop and phone alerts are global at identical gain, including remote teachers',()=>{
- for(const type of['food-complete','gum-pop','phone-notification'])for(const listener of[{id:0,x:0,z:0},{id:9,x:1000,z:-1000},{id:-1,x:30,z:25}])assert.deepEqual(soundForEvent({type,studentId:0,x:0,z:0},listener),{kind:type,gain:.8});
+ for(const type of['food-complete','drink-complete','gum-pop','phone-notification'])for(const listener of[{id:0,x:0,z:0},{id:9,x:1000,z:-1000},{id:-1,x:30,z:25}])assert.deepEqual(soundForEvent({type,studentId:0,x:0,z:0},listener),{kind:type,gain:.8});
 });
 test('chewing, drinking, inflation and computer effects are private regardless of proximity or recipient mistakes',()=>{
  for(const type of['use-crunch','use-gulp','gum-inflate','snake-food','snake-failed','valorant-watch']){
@@ -46,8 +46,8 @@ test('chewing, drinking, inflation and computer effects are private regardless o
   assert.equal(soundForEvent({...event,recipientId:3},owner),null);
  }
 });
-test('drink completion, burp and chalk remain positional; unrelated score events do not duplicate sounds',()=>{
- for(const type of['drink-complete','burp','chalk-throw','chalk-hit']){
+test('burp and chalk remain positional; unrelated score events do not duplicate sounds',()=>{
+ for(const type of['burp','chalk-throw','chalk-hit']){
   const event={type,x:0,z:0};const near=soundForEvent(event,{id:-1,x:0,z:0}),far=soundForEvent(event,{id:-1,x:8,z:0});assert.ok(near.gain>far.gain);assert.equal(soundForEvent(event,{id:-1,x:14,z:0}),null);
  }
  for(const type of['complete','gum-score','bubble-score','class-started'])assert.equal(soundForEvent({type,studentId:0},{id:0,x:0,z:0}),null);
