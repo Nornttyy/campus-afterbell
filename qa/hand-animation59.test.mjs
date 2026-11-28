@@ -87,7 +87,7 @@ test('legacy walk-only documents leave idle to the game and fade a stopped crawl
  let p;for(let i=0;i<20;i++)p=r.sample({movement:1,crouched:true},1+i*.02);assert.equal(p.clipId,'student-crawl');
  p=r.sample({movement:0,crouched:true},1.4);assert.ok(p.weight>0&&p.weight<1);r.sample({movement:0,crouched:true},1.5);assert.equal(r.sample({movement:0,crouched:true},1.6),null);r.dispose();
 });
-const sources=await Promise.all(['ponytail-hand-left-v1.glb','ponytail-hand-right-v1.glb','teacher-hand-left-v1.glb','teacher-hand-right-v1.glb'].map(loadGeometry));
+const sources=await Promise.all(['ponytail-hand-left-v2.glb','ponytail-hand-right-v2.glb','teacher-hand-left-v1.glb','teacher-hand-right-v1.glb'].map(loadGeometry));
 function make(teacher=false){return createDeskHands({createHand:(side,scale)=>{const h=createRiggedPalm(sources[(teacher?2:0)+(side<0?0:1)],side,scale);if(teacher)h.group.userData.characterRole='teacher';return h;}});}
 function skin(h){h.group.updateMatrixWorld(true);const result=[];for(const side of ['left','right'])h.getHand(side).group.traverse(o=>{if(!o.isSkinnedMesh)return;o.skeleton.update();for(let i=0;i<o.geometry.attributes.position.count;i+=53)result.push(o.getVertexPosition(i,V()).applyMatrix4(o.matrixWorld));});return result;}
 function sameSkin(a,b,eps=1e-8){assert.equal(a.length,b.length);for(let i=0;i<a.length;i++)assert.ok(a[i].distanceTo(b[i])<eps,`skin sample ${i} changed by ${a[i].distanceTo(b[i])}`);}

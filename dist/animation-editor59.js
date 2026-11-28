@@ -2,7 +2,7 @@ import {CRAWL_TUNING} from './crawl-profile.js?v=campus-83&rev=157';
 import * as T from './vendor/three.module.js';
 import {OrbitControls} from './vendor/addons/controls/OrbitControls.js';
 import {TransformControls} from './vendor/addons/controls/TransformControls.js';
-import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=161';
+import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=162';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {createDeskHands} from './game-actors.js?v=campus-117&rev=161';
 import {ITEM_HAND_CLIPS,newItemHandClip,createHandAnimationDocument,validateHandAnimationDocument,sampleHandAnimationClip} from './hand-animation-data59.js?v=campus-111';
