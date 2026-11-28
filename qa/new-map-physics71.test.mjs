@@ -14,7 +14,7 @@ const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
 const projectile=(map,layout,values)=>Object.assign(createSmokeProjectile({id:9,x:6.5,z:6,yaw:0},90,0,map,layout),values);
 
 test('special maps keep genuine actor places without synthesizing ordinary desks or chairs',()=>{
- for(const [map,count] of [['hotpot',32],['toilet',28],['dorm',32],['playground',24]]){
+ for(const [map,count] of [['hotpot',32],['toilet',28],['dorm',32],['playground',24],['pool',22]]){
   const c=context(map);assert.equal(c.seats.length,count);assert.equal(c.desks.length,0);assert.ok(c.furnitureVolumes.length);
   if(map!=='hotpot')assert.equal(c.chairBacks.length,OFFICE_DESKS.length);
   if(map!=='hotpot')assert.ok(!c.walkSolids.includes(LECTERN));
@@ -22,7 +22,7 @@ test('special maps keep genuine actor places without synthesizing ordinary desks
   const volumes=enclosureVolumes(map,c);for(const v of c.furnitureVolumes)assert.equal(volumes.filter(s=>s===v).length,1,'furniture appears once in projectile enclosure');
   if(map==='playground')for(const s of c.seats){assert.equal(s.standing,true);assert.equal(blocked(s.x,s.z,.18,c),false);}
  }
- assert.equal(CAMPUS_MAPS.length,10);
+ assert.equal(CAMPUS_MAPS.length,11);
 });
 
 test('current cubicle and cabinet angles update movement, sight and projectile caches independently',()=>{

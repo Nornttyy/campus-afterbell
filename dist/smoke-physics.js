@@ -1,9 +1,9 @@
-import {mapBounds,DESKS,enclosureVolumes,lecternForMap,OFFICE_SOLIDS,floorTiles,floorHeight,actorEyePosition,mapKind} from './classroom-layout.js?v=campus-117&rev=174';
+import {mapBounds,DESKS,enclosureVolumes,lecternForMap,OFFICE_SOLIDS,floorTiles,floorHeight,actorEyePosition,mapKind} from './classroom-layout.js?v=campus-117&rev=180';
 
 const R=.075,GRAVITY=9.8;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const colliderCache=new Map();
-const furnishedMaps=new Set(['hotpot','toilet','dorm','playground']);
+const furnishedMaps=new Set(['hotpot','toilet','dorm','playground','pool']);
 function tablesFor(map='classroom',layout=null){
  const key=map,cache=layout?(layout.projectileColliderCache??=new Map()):colliderCache;
  if(map==='bus'){if(!cache.has(key))cache.set(key,enclosureVolumes(map,layout));return cache.get(key);}
@@ -11,7 +11,7 @@ function tablesFor(map='classroom',layout=null){
   // These maps supply the real pot, cabinet, bunk and outdoor fixture volumes
   // through enclosureVolumes. Flattening them into a desktop loses their shape.
   const tables=furnishedMaps.has(mapKind(map))?[]:(layout?.desks||DESKS).map(d=>{const h=floorHeight((d.minX+d.maxX)/2,(d.minZ+d.maxZ)/2,map);return{...d,minY:h+.80,maxY:h+.895};});
-  cache.set(key,[...tables,...enclosureVolumes(map,layout),...OFFICE_SOLIDS,...(mapKind(map)==='playground'?[]:floorTiles(map).map(t=>({...t,minY:0,maxY:t.height}))),...(['toilet','dorm','playground'].includes(mapKind(map))?[]:[{...lecternForMap(map),minY:.16,maxY:1.15}])]);
+  cache.set(key,[...tables,...enclosureVolumes(map,layout),...OFFICE_SOLIDS,...(mapKind(map)==='playground'?[]:floorTiles(map).map(t=>({...t,minY:0,maxY:t.height}))),...(['toilet','dorm','playground','pool'].includes(mapKind(map))?[]:[{...lecternForMap(map),minY:.16,maxY:1.15}])]);
  }
  return cache.get(key);
 }

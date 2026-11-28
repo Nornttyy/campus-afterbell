@@ -1,14 +1,16 @@
+import {takeLoose} from './field-items116.js?v=campus-117&rev=180';
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=157';
 import {DORM_ROOMS,DORM_BUNK_ROWS,dormRoomPoint} from './dorm-layout70.js?v=campus-95&rev=127';
 import {diningPlanForSeats} from './hotpot-layout70.js?v=campus-94&rev=154';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94&rev=173';
 import {normalWalkSpeed} from './movement55.js?v=campus-117&rev=157';
-import {releaseMapActivity} from './map-activities77.js?v=campus-117&rev=173';
+import {releaseMapActivity} from './map-activities77.js?v=campus-117&rev=180';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const vendingApproach=v=>({x:v.x+Math.sin(v.yaw)*.94+Math.cos(v.yaw)*.51,z:v.z+Math.cos(v.yaw)*.94-Math.sin(v.yaw)*.51});
 // Locations come from the existing reference-based furnishings. Delays and
 // decision weights are local AI tuning, not measured original-game constants.
 export function inspectionPoints(map,seats){
+ if(map==='pool')return [{x:3,z:-7,checkpointId:'pool-changing-south'},{x:2.5,z:6.8,checkpointId:'pool-changing-north'},{x:-2,z:0,checkpointId:'pool-shallow-end'},{x:-24.3,z:0,checkpointId:'pool-far-deck'}];
  if(map==='bus')return [{x:5.62,z:-13.31,busDeck:0,checkpointId:'coach-aisle'},{x:-4.38,z:-14.26,busDeck:0,checkpointId:'coach-washroom'},{x:6.03,z:-12.91,busDeck:1,checkpointId:'coach-study-deck'}];
  if(map==='dorm')return DORM_ROOMS.flatMap(r=>DORM_BUNK_ROWS.map((z,i)=>({...dormRoomPoint(r.id,0,z),roomId:r.id,row:i,checkpointId:`bed-${r.id}-${i}`})));
  if(map==='toilet')return TOILET_STALLS.map(s=>({x:s.x,z:s.z+2.90,stallId:s.id,checkpointId:`stall-${s.id}`}));
@@ -106,4 +108,27 @@ export function advancePlaygroundPupil(round,a,dt){
   if(round.elapsed>=(a._outdoorAt||0))a._outdoorAt=roam(round,a)?0:round.elapsed+1;
  }
  a.mood='standing';return true;
+}
+
+export function advancePoolPupil(round,p,dt){
+ if(p.isPlayer||p.networkHuman||p.seated||p._returnRoute||p._heldSource||p.mapActivity)return false;
+ if(round.stage!=='class')return true;
+ const trip=p._poolTrip;
+ if(trip){
+  if(round._follow(p,trip.route,normalWalkSpeed(p,round.map),dt,.2)){
+   p._poolTrip=null;
+   if(trip.item!=null)takeLoose(round,trip.item,p);
+   p._poolWalkAt=round.elapsed+round._range(3,9);
+  }
+  p.mood='walking';
+  return true;
+ }
+ p.mood='standing';
+ if(round.elapsed<(p._poolWalkAt??(3+p.id*.55)))return true;
+ p._poolWalkAt=round.elapsed+round._range(3,9);
+ const food=p.isTeammate&&[...round.groundItems.values()].filter(i=>i.poolSource==='snack'&&i.action!=='gum').sort((a,b)=>distance(a,p)-distance(b,p))[0];
+ const target=food||{x:round._range(-20,-3.7),z:p.z<0?round._range(-8.5,-7.25):round._range(6.3,7.75)};
+ const route=round._walkRoute(p,target,.2);
+ if(route.length)p._poolTrip={route,item:food?.id};
+ return true;
 }

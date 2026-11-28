@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
 import {PLAYGROUND_LAYOUT} from './playground-layout70.js?v=campus-117&rev=157';
 import {TOILET_STALLS} from './toilet-layout70.js?v=campus-94&rev=173';
-import {toiletBowl} from './map-activities77.js?v=campus-117&rev=173';
-import {activityHandTargets} from './map-activity-pose77.js?v=campus-117&rev=173';
+import {toiletBowl} from './map-activities77.js?v=campus-117&rev=180';
+import {activityHandTargets} from './map-activity-pose77.js?v=campus-117&rev=180';
 import {handFrame} from './hand-motion.js?v=campus-117';
 import {setWasteModel} from './game-actors.js?v=campus-117&rev=178';
 const handRigs=new WeakMap();
@@ -20,13 +20,13 @@ export function createMapActivityView(scene){
  for(const b of PLAYGROUND_LAYOUT.bars){const object=mesh(geo(new T.BoxGeometry(.13,.13,b.width-.16)),pickMaterial,root,b.x,b.height,b.z);object.name=b.id+'-grip-target';bars.set(b.id,object);}
  let state=null;
  return{
-  targets(s){if(s.map==='playground')return[...bars].map(([id,object])=>({id,object,kind:'sports-bar'}));if(s.map==='toilet')return[...plungers].filter(([id])=>s.toiletClogs?.[id]).map(([id,object])=>({id,object,kind:'plunger'}));return[];},
+  targets(s){if(s.map==='playground')return[...bars].map(([id,object])=>({id,object,kind:'sports-bar'}));if(['toilet','pool'].includes(s.map))return[...plungers].filter(([id])=>s.toiletClogs?.[id]).map(([id,object])=>({id,object,kind:'plunger'}));return[];},
   target(kind,id){return(kind==='sports-bar'?bars:plungers).get(id);},
   update(s){state=s;const people=[...(s?.students||[]),...(s?.player?[s.player]:[])];
-   for(const[id,g]of plungers){g.visible=s?.map==='toilet';const b=toiletBowl(id),actor=people.find(a=>a.mapActivity?.kind==='plunge'&&a.mapActivity.id===id);g.position.set(b.x+.40,0,b.z+.05);g.rotation.set(0,0,-.12);
+   for(const[id,g]of plungers){const b=toiletBowl(id,s?.map);g.visible=Boolean(b&&['pool','toilet'].includes(s?.map));if(!g.visible){wrappers.get(id).visible=false;continue;}const actor=people.find(a=>a.mapActivity?.kind==='plunge'&&a.mapActivity.id===id);g.position.set(b.x+.40,0,b.z+.05);g.rotation.set(0,0,-.12);
     if(actor){g.position.set(b.x,.22+.065*Math.sin(actor.mapActivity.age*Math.PI*4),b.z+.05);g.rotation.z=0;}
     const wrapper=wrappers.get(id),flush=s?.toiletFlushes?.[id],remaining=flush?Math.max(0,flush.end-s.elapsed):0;
-    wrapper.visible=g.visible&&Boolean(s.toiletClogs?.[id]||remaining>0);
+    wrapper.position.x=b.x;wrapper.position.z=b.z;wrapper.visible=g.visible&&Boolean(s.toiletClogs?.[id]||remaining>0);
     if(wrapper.visible){const progress=remaining>0?1-Math.min(1,remaining):1;
      wrapper.rotation.y=id*.9+progress*5.2;wrapper.position.y=.31+(1-progress)*.17-(s.toiletClogs?.[id]?0:.19*progress)-(actor?.mapActivity?.progress||0)*.035;
      wrapper.children[0].visible=flush?.item!=='phone';if(wrapper.children[0].visible)setWasteModel(wrapper.children[0],flush?.dish);wrapper.children[1].visible=flush?.item==='phone';

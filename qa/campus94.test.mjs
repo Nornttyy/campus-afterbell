@@ -13,7 +13,7 @@ function lookAtPot(round,actor,pot){
  actor.pitch=Math.atan2(actorEyeHeight(actor,'hotpot')-1.10,Math.hypot(actor.x-pot.x,actor.z-pot.z));
 }
 test('public floor numbers, preserved floor aliases, and the four complete exam seating plans',()=>{
- assert.deepEqual(CAMPUS_MAPS,['playground','classroom','night','tiered','computer','toilet','hotpot','dorm','cafeteria','exam']);
+ assert.deepEqual(CAMPUS_MAPS,['playground','classroom','night','tiered','computer','toilet','hotpot','dorm','cafeteria','exam','pool']);
  assert.equal(campusFloor('computer7'),7);assert.equal(campusFloor('bus'),0);
  const plans=[0,1,2,3].map(seed=>createSeatLayout(seed,null,'exam'));assert.equal(new Set(plans.map(s=>s[0].pattern)).size,4);
  for(const seats of plans){assert.equal(seats.length,32);const ctx=createLayoutContext(seats);for(const s of seats)assert.equal(blocked(s.x,s.z,.18,ctx),false);}

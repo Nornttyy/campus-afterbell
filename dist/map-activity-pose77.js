@@ -1,11 +1,11 @@
 import * as T from './vendor/three.module.js';
-import {barById,toiletBowl} from './map-activities77.js?v=campus-117&rev=173';
+import {barById,toiletBowl} from './map-activities77.js?v=campus-117&rev=180';
 import {createFingerRig,handFrame} from './hand-motion.js?v=campus-117';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),Q=()=>new T.Quaternion();
 export function activityHandTargets(activity){
  if(!activity)return null;
  if(activity.kind==='hang'){const b=barById(activity.id);return b?{Left:V(b.x-.025,b.height-.115,b.z-.23),Right:V(b.x-.025,b.height-.115,b.z+.23)}:null;}
- const b=toiletBowl(activity.id);if(!b)return null;
+ const b=toiletBowl(activity.id,activity.map);if(!b)return null;
  const h=.86+.065*Math.sin(activity.age*Math.PI*4);
  return{Left:V(b.x-.035,h,b.z+.05),Right:V(b.x+.035,h-.105,b.z+.05)};
 }

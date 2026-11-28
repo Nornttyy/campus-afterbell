@@ -3,14 +3,14 @@ import {endOfJoint,installGripDrag} from './grip-drag.js?v=campus-117&rev=172';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from './vendor/addons/controls/OrbitControls.js';
-import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=178';
+import {createRiggedPalm} from './student-assets.js?v=campus-117&rev=180';
 import {createDeskHands} from './game-actors.js?v=campus-117&rev=178';
 import {CLASSROOM_PROP_SOURCES} from './prop-assets.js?v=campus-83';
 import {teacherGripProps} from './grip-tools.js?v=campus-117&rev=171';
 import {createPropGripLayer,createGripLayer,gripSides,teacherItem,FINGERS} from './item-grips.js?v=campus-117&rev=175';
 import {TEXTBOOK,bookSpineHeight} from './study-book58.js?v=campus-110';
-import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=178';
-import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=178';
+import {createUpperFloorView} from './upper-floor-view85.js?v=campus-117&rev=180';
+import {createMapActivityView} from './map-activity-view77.js?v=campus-117&rev=180';
 
 const vec=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 function makeBook(redraw){

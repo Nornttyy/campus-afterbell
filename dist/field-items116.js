@@ -1,5 +1,5 @@
-import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=174';
-import {actorEyePosition} from './classroom-layout.js?v=campus-117&rev=174';
+import {createSmokeProjectile,stepSmokeProjectile} from './smoke-physics.js?v=campus-117&rev=180';
+import {actorEyePosition} from './classroom-layout.js?v=campus-117&rev=180';
 import {PLAYGROUND_LAYOUT,vendingPoint} from './playground-layout70.js?v=campus-117&rev=157';
 
 const foods=['snack','drink','burger','noodles','chips','gum'];
@@ -9,10 +9,10 @@ export function coolerPoint(i){
 }
 export function nextSnack(round){
  const r=round._random();
- if(r<.06)return 'flash';
- if(r<.12)return 'smoke';
- if(r<.23)return 'banana';
- return foods[Math.min(foods.length-1,Math.floor((r-.23)/.77*foods.length))];
+ if(r<.025)return 'flash';
+ if(r<.05)return 'smoke';
+ if(r<.14)return 'banana';
+ return foods[Math.min(foods.length-1,Math.floor((r-.14)/.86*foods.length))];
 }
 // Resting extents of the game meshes, measured in their ground orientation (mm).
 const footprints={

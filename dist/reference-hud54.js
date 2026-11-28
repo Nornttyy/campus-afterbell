@@ -1,4 +1,4 @@
-import {attacks} from './teacher-attacks129.js?v=campus-117&rev=174';
+import {attacks} from './teacher-attacks129.js?v=campus-117&rev=180';
 import {readControls,keyLabel} from './control-settings64.js?v=campus-93';
 // Presentation consumes authoritative scores; names and points are never
 // invented from an animation or inferred from the number of eaten objects.

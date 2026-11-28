@@ -11,7 +11,7 @@ import {CAMPUS_SURFACE_SOURCES} from '../dist/surface-materials.js';
 import {CAMPUS_ARTWORK_SOURCES} from '../dist/campus-artwork.js';
 import {FURNITURE_SOURCES67} from '../dist/furniture-assets67.js';
 
-const reopened=['cafeteria','exam','toilet','dorm'];
+const reopened=['cafeteria','exam','toilet','dorm','pool'];
 const board=p=>Object.assign(p,{x:LIFT.x,z:LIFT.z,seated:false});
 test('hotpot is archived and other destinations keep their floor numbers',()=>{
  assert.deepEqual(OPEN_CAMPUS_MAPS,CAMPUS_MAPS.filter(m=>m!=='hotpot'));assert.equal(campusFloor('hotpot'),7);assert.equal(campusFloor('dorm'),8);assert.equal(playableCampusMap('hotpot'),null);assert.equal(playableCampusMap('bus'),null);

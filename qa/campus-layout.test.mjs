@@ -62,8 +62,8 @@ test('chalk geometry follows the enlarged partitions, open door headers, lectern
  const ctx=createLayoutContext(SEATS),a={x:6.7,y:1.4,z:0},b={x:9.3,y:1.4,z:0};assert.equal(chalkHit(a,b,[],[],'classroom',ctx).kind,'wall');for(const door of DOORS){const student={id:1,x:9.1,z:door.center,seated:false};assert.equal(chalkHit({...a,z:door.center},{...b,z:door.center},[student],[],'classroom',ctx).kind,'student');assert.equal(chalkHit({...a,y:3.4,z:door.center},{...b,y:3.4,z:door.center},[],[],'classroom',ctx).kind,'wall');}updateLayoutDoors(ctx,{rearDoorClosed:true});assert.equal(chalkHit({...a,z:DOORS[0].center},{...b,z:DOORS[0].center},[],[],'classroom',ctx).kind,'wall');
 });
 
-test('ten distinct maps preserve corridor/office roofs and give the outdoor playground open sky',()=>{
- assert.deepEqual(CAMPUS_MAPS,['playground','classroom','night','tiered','computer','toilet','hotpot','dorm','cafeteria','exam']);for(const map of CAMPUS_MAPS){const expected=map==='dorm'?DORM_BOUNDS.height:teachingRoomHeight(map);for(const [x,z,height]of[[map==='dorm'?4.1:0,0,expected],[9.2,0,CEILING_HEIGHT],[TEACHER_SPAWN.x,TEACHER_SPAWN.z,OFFICE.height]]){const roof=ceilingVolumes(map).find(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ&&v.minY===height);assert.equal(Boolean(roof),map!=='playground'||x!==0);if(roof)assert.ok(enclosureVolumes(map).includes(roof));}}
+test('eleven distinct maps preserve corridor/office roofs and give the outdoor playground open sky',()=>{
+ assert.deepEqual(CAMPUS_MAPS,['playground','classroom','night','tiered','computer','toilet','hotpot','dorm','cafeteria','exam','pool']);for(const map of CAMPUS_MAPS){const expected=map==='dorm'?DORM_BOUNDS.height:teachingRoomHeight(map);for(const [x,z,height]of[[map==='dorm'?4.1:0,0,expected],[9.2,0,CEILING_HEIGHT],[TEACHER_SPAWN.x,TEACHER_SPAWN.z,OFFICE.height]]){const roof=ceilingVolumes(map).find(v=>x>=v.minX&&x<=v.maxX&&z>=v.minZ&&z<=v.maxZ&&v.minY===height);assert.equal(Boolean(roof),map!=='playground'||x!==0);if(roof)assert.ok(enclosureVolumes(map).includes(roof));}}
 });
 
 test('each floor variant supports a whole table and chair on the same local elevation',()=>{
